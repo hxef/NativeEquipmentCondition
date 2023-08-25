@@ -5,6 +5,7 @@
 
 #include <unordered_map>
 #include <unordered_set>
+#include <set>
 
 #include "F4SE/F4SE.h"
 #include "RE/Fallout.h"

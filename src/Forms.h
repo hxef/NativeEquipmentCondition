@@ -11,20 +11,22 @@ static const constexpr auto CND_MODCOL_OMOD_ID = 0x26F0C;
 static const constexpr auto CND_TEMPLATE_WEAPON = 0x1A1E7;
 static const constexpr auto CND_WEAPON_INNR = 0x1A1E9;
 // Condition related forms, from worst to best
-static const constexpr std::uint32_t CND_KEYWORDS_ID[] = { 0x1E645, 0x1E646, 0x1E647, 0x1E648, 0x1E649, 0x1E64A, 0x1E64B, 0x1E64C, 0x1E64D, 0x1E64E, 0x1E64F };
-static const constexpr std::uint32_t CND_OMODS_ID[] = { 0x26EF7, 0x26EF8, 0x26EF9, 0x26EFA, 0x26EFB, 0x26EFC, 0x26EFD, 0x26EFE, 0x26EFF, 0x26F00, 0x26F01 };
-static const constexpr std::uint32_t CND_COBJ_ID[] = { 0x3C4A5, 0x3C4A6, 0x3C4A7, 0x3C4A8, 0x3C4A9, 0x3C4AA, 0x3C4AB, 0x3C4AC, 0x3C4AD, 0x3C4AE, 0x3C4AF };
-static_assert(sizeof(CND_KEYWORDS_ID) == sizeof(CND_OMODS_ID) && sizeof(CND_OMODS_ID) == sizeof(CND_COBJ_ID));
+static const constexpr std::uint32_t CND_KEYWORDS_ID[] = { 0x1E500, 0x1E501, 0x1E502, 0x1E503, 0x1E504, 0x1E505, 0x1E506, 0x1E507, 0x1E508, 0x1E509, 0x1E50A, 0x1E50B, 0x1E50C, 0x1E50D, 0x1E50E, 0x1E50F, 0x1E510, 0x1E511, 0x1E512, 0x1E513, 0x1E514 };
+static const constexpr std::uint32_t CND_OMODS_ID[] = { 0x22A00, 0x22A01, 0x22A02, 0x22A03, 0x22A04, 0x22A05, 0x22A06, 0x22A07, 0x22A08, 0x22A09, 0x22A0A, 0x22A0B, 0x22A0C, 0x22A0D, 0x22A0E, 0x22A0F, 0x22A10, 0x22A11, 0x22A12, 0x22A13, 0x22A14 };
+static const constexpr std::uint32_t CND_COBJ_ID[] =  { 0x3C000, 0x3C001, 0x3C002, 0x3C003, 0x3C004, 0x3C005, 0x3C006, 0x3C007, 0x3C008, 0x3C009, 0x3C00A };
+static_assert(sizeof(CND_KEYWORDS_ID) == sizeof(CND_OMODS_ID));
 
 const std::uint8_t NUM_CONDITION_LEVELS = sizeof(CND_KEYWORDS_ID) / sizeof(std::uint32_t);
 
 std::vector<ConditionObject> g_cndObjects;
 
-namespace Forms {
+namespace Forms
+{
 
 	static constexpr std::string_view CND_NAMES[] = { "Broken", "Ruined", "Faulty", "Worn", "Good" };
 
-	void Register() {
+	void Register()
+	{
 		logger::info("Registering forms...");
 
 		if (!g_dataHandler->LookupLoadedModByName(PLUGIN_NAME)) {
@@ -53,9 +55,13 @@ namespace Forms {
 			if (!omod) {
 				stl::report_and_fail("Condition omod was not found.");
 			}
-			auto* cobj = g_dataHandler->LookupForm<RE::BGSConstructibleObject>(CND_COBJ_ID[i], PLUGIN_NAME);
-			if (!cobj) {
-				stl::report_and_fail("Condition cobj was not found.");
+			RE::BGSConstructibleObject* cobj;
+			// cobj is initialized for even indices only.
+			if (i % 2 == 0) {
+				cobj = g_dataHandler->LookupForm<RE::BGSConstructibleObject>(CND_COBJ_ID[i / 2], PLUGIN_NAME);
+				if (!cobj) {
+					stl::report_and_fail("Condition cobj was not found.");
+				}
 			}
 			g_cndObjects.push_back({ kwd, omod, cobj });
 		}
@@ -64,7 +70,9 @@ namespace Forms {
 		for (auto i = 0; i < NUM_CONDITION_LEVELS; i++) {
 			auto* cobj = g_cndObjects[i].cobj;
 			auto* omod = g_cndObjects[i].omod;
-			cobj->createdItem = omod;
+			if (i != 0) { // broken omod is not craftable
+				cobj->createdItem = omod;
+			}
 			cobj->data.numConstructed = 1;
 			// add name and description to each condition omod
 			if (i == 0) {
@@ -84,7 +92,7 @@ namespace Forms {
 			const auto& arr = (*keywords)[stl::to_underlying(RE::KeywordType::kAttachPoint)];
 			for (std::uint16_t i = 0; i < arr.size(); i++) {
 				if (arr[i] == g_apCndKeyword) {
-					logger::debug(FMT_STRING("Keyword {:s} has index {:d}."), g_apCndKeyword->GetFormEditorID(), i);
+					logger::info(FMT_STRING("Keyword {:s} has index {:d}."), g_apCndKeyword->GetFormEditorID(), i);
 					apCndIndex = i;
 					bFound = true;
 					break;
@@ -100,7 +108,7 @@ namespace Forms {
 		// Some weapons don't have any object template item, but can be used by the player during normal gameplay.
 		// Use the following weapon form as a template for creating an object template item for these kind of weapons.
 		// (creating one from code does not work, something to do with RE::BGSMod::Template::Item constructor).
-		// Also this is used to initialize ap list for weapons that don't have any ap, but are still playable.
+		// Another use for this is to initialize ap list for weapons that don't have any ap, but are still playable.
 		auto cndTemplateWeapForm = g_dataHandler->LookupForm<RE::TESObjectWEAP>(CND_TEMPLATE_WEAPON, PLUGIN_NAME);
 		if (!cndTemplateWeapForm) {
 			stl::report_and_fail("Condition template weapon form was not found.");
@@ -121,7 +129,7 @@ namespace Forms {
 
 		// Iterate through all weapons
 		for (auto weaponForm : g_dataHandler->GetFormArray<RE::TESObjectWEAP>()) {
-			// skip weapons that are: non-playable, mines and grenades, without equip slot, without a world model, with no name
+			// skip weapons that are: non-playable, mines, grenades, without equip slot, without a world model, with no name
 			if (!weaponForm->GetPlayable(weaponForm->GetBaseInstanceData()) || weaponForm->weaponData.type == RE::WEAPON_TYPE::kGrenade || weaponForm->weaponData.type == RE::WEAPON_TYPE::kMine || !weaponForm->equipSlot || weaponForm->model.empty() || weaponForm->fullName.empty()) {
 				continue;
 			}
@@ -130,7 +138,7 @@ namespace Forms {
 			auto& apArr = weaponForm->attachParents.array;
 			auto& apArrSize = weaponForm->attachParents.size;
 			if (!apArr) {
-				logger::debug(FMT_STRING("Weapon {:x} does not have an AP array."), weaponForm->GetFormID());
+				logger::info(FMT_STRING("Weapon {:x} does not have an AP array."), weaponForm->GetFormID());
 				apArrSize = 0;
 			}
 			void* allocApArr;
@@ -153,7 +161,7 @@ namespace Forms {
 			auto& objTmpl = weaponForm->objectTemplate;
 			if (objTmpl.items.empty()) {
 				// If weapon does not have any obj template, copy and paste a new one from the cnd weapon template form
-				logger::debug(FMT_STRING("Weapon {:x} does not have an object template."), weaponForm->GetFormID());
+				logger::info(FMT_STRING("Weapon {:x} does not have an object template."), weaponForm->GetFormID());
 				auto newItemCopy = RE::malloc<RE::BGSMod::Template::Item>();
 				if (!newItemCopy) {
 					stl::report_and_fail("Failed to allocate a RE::BGSMod::Template::Item.");
@@ -185,7 +193,7 @@ namespace Forms {
 					auto* newBuffer = reinterpret_cast<std::byte*>(alloc);
 					// write the condition modcol omod address at the beginning of new buffer.
 					// for omods, first 8 bytes represent its memory address, and the purpose of the other 8 is unknown
-					// for now we'll just copy the 8 bytes of the first omod
+					// for now we'll just copy the 8 bytes, which is the ptr to first omod(fingers crossed the oter 8 bytes don't matter)
 					std::memcpy(newBuffer, &modcolCnd, sizeof(&modcolCnd));
 					std::memcpy(newBuffer + 8, buffer + 8, 8);
 					// append the values of the original buffer to the new buffer
@@ -211,7 +219,7 @@ namespace Forms {
 				weaponForm->instanceNamingRules = cndWeapInnr;
 			}
 
-			logger::debug(FMT_STRING("Patched weapon {:s}, id {:x}."), weaponForm->GetFullName(), weaponForm->GetFormID());
+			logger::info(FMT_STRING("Patched weapon {:s}, id {:x}."), weaponForm->GetFullName(), weaponForm->GetFormID());
 			numPatched++;
 		}
 

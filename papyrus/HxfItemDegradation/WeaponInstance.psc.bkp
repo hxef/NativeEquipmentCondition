@@ -1,0 +1,314 @@
+Scriptname WeaponInstance extends ObjectReference
+
+import HxfItemDegradation
+
+WeaponQuest Property kQst Auto Const ; WeaponQuest script
+Float Property fHealth = -1.0 Auto Hidden; weapon condition value
+
+
+Function InitWeapon()
+	If !IsBoundGameObjectAvailable()
+		Return
+	EndIf
+
+	If Utility.RandomFloat() <= 0.08
+		fHealth = Utility.RandomFloat(600.0, 900.0)
+	Else
+		fHealth = Utility.RandomFloat(50.0, 600.0)
+	EndIf
+
+	SetOmodHealth(fHealth)
+
+	Debug.Trace("INIT: " + Self + " [" + GetDisplayName() + "] " + fHealth)
+	;StartTimer(5)
+EndFunction
+
+;/
+Event OnTimer(Int aiTimerID)
+	Debug.Trace(GetDisplayName() + " | " + GetIsEquippedRef(Self))
+	StartTimer(3)
+EndEvent
+/;
+
+InstanceData:Owner Function GetInstanceOwner()
+	InstanceData:Owner inst = new InstanceData:Owner
+	inst.owner = self
+	return inst
+EndFunction
+
+Bool Function IsAutomatic(InstanceData:Owner aInstance)
+	If HasKeyword(kQst.kWeaponTypeAutomatic) || InstanceData.GetFlag(aInstance, 0x0004000)
+		Return True
+	EndIf
+	Return False
+EndFunction
+
+Bool Function IsMelee()
+	If HasKeyword(kQst.kWeaponTypeMelee1H) || HasKeyword(kQst.kWeaponTypeMelee2H) || HasKeyword(kQst.kWeaponTypeUnarmed)
+		Return True
+	EndIf
+	Return False
+EndFunction
+
+Function DecreaseHealth(Float afAmount)
+	fHealth = Math.Max(0.0, fHealth - (afAmount * kQst.kDegradationMultGlb.GetValue()))
+EndFunction
+
+
+Function SetHealth(Float afAmount)
+	If afAmount < kQst.aConditionThr[0]
+		fHealth = Math.Max(afAmount, kQst.aConditionThr[0])
+	Else
+		fHealth = Math.Min(afAmount, kQst.aConditionThr[10])
+	EndIf
+EndFunction
+
+; Set the condition keyword depending on health param
+Function SetCondKwdHealth(InstanceData:Owner aInstance, Float afHealth)
+	Int i
+	Keyword condKwd
+	While i < kQst.aConditionThr.Length
+		If afHealth <= kQst.aConditionThr[i]
+			condKwd = kQst.aConditionKwd[i]
+			If !HasKeyword(condKwd)
+
+				Keyword[] keywords = InstanceData.GetKeywords(aInstance)
+				If keywords
+					Int j
+					Int oldKwdIndex
+					While j < kQst.aConditionKwd.Length
+						oldKwdIndex = keywords.RFind(kQst.aConditionKwd[j])
+						If oldKwdIndex > -1
+							keywords.Remove(oldKwdIndex)
+							j = kQst.aConditionKwd.Length ; break
+						Else
+							j = j + 1
+						EndIf
+					EndWhile
+				Else
+					keywords = new Keyword[0]
+				EndIf
+				keywords.Add(condKwd)
+				If !HasKeyword(kQst.kDegradedWeapKeyword)
+					keywords.Add(kQst.kDegradedWeapKeyword)
+				EndIf
+				InstanceData.SetKeywords(aInstance, keywords)
+
+			EndIf
+			i = kQst.aConditionThr.Length ; break
+		Else
+			i = i + 1
+		EndIf
+	EndWhile
+	Debug.Trace("------Current Keywords List------")
+	i = 0
+	Keyword[] keywords = InstanceData.GetKeywords(aInstance)
+	While i < keywords.Length
+		Debug.Trace(keywords[i])
+		i = i + 1
+	EndWhile
+EndFunction
+
+; Set the degradation OMOD based on depending on health param
+Function SetOmodHealth(Float afHealth)
+	Int i
+	While i < kQst.aConditionThr.Length
+		If afHealth <= kQst.aConditionThr[i]
+			AttachMod(kQst.aConditionMod[i])
+			i = kQst.aConditionThr.Length ; break
+		Else
+			i = i + 1
+		EndIf
+	EndWhile
+EndFunction
+
+; Calculates degradation rate depending on certain weapon aspects
+Float Function GetDegradationRate(InstanceData:Owner aInstance)
+	Float fDegradationRate = 1.0
+	If IsMelee()
+		fDegradationRate *= 3.50
+	EndIf
+	If HasKeyword(kQst.kWeaponTypeBallistic)
+		fDegradationRate *= 1.00
+	EndIf
+	If HasKeyword(kQst.kWeaponTypePlasma)
+		fDegradationRate *= 1.10
+	EndIf
+	If HasKeyword(kQst.kWeaponTypeLaser)
+		fDegradationRate *= 1.20
+	EndIf
+	If HasKeyword(kQst.kWeaponTypeAlienBlaster)
+		fDegradationRate *= 0.25
+	EndIf
+	If HasKeyword(kQst.kWeaponTypePipe)
+		fDegradationRate *= 3.00
+	EndIf
+	If HasKeyword(kQst.kWeaponTypeRifle) && !HasKeyword(kQst.kWeaponTypeHeavyGun)
+		fDegradationRate *= 2.00
+	EndIf
+	If IsAutomatic(aInstance)
+		fDegradationRate *= 0.50
+	EndIf
+	If InstanceData.GetFlag(aInstance, 0x0400000) ; bolt action
+		fDegradationRate *= 2.00
+	EndIf
+	If InstanceData.GetFlag(aInstance, 0x0002000) ; hold to power(eg: gauss rifle)
+		fDegradationRate *= 2.00
+	EndIf
+	If InstanceData.GetFlag(aInstance, 0x0000008) ; charging reload(eg: laser musket)
+		fDegradationRate *= 2.00
+	EndIf
+	If HasKeyword(kQst.kWeaponTypePistol)
+		fDegradationRate *= 1.50
+	EndIf
+	If HasKeyword(kQst.kWeaponTypeShotgun)
+		fDegradationRate *= 1.75
+	EndIf
+	If HasKeyword(kQst.kWeaponTypeMinigun) || HasKeyword(kQst.kWeaponTypeGatlingLaser)
+		fDegradationRate *= 0.25
+	EndIf
+	If HasKeyword(kQst.kWeaponTypeHeavyGun) && !IsAutomatic(aInstance) && !HasKeyword(kQst.kWeaponTypeMinigun) && !HasKeyword(kQst.kWeaponTypeGatlingLaser)
+		fDegradationRate *= 7.50
+	EndIf
+	If HasKeyword(kQst.kWeaponTypePossiblyVerySmallClipSize)
+		fDegradationRate *= 1.50
+	EndIf
+	If HasKeyword(kQst.kWeaponTypeExplosive) || HasKeyword(kQst.kWeaponTypeFatman)
+		fDegradationRate *= 2.50
+	EndIf
+	If HasKeyword(kQst.kHasScope)
+		fDegradationRate *= 1.10
+	EndIf
+	If HasKeyword(kQst.kHasSilencer)
+		fDegradationRate *= 0.90
+	EndIf
+	If HasKeyword(kQst.kHasLegendaryExplosiveBullets) || HasKeyword(kQst.kHasLegendaryTwoShot) || HasKeyword(kQst.kHasLegendaryBleed)
+		fDegradationRate *= 2.00
+	EndIf
+	Return fDegradationRate
+EndFunction
+
+Function JamWeapon(InstanceData:Owner aInstance)
+	kQst.bWeaponJammed = True
+	; Replace ammo type with dummy ammo and remember original ammo
+	kQst.kOriginalAmmo = InstanceData.GetAmmo(aInstance)
+	InstanceData.SetAmmo(aInstance, kQst.kJammedAmmo)
+	; Replace missing ammo text with jammed text
+	kQst.sMissingAmmoTextGs = Game.GetGameSettingString("sNoAmmo")
+	Game.SetGameSettingString("sNoAmmo", "Your weapon has jammed. Reload!")
+EndFunction
+
+Function UnJamWeapon()
+	kQst.bWeaponJammed = False
+	InstanceData.SetAmmo(GetInstanceOwner(), kQst.kOriginalAmmo) ; restore original ammo form
+	Game.SetGameSettingString("sNoAmmo", kQst.sMissingAmmoTextGs) ; restore original missing ammo text
+EndFunction
+
+; Updates degradation penalties, jamming roll, cond widget, etc.
+Function UpdateWeaponCondition(Bool abRepair = False)
+
+	; Count the number of condition updates between the timed updates
+	kQst.IncrementNumUpdates()
+	
+	If kQst.bUpdateCondition
+		kQst.bUpdateCondition = False
+	
+		InstanceData:Owner instance = GetInstanceOwner()
+	
+		If !abRepair
+			kQst.fDegradationRate = GetDegradationRate(instance)
+			DecreaseHealth(kQst.iNumUpdateHealth * kQst.fDegradationRate)
+			kQst.iNumUpdateHealth = 0
+			Debug.Trace(GetDisplayName() + " | dRate: " + kQst.fDegradationRate)
+		EndIf
+	
+		; Degrade/Repair weapon
+		If abRepair
+			SetOmodHealth(fHealth)
+		Else
+			SetCondKwdHealth(instance, fHealth)
+		EndIf
+
+		; Weapon jamming roll.
+		If !abRepair && !kQst.bWeaponJammed && !IsMelee()
+			Float fJammingRoll = Math.Min(0.10, \
+										1 - Math.Pow(fHealth / kQst.aConditionThr[10], kQst.fJammingExp))
+			; Automatic guns get a jamming chance reduction
+			If IsAutomatic(instance) || HasKeyword(kQst.kWeaponTypeMinigun) || HasKeyword(kQst.kWeaponTypeGatlingLaser)
+				fJammingRoll *= kQst.fJammingAutomaticMult
+			EndIf
+			If fJammingRoll > Utility.RandomFloat()
+				JamWeapon(instance)
+			EndIf
+		EndIf
+
+		; Send new health value to cnd meter
+		If kQst.WeaponConditionWidget_Loaded
+			kQst.hud.SendMessage(kQst.WeaponConditionWidget, kQst.WeaponConditionWidget_SetHealth_Cmd, fHealth)
+		EndIf
+
+		; Wait some time between these updates to prevent too many threads starting when shooting with auto guns
+		kQst.StartTimer(0.15, 2)
+	EndIf
+
+EndFunction
+
+Function SetEquipped()
+	;GetIsEquippedRef(Self)
+	kQst.eqWeapon = Self
+	kQst.UpdateWidgetProps()
+	Debug.Trace("OnEquipped " + GetDisplayName())
+EndFunction
+
+Function SetUnequipped()
+	kQst.eqWeapon = None
+	If kQst.bWeaponJammed
+		UnJamWeapon()
+	EndIf
+	; Make widget invisible
+	kQst.SetWidgetVisibility(0)
+	Debug.Trace("OnUnequipped " + GetDisplayName())
+EndFunction
+
+Event OnEquipped(Actor akActor)
+	If akActor != kQst.kPlayerRef
+		Return
+	EndIf
+	SetEquipped()
+EndEvent
+
+Event OnUnequipped(Actor akActor)
+	If akActor != kQst.kPlayerRef
+		Return
+	EndIf
+	SetUnequipped()
+EndEvent
+
+Event OnCellLoad()
+	If fHealth <= -1
+		InitWeapon()
+	EndIf
+EndEvent
+
+Event OnContainerChanged(ObjectReference akNewContainer, ObjectReference akOldContainer)
+
+	If fHealth <= -1
+		InitWeapon()
+	EndIf
+
+	If akOldContainer == kQst.kPlayerRef
+
+		; If player drops an equipped weapon that is part of a stack, the OnUnequipped event won't fire
+		; preventing events from unregistering and other bad stuff.
+		If kQst.eqWeapon == Self
+			SetUnequipped()
+			; The next weapon in the stack is automatically equipped, but without the OnEquipped event firing!
+			; Just forcefully unequip it instead to prevent any bugs
+			Weapon keqWeaponForm = GetBaseObject() as Weapon
+			(akOldContainer as Actor).UnequipItem(keqWeaponForm, False, True)
+		EndIf
+
+	EndIf
+	
+	Debug.Trace(GetDisplayName() + " moved from " + akOldContainer + " to " + akNewContainer)
+EndEvent

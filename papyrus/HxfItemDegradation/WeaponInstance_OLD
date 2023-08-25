@@ -1,0 +1,547 @@
+Scriptname HxfItemDegradation:WeaponInstance extends ObjectReference
+
+; 17 OCT 2020
+; OLDER VERSION THAT USES INSTANCE_DATA TO MODIFY INSTANCE STATS BASED ON DEGRADATION
+
+HxfItemDegradation:WeaponQuest Property kQst Auto Const
+
+
+Struct Data
+	Bool bEquippedByPlayer ; is this weapon equipped by Player?
+	Float fHealth ; weapon condition value
+
+	; Stats of this weapon, without degradation penalties
+	Int iAttackDamage
+	Float fApCost
+	Float fMinRange
+	Float fMaxRange
+	Float fReloadSpeed
+	Float fAttackSpeed
+	Int iValue
+EndStruct
+
+; these 2 vars are lazy-loaded when NPC equips/Player picks it up for the first time. A good way to mitigate save bloat.
+Data Property data Auto Hidden 
+InstanceData:DamageTypeInfo[] Property damageTypes Auto Hidden
+
+
+Function InitWeapon(Bool abFullHealth = False)
+	data = new Data
+
+	; Bought weapons are always at 100% condition
+	If abFullHealth || Ui.IsMenuOpen("BarterMenu")
+		data.fHealth = kQst.aConditionThr[10]
+	Else
+		If Utility.RandomFloat() <= 0.10
+			data.fHealth = Utility.RandomFloat(600.0, 900.0)
+		Else
+			data.fHealth = Utility.RandomFloat(100.0, 600.0)
+		EndIf
+	EndIf
+
+	InstanceData:Owner instance = GetInstanceOwner()
+	SetBaseStats(instance)
+	SetDegradationPenalties(instance)
+
+	Debug.Trace("INIT: " + Self + " [" + GetDisplayName() + "] " + data.fHealth)
+EndFunction
+
+
+InstanceData:Owner Function GetInstanceOwner()
+	InstanceData:Owner thisWeapon = new InstanceData:Owner
+	thisWeapon.Owner = Self as ObjectReference
+	Return thisWeapon
+EndFunction
+
+
+Function DecreaseHealth(Float afAmount)
+	data.fHealth = Math.Max(0.0, data.fHealth - (afAmount * kQst.kDegradationMultGlb.GetValue()))
+EndFunction
+
+
+Function SetHealth(Float afAmount)
+	If afAmount >= 0.0
+		data.fHealth = Math.Min(afAmount, kQst.aConditionThr[10])
+	Else
+		data.fHealth = 0.0
+	EndIf
+EndFunction
+
+
+; Set stat variables of this weapon, with modifications included
+; These are used as a base for degradation reductions
+Function SetBaseStats(InstanceData:Owner aThisWeapon)
+	damageTypes = InstanceData.GetDamageTypes(aThisWeapon)
+	data.iAttackDamage = InstanceData.GetAttackDamage(aThisWeapon)
+	data.fApCost = InstanceData.GetActionPointCost(aThisWeapon)
+	data.fMinRange = InstanceData.GetMinRange(aThisWeapon)
+	data.fMaxRange = InstanceData.GetMaxRange(aThisWeapon)
+	data.fReloadSpeed = InstanceData.GetReloadSpeed(aThisWeapon)
+	data.fAttackSpeed = InstanceData.GetSpeed(aThisWeapon)
+	data.iValue = InstanceData.GetGoldValue(aThisWeapon)
+EndFunction
+
+
+; Set weapon instance stats via InstanceData depening on current condition
+Function SetDegradationPenalties(InstanceData:Owner aThisWeapon)
+	
+	Float fDegradationPerc = 1 - (data.fHealth / kQst.aConditionThr[10])
+	If damageTypes
+		InstanceData:DamageTypeInfo[] damageTypesPenalty = InstanceData.GetDamageTypes(aThisWeapon)
+		Int i = 0
+		While i < damageTypesPenalty.Length
+			damageTypesPenalty[i].Damage = damageTypes[i].Damage - \
+								(damageTypes[i].Damage * kQst.fMaxDegradAttackDamage * fDegradationPerc) as Int
+			i += 1
+		EndWhile
+		InstanceData.SetDamageTypes(aThisWeapon, damageTypesPenalty)
+	EndIf
+	InstanceData.SetAttackDamage(aThisWeapon, data.iAttackDamage - (data.iAttackDamage * kQst.fMaxDegradAttackDamage * fDegradationPerc) as Int)
+	InstanceData.SetActionPointCost(aThisWeapon, data.fApCost - data.fApCost * kQst.fMaxDegradApCost * fDegradationPerc)
+	InstanceData.SetMinRange(aThisWeapon, data.fMinRange - data.fMinRange * kQst.fMaxDegradMinRange * fDegradationPerc)
+	InstanceData.SetMaxRange(aThisWeapon, data.fMaxRange - data.fMaxRange * kQst.fMaxDegradMaxRange * fDegradationPerc)
+	InstanceData.SetReloadSpeed(aThisWeapon, data.fReloadSpeed - data.fReloadSpeed * kQst.fMaxDegradReloadSpeed * fDegradationPerc)
+	InstanceData.SetSpeed(aThisWeapon, data.fAttackSpeed - data.fAttackSpeed * kQst.fMaxDegradAttackSpeed * fDegradationPerc)
+	InstanceData.SetGoldValue(aThisWeapon, data.iValue - (data.iValue * kQst.fMaxDegradValue * fDegradationPerc) as Int)
+
+EndFunction
+
+
+; Calculates degradation rate depending on certain weapon aspects
+Function CalculateDegradationRate()
+	InstanceData:Owner instance = GetInstanceOwner()
+	Float fDegradationRate = 1.0
+	If kQst.bEquippedMelee
+		fDegradationRate *= 3.30
+	EndIf
+	If HasKeyword(kQst.kWeaponTypeBallistic)
+		fDegradationRate *= 1.00
+	EndIf
+	If HasKeyword(kQst.kWeaponTypePlasma)
+		fDegradationRate *= 1.10
+	EndIf
+	If HasKeyword(kQst.kWeaponTypeLaser)
+		fDegradationRate *= 1.20
+	EndIf
+	If HasKeyword(kQst.kWeaponTypeAlienBlaster)
+		fDegradationRate *= 0.25
+	EndIf
+	If HasKeyword(kQst.kWeaponTypePipe)
+		fDegradationRate *= 3.00
+	EndIf
+	If HasKeyword(kQst.kWeaponTypeRifle) && !HasKeyword(kQst.kWeaponTypeHeavyGun)
+		fDegradationRate *= 2.00
+	EndIf
+	If HasKeyword(kQst.kWeaponTypeAutomatic)
+		fDegradationRate *= 0.50
+	EndIf
+	If InstanceData.GetFlag(instance, 4194304) ; bolt action
+		fDegradationRate *= 2.00
+	EndIf
+	If InstanceData.GetFlag(instance, 8192) ; hold to power(eg: gauss rifle)
+		fDegradationRate *= 2.00
+	EndIf
+	If InstanceData.GetFlag(instance, 8) ; charging reload(eg: laser musket)
+		fDegradationRate *= 2.00
+	EndIf
+	If HasKeyword(kQst.kWeaponTypePistol)
+		fDegradationRate *= 1.50
+	EndIf
+	If HasKeyword(kQst.kWeaponTypeShotgun)
+		fDegradationRate *= 1.75
+	EndIf
+	If HasKeyword(kQst.kWeaponTypeMinigun) || HasKeyword(kQst.kWeaponTypeGatlingLaser)
+		fDegradationRate *= 0.30
+	EndIf
+	If HasKeyword(kQst.kWeaponTypeHeavyGun) && !HasKeyword(kQst.kWeaponTypeAutomatic) && !HasKeyword(kQst.kWeaponTypeMinigun) && !HasKeyword(kQst.kWeaponTypeGatlingLaser)
+		fDegradationRate *= 7.50
+	EndIf
+	If HasKeyword(kQst.kWeaponTypePossiblyVerySmallClipSize)
+		fDegradationRate *= 1.50
+	EndIf
+	If HasKeyword(kQst.kWeaponTypeExplosive) || HasKeyword(kQst.kWeaponTypeFatman)
+		fDegradationRate *= 2.50
+	EndIf
+	If HasKeyword(kQst.kHasScope)
+		fDegradationRate *= 1.10
+	EndIf
+	If HasKeyword(kQst.kHasSilencer)
+		fDegradationRate *= 0.90
+	EndIf
+	If HasKeyword(kQst.kHasLegendaryExplosiveBullets) || HasKeyword(kQst.kHasLegendaryTwoShot) || HasKeyword(kQst.kHasLegendaryBleed)
+		fDegradationRate *= 2.00
+	EndIf
+	kQst.fDegradationRate = fDegradationRate
+EndFunction
+
+
+; Returns true and unequips the weapon if weapon health is lower than zero , otherwise returns false
+Bool Function ForceUnequipZeroHealth()
+	If data.fHealth <= 0
+		Weapon akWeaponForm = GetBaseObject() as Weapon
+		kQst.kPlayerRef.UnequipItem(akWeaponForm, False, True)
+		Return True
+	EndIf
+	Return False
+EndFunction
+
+
+Function SetHUDWidget()
+	If kQst.WeaponConditionWidget_Loaded
+		; Set new health value to cnd meter
+		kQst.hud.SendMessage(kQst.WeaponConditionWidget, kQst.WeaponConditionWidget_SetMeter_Cmd, data.fHealth)
+		; Set widget props depending on melee/ranged weapon
+		If kQst.bEquippedMelee
+			kQst.hud.SendMessage(kQst.WeaponConditionWidget, kQst.WeaponConditionWidget_MeleeWeapon_Cmd, 0)
+		Else
+			kQst.hud.SendMessage(kQst.WeaponConditionWidget, kQst.WeaponConditionWidget_RangedWeapon_Cmd, 0)
+		EndIf
+		; Set widget visible
+		kQst.hud.SendMessage(kQst.WeaponConditionWidget, kQst.WeaponConditionWidget_Visible_Cmd, 1)
+	EndIf
+EndFunction
+
+
+Function JamWeapon()
+	kQst.bWeaponJammed = True
+	
+	RegisterForControl("PrimaryAttack") ; for playing dry fire sound
+	RegisterForControl("ReadyWeapon") ; player must reload to unjam weapon
+	
+	; Replace missing ammo text with jammed text
+	kQst.sMissingAmmoTextGs = Game.GetGameSettingString("sNoAmmo")
+	Game.SetGameSettingString("sNoAmmo", "Your weapon has jammed!")
+
+	; Replace ammo type with dummy ammo and store original
+	InstanceData:Owner instance = GetInstanceOwner()
+	kQst.kOriginalAmmo = InstanceData.GetAmmo(instance)
+	InstanceData.SetAmmo(instance, kQst.kJammedDummyAmmo)
+	
+	; Quickly disable and enable combat controls to stop player from firing if using automatic weapon
+	InputEnableLayer inputLayer = InputEnableLayer.Create()
+	inputLayer.EnableFighting(False)
+	inputLayer.EnableFighting(True)
+	inputLayer.Delete()
+EndFunction
+
+
+Function UnJamWeapon()
+	kQst.bWeaponJammed = False
+	UnRegisterForControl("PrimaryAttack")
+	UnRegisterForControl("ReadyWeapon")
+	InstanceData.SetAmmo(GetInstanceOwner(), kQst.kOriginalAmmo) ; restore original ammo form
+	Game.SetGameSettingString("sNoAmmo", kQst.sMissingAmmoTextGs) ; restore original missing ammo text
+EndFunction
+
+
+; Refills nearby NPC aliases
+Function ResetNearbyNpcsQuest()
+	If kQst.bUpdateNearbyNpcsQuest
+		kQst.kNearbyNpcsQuest.Reset()
+		kQst.kNearbyNpcsQuest.Stop()
+		kQst.kNearbyNpcsQuest.Start()
+		; Wait a few seconds between resets in case PC spams melee/attack key
+		kQst.bUpdateNearbyNpcsQuest = False
+		StartTimer(2.0, 1)
+	EndIf
+EndFunction
+
+
+; Change position of cnd widget depending whether player is in PA or not
+Function SetWidgetPA()
+	If kQst.WeaponConditionWidget_Loaded
+		If kQst.kPlayerRef.IsInPowerArmor()
+			kQst.hud.SendMessage(kQst.WeaponConditionWidget, kQst.WeaponConditionWidget_SetPowerArmor_Cmd, 1)
+			Debug.Trace("Player in PA.")
+		Else
+			kQst.hud.SendMessage(kQst.WeaponConditionWidget, kQst.WeaponConditionWidget_SetPowerArmor_Cmd, 0)
+			Debug.Trace("Player NOT in PA.")
+		EndIf
+	EndIf
+EndFunction
+
+
+; Adds a keyword that marks the weapon as being in player's inventory(using InstanceData)
+Function AddPlayerInvKeyword(InstanceData:Owner aThisWeapon)
+	Keyword[] keywords = InstanceData.GetKeywords(aThisWeapon)
+	If !keywords
+		keywords = new Keyword[1]
+		keywords[0] = kQst.kInPlayerInventory
+	Else
+		keywords.Add(kQst.kInPlayerInventory)
+	EndIf
+	InstanceData.SetKeywords(aThisWeapon, keywords)	
+EndFunction
+
+
+; Updates degradation penalties, jamming roll, widget, etc.
+Function UpdateWeaponCondition()
+	
+	If kQst.bUpdateCondition
+
+		SetDegradationPenalties(GetInstanceOwner())
+
+		; Weapon jamming roll. Add data.bEquippedByPlayer check too because this function could fire even after OnUnequipped event!
+		If !kQst.bWeaponJammed && !kQst.bEquippedMelee && data.bEquippedByPlayer
+			Float fJammingRoll = Math.Min(0.15, \
+										1 - Math.Pow(data.fHealth / kQst.aConditionThr[10], kQst.fJammingExp))
+			; Automatic guns get a jamming chance reduction
+			If HasKeyword(kQst.kWeaponTypeAutomatic) || HasKeyword(kQst.kWeaponTypeMinigun) || HasKeyword(kQst.kWeaponTypeGatlingLaser)
+				fJammingRoll *= kQst.fJammingAutomaticMult
+			EndIf
+			If fJammingRoll > Utility.RandomFloat()
+				JamWeapon()
+			EndIf
+		EndIf
+		
+		; set repairable global if weapon is damaged
+		If data.fHealth < kQst.aConditionThr[10]
+			kQst.kWeaponRepairable.SetValue(1)
+		EndIf
+		
+		If ForceUnequipZeroHealth()
+			Debug.Notification("Your weapon broke!")
+		Else
+			; Send new health value to cnd meter
+			If kQst.WeaponConditionWidget_Loaded
+				kQst.hud.SendMessage(kQst.WeaponConditionWidget, kQst.WeaponConditionWidget_SetMeter_Cmd, data.fHealth)
+			EndIf
+		EndIf
+
+		; Wait some time between these updates to prevent too many stack frames when shooting with auto guns
+		kQst.bUpdateCondition = False
+		StartTimer(0.15, 2)
+	EndIf
+
+EndFunction
+
+
+; Sets HUD_widget/events/variables when PC equips this weapon
+Function SetEquipped()
+	If data.bEquippedByPlayer
+		Return
+	EndIf
+	
+	kQst.equippedWeapon = Self
+
+	If ForceUnequipZeroHealth()
+		Debug.Notification("You cannot equip a broken weapon.")
+		Return
+	EndIf
+	
+	; set repairable global if weapon is damaged
+	If data.fHealth < kQst.aConditionThr[10]
+		kQst.kWeaponRepairable.SetValue(1)
+	EndIf
+	
+	If HasKeyword(kQst.kWeaponTypeMelee1H) || HasKeyword(kQst.kWeaponTypeMelee2H) || HasKeyword(kQst.kWeaponTypeUnarmed)
+		kQst.bEquippedMelee = True
+		RegisterForControl("PrimaryAttack")
+	Else
+		kQst.bEquippedMelee = False
+	EndIf
+
+	CalculateDegradationRate()
+	
+	SetHUDWidget()
+	SetWidgetPA()
+	
+	RegisterForAnimationEvent(kQst.kPlayerRef, "weaponFire")
+	RegisterForRemoteEvent(kQst.kPlayerRef, "OnSit") ; for checking PA enter/exit
+	RegisterForRemoteEvent(kQst.kPlayerRef, "OnPlayerLoadGame")
+	RegisterForControl("Melee") ; bash attack
+	
+	data.bEquippedByPlayer = True
+EndFunction
+
+
+; UnSets HUD_widget/events/variables when PC unequips this weapon
+Function SetUnequipped()
+	If !data.bEquippedByPlayer
+		Return
+	EndIf
+	
+	kQst.equippedWeapon = None
+	kQst.kWeaponRepairable.SetValue(0)
+	UnregisterForAllEvents()
+	
+	If kQst.bWeaponJammed
+		UnJamWeapon()
+	EndIf
+	
+	; Make widget invisible
+	If kQst.WeaponConditionWidget_Loaded
+		kQst.hud.SendMessage(kQst.WeaponConditionWidget, kQst.WeaponConditionWidget_Visible_Cmd, 0)
+	EndIf
+	
+	data.bEquippedByPlayer = False
+EndFunction
+
+
+Event OnEquipped(Actor akActor)
+
+	If !(akActor == kQst.kPlayerRef)
+		If !data
+			InitWeapon()
+		EndIf
+		Debug.Trace(Self.GetDisplayName() + " equipped_by " + akActor.GetDisplayName() + " | health: " + data.fHealth)
+		Return
+	ElseIf !data
+		; Weapon was added to player by other means(e.g. through AddItem command, which does not trigger OnContainerChanged)
+		InitWeapon(abFullHealth = True)
+	EndIf
+
+	SetEquipped()
+
+	Debug.Trace("Equipped + " + GetDisplayName() + ", Rate: " + kQst.fDegradationRate)
+EndEvent
+
+
+Event OnUnequipped(Actor akActor)
+	If !(akActor == kQst.kPlayerRef)
+		Return
+	EndIf
+
+	SetUnequipped()
+
+	Debug.Trace("Unequipped + " + GetDisplayName())
+EndEvent
+
+
+Event OnContainerChanged(ObjectReference akNewContainer, ObjectReference akOldContainer)
+
+	If akNewContainer == kQst.kPlayerRef
+	
+		If !data
+			; Weapon picked up by player for the first time. Initialize it.
+			InitWeapon()
+		EndIf
+	
+		AddPlayerInvKeyword(GetInstanceOwner())
+
+		; Register the mod event when the player picks up this weapon. Unregister when player drops it.
+		; Used for recalculating base stats of all inventory weapons when the player mods any weapon from their inventory
+		RegisterForRemoteEvent(kQst.kPlayerRef, "OnPlayerModArmorWeapon")
+
+	ElseIf akOldContainer == kQst.kPlayerRef
+
+		If data
+			UnRegisterForRemoteEvent(kQst.kPlayerRef, "OnPlayerModArmorWeapon")
+
+			; If player drops an equipped weapon that is part of a stack, the OnUnequipped event won't fire
+			; preventing events from unregistering and other bad stuff.
+			If data.bEquippedByPlayer
+				SetUnequipped()
+				; The next weapon in the stack is automatically equipped, but without the OnEquipped event firing!
+				; Just forcefully unequip it instead to prevent any bugs
+				Weapon kEquippedWeaponForm = GetBaseObject() as Weapon
+				(akOldContainer as Actor).UnequipItem(kEquippedWeaponForm, False, True)
+			EndIf
+		Else
+			; Weapon was added to player by other means(e.g. through AddItem command, which does not trigger OnContainerChanged)
+			InitWeapon(abFullHealth = True)
+		EndIf
+	EndIf
+	
+	If !akOldContainer && data
+		; InstanceData seems to be reset when weapon is dropped to the ground. 
+		; I swear this didn't use to happen before, but maybe I was just imagining things
+		SetDegradationPenalties(GetInstanceOwner())
+	EndIf
+	
+	Debug.Trace(GetDisplayName() + " moved from " + akOldContainer + " to " + akNewContainer)
+	
+EndEvent
+
+
+; When PC fires a weapon
+Event OnAnimationEvent(ObjectReference akSource, String asEventName)
+	DecreaseHealth(kQst.fDegradationRate)
+	UpdateWeaponCondition()
+	; Debug.Notification("You fired weapon " + GetDisplayName() + ". Health left: " + data.fHealth)
+EndEvent
+
+
+Event OnTimer(Int aiTimerID)
+	If aiTimerID == 1
+		kQst.bUpdateNearbyNpcsQuest = True
+	ElseIf aiTimerID == 2
+		kQst.bUpdateCondition = True
+	EndIf
+EndEvent
+
+
+; Event used for the jamming feature and nearby npc alias refilling
+Event OnControlDown(String asControl)
+
+	If !kQst.kPlayerRef.IsWeaponDrawn()
+		Return
+	EndIf
+	
+	If asControl == "Melee"
+	
+		ResetNearbyNpcsQuest()
+
+	ElseIf asControl == "PrimaryAttack"
+
+		If kQst.bEquippedMelee
+			ResetNearbyNpcsQuest()
+		ElseIf kQst.bWeaponJammed
+			kQst.kRifleFireDrySND.Play(kQst.kPlayerRef)
+		EndIf
+
+	ElseIf asControl == "ReadyWeapon"
+
+		If kQst.bWeaponJammed
+
+			UnJamWeapon()
+			
+			; Play the reload anim because we don't have any ammo in the jammed state
+			Idle kReloadMusket
+			Idle kReloadNonMusket
+			If kQst.kPlayerRef.GetAnimationVariableBool("IsFirstPerson")
+				kReloadMusket = kQst.kFpReloadLaserMusket
+				kReloadNonMusket = kQst.kFpReloadNonLM
+			Else
+				kReloadMusket = kQst.kTpReloadLaserMusket
+				kReloadNonMusket = kQst.kTpRaiderReload
+			EndIf
+
+			If HasKeyword(kQst.kAnimsLaserMusket)
+				kQst.kPlayerRef.PlayIdle(kReloadMusket)
+			Else
+				kQst.kPlayerRef.PlayIdle(kReloadNonMusket)
+			EndIf
+
+		EndIf
+	EndIf
+EndEvent
+
+
+; Re-Register fire anim event and set widget stuff when player enters/exits PA
+Event Actor.OnSit(Actor akSender, ObjectReference akFurniture)
+	If akFurniture.HasKeyword(kQst.kFurnitureTypePowerArmor)
+		RegisterForAnimationEvent(kQst.kPlayerRef, "weaponFire")
+		Utility.Wait(0.1)
+		SetWidgetPA()
+	EndIf
+EndEvent
+
+
+Event Actor.OnPlayerModArmorWeapon(Actor akSender, Form akBaseObject, ObjectMod akModBaseObject)
+	If akBaseObject Is Weapon && !HasKeyword(kQst.kInPlayerInventory)
+		InstanceData:Owner instance = GetInstanceOwner()
+		SetBaseStats(instance)
+		SetDegradationPenalties(instance)
+		AddPlayerInvKeyword(instance)
+		Debug.Trace(GetDisplayName() + " got upgraded.")
+	EndIf
+EndEvent
+
+
+; Used for updating the cnd meter post game load
+Event Actor.OnPlayerLoadGame(Actor akSender)
+	Utility.Wait(0.25)
+	SetHUDWidget()
+	Debug.Trace("OnPlayerLoadGame.")
+EndEvent

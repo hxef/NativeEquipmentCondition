@@ -1,53 +1,58 @@
 #include "Common.h"
 #include "Forms.h"
-#include "Papyrus.h"
+#include "Events.h"
+#include "Hooks.h"
+#include "Degradation.h"
 
-RE::TESDataHandler* g_dataHandler = NULL;
+RE::TESDataHandler* g_dataHandler;
+RE::PlayerCharacter* g_player;
 
-namespace
+void InitializeLog()
 {
-	void InitializeLog()
-	{
-		auto path = logger::log_directory();
-		if (!path) {
-			stl::report_and_fail("Failed to find standard logging directory"sv);
-		}
-
-		*path /= fmt::format(FMT_STRING("{:s}.log"), Version::PROJECT);
-		auto sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>(path->string(), true);
-
-		auto log = std::make_shared<spdlog::logger>("global log"s, std::move(sink));
-
-		log->set_level(spdlog::level::trace);
-		log->flush_on(spdlog::level::trace);
-
-		spdlog::set_default_logger(std::move(log));
-		spdlog::set_pattern("[%m/%d/%Y - %T] [%^%l%$] %v"s);
-
-		logger::info(FMT_STRING("{:s} v{:s}"), Version::PROJECT, Version::NAME);
+	auto path = logger::log_directory();
+	if (!path) {
+		stl::report_and_fail("Failed to find standard logging directory"sv);
 	}
 
-	void MessageHandler(F4SE::MessagingInterface::Message* a_msg)
-	{
-		if (!a_msg) {
-			return;
-		}
+	*path /= fmt::format(FMT_STRING("{:s}.log"), Version::PROJECT);
+	auto sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>(path->string(), true);
 
-		switch (a_msg->type) {
-		case F4SE::MessagingInterface::kGameDataReady:
-			{
-				if (static_cast<bool>(a_msg->data)) {
-					g_dataHandler = RE::TESDataHandler::GetSingleton();
-					if (!g_dataHandler) {
-						stl::report_and_fail("Aborting - TESDataHandler::GetSingleton() failed."sv);
-					}
-					Forms::Register();
+	auto log = std::make_shared<spdlog::logger>("global log"s, std::move(sink));
+
+	log->set_level(spdlog::level::trace);
+	log->flush_on(spdlog::level::trace);
+
+	spdlog::set_default_logger(std::move(log));
+	spdlog::set_pattern("[%m/%d/%Y - %T] [%^%l%$] %v"s);
+
+	logger::info(FMT_STRING("{:s} v{:s}"), Version::PROJECT, Version::NAME);
+}
+
+void MessageHandler(F4SE::MessagingInterface::Message* a_msg)
+{
+	if (!a_msg) {
+		return;
+	}
+
+	switch (a_msg->type) {
+	case F4SE::MessagingInterface::kGameDataReady:
+		{
+			if (static_cast<bool>(a_msg->data)) {
+				g_dataHandler = RE::TESDataHandler::GetSingleton();
+				if (!g_dataHandler) {
+					stl::report_and_fail("Aborting - TESDataHandler::GetSingleton() failed."sv);
 				}
-				break;
+				g_player = RE::PlayerCharacter::GetSingleton();
+				if (!g_player) {
+					stl::report_and_fail("Aborting - PlayerCharacter::GetSingleton() failed."sv);
+				}
+				Forms::Register();
+				Events::All::Register();
 			}
-		default:
 			break;
 		}
+	default:
+		break;
 	}
 }
 
@@ -89,11 +94,11 @@ extern "C" DLLEXPORT bool F4SEAPI F4SEPlugin_Load(const F4SE::LoadInterface* a_f
 		return false;
 	}
 
-	const auto papyrus = F4SE::GetPapyrusInterface();
-	if (!papyrus || !papyrus->Register(Papyrus::RegisterFunctions)) {
-		logger::critical("Failed to register Papyrus functions, marking as incompatible.");
-		return false;
-	}
-
+	//const auto papyrus = F4SE::GetPapyrusInterface();
+	//if (!papyrus || !papyrus->Register(Papyrus::RegisterFunctions)) {
+	//	logger::critical("Failed to register Papyrus functions, marking as incompatible.");
+	//	return false;
+	//}
+	Hooks::All::Install();
 	return true;
 }

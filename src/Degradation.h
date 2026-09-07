@@ -1,5 +1,6 @@
+#pragma once
+
 #include "Common.h"
-#include "Version.h"
 
 namespace Degradation
 {
@@ -107,7 +108,7 @@ namespace Degradation
 					if (stack->count > 1 && !xStack->HasType(RE::EXTRA_DATA_TYPE::kUniqueID)) {
 						// create the split stack
 						auto split = RE::BSTSmartPointer(RE::calloc<RE::BGSInventoryItem::Stack>(1));
-						stl::emplace_vtable(split.get());
+						REX::EMPLACE_VTABLE(split.get());
 
 						// copy only the flags not related to slot index
 						using Flag = RE::BGSInventoryItem::Stack::Flag;
@@ -120,9 +121,13 @@ namespace Degradation
 
 						// create a copy of stack's BGSObjectInstanceExtra and attach it to the split stack
 						auto xSplitObjInstance = new RE::BGSObjectInstanceExtra();
-						std::vector<RE::BGSMod::Attachment::Mod*> attachedMods = GetModsFromObjectExtra(xObjectInstance);
-						for (auto& mod : attachedMods) {
-							AttachMod(xSplitObjInstance, *mod);
+						// Walk the index data rather than GetModsFromObjectExtra() so that each
+						// copied mod keeps its attach index and rank, which a plain mod list drops.
+						for (const auto& idx : xObjectInstance->GetIndexData()) {
+							auto* mod = RE::TESForm::GetFormByID<RE::BGSMod::Attachment::Mod>(idx.objectID);
+							if (mod) {
+								xSplitObjInstance->AddMod(*mod, idx.index, idx.rank, false);
+							}
 						}
 						xSplitObjInstance->flags = xObjectInstance->flags;
 						xSplit->AddExtra(xSplitObjInstance);
@@ -137,7 +142,7 @@ namespace Degradation
 						auto xStackTextDisplayData = xStack->GetByType<RE::ExtraTextDisplayData>();
 						if (xStackTextDisplayData) {
 							auto xSplitTextDisplayData = new RE::ExtraTextDisplayData(*xStackTextDisplayData);
-							stl::emplace_vtable(xSplitTextDisplayData);
+							REX::EMPLACE_VTABLE(xSplitTextDisplayData);
 							xSplitTextDisplayData->next = nullptr;
 							xSplit->AddExtra(xSplitTextDisplayData);
 						}
@@ -146,7 +151,7 @@ namespace Degradation
 						auto xStackHealth = xStack->GetByType<RE::ExtraHealth>();
 						if (xStackHealth) {
 							auto xSplitHealth = new RE::ExtraHealth(*xStackHealth);
-							stl::emplace_vtable(xSplitHealth);
+							REX::EMPLACE_VTABLE(xSplitHealth);
 							xSplitHealth->next = nullptr;
 							xSplit->AddExtra(xSplitHealth);
 						}
@@ -204,9 +209,9 @@ namespace Degradation
 			auto xHealth = stack->extra->GetByType<RE::ExtraHealth>();
 			if (!xHealth) {
 				// initialize health extradata for this item to max health
-				xHealth = new RE::ExtraHealth();
-				xHealth->type = RE::ExtraHealth::TYPE;
-				xHealth->health = MAX_HEALTH;
+				// ExtraHealth's constructor sets the extra-data type and emplaces the
+				// vtable, so unlike the extras above this one needs no EMPLACE_VTABLE.
+				xHealth = new RE::ExtraHealth(MAX_HEALTH);
 				stack->extra->AddExtra(xHealth);
 
 				// attach full condition mod
@@ -253,7 +258,8 @@ namespace Degradation
 		}
 	};
 
-	void WorkbenchMenuOpened(std::monostate, bool bOpened)
+	// inline: defined in a header included by several translation units.
+	inline void WorkbenchMenuOpened(std::monostate, bool bOpened)
 	{
 		// A map of OMOD pointers to vector of (component form, count) pairs that make up the OMOD, sorted by value.
 		static auto cmp = [](const auto& a, const auto& b) -> bool {

@@ -1,25 +1,75 @@
-This is a basic plugin template for use with CommonLibSSE
+# HxfItemDegradation
+
+An F4SE plugin that adds item degradation to Fallout 4, built on
+[CommonLibF4](https://github.com/libxse/commonlibf4).
+
+Weapons lose condition as they are used, tracked through condition OMODs attached to
+the item and surfaced in the workbench and examine menus.
 
 ## Requirements
-* [CMake](https://cmake.org/)
-	* Add this to your `PATH`
-* [The Elder Scrolls V: Skyrim Special Edition](https://store.steampowered.com/app/489830)
-	* Add the environment variable `Skyrim64Path` to point to the root installation of your game directory (the one containing `SkyrimSE.exe`).
-* [Vcpkg](https://github.com/microsoft/vcpkg)
-	* Add the environment variable `VCPKG_ROOT` with the value as the path to the folder containing vcpkg
-* [Visual Studio Community 2022](https://visualstudio.microsoft.com/)
-	* Desktop development with C++
+
+- [xmake](https://xmake.io) 3.0.0+
+- A C++23 compiler (MSVC or Clang-CL)
+- Fallout 4 **1.11.240** and a matching build of
+  [F4SE](https://f4se.silverlock.org/)
 
 ## Building
-```
-git clone https://github.com/Ryan-rsm-McKenzie/ExamplePlugin-CommonLibSSE
-cd ExamplePlugin-CommonLibSSE
-git submodule init
-git submodule update
-cmake --preset vs2022-windows
-cmake --build build --config Release
+
+```bat
+git clone --recurse-submodules https://github.com/hxef/HxfItemDegradation
+cd HxfItemDegradation
+xmake build
 ```
 
-## Tips
-* Set `COPY_OUTPUT` to `ON` to automatically copy the built dll to the game directory, i.e. `cmake --preset vs2022-windows -DCOPY_OUTPUT=ON`
-* Build the `package` target to automatically build and zip up your dll in a ready-to-distribute format.
+The output lands in `build/windows/x64/`.
+
+If you already cloned without `--recurse-submodules`:
+
+```bat
+git submodule update --init --recursive
+```
+
+### Build output
+
+To have the build copied into the game or a mod manager, set one of:
+
+- `XSE_FO4_MODS_PATH`, a mod manager's mods folder, or
+- `XSE_FO4_GAME_PATH`, the Fallout 4 install folder
+
+### Visual Studio
+
+```bat
+xmake project -k vsxmake
+```
+
+This generates a `vsxmakeXXXX/` directory using the newest installed Visual Studio.
+
+### Other editors (clangd)
+
+```bat
+xmake project -k compile_commands
+```
+
+This writes `compile_commands.json` into the project root, where clangd finds it
+without further configuration. Regenerate it whenever the build configuration
+changes, and note that until it exists clangd has no include paths at all and
+every `RE::` name will appear undefined.
+
+The committed `.clangd` drops the `/Yu` flag, which points at a precompiled
+header only a real build produces. The `/FI` force-include of `src/pch.h` is
+kept, and that is what lets the headers here resolve `RE` and `F4SE` without
+including anything themselves.
+
+## Papyrus scripts
+
+The `papyrus/` scripts are **not** built by default. Compiling them needs
+`PapyrusCompiler.exe` and the base game scripts, which ship with the Creation Kit
+rather than the game itself. With the CK installed and `XSE_FO4_GAME_PATH` set:
+
+```bat
+xmake build Papyrus
+```
+
+## License
+
+[GPL-3.0](LICENSE) with the [modding exceptions](EXCEPTIONS) CommonLibF4 carries.

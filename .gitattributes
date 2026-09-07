@@ -1,0 +1,8 @@
+# Normalize line endings: LF in the repository, native in the working tree.
+* text=auto
+
+*.cpp   text eol=lf
+*.h     text eol=lf
+*.lua   text eol=lf
+*.psc   text eol=lf
+*.md    text eol=lf

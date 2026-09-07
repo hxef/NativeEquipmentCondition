@@ -4,9 +4,17 @@ namespace Degradation
 {
 	// SetHealthPerc removes the health extradata if set to 1.0.
 	// Must not be higher than 1.0 because it increases the value of the item (leftover code Skyrim).
-	const float Condition::MAX_HEALTH = 0.9999999;  
-	const float Condition::MIN_HEALTH = 0.0;
-	const float Condition::INVALID_HEALTH = -1.0;
+	const float Condition::MAX_HEALTH = 0.9999999f;
+	const float Condition::MIN_HEALTH = 0.0f;
+	const float Condition::INVALID_HEALTH = -1.0f;
+
+	// Namespace-scope counterparts declared in Degradation.h. These were declared but
+	// never defined, which would not link once EquippedItemData was referenced.
+	// Kept in step with the Condition members above (which are private, so they
+	// cannot simply be aliased here).
+	const float MAX_HEALTH = 0.9999999f;
+	const float MIN_HEALTH = 0.0f;
+	const float INVALID_HEALTH = -1.0f;
 
 	void ForEachStackWithLock(RE::BGSInventoryList* a_inv,
 		std::function<bool(RE::BGSInventoryItem&)> a_filter,
@@ -22,9 +30,9 @@ namespace Degradation
 			return;
 		}
 
-		const auto& xInstanceData = this->stack.extra->GetInstanceData());
+		auto* xInstanceData = this->stack.extra->GetByType<RE::ExtraInstanceData>();
 		if (!xInstanceData) {
-			logger::warn("item has no instance data, condition will not be decreased");
+			REX::WARN("item has no instance data, condition will not be decreased");
 			return;
 		}
 
@@ -39,12 +47,12 @@ namespace Degradation
 		if (curCndLevel != newCndLevel) {
 			auto* xObjectInstance = stack.extra->GetByType<RE::BGSObjectInstanceExtra>();
 			if (!xObjectInstance) {
-				logger::warn("item has no object instance extra, condition mods won't be applied");
+				REX::WARN("item has no object instance extra, condition mods won't be applied");
 				return;
 			}
 			xObjectInstance->RemoveMod(GetMod(curCndLevel), 1);
 			xObjectInstance->AddMod(*GetMod(newCndLevel), 1, 0, false);
-			object.ApplyMods(xInstanceData->data), xObjectInstance);
+			object.ApplyMods(xInstanceData->data, xObjectInstance);
 			UpdateInstanceData(xInstanceData->data.get());
 		}
 	}
@@ -57,7 +65,7 @@ namespace Degradation
 		} else if (a_health >= MAX_HEALTH) {
 			a_health = MAX_HEALTH;
 		}
-		this->stack.extra->SetHealthPercent(a_health);
+		this->stack.extra->SetHealthPerc(a_health);
 		return a_health;
 	}
 

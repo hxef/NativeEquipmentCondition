@@ -1,9 +1,0 @@
-{
-  "name": "hxf-item-degradation",
-  "version-string": "1.0.0",
-  "dependencies": [
-    "boost-stl-interfaces",
-    "spdlog",
-    "rsm-mmio"
-  ]
-}

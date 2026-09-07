@@ -1,0 +1,11 @@
+# clangd takes its flags from compile_commands.json, generated with
+#   xmake project -k compile_commands
+
+CompileFlags:
+  Remove:
+    # /Yu tells the compiler to use a precompiled pch.pch that only a real build
+    # produces, so clangd cannot honour it. The matching /FIpch.h force-include
+    # is kept, which is what lets headers see the RE and F4SE declarations they
+    # rely on without including anything themselves.
+    - -Yu*
+    - -Fp*

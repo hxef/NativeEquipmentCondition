@@ -1,11 +1,10 @@
 #include "Common.h"
-#include "Version.h"
 
 // Everything related to form data manipulation
 
 RE::BGSKeyword* g_apCndKeyword;
 
-static const constexpr auto PLUGIN_NAME = Version::ESP_FILE;
+static const constexpr auto PLUGIN_NAME = "HxfItemDegradation.esp"sv;
 static const constexpr auto CND_AP_KWD_ID = 0x1A212;
 static const constexpr auto CND_MODCOL_OMOD_ID = 0x26F0C;
 static const constexpr auto CND_TEMPLATE_WEAPON = 0x1A1E7;
@@ -27,21 +26,19 @@ namespace Forms
 
 	void Register()
 	{
-		logger::info("Registering forms...");
+		REX::INFO("Registering forms...");
 
 		if (!g_dataHandler->LookupLoadedModByName(PLUGIN_NAME)) {
-			stl::report_and_fail(fmt::format(
-				FMT_STRING("{:s} is not loaded."),
-				PLUGIN_NAME));
+			REX::FAIL("{:s} is not loaded.", PLUGIN_NAME);
 		}
 
 		g_apCndKeyword = g_dataHandler->LookupForm<RE::BGSKeyword>(CND_AP_KWD_ID, PLUGIN_NAME);
 		if (!g_apCndKeyword) {
-			stl::report_and_fail("Condition attachment point was not found.");
+			REX::FAIL("Condition attachment point was not found.");
 		}
 		auto modcolCnd = g_dataHandler->LookupForm<RE::BGSMod::Attachment::Mod>(CND_MODCOL_OMOD_ID, PLUGIN_NAME);
 		if (!modcolCnd) {
-			stl::report_and_fail("Condition mod collection was not found.");
+			REX::FAIL("Condition mod collection was not found.");
 		}
 
 		// Populate global condition keywords, omods and cobj formlists
@@ -49,18 +46,18 @@ namespace Forms
 		for (auto i = 0; i < NUM_CONDITION_LEVELS; i++) {
 			auto* kwd = g_dataHandler->LookupForm<RE::BGSKeyword>(CND_KEYWORDS_ID[i], PLUGIN_NAME);
 			if (!kwd) {
-				stl::report_and_fail("Condition keyword was not found.");
+				REX::FAIL("Condition keyword was not found.");
 			}
 			auto* omod = g_dataHandler->LookupForm<RE::BGSMod::Attachment::Mod>(CND_OMODS_ID[i], PLUGIN_NAME);
 			if (!omod) {
-				stl::report_and_fail("Condition omod was not found.");
+				REX::FAIL("Condition omod was not found.");
 			}
 			RE::BGSConstructibleObject* cobj;
 			// cobj is initialized for even indices only.
 			if (i % 2 == 0) {
 				cobj = g_dataHandler->LookupForm<RE::BGSConstructibleObject>(CND_COBJ_ID[i / 2], PLUGIN_NAME);
 				if (!cobj) {
-					stl::report_and_fail("Condition cobj was not found.");
+					REX::FAIL("Condition cobj was not found.");
 				}
 			}
 			g_cndObjects.push_back({ kwd, omod, cobj });
@@ -89,10 +86,10 @@ namespace Forms
 		std::uint16_t apCndIndex = 0;
 		const auto keywords = RE::BGSKeyword::GetTypedKeywords();
 		if (keywords) {
-			const auto& arr = (*keywords)[stl::to_underlying(RE::KeywordType::kAttachPoint)];
+			const auto& arr = (*keywords)[std::to_underlying(RE::KeywordType::kAttachPoint)];
 			for (std::uint16_t i = 0; i < arr.size(); i++) {
 				if (arr[i] == g_apCndKeyword) {
-					logger::info(FMT_STRING("Keyword {:s} has index {:d}."), g_apCndKeyword->GetFormEditorID(), i);
+					REX::INFO("Keyword {:s} has index {:d}.", g_apCndKeyword->GetFormEditorID(), i);
 					apCndIndex = i;
 					bFound = true;
 					break;
@@ -100,9 +97,7 @@ namespace Forms
 			}
 		}
 		if (!bFound) {
-			stl::report_and_fail(fmt::format(
-				FMT_STRING("Keyword index for {:s} was not found."),
-				g_apCndKeyword->GetFormEditorID()));
+			REX::FAIL("Keyword index for {:s} was not found.", g_apCndKeyword->GetFormEditorID());
 		}
 
 		// Some weapons don't have any object template item, but can be used by the player during normal gameplay.
@@ -111,7 +106,7 @@ namespace Forms
 		// Another use for this is to initialize ap list for weapons that don't have any ap, but are still playable.
 		auto cndTemplateWeapForm = g_dataHandler->LookupForm<RE::TESObjectWEAP>(CND_TEMPLATE_WEAPON, PLUGIN_NAME);
 		if (!cndTemplateWeapForm) {
-			stl::report_and_fail("Condition template weapon form was not found.");
+			REX::FAIL("Condition template weapon form was not found.");
 		}
 		assert(cndTemplateWeapForm->objectTemplate.items.size() == 1);
 
@@ -121,7 +116,7 @@ namespace Forms
 		// The base condition INNR used for weapons that don't have an INNR form
 		auto cndWeapInnr = g_dataHandler->LookupForm<RE::BGSInstanceNamingRules>(CND_WEAPON_INNR, PLUGIN_NAME);
 		if (!cndTemplateWeapForm) {
-			stl::report_and_fail("Weapon condition INNR form was not found.");
+			REX::FAIL("Weapon condition INNR form was not found.");
 		}
 
 		using TypedKwdAp = RE::BGSTypedKeywordValue<RE::KeywordType::kAttachPoint>;
@@ -138,7 +133,7 @@ namespace Forms
 			auto& apArr = weaponForm->attachParents.array;
 			auto& apArrSize = weaponForm->attachParents.size;
 			if (!apArr) {
-				logger::info(FMT_STRING("Weapon {:x} does not have an AP array."), weaponForm->GetFormID());
+				REX::INFO("Weapon {:x} does not have an AP array.", weaponForm->GetFormID());
 				apArrSize = 0;
 			}
 			void* allocApArr;
@@ -148,9 +143,7 @@ namespace Forms
 				allocApArr = RE::aligned_alloc(alignof(TypedKwdAp), sizeof(TypedKwdAp));
 			}
 			if (!allocApArr) {
-				stl::report_and_fail(fmt::format(
-					FMT_STRING("Failed to alloc attachParents array for {:s}."),
-					weaponForm->GetFormEditorID()));
+				REX::FAIL("Failed to alloc attachParents array for {:s}.", weaponForm->GetFormEditorID());
 			}
 			apArr = reinterpret_cast<TypedKwdAp*>(allocApArr);
 			apArr[apArrSize].keywordIndex = apCndIndex;
@@ -161,10 +154,10 @@ namespace Forms
 			auto& objTmpl = weaponForm->objectTemplate;
 			if (objTmpl.items.empty()) {
 				// If weapon does not have any obj template, copy and paste a new one from the cnd weapon template form
-				logger::info(FMT_STRING("Weapon {:x} does not have an object template."), weaponForm->GetFormID());
+				REX::INFO("Weapon {:x} does not have an object template.", weaponForm->GetFormID());
 				auto newItemCopy = RE::malloc<RE::BGSMod::Template::Item>();
 				if (!newItemCopy) {
-					stl::report_and_fail("Failed to allocate a RE::BGSMod::Template::Item.");
+					REX::FAIL("Failed to allocate a RE::BGSMod::Template::Item.");
 				}
 				auto cndItem = cndTemplateWeapForm->objectTemplate.items.at(0);
 				std::memcpy(newItemCopy, cndItem, sizeof(*newItemCopy));
@@ -185,9 +178,7 @@ namespace Forms
 					// in order to insert the condition modcol, we need a new buffer with size of old buffer + 16(condition modcol) + size of numbers representing the size of omod and prop-mod lists
 					auto* alloc = RE::malloc(bufferSize + 16 + sizeof(std::uint32_t) * 2);
 					if (!alloc) {
-						stl::report_and_fail(fmt::format(
-							FMT_STRING("Failed to allocate new object template item buffer for {:s}."),
-							weaponForm->GetFormEditorID()));
+						REX::FAIL("Failed to allocate new object template item buffer for {:s}.", weaponForm->GetFormEditorID());
 					}
 
 					auto* newBuffer = reinterpret_cast<std::byte*>(alloc);
@@ -219,14 +210,14 @@ namespace Forms
 				weaponForm->instanceNamingRules = cndWeapInnr;
 			}
 
-			logger::info(FMT_STRING("Patched weapon {:s}, id {:x}."), weaponForm->GetFullName(), weaponForm->GetFormID());
+			REX::INFO("Patched weapon {:s}, id {:x}.", weaponForm->GetFullName(), weaponForm->GetFormID());
 			numPatched++;
 		}
 
-		logger::info(FMT_STRING("Injected condition omods to object templates and condition attach point to {:d} weapon forms."), numPatched);
+		REX::INFO("Injected condition omods to object templates and condition attach point to {:d} weapon forms.", numPatched);
 
 		if (weaponInnrPtrs.empty()) {
-			stl::report_and_fail("Couldn't find any INNR form attached to weapons.");
+			REX::FAIL("Couldn't find any INNR form attached to weapons.");
 		}
 
 		// Inject condition naming rules to INNR forms associated with patched weapon forms
@@ -259,7 +250,7 @@ namespace Forms
 
 				auto alloc = RE::malloc<RE::BGSKeyword*>();
 				if (!alloc) {
-					stl::report_and_fail("Failed to allocate pointer to BGSKeyword.");
+					REX::FAIL("Failed to allocate pointer to BGSKeyword.");
 				}
 				alloc = &g_cndObjects[i].keyword;
 				ruleData.keywords.keywords = alloc;
@@ -269,14 +260,14 @@ namespace Forms
 
 			// fix the vfptr tables for each ruledata from ruleSet0.
 			std::for_each(ruleSet0.begin(), ruleSet0.end(), [](auto& ruleData) {
-				stl::emplace_vtable(&ruleData.keywords);
-				stl::emplace_vtable(static_cast<RE::IKeywordFormBase*>(&ruleData.keywords));
+				REX::EMPLACE_VTABLE(&ruleData.keywords);
+				REX::EMPLACE_VTABLE(static_cast<RE::IKeywordFormBase*>(&ruleData.keywords));
 			});
 
 			numPatched++;
 		}
 
-		logger::info(FMT_STRING("Injected condition naming rules to {:d} INNR forms."), numPatched);
+		REX::INFO("Injected condition naming rules to {:d} INNR forms.", numPatched);
 
 		// patch string format of this specific load screen
 		auto loadScreen = g_dataHandler->LookupForm<RE::TESLoadScreen>(0x2B360, PLUGIN_NAME);

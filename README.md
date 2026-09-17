@@ -60,6 +60,22 @@ header only a real build produces. The `/FI` force-include of `src/pch.h` is
 kept, and that is what lets the headers here resolve `RE` and `F4SE` without
 including anything themselves.
 
+## Building from Linux
+
+The plugin is a Windows DLL wherever it is built, and a Linux host cross compiles
+it. There `xmake.lua` includes `contrib/linux-cross`, a submodule holding
+[commonlibf4-linux-cross](https://github.com/hxef/commonlibf4-linux-cross), so a
+Linux build needs it checked out. The recursive clone above does that, and its
+README says what else to install. Then configure once and build:
+
+```sh
+xmake f -p windows -a x64 -m releasedbg --toolchain=xwin-clang-cl
+xmake build
+```
+
+Repeat those flags whenever you run `xmake f` again. Without them xmake
+configures for Linux instead.
+
 ## Papyrus scripts
 
 The `papyrus/` scripts are **not** built by default. Compiling them needs

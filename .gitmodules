@@ -1,3 +1,6 @@
 [submodule "lib/commonlibf4"]
 	path = lib/commonlibf4
 	url = https://github.com/hxef/CommonLibF4.git
+[submodule "contrib/linux-cross"]
+	path = contrib/linux-cross
+	url = https://github.com/hxef/commonlibf4-linux-cross.git

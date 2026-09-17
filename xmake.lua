@@ -1,6 +1,12 @@
 -- include subprojects
 includes("lib/commonlibf4")
 
+-- A Linux host builds the Windows DLL through the contrib/linux-cross
+-- submodule, which a Windows build never reads.
+if is_host("linux") then
+    includes("contrib/linux-cross")
+end
+
 -- set project constants
 set_project("HxfItemDegradation")
 set_version("1.0.0")

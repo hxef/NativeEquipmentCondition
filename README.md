@@ -1,91 +1,71 @@
-# HxfItemDegradation
+# Native Equipment Condition
 
-An F4SE plugin that adds item degradation to Fallout 4, built on
-[CommonLibF4](https://github.com/libxse/commonlibf4).
+An F4SE plugin that gives Fallout 4 weapons a condition that wears down with
+use, built on [CommonLibF4](https://github.com/libxse/commonlibf4). It is one
+DLL, `NEC.dll`, and its settings file, `NEC.ini`, which says what every
+setting does. Put your own changes in `NEC_custom.ini` beside it.
 
-Weapons lose condition as they are used, tracked through condition OMODs attached to
-the item and surfaced in the workbench and examine menus.
+### Requirements
+* [XMake](https://xmake.io) [3.0.0+]
+* C++23 Compiler (MSVC or Clang-CL)
+* Fallout 4 1.11.240 and a matching [F4SE](https://f4se.silverlock.org/)
 
-## Requirements
-
-- [xmake](https://xmake.io) 3.0.0+
-- A C++23 compiler (MSVC or Clang-CL)
-- Fallout 4 **1.11.240** and a matching build of
-  [F4SE](https://f4se.silverlock.org/)
-
-## Building
-
+## Getting Started
 ```bat
-git clone --recurse-submodules https://github.com/hxef/HxfItemDegradation
-cd HxfItemDegradation
+git clone --recurse-submodules https://github.com/hxef/NativeEquipmentCondition
+cd NativeEquipmentCondition
+```
+
+### Build
+To build the project, run the following command:
+```bat
 xmake build
 ```
 
-The output lands in `build/windows/x64/`.
+> ***Note:*** *This will generate a `build/windows/` directory in the **project's root directory** with the build output.*
 
-If you already cloned without `--recurse-submodules`:
+### Build Output (Optional)
+If you want to redirect the build output, set one of the following environment variables:
+- Path to a Mod Manager mods folder: `XSE_FO4_MODS_PATH`
+or
+- Path to a Fallout 4 install folder: `XSE_FO4_GAME_PATH`
 
+To copy the DLL, the PDB and `NEC.ini` into a mod folder after every build instead, point `deploy_dir` at it once:
 ```bat
-git submodule update --init --recursive
+xmake f --deploy_dir="C:/MO2/mods/Native Equipment Condition"
 ```
 
-### Build output
-
-To have the build copied into the game or a mod manager, set one of:
-
-- `XSE_FO4_MODS_PATH`, a mod manager's mods folder, or
-- `XSE_FO4_GAME_PATH`, the Fallout 4 install folder
-
-### Visual Studio
-
+### Project Generation (Optional)
+If you use Visual Studio, run the following command:
 ```bat
 xmake project -k vsxmake
 ```
 
-This generates a `vsxmakeXXXX/` directory using the newest installed Visual Studio.
+> ***Note:*** *This will generate a `vsxmakeXXXX/` directory in the **project's root directory** using the latest version of Visual Studio installed on the system.*
 
-### Other editors (clangd)
-
+**Alternatively**, if you do not use Visual Studio, you can generate a `compile_commands.json` file for use with a language server like clangd in any code editor that supports it, like vscode:
 ```bat
 xmake project -k compile_commands
 ```
 
-This writes `compile_commands.json` into the project root, where clangd finds it
-without further configuration. Regenerate it whenever the build configuration
-changes, and note that until it exists clangd has no include paths at all and
-every `RE::` name will appear undefined.
+> ***Note:*** *You must have a language server extension installed to make use of this file. I recommend `clangd`. Do not have more than one installed at a time as they will conflict with each other. I also recommend installing the `xmake` extension if available to make building the project easier.*
 
-The committed `.clangd` drops the `/Yu` flag, which points at a precompiled
-header only a real build produces. The `/FI` force-include of `src/pch.h` is
-kept, and that is what lets the headers here resolve `RE` and `F4SE` without
-including anything themselves.
+### Upgrading Packages (Optional)
+If you want to upgrade the project's dependencies, run the following commands:
+```bat
+xmake repo --update
+xmake require --upgrade
+```
 
-## Building from Linux
-
-The plugin is a Windows DLL wherever it is built, and a Linux host cross compiles
-it. There `xmake.lua` includes `contrib/linux-cross`, a submodule holding
-[commonlibf4-linux-cross](https://github.com/hxef/commonlibf4-linux-cross), so a
-Linux build needs it checked out. The recursive clone above does that, and its
-README says what else to install. Then configure once and build:
-
+### Building from Linux (Optional)
+A Linux host cross compiles the DLL through the `contrib/linux-cross` submodule, see [its README](contrib/linux-cross/README.md) for the setup:
 ```sh
 xmake f -p windows -a x64 -m releasedbg --toolchain=xwin-clang-cl
 xmake build
 ```
 
-Repeat those flags whenever you run `xmake f` again. Without them xmake
-configures for Linux instead.
-
-## Papyrus scripts
-
-The `papyrus/` scripts are **not** built by default. Compiling them needs
-`PapyrusCompiler.exe` and the base game scripts, which ship with the Creation Kit
-rather than the game itself. With the CK installed and `XSE_FO4_GAME_PATH` set:
-
-```bat
-xmake build Papyrus
-```
+## Documentation
+[ARCHITECTURE.md](ARCHITECTURE.md) is the layout. Every header says what the game does there and what the plugin does about it. `legacy/` holds the Papyrus scripts, the ESP and the sources that need them, kept for reference and never built.
 
 ## License
-
 [GPL-3.0](LICENSE) with the [modding exceptions](EXCEPTIONS) CommonLibF4 carries.

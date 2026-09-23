@@ -1,0 +1,25 @@
+#pragma once
+
+#include "Core/Plugin.h"
+
+// How fast a weapon wears, against the ordinary weapon of the load order.
+// Private to this folder.
+namespace WeaponWear
+{
+	// Measures what an ordinary weapon in this load order hits for and says so
+	// in the log.
+	void MeasureReference();
+
+	// How much health one shot or swing costs, from the damage this copy deals
+	// and what it is built of. The weapon and its extra data say what it is
+	// built from, the instance data what the copy in hand does.
+	float Rate(const RE::TESObjectWEAP& a_weapon, const RE::TESObjectWEAP::InstanceData& a_instance,
+		const RE::ExtraDataList* a_extra);
+
+	// Prints every place a weapon keeps a damage number, once per weapon form.
+	// There are 3: physical damage, a single field. Damage types, a list of
+	// forms and values, where a laser keeps its energy damage. And an object
+	// effect, a spell the magic code casts on the target. Each meets the
+	// condition penalty at a hook of its own, see HealthDamage.h.
+	void LogDamageSources(const RE::TESBoundObject& a_object, RE::TBO_InstanceData* a_data, bool a_perStack);
+}

@@ -1,0 +1,213 @@
+#include "UI/Repair/Workbench/Display.h"
+
+#include "Core/TraceLog.h"
+#include "UI/Flash.h"
+#include "UI/Repair/Workbench/Bench.h"
+
+#include <algorithm>
+#include <array>
+#include <cmath>
+#include <cstdint>
+#include <limits>
+
+namespace Workbench
+{
+	namespace
+	{
+		using Scaleform::GFx::Value;
+		using Params = Scaleform::GFx::FunctionHandler::Params;
+
+		// The list down the left of the bench, showing whichever of its lists
+		// is in use, and the inventory it shows first. BaseInstance is the menu
+		// itself.
+		constexpr const char* LIST_PATH = "_root.BaseInstance.InventoryBase_mc.InventoryList_mc";
+		constexpr const char* INVENTORY_PATH = "_root.BaseInstance.InventoryListObject";
+
+		// How strongly the bench draws a row of no use.
+		constexpr double FADED = 0.5;
+
+		// A stop for the walk along the rows. The list keeps 6 clips and hands
+		// them round.
+		constexpr std::uint32_t MAX_ROWS = 64;
+
+		// No row at all, which is where the list puts the clips it is not
+		// using.
+		constexpr std::uint32_t NO_ROW = std::numeric_limits<std::uint32_t>::max();
+
+		// Which row a clip is showing. The list reuses its clips for other rows
+		// as it scrolls, so this is asked every time.
+		[[nodiscard]] std::uint32_t RowOf(const Value& a_clip)
+		{
+			const auto row = Flash::Number(a_clip, "itemIndex"sv, -1.0);
+			return row >= 0.0 && row < NO_ROW ? static_cast<std::uint32_t>(row) : NO_ROW;
+		}
+
+		// Whether a row is one FadeWorn faded. The bench marks every row live
+		// as it builds it, so a row neither live nor buildable is one of this
+		// plugin's.
+		[[nodiscard]] bool Faded(const Value& a_row)
+		{
+			return !Flash::Bool(a_row, "enabled"sv) && !Flash::Bool(a_row, "hasRequired"sv);
+		}
+
+		// Called by the bench every frame. The rows are walked, not watched,
+		// since a row redraws whenever it is scrolled past, picked or put down
+		// and sends no event. Only a name that should be faded and is not is
+		// written.
+		class FrameListener final : public Scaleform::GFx::FunctionHandler
+		{
+		public:
+			void Call(const Params& a_params) override
+			{
+				// The inventory answers what is picked only while it is the
+				// list on show. In the slots and the mods the rows belong to
+				// somebody else.
+				Value inventory;
+				Value picked;
+				Value list;
+				Value rows;
+				if (!a_params.movie ||
+					!a_params.movie->GetVariable(&inventory, INVENTORY_PATH) || !inventory.IsObject() ||
+					!inventory.GetMember("selectedEntry"sv, &picked) || !picked.IsObject() ||
+					!a_params.movie->GetVariable(&list, LIST_PATH) || !list.IsDisplayObject() ||
+					!list.GetMember("entryList"sv, &rows) || !rows.IsArray()) {
+					return;
+				}
+
+				for (std::uint32_t i = 0; i < MAX_ROWS; i++) {
+					Value      clip;
+					const auto index = Value(i);
+					if (!list.Invoke("GetClipByIndex", &clip, &index, 1) || !clip.IsDisplayObject()) {
+						break;
+					}
+
+					Value row;
+					Value name;
+					const auto at = RowOf(clip);
+					if (at == NO_ROW || !rows.GetElement(at, &row) || !row.IsObject() || !Faded(row) ||
+						!clip.GetMember("textField"sv, &name) || !name.IsDisplayObject()) {
+						continue;
+					}
+
+					if (std::abs(Flash::Number(name, "alpha"sv, 1.0) - FADED) > 0.01) {
+						name.SetMember("alpha"sv, Value(FADED));
+
+						// Said once per bench, and only when something was
+						// written.
+						if (!said) {
+							said = true;
+							TraceLog::Line("menu", "Workbench faded the weapon in hand, {:s}",
+								Flash::String(name, "text"sv));
+						}
+					}
+				}
+			}
+
+			void Reset()
+			{
+				said = false;
+			}
+
+		private:
+			bool said = false;
+		};
+
+		// Lives as long as the plugin, the same way as the HUD's listeners.
+		FrameListener g_frameListener;
+	}
+
+	void Dim(RE::ExamineMenu* a_menu, Value& a_list, std::string_view a_what)
+	{
+		Value rows;
+		if (!a_menu || !a_list.IsObject() ||
+			!a_list.GetMember("entryList"sv, &rows) || !rows.IsArray()) {
+			return;
+		}
+
+		const auto count = rows.GetArraySize();
+		for (std::uint32_t i = 0; i < count; i++) {
+			Value row;
+			if (!rows.GetElement(i, &row) || !row.IsObject()) {
+				continue;
+			}
+			row.SetMember("hasRequired"sv, Value(false));
+			row.SetMember("enabled"sv, Value(false));
+			row.SetMember("hasLooseMod"sv, Value(false));
+		}
+
+		a_list.SetMember("entryList"sv, rows);
+		a_list.Invoke("RefreshList");
+		a_menu->menuObj.Invoke("UpdateButtons");
+
+		TraceLog::Line("menu", "Workbench greyed out {:d} {:s} rows", count, a_what);
+	}
+
+	void Clear(RE::ExamineMenu* a_menu, Value& a_list)
+	{
+		if (!a_menu || !a_menu->uiMovie || !a_list.IsObject()) {
+			return;
+		}
+
+		Value empty;
+		a_menu->uiMovie->CreateArray(&empty);
+		a_list.SetMember("entryList"sv, empty);
+		a_list.Invoke("RefreshList");
+		a_menu->menuObj.Invoke("UpdateButtons");
+	}
+
+	void FadeWorn(RE::ExamineMenu* a_menu)
+	{
+		Value rows;
+		if (!a_menu || !a_menu->itemList.IsObject() ||
+			!a_menu->itemList.GetMember("entryList"sv, &rows) || !rows.IsArray()) {
+			return;
+		}
+
+		const auto&   carried = a_menu->invInterface.stackedEntries;
+		const auto    count = std::min(rows.GetArraySize(), static_cast<std::uint32_t>(carried.size()));
+		std::uint32_t faded = 0;
+		std::uint32_t inHand = 0;
+
+		for (std::uint32_t i = 0; i < count; i++) {
+			Value row;
+			if (!rows.GetElement(i, &row) || !row.IsObject() ||
+				!Selection{ SelectedItem::Read(carried[static_cast<std::size_t>(i)]) }.TooWorn()) {
+				continue;
+			}
+
+			row.SetMember("enabled"sv, Value(false));
+			row.SetMember("hasRequired"sv, Value(false));
+			faded++;
+
+			if (Flash::Number(row, "equipState"sv, 0.0) > 0.0) {
+				inHand++;
+			}
+		}
+
+		if (faded == 0) {
+			return;
+		}
+
+		a_menu->itemList.Invoke("RefreshList");
+		TraceLog::Line("menu", "Workbench faded {:d} of {:d} rows, {:d} of them equipped",
+			faded, count, inHand);
+	}
+
+	void WatchWeaponInHand(Scaleform::GFx::Movie& a_movie)
+	{
+		Value stage;
+		if (!a_movie.GetVariable(&stage, "_root.stage") || !stage.IsObject()) {
+			REX::WARN("The workbench has no stage to listen on, so a worn weapon in hand is drawn at full strength.");
+			return;
+		}
+
+		// A new bench has logged nothing yet.
+		g_frameListener.Reset();
+
+		Value listener;
+		a_movie.CreateFunction(&listener, &g_frameListener);
+		if (!stage.Invoke("addEventListener", std::array{ Value("enterFrame"), listener })) {
+			REX::WARN("The workbench refused the frame listener, so a worn weapon in hand is drawn at full strength.");
+		}
+	}
+}

@@ -43,27 +43,32 @@ namespace VendorRepair
 
 		// The key. The barter screen answers 6 of the 17 buttons menu mode
 		// names and passes the rest on. A greyed REPAIR is answered too, which
-		// is how the player hears why it is greyed.
+		// is how the player hears why it is greyed. The limit is the one for
+		// the highlighted item's kind.
 		bool OnButtonEventReleaseHk(RE::BarterMenu* a_menu, const RE::BSFixedString& a_event)
 		{
-			if (a_event == HINT_EVENT && !Asking() &&
-				Shown(Selected(a_menu), Ceiling(a_menu))) {
-				Press();
-				return true;
+			if (a_event == HINT_EVENT && !Asking()) {
+				const auto selection = Selected(a_menu);
+				if (Shown(selection, Ceiling(a_menu, selection.kind))) {
+					Press();
+					return true;
+				}
 			}
 			return _OnButtonEventRelease(a_menu, a_event);
 		}
 
 		// The screen being put away. The game's own handling stops the markup
 		// on every price, so the Pip-Boy is told about a repair a moment after,
-		// through F4SE's task queue.
+		// through F4SE's task queue, once for each kind repaired.
 		RE::UI_MESSAGE_RESULTS ProcessMessageHk(RE::BarterMenu* a_menu, RE::UIMessage& a_message)
 		{
 			const auto result = _ProcessMessage(a_menu, a_message);
-			if (*a_message.type == RE::UI_MESSAGE_TYPE::kHide && TakeCardsOwed()) {
+			if (*a_message.type == RE::UI_MESSAGE_TYPE::kHide) {
 				const auto* tasks = F4SE::GetTaskInterface();
-				if (tasks) {
-					tasks->AddTask([] { ItemCards::Refresh(RE::ENUM_FORM_ID::kWEAP); });
+				for (const auto owed : TakeCardsOwed()) {
+					if (tasks) {
+						tasks->AddTask([owed] { ItemCards::Refresh(owed); });
+					}
 				}
 			}
 			return result;
@@ -81,14 +86,14 @@ namespace VendorRepair
 
 		REX::INFO("Traders with {:d} rows of weapons out and one row in {:d} a weapon, "
 				  "or {:d} rows of weapons and ammunition and one row in {:d} one of those, "
-				  "repair weapons for caps, keyed to {:s}.",
-			MANY_GUNS, MANY_SHARE, SOME_GUNS, SOME_SHARE, HINT_EVENT);
+				  "repair weapons for caps, and the same counts of armor and power armor pieces buy armor repairs, keyed to {:s}.",
+			MANY_ROWS, MANY_SHARE, SOME_ROWS, SOME_SHARE, HINT_EVENT);
 		std::string reach;
-		for (std::size_t guns = 1; guns <= FULL_GUNS; guns++) {
-			reach += std::format("{:s}{:d}:{:d}%", reach.empty() ? "" : " ", guns, Reach(guns));
+		for (std::size_t rows = 1; rows <= FULL_ROWS; rows++) {
+			reach += std::format("{:s}{:d}:{:d}%", reach.empty() ? "" : " ", rows, Reach(rows));
 		}
-		REX::INFO("How far they take one back, by rows of weapons out, {:s}", reach);
-		REX::INFO("A weapon at nothing owes a trader {:.2f} times what it is worth, and at each level {:s}",
+		REX::INFO("How far they take one back, by rows of their trade out, {:s}", reach);
+		REX::INFO("An item at nothing owes a trader {:.2f} times what it is worth, and at each level {:s}",
 			Repair::Debt(0, Scaled(WRECK_MULTIPLE)), Repair::Ladder(Scaled(WRECK_MULTIPLE)));
 	}
 }

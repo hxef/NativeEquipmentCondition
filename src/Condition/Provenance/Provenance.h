@@ -1,23 +1,26 @@
 #pragma once
 
+#include "Condition/Condition.h"
 #include "Core/Plugin.h"
 
-// Where a weapon came from and who carries it. A purely random condition makes
-// every raider's gun as worn as every Courser's. Fallout 3 wrote a health onto
-// each leveled list entry by hand. Naming factions here would be wrong the
-// moment a faction mod appears, so the ranking is read from the load order
-// instead, from what a faction's gear is worth and how much armor it gives its
-// members. A well funded faction is given good weapons.
+// Where a weapon or a piece of armor came from and who carries it. A purely
+// random condition makes every raider's gun as worn as every Courser's. Fallout
+// 3 wrote a health onto each leveled list entry by hand. Naming factions here
+// would be wrong the moment a faction mod appears, so the ranking is read from
+// the load order instead, from what a faction's gear is worth and how much
+// armor it gives its members. A well funded faction is given good weapons.
 //
-// 2 halves, measured separately. Supply is how good the gear is that the weapon
+// 2 halves, measured separately. Supply is how good the gear is that the item
 // came from: the engine stamps the leveled list a spawned item came from into
 // an ExtraLeveledItem before it reaches any inventory, and averaging what that
 // list's weapons are worth, ranked against every other weapon list in the load
 // order, puts raider pipe lists near the bottom and Institute lists at the top.
-// Care is how well the owner keeps their gear: the armor their base form is
-// given, outfit and own inventory together, ranked the same way. Power armor
-// has no rating to add up, so a character given one counts as the best equipped
-// there is. A unique, essential or protected character gets a boost on top.
+// Armor lists are ranked the same way against each other, by what their armor
+// sells for. Care is how well the owner keeps their gear: the armor their base
+// form is given, outfit and own inventory together, ranked the same way. Power
+// armor has no rating to add up, so a character given one counts as the best
+// equipped there is. A unique or protected character gets a boost on top, and
+// an essential one's gear arrives new, see SpawnCondition.
 //
 // The 2 are multiplied. Supply is a ceiling and care is how far below it the
 // weapon has fallen, so a raider who looted a Gauss rifle still carries a worn
@@ -45,11 +48,11 @@ namespace Provenance
 	// the poorest thing in the load order.
 	inline constexpr float UNMEASURED = -1.0F;
 
-	// What is known about one weapon arriving in one inventory.
+	// What is known about one item arriving in one inventory.
 	struct Origin
 	{
-		// How good the gear is that this weapon came from, from 0 for the
-		// poorest source in the load order to 1 for the richest.
+		// How good the gear is that this item came from, from 0 for the poorest
+		// source in the load order to 1 for the richest.
 		float supply{ UNMEASURED };
 
 		// How well the owner keeps their equipment, on the same scale.
@@ -67,7 +70,7 @@ namespace Provenance
 		// inventory with no owner.
 		const RE::TESForm* keeper{ nullptr };
 
-		// The middle of the band this weapon spawns in. An unmeasured half
+		// The middle of the band this item spawns in. An unmeasured half
 		// counts as the middle of its scale, so one half missing pulls the
 		// answer halfway to the plain average.
 		[[nodiscard]] float Centre() const;
@@ -78,8 +81,8 @@ namespace Provenance
 	[[nodiscard]] float LowestCentre();
 	[[nodiscard]] float HighestCentre();
 
-	// Both halves for one stack on its way into one inventory. Safe before Load
-	// has run and with a list that has no owner. Both halves then come back
-	// UNMEASURED.
-	[[nodiscard]] Origin Of(const RE::BGSInventoryList& a_list, const RE::BGSInventoryItem::Stack& a_stack);
+	// Both halves for one stack on its way into one inventory, a_kind saying
+	// which scale the supply half reads. Safe before Load has run and with a
+	// list that has no owner. Both halves then come back UNMEASURED.
+	[[nodiscard]] Origin Of(const RE::BGSInventoryList& a_list, const RE::BGSInventoryItem::Stack& a_stack, Condition::Kind a_kind);
 }

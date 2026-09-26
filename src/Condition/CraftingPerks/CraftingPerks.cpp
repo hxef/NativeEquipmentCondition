@@ -30,21 +30,40 @@ namespace CraftingPerks
 		// nothing reads it, so no lock.
 		std::array<const RE::BGSPerk*, KINDS> g_kinds{};
 
-		// How many weapon mod recipes each perk unlocks across the load order.
-		// Breaks the tie for a weapon that names 2 perks equally, like the Fat
-		// Man, half Gun Nut and half Science: Gun Nut unlocks 370 and Science
-		// 240, so it goes under Gun Nut, where vanilla puts it.
-		std::unordered_map<const RE::BGSPerk*, std::uint32_t> g_weight;
+		// The same for armor, which is one kind: the perk behind most armor
+		// mods, Armorer in vanilla.
+		const RE::BGSPerk* g_armor{ nullptr };
+
+		// How many mod recipes each perk unlocks across the load order, weapon
+		// mods and armor mods counted apart. The total breaks the tie for a
+		// weapon that names 2 perks equally, like the Fat Man, half Gun Nut and
+		// half Science: Gun Nut unlocks 370 and Science 284, 44 of them armor
+		// mods, so it goes under Gun Nut, where vanilla puts it. The 2 counts
+		// say what a perk's page should name.
+		struct Gates
+		{
+			std::uint32_t weapons{ 0 };
+			std::uint32_t armor{ 0 };
+		};
+
+		std::unordered_map<const RE::BGSPerk*, Gates> g_gates;
 
 		// Every recipe that names a perk, and the perks it names. The game
 		// states it on the recipe, so nothing here is guessed.
 		std::unordered_map<const RE::BGSConstructibleObject*, std::vector<const RE::BGSPerk*>> g_byRecipe;
 
-		// How many recipes one perk unlocks, looked up without adding an entry.
+		// What one perk unlocks, looked up without adding an entry.
+		[[nodiscard]] Gates GatesOf(const RE::BGSPerk* a_perk)
+		{
+			const auto found = a_perk ? g_gates.find(a_perk) : g_gates.end();
+			return found != g_gates.end() ? found->second : Gates{};
+		}
+
+		// How many recipes one perk unlocks in all.
 		[[nodiscard]] std::uint32_t Weight(const RE::BGSPerk* a_perk)
 		{
-			const auto found = a_perk ? g_weight.find(a_perk) : g_weight.end();
-			return found != g_weight.end() ? found->second : 0;
+			const auto gates = GatesOf(a_perk);
+			return gates.weapons + gates.armor;
 		}
 
 		// Adds a_count to a_perk's entry in a tally.
@@ -117,10 +136,21 @@ namespace CraftingPerks
 		InstallDescriptions();
 	}
 
+	bool PricesWeapons(const RE::BGSPerk* a_first)
+	{
+		return GatesOf(a_first).weapons > 0;
+	}
+
+	bool PricesArmor(const RE::BGSPerk* a_first)
+	{
+		return GatesOf(a_first).armor > 0;
+	}
+
 	void Unload()
 	{
 		g_kinds.fill(nullptr);
-		g_weight.clear();
+		g_armor = nullptr;
+		g_gates.clear();
 		g_byRecipe.clear();
 		ForgetTold();
 	}
@@ -139,49 +169,18 @@ namespace CraftingPerks
 			}
 		}
 
-		// Which kinds of weapon offer each slot, a bit per kind. A slot no
-		// weapon offers never appears, which keeps armor out of the count
-		// without naming it.
-		std::unordered_map<const RE::BGSKeyword*, std::uint32_t> offering;
-		std::uint32_t                                            weapons = 0;
-		for (const auto* weapon : g_dataHandler->GetFormArray<RE::TESObjectWEAP>()) {
-			if (!weapon || !Condition::WearsOut(*weapon)) {
-				continue;
-			}
-			weapons++;
-
-			const auto  bit = 1U << KindOf(*weapon, nullptr);
-			const auto& parents = weapon->attachParents;
-			for (std::uint32_t i = 0; parents.array && i < parents.size; i++) {
-				if (const auto* point = PointOf(parents.array[i].keywordIndex)) {
-					offering[point] |= bit;
-				}
-			}
-		}
-
-		// Which kinds of weapon a recipe's mod could go on. A recipe building a
-		// list of mods counts everything any of them can go on.
-		const auto reached = [&offering](const RE::TESForm* a_built) -> std::uint32_t {
-			if (!a_built || !a_built->Is(RE::ENUM_FORM_ID::kOMOD)) {
-				return 0;
-			}
-
-			const auto& mod = *static_cast<const RE::BGSMod::Attachment::Mod*>(a_built);
-			if (mod.targetFormType.get() != RE::ENUM_FORM_ID::kWEAP) {
-				return 0;
-			}
-
-			const auto* point = PointOf(mod.attachPoint.keywordIndex);
-			const auto  found = point ? offering.find(point) : offering.end();
-			return found != offering.end() ? found->second : 0;
-		};
+		// Which slots the weapons and armor that take part offer, so a recipe
+		// can be matched to the kinds its mod could go on.
+		const auto slots = SlotsOffered();
 
 		// Every recipe that needs a perk counts that perk once for every kind
-		// of weapon the mod it builds could go on.
+		// of weapon the mod it builds could go on, or once for armor.
 		std::array<std::vector<Tally>, KINDS> byKind;
+		std::vector<Tally>                    byArmor;
 		std::vector<const RE::BGSPerk*>       ladders;
 		std::vector<const RE::BGSPerk*>       alone;
 		std::uint32_t                         gated = 0;
+		std::uint32_t                         armorGated = 0;
 
 		for (const auto* recipe : g_dataHandler->GetFormArray<RE::BGSConstructibleObject>()) {
 			const auto* built = recipe ? recipe->createdItem : nullptr;
@@ -194,32 +193,28 @@ namespace CraftingPerks
 				continue;
 			}
 
-			// Kept whatever it builds, a weapon mod or a suit of armor, since
-			// the bench prices whatever recipe is in front of it. The count
-			// below is stricter.
+			// Kept whatever it builds, since the bench prices whatever recipe
+			// is in front of it. The count below is stricter.
 			g_byRecipe.emplace(recipe, ladders);
 
-			// The same 2 forms Materials::Load reads: the item itself, or a
-			// list of items.
-			std::uint32_t kinds = 0;
-			if (built->Is(RE::ENUM_FORM_ID::kFLST)) {
-				for (const auto* listed : static_cast<const RE::BGSListForm*>(built)->arrayOfForms) {
-					kinds |= reached(listed);
-				}
-			} else {
-				kinds = reached(built);
-			}
-			if (kinds == 0) {
+			const auto reach = ReachOf(*built, slots);
+			if (reach.kinds == 0 && !reach.armor) {
 				continue;
 			}
 
-			gated++;
+			gated += reach.kinds != 0 ? 1 : 0;
+			armorGated += reach.armor ? 1 : 0;
 			for (const auto* ladder : ladders) {
-				g_weight[ladder]++;
+				auto& gates = g_gates[ladder];
+				gates.weapons += reach.kinds != 0 ? 1 : 0;
+				gates.armor += reach.armor ? 1 : 0;
 				for (std::size_t kind = 0; kind < KINDS; kind++) {
-					if (kinds & (1U << kind)) {
+					if (reach.kinds & (1U << kind)) {
 						Note(byKind[kind], ladder, 1);
 					}
+				}
+				if (reach.armor) {
+					Note(byArmor, ladder, 1);
 				}
 			}
 
@@ -235,16 +230,22 @@ namespace CraftingPerks
 		// What each kind falls back on: the perk that unlocks most of the mods
 		// it can take. Ties go to the perk that unlocks more of the load order,
 		// never to the player's ranks, so the result is the same for everyone.
-		for (std::size_t kind = 0; kind < KINDS; kind++) {
-			std::uint32_t most = 0;
-			for (const auto& said : byKind[kind]) {
+		const auto winner = [](const std::vector<Tally>& a_said) {
+			const RE::BGSPerk* best = nullptr;
+			std::uint32_t      most = 0;
+			for (const auto& said : a_said) {
 				if (said.count > most ||
-					(said.count == most && Weight(said.perk) > Weight(g_kinds[kind]))) {
-					g_kinds[kind] = said.perk;
+					(said.count == most && Weight(said.perk) > Weight(best))) {
+					best = said.perk;
 					most = said.count;
 				}
 			}
+			return best;
+		};
+		for (std::size_t kind = 0; kind < KINDS; kind++) {
+			g_kinds[kind] = winner(byKind[kind]);
 		}
+		g_armor = winner(byArmor);
 
 		// The perks that can price a repair, for the description hook. A perk
 		// that can never price one gets no line, which keeps Demolition Expert
@@ -261,15 +262,19 @@ namespace CraftingPerks
 		for (const auto* perk : g_kinds) {
 			remember(perk);
 		}
+		remember(g_armor);
 		TellRanks(saying);
 
-		REX::INFO("{:d} of the load order's weapon mod recipes name a crafting perk, across {:d} weapons that wear out, and {:d} perks now say so.",
-			gated, weapons, saying.size());
+		REX::INFO("{:d} of the load order's weapon mod recipes name a crafting perk, across {:d} weapons that wear out, and {:d} armor mod recipes do, across {:d} pieces of armor that wear out. {:d} perks now say so.",
+			gated, slots.weaponCount, armorGated, slots.armorCount, saying.size());
 
-		// Perk recipes that fit no weapon means the slots matched nothing, and
+		// Perk recipes that fit nothing means the slots matched nothing, and
 		// every repair would quietly cost full price.
-		if (weapons > 0 && gated == 0) {
-			REX::WARN("No weapon mod recipe in the load order reaches a weapon, so no repair will be discounted.");
+		if (slots.weaponCount > 0 && gated == 0) {
+			REX::WARN("No weapon mod recipe in the load order reaches a weapon, so no weapon repair will be discounted.");
+		}
+		if (slots.armorCount > 0 && armorGated == 0) {
+			REX::WARN("No armor mod recipe in the load order reaches a piece of armor, so no armor repair will be discounted.");
 		}
 
 		for (const auto* first : saying) {
@@ -287,19 +292,16 @@ namespace CraftingPerks
 					kind, RE::TESFullName::GetFullName(*g_kinds[kind]));
 			}
 		}
+		if (g_armor) {
+			REX::INFO("A piece of armor whose own parts name no perk falls back on {:s}",
+				RE::TESFullName::GetFullName(*g_armor));
+		}
 	}
 
 	Standing Of(const RE::TESBoundObject& a_object, const RE::ExtraDataList* a_extra,
 		std::span<const Materials::Line> a_bill)
 	{
 		Standing out;
-
-		// IsWeapon reads the form type byte, so it costs nothing and never
-		// comes back empty like a runtime cast can.
-		if (!a_object.IsWeapon()) {
-			return out;
-		}
-		const auto& weapon = static_cast<const RE::TESObjectWEAP&>(a_object);
 
 		// Each line counts its component units for the perk its recipe needs. A
 		// line whose recipe needs no perk counts for nobody.
@@ -335,10 +337,14 @@ namespace CraftingPerks
 			}
 		}
 
-		// No part of the gun names a perk, so it is treated as any weapon of
-		// its kind.
+		// No part of the item names a perk, so it is treated as any item of its
+		// kind: a weapon by its type, a piece of armor as armor. IsWeapon reads
+		// the form type byte, so it costs nothing and never comes back empty
+		// like a runtime cast can.
 		if (!out.perk) {
-			out.perk = g_kinds[KindOf(weapon, a_extra)];
+			out.perk = a_object.IsWeapon() ?
+			               g_kinds[KindOf(static_cast<const RE::TESObjectWEAP&>(a_object), a_extra)] :
+			               g_armor;
 			out.fromKind = out.perk != nullptr;
 			out.ranks = Ranks(out.perk);
 			out.rank = RankHeld(out.perk);

@@ -1,10 +1,14 @@
 #include "Core/Feature.h"
 
+#include "Condition/ArmorWear/ArmorWear.h"
 #include "Condition/CraftingPerks/CraftingPerks.h"
-#include "Condition/Materials.h"
+#include "Condition/Materials/Materials.h"
 #include "Condition/Provenance/Provenance.h"
 #include "Condition/WeaponWear/WeaponWear.h"
 #include "Core/Settings.h"
+#include "Gameplay/ArmorEvents.h"
+#include "Gameplay/ArmorRating.h"
+#include "Gameplay/BrokenEquip.h"
 #include "Gameplay/CritMeter.h"
 #include "Gameplay/FireRate.h"
 #include "Gameplay/HealthDamage/HealthDamage.h"
@@ -17,6 +21,7 @@
 #include "UI/Hud/PowerArmorCondition/PowerArmorCondition.h"
 #include "UI/Hud/QuickContainer/QuickContainer.h"
 #include "UI/Inventory/ItemCard/ItemCard.h"
+#include "UI/Inventory/PaperDoll.h"
 #include "UI/Inventory/Pipboy.h"
 #include "UI/LoadingTips.h"
 #include "UI/Repair/ConfirmScroll.h"
@@ -32,7 +37,8 @@ namespace
 	constexpr Feature FEATURES[]{
 		// Condition: what condition is, and what repairing costs.
 
-		// What a weapon is built from, read off the game's own recipes.
+		// What a weapon or a piece of armor is built from, read off the game's
+		// own recipes.
 		{ .name = "Materials", .Load = Materials::Load, .Unload = Materials::Unload },
 		// Which perk prices a repair. Reads the same recipes as Materials, so
 		// it comes after.
@@ -40,16 +46,26 @@ namespace
 		// What an ordinary weapon hits for, which every wear rate is measured
 		// against.
 		{ .name = "WeaponWear", .Load = WeaponWear::Load },
-		// Where a weapon came from, measured from every leveled list and
-		// outfit. Only SpawnCondition uses it, so its switch covers both.
+		// How armor wears, measured against the same ordinary weapon, so it
+		// comes after.
+		{ .name = "ArmorWear", .Load = ArmorWear::Load },
+		// Where a weapon or a piece of armor came from, measured from every
+		// leveled list and outfit. Only SpawnCondition uses it, so its switch
+		// covers both.
 		{ .name = "Provenance", .on = &Settings::bSpawnCondition, .Load = Provenance::Load, .Unload = Provenance::Unload },
 
 		// Gameplay: hooks that change play.
 
 		// Wear on every shot and every blow of the player's weapon.
 		{ .name = "WeaponEvents", .Install = WeaponEvents::Install, .Load = WeaponEvents::Load },
+		// Wear on the armor a blow lands on, whoever wears it.
+		{ .name = "ArmorEvents", .Load = ArmorEvents::Load },
 		// A worn weapon does less damage.
 		{ .name = "HealthDamage", .Install = HealthDamage::Install },
+		// A worn piece of armor protects less.
+		{ .name = "ArmorRating", .Install = ArmorRating::Install },
+		// A broken item comes off when asked and goes on only once repaired.
+		{ .name = "BrokenEquip", .Install = BrokenEquip::Install },
 		// A worn item is worth less, everywhere the game prints a price.
 		{ .name = "ItemValue", .Install = ItemValue::Install },
 		// A worn automatic weapon fires slower, in anybody's hands.
@@ -59,7 +75,8 @@ namespace
 		{ .name = "CritMeter", .on = &Settings::bCritMeter, .Install = CritMeter::Install },
 		// A worn gun can jam.
 		{ .name = "Jam", .on = &Settings::bJam, .Load = Jam::Load, .Unload = Jam::Unload },
-		// A weapon spawns at a condition that suits where it came from.
+		// A weapon or a piece of armor spawns at a condition that suits where
+		// it came from.
 		{ .name = "SpawnCondition", .on = &Settings::bSpawnCondition, .Install = SpawnCondition::Install },
 
 		// UI: what is drawn into the game's own menus.
@@ -68,8 +85,10 @@ namespace
 		// menu shows or weighs it. Asks FireRate whether a worn gun slows, so
 		// it comes after.
 		{ .name = "ItemCard", .Install = ItemCard::Install, .OnMovieLoaded = ItemCard::OnMovieLoaded },
-		// Faded names for worn out weapons in the Pip-Boy's lists.
+		// Faded names for worn out items in the Pip-Boy's lists.
 		{ .name = "Pipboy", .OnMovieLoaded = Pipboy::OnMovieLoaded },
+		// A CND bar over each body region of the Pip-Boy's paper doll.
+		{ .name = "PaperDoll", .OnMovieLoaded = PaperDoll::OnMovieLoaded },
 		// What both HUD readouts share, on their switch. Their colour targets
 		// go with the HUD menu they were made for.
 		{ .name = "HudParts", .on = &Settings::bHudCondition, .Install = HudParts::Install },
@@ -79,14 +98,17 @@ namespace
 		{ .name = "PowerArmorCondition", .on = &Settings::bHudCondition, .Load = PowerArmorCondition::Load, .OnMovieLoaded = PowerArmorCondition::OnMovieLoaded },
 		// Condition meters on the rows of the HUD's quick container.
 		{ .name = "QuickContainer", .on = &Settings::bQuickContainer, .Install = QuickContainer::Install, .OnMovieLoaded = QuickContainer::OnMovieLoaded },
-		// Repairing a worn weapon at the weapon workbench, for components.
+		// Repairing a worn weapon or piece of armor at its workbench, for
+		// components.
 		{ .name = "Workbench", .Install = Workbench::Install, .Load = Workbench::Load, .OnMovieLoaded = Workbench::OnMovieLoaded },
 		// A long component list in a workbench's confirmation box shows more
 		// rows and scrolls with the mouse wheel and the keys.
 		{ .name = "ConfirmScroll", .on = &Settings::bConfirmScroll, .Install = ConfirmScroll::Install },
-		// Paying a trader who deals in weapons to repair one, for caps.
+		// Paying a trader who deals in weapons, armor or clothing to repair
+		// one, for caps.
 		{ .name = "VendorRepair", .on = &Settings::bVendorRepair, .Install = VendorRepair::Install },
-		// Setting the weapon in hand to any condition from the console.
+		// Setting the weapon in hand or the armor worn to any condition from
+		// the console.
 		{ .name = "ConsoleRepair", .Install = ConsoleRepair::Install },
 		// Loading screen tips about condition.
 		{ .name = "LoadingTips", .on = &Settings::bLoadingTips, .Install = LoadingTips::Install, .Load = LoadingTips::Load, .Unload = LoadingTips::Unload },

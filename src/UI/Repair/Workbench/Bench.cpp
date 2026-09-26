@@ -19,6 +19,25 @@ namespace Workbench
 		return Selection{ SelectedItem::Read(rows[static_cast<std::size_t>(row)]) };
 	}
 
+	std::optional<Condition::Kind> WorksOn(RE::ExamineMenu* a_menu)
+	{
+		const auto* bench = a_menu ? a_menu->workbenchRef.get() : nullptr;
+		const auto* base = bench ? bench->GetObjectReference() : nullptr;
+		const auto* furniture = base ? base->As<RE::TESFurniture>() : nullptr;
+		if (!furniture) {
+			return std::nullopt;
+		}
+
+		switch (furniture->wbData.type.get()) {
+		case RE::WorkbenchData::Type::kWeapons:
+			return Condition::Kind::kWeapon;
+		case RE::WorkbenchData::Type::kArmor:
+			return Condition::Kind::kArmor;
+		default:
+			return std::nullopt;
+		}
+	}
+
 	RE::ExamineMenu* OpenBench()
 	{
 		const auto* ui = RE::UI::GetSingleton();

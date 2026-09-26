@@ -3,7 +3,7 @@
 #include "Condition/CraftingPerks/CraftingPerks.h"
 #include "Condition/CraftingPerks/Ladder.h"
 #include "Core/CallPatch.h"
-#include "Core/Text.h"
+#include "Core/Text/Text.h"
 #include "Core/TraceLog.h"
 
 #include <algorithm>
@@ -15,17 +15,19 @@ namespace CraftingPerks
 {
 	namespace
 	{
-		// One rank's own description and what it takes off a repair. perk and
-		// rank name it in the trace.
+		// One rank's own description, what it takes off a repair, and what its
+		// mods go on. perk and rank name it in the trace.
 		struct Told
 		{
 			const RE::TESDescription* description{ nullptr };
 			std::uint32_t             percent{ 0 };
 			const RE::BGSPerk*        perk{ nullptr };
 			std::uint32_t             rank{ 0 };
+			bool                      weapons{ false };
+			bool                      armor{ false };
 		};
 
-		// Every rank of every perk that can price a repair, 11 in vanilla, so a
+		// Every rank of every perk that can price a repair, 15 in vanilla, so a
 		// plain loop is fast enough.
 		std::vector<Told> g_told;
 
@@ -63,7 +65,7 @@ namespace CraftingPerks
 			if (!said.empty()) {
 				said += " ";
 			}
-			said += Text::PerkDiscount(ours->percent);
+			said += Text::PerkDiscount(ours->percent, ours->weapons, ours->armor);
 			a_out.Set(said.c_str(), 0);
 
 			// A screen asks for a description every time it draws, so the trace
@@ -103,11 +105,13 @@ namespace CraftingPerks
 		// so the count is the rank.
 		for (const auto* first : a_first) {
 			const auto    ranks = Ranks(first);
+			const auto    weapons = PricesWeapons(first);
+			const auto    armor = PricesArmor(first);
 			const auto*   walk = first;
 			std::uint32_t at = 0;
 			do {
 				at++;
-				g_told.push_back({ static_cast<const RE::TESDescription*>(walk), Discount(at, ranks), walk, at });
+				g_told.push_back({ static_cast<const RE::TESDescription*>(walk), Discount(at, ranks), walk, at, weapons, armor });
 				walk = walk->nextPerk;
 			} while (walk && walk != first && at < LADDER_LIMIT);
 		}

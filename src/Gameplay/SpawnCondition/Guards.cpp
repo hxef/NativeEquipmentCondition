@@ -182,16 +182,16 @@ namespace SpawnCondition
 		// it is reported and everything else carries on.
 		if (CallPatch::PatchAll(RUN_CONSOLE_COMMANDS_SITE, RE::ID::Console::RunQueuedCommands,
 				CallPatch::Repeat<std::size(RUN_CONSOLE_COMMANDS_SITE)>(reinterpret_cast<std::uintptr_t>(&RunConsoleCommandsHk)),
-				"Console commands hand out weapons at full condition") == 0) {
-			REX::WARN("Weapons added from the console will be rolled like any other loot.");
+				"Console commands hand out weapons and armor at full condition") == 0) {
+			REX::WARN("Weapons and armor added from the console will be rolled like any other loot.");
 		}
 
 		// If this patch fails, an older save's stacks just keep sharing one
 		// condition, so it is reported the same way.
 		if (CallPatch::PatchAll(LOAD_SAVED_STACK_SITE, RE::ID::BGSInventoryList::AddItem1,
 				CallPatch::Repeat<std::size(LOAD_SAVED_STACK_SITE)>(reinterpret_cast<std::uintptr_t>(&LoadSavedStackHk)),
-				"Weapons a save kept in one stack split up as it loads") == 0) {
-			REX::WARN("Weapons a save from before this mod kept in one stack will share one condition.");
+				"Weapons and armor a save kept in one stack split up as it loads") == 0) {
+			REX::WARN("Weapons and armor a save from before this mod kept in one stack will share one condition.");
 		}
 
 		// Index 1 is the call operator. Every script AddItem and RemoveItem
@@ -200,7 +200,7 @@ namespace SpawnCondition
 		_RunScriptAddItem = addItem.write_vfunc(0x01, RunScriptAddItemHk);
 		REL::Relocation<std::uintptr_t> removeItem{ RE::GameScript::RemoveItemFunctor::VTABLE[0] };
 		_RunScriptRemoveItem = removeItem.write_vfunc(0x01, RunScriptRemoveItemHk);
-		REX::INFO("Weapons a script gives the player with no condition yet, a quest reward among them, arrive at full condition.");
+		REX::INFO("Weapons and armor a script gives the player with no condition yet, a quest reward among them, arrive at full condition.");
 		REX::INFO("So does a quest item or a character's gift a script hands the player.");
 	}
 }

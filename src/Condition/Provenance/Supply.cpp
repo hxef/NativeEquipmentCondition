@@ -9,9 +9,10 @@ namespace Provenance
 	namespace
 	{
 		// Where each leveled list ranks against every other list that can give
-		// out a weapon. Keyed by form ID, which is what the engine records on
-		// the item.
+		// out a weapon, and the same for armor. Keyed by form ID, which is what
+		// the engine records on the item.
 		std::unordered_map<RE::TESFormID, float> g_supply;
+		std::unordered_map<RE::TESFormID, float> g_armorSupply;
 
 		// What one pick from each list is worth in armor, and the lists that
 		// could not be worked out. Filled by MeasureSupply and read from then
@@ -32,9 +33,14 @@ namespace Provenance
 			std::uint64_t weaponWorth{ 0 };
 			std::uint64_t weapons{ 0 };
 
-			// What one pick is worth in armor, an average and not a total,
-			// since a list usually gives out one entry. See HaulOf for the
-			// exception.
+			// The armor the same way, by what it sells for, for the supply
+			// half of a piece of armor spawning.
+			std::uint64_t armorValue{ 0 };
+			std::uint64_t armors{ 0 };
+
+			// What one pick is worth in armor rating, an average and not a
+			// total, since a list usually gives out one entry. See HaulOf for
+			// the exception. The care half reads it.
 			float armorWorth{ 0.0F };
 		};
 
@@ -102,9 +108,14 @@ namespace Provenance
 						break;
 
 					case RE::ENUM_FORM_ID::kARMO:
-						armorSum += static_cast<float>(static_cast<const RE::TESObjectARMO*>(form)->armorData.rating);
-						++armorEntries;
-						break;
+						{
+							const auto& armor = *static_cast<const RE::TESObjectARMO*>(form);
+							armorSum += static_cast<float>(armor.armorData.rating);
+							++armorEntries;
+							walk.haul.armorValue += armor.armorData.value;
+							++walk.haul.armors;
+							break;
+						}
 
 					case RE::ENUM_FORM_ID::kLVLI:
 						{
@@ -112,6 +123,8 @@ namespace Provenance
 								a_notes, a_depth + 1);
 							walk.haul.weaponWorth += nested.haul.weaponWorth;
 							walk.haul.weapons += nested.haul.weapons;
+							walk.haul.armorValue += nested.haul.armorValue;
+							walk.haul.armors += nested.haul.armors;
 
 							// A list inside a list counts as one entry worth
 							// whatever it gives out.
@@ -163,10 +176,12 @@ namespace Provenance
 		Notes notes;
 		std::size_t spoiled = 0;
 
-		// Every leveled list that can put a weapon in someone's hands. Lists
-		// giving out ammunition and junk are left out, so they do not crowd the
-		// scale.
+		// Every leveled list that can put a weapon in someone's hands, and
+		// every one that can put armor on them, each on a scale of its own.
+		// Lists giving out ammunition and junk are left out, so they do not
+		// crowd either scale.
 		std::vector<std::pair<RE::TESFormID, float>> pipelines;
+		std::vector<std::pair<RE::TESFormID, float>> armorPipelines;
 		for (const auto* list : g_dataHandler->GetFormArray<RE::TESLevItem>()) {
 			if (!list) {
 				continue;
@@ -189,23 +204,30 @@ namespace Provenance
 				pipelines.emplace_back(list->formID,
 					OnARung(static_cast<float>(walk.haul.weaponWorth) / static_cast<float>(walk.haul.weapons)));
 			}
+			if (walk.haul.armors > 0) {
+				armorPipelines.emplace_back(list->formID,
+					OnARung(static_cast<float>(walk.haul.armorValue) / static_cast<float>(walk.haul.armors)));
+			}
 		}
 		g_supply = PositionsOf(pipelines);
+		g_armorSupply = PositionsOf(armorPipelines);
 
-		return { g_supply.size(), spoiled };
+		return { g_supply.size(), g_armorSupply.size(), spoiled };
 	}
 
 	void ForgetSupply()
 	{
 		g_supply.clear();
+		g_armorSupply.clear();
 		g_listArmor.clear();
 		g_ruinedLists.clear();
 	}
 
-	std::optional<float> SupplyOf(RE::TESFormID a_list)
+	std::optional<float> SupplyOf(RE::TESFormID a_list, Condition::Kind a_kind)
 	{
-		const auto found = g_supply.find(a_list);
-		return found != g_supply.end() ? std::optional{ found->second } : std::nullopt;
+		const auto& supply = a_kind == Condition::Kind::kArmor ? g_armorSupply : g_supply;
+		const auto  found = supply.find(a_list);
+		return found != supply.end() ? std::optional{ found->second } : std::nullopt;
 	}
 
 	std::optional<float> ArmorFrom(const RE::TESForm& a_form)

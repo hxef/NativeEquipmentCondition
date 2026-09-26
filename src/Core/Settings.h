@@ -51,11 +51,12 @@ namespace Settings
 	// weapon lands fewer critical hits, see CritMeter.h.
 	inline REX::TIniSetting<bool> bCritMeter{ "Features", "bCritMeter", true };
 
-	// Weapons spawn already worn, see SpawnCondition.h. Provenance measures
-	// the load order for it and for nothing else, so the switch covers both.
+	// Weapons and armor spawn already worn, see SpawnCondition.h. Provenance
+	// measures the load order for it and for nothing else, so the switch
+	// covers both.
 	inline REX::TIniSetting<bool> bSpawnCondition{ "Features", "bSpawnCondition", true };
 
-	// Traders who deal in weapons repair them for caps.
+	// Traders who deal in weapons, armor or clothing repair them for caps.
 	inline REX::TIniSetting<bool> bVendorRepair{ "Features", "bVendorRepair", true };
 
 	// Loading screen tips about condition.
@@ -73,12 +74,20 @@ namespace Settings
 
 	// Balance. Read again on every save load.
 
-	// What every wear rate is multiplied by, see WeaponWear/Rate.cpp.
+	// What every weapon's wear rate is multiplied by, see WeaponWear/Rate.cpp.
 	inline REX::TIniSetting<float, EveryLoad> fWearRateMult{ "Balance", "fWearRateMult", 1.0F };
+
+	// What every piece of armor's wear rate is multiplied by, see
+	// ArmorWear/Rate.cpp.
+	inline REX::TIniSetting<float, EveryLoad> fArmorWearRateMult{ "Balance", "fArmorWearRateMult", 1.0F };
 
 	// What a weapon at nothing still hits for, as a share of its full damage,
 	// see HealthDamage/Curve.h.
 	inline REX::TIniSetting<float, EveryLoad> fDamageFloor{ "Balance", "fDamageFloor", 0.66F };
+
+	// What a piece of armor at nothing still protects for, as a share of its
+	// full resistances, see ArmorRating.h.
+	inline REX::TIniSetting<float, EveryLoad> fArmorFloor{ "Balance", "fArmorFloor", 0.66F };
 
 	// What a worn item is worth, as its condition raised to this power, see
 	// ItemValue.cpp.
@@ -93,8 +102,8 @@ namespace Settings
 	// keeps, see CritMeter.cpp.
 	inline REX::TIniSetting<float, EveryLoad> fCritMeterFloor{ "Balance", "fCritMeterFloor", 0.5F };
 
-	// What a repair at the weapon workbench costs, against the mod as tuned,
-	// see Workbench/Cost.h.
+	// What a repair at a workbench costs, against the mod as tuned, see
+	// Workbench/Cost.h.
 	inline REX::TIniSetting<float, EveryLoad> fBenchCostMult{ "Balance", "fBenchCostMult", 1.0F };
 
 	// What a trader asks for a repair, against the mod as tuned, see

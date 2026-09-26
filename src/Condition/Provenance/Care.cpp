@@ -13,9 +13,9 @@ namespace Provenance
 {
 	namespace
 	{
-		// Where a unique, essential or protected character lands when nothing
-		// else is known, and how far towards the top the boost moves one who
-		// was measured.
+		// Where a unique or protected character lands when nothing else is
+		// known, and how far towards the top the boost moves one who was
+		// measured.
 		constexpr float NAMED_CARE = 0.75F;
 		constexpr float NAMED_LIFT = 0.35F;
 
@@ -249,11 +249,12 @@ namespace Provenance
 			care = *armor > 0.0F ? PositionIn(OnARung(*armor)) : 0.0F;
 		}
 
-		// A unique, essential or protected character gets a boost, since
-		// someone the game treats as special has their gear looked after. An
-		// ordinary raider is none of these and a raider boss is.
+		// A unique or protected character gets a boost, since someone the game
+		// treats as special has their gear looked after. An ordinary raider is
+		// neither and a raider boss is. An essential character's gear arrives
+		// new instead, see SpawnCondition.cpp.
 		using Flag = RE::ACTOR_BASE_DATA::Flag;
-		if (a_npc.actorData.actorBaseFlags.any(Flag::kUnique, Flag::kEssential, Flag::kProtected)) {
+		if (a_npc.actorData.actorBaseFlags.any(Flag::kUnique, Flag::kProtected)) {
 			care = care == UNMEASURED ? NAMED_CARE : std::lerp(care, 1.0F, NAMED_LIFT);
 		}
 

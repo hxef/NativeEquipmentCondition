@@ -2,7 +2,7 @@
 
 #include "Core/CallPatch.h"
 #include "Core/Settings.h"
-#include "Core/Text.h"
+#include "Core/Text/Text.h"
 #include "Core/TraceLog.h"
 
 #include <algorithm>
@@ -29,10 +29,20 @@ namespace LoadingTips
 		};
 
 		// Every tip, each on a picture of what it tells of. Another one is a
-		// sentence in Text.cpp and a row here.
+		// table in Tips.cpp, its function in Text.h and a row here.
 		constexpr Tip TIPS[]{
-			// WeaponMod02, the weapons workbench.
-			{ .words = &Text::WearTip, .picture = 0x001603FD },
+			// Weapons1610mm, the 10mm pistol.
+			{ .words = &Text::WearTip, .picture = 0x001F6DBD },
+			// GeneralGameplay11WeaponsWorkbench, the weapons workbench.
+			{ .words = &Text::BenchTip, .picture = 0x001F9609 },
+			// GeneralGameplay22Shops, a shop counter.
+			{ .words = &Text::TraderTip, .picture = 0x001F9624, .on = &Settings::bVendorRepair },
+			// Armor06Metal, metal armor.
+			{ .words = &Text::BrokenTip, .picture = 0x001F6DCB },
+			// Weapons13SubmachineGun, the submachine gun.
+			{ .words = &Text::JamTip, .picture = 0x001F6DB9, .on = &Settings::bJam },
+			// CreatureRaider, a raider.
+			{ .words = &Text::LootTip, .picture = 0x001CEDB8, .on = &Settings::bSpawnCondition },
 		};
 
 		// The numbers the tips take. FF numbers are the game's dynamic ones,

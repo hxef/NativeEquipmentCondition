@@ -1,6 +1,6 @@
 #include "UI/Repair/RepairPrompt.h"
 
-#include "Core/Text.h"
+#include "Core/Text/Text.h"
 #include "UI/MessageBox.h"
 
 #include <utility>

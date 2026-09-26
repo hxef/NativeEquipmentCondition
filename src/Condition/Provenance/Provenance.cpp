@@ -86,8 +86,8 @@ namespace Provenance
 
 		g_measured.store(true, std::memory_order_release);
 
-		REX::INFO("Ranked {:d} leveled lists that hand out weapons and what {:d} characters are issued. Of those, {:d} are issued armor and ranked against each other, {:d} are issued none, and {:d} spawn in power armor.",
-			supply.ranked, care.ranked, care.kits, care.issuedNothing, care.armored);
+		REX::INFO("Ranked {:d} leveled lists that hand out weapons, {:d} that hand out armor, and what {:d} characters are issued. Of those, {:d} are issued armor and ranked against each other, {:d} are issued none, and {:d} spawn in power armor.",
+			supply.ranked, supply.armorRanked, care.ranked, care.kits, care.issuedNothing, care.armored);
 
 		// Loud on purpose. A leveled list in this load order points round in a
 		// circle or nests absurdly deep, and whatever draws from it has lost
@@ -99,7 +99,7 @@ namespace Provenance
 		}
 	}
 
-	Origin Of(const RE::BGSInventoryList& a_list, const RE::BGSInventoryItem::Stack& a_stack)
+	Origin Of(const RE::BGSInventoryList& a_list, const RE::BGSInventoryItem::Stack& a_stack, Condition::Kind a_kind)
 	{
 		Origin origin;
 
@@ -109,13 +109,13 @@ namespace Provenance
 			return origin;
 		}
 
-		// Which leveled list produced this weapon. The engine resolves a
+		// Which leveled list produced this item. The engine resolves a
 		// reference's starting inventory list and stamps the list's form ID
 		// into an ExtraLeveledItem on everything that came out of it, before
 		// any of it reaches an inventory.
 		if (a_stack.extra) {
 			if (const auto* came = a_stack.extra->GetByType<RE::ExtraLeveledItem>()) {
-				if (const auto supply = SupplyOf(came->levItem)) {
+				if (const auto supply = SupplyOf(came->levItem, a_kind)) {
 					origin.supply = *supply;
 					origin.pipeline = came->levItem;
 				}

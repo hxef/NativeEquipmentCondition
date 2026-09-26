@@ -1,7 +1,7 @@
 #include "Condition/WeaponWear/Rate.h"
 
 #include "Condition/Condition.h"
-#include "Condition/Materials.h"
+#include "Condition/Materials/Materials.h"
 #include "Core/Settings.h"
 #include "Core/TraceLog.h"
 
@@ -123,6 +123,11 @@ namespace WeaponWear
 		REX::INFO("An ordinary weapon in this load order hits for {:.0f}.", g_referenceDamage);
 	}
 
+	float ReferenceDamage()
+	{
+		return g_referenceDamage;
+	}
+
 	void LogDamageSources(const RE::TESBoundObject& a_object, RE::TBO_InstanceData* a_data, bool a_perStack)
 	{
 		if (!a_object.IsWeapon() || !a_data) {
@@ -189,7 +194,7 @@ namespace WeaponWear
 		// as it fires.
 		const auto mult = Settings::fWearRateMult.GetValue();
 		const auto wear = RATE_AT_REFERENCE * (mult > 0.0F ? mult : 0.0F) *
-		                  (damage / g_referenceDamage) * (Materials::ReferenceQuality() / quality);
+		                  (damage / g_referenceDamage) * (Materials::ReferenceQuality(Condition::Kind::kWeapon) / quality);
 
 		if (blast > 0.0F) {
 			TraceLog::Line("rate", "{:.0f} damage, {:.0f} of it the blast, at quality {:.1f} costs {:.6f} a shot",

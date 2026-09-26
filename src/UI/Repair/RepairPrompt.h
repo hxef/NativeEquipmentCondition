@@ -9,7 +9,7 @@
 #include <string_view>
 #include <vector>
 
-// Asking how far to repair a worn weapon. The box is the game's own, headed
+// Asking how far to repair a worn item. The box is the game's own, headed
 // REPAIR, with a button per condition on offer and a cancel button after them.
 // The caller decides the line above the question: the bench names the perk, the
 // trader says how far they can go. The answer comes back through F4SE's task

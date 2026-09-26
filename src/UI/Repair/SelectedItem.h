@@ -2,15 +2,16 @@
 
 #include "Core/Plugin.h"
 
+#include "Condition/Condition.h"
 #include "Condition/Repair.h"
 
 #include <cstdint>
 #include <string>
 
-// The weapon highlighted in a menu's inventory list. A menu keeps its rows as
-// inventory handles, so a row is turned back into an item the way the game's
-// own price lookup does, through the inventory interface. Only a weapon that
-// wears is read.
+// The item highlighted in a menu's inventory list, a weapon or a piece of
+// armor. A menu keeps its rows as inventory handles, so a row is turned back
+// into an item the way the game's own price lookup does, through the inventory
+// interface. Only an item that wears is read.
 namespace SelectedItem
 {
 	struct Item
@@ -22,9 +23,14 @@ namespace SelectedItem
 		std::uint32_t               stack{ 0 };
 		std::uint32_t               count{ 0 };
 		std::uint32_t               percent{ Repair::FULL };
+		Condition::Kind             kind{ Condition::Kind::kWeapon };
 
-		// True for a weapon below full condition.
+		// True for an item below full condition.
 		[[nodiscard]] bool Worn() const { return object && percent < Repair::FULL; }
+
+		// True for a piece of armor, for the sentences and the cards that go
+		// by kind.
+		[[nodiscard]] bool Armor() const { return kind == Condition::Kind::kArmor; }
 
 		// The name the player sees, which is rarely the name on the form: a
 		// pipe gun's form is named Pipe and its mods add the rest of the name.

@@ -1,27 +1,13 @@
-#include "Core/Text.h"
+#include "Core/Text/Text.h"
 
-#include <algorithm>
-#include <cctype>
-#include <format>
-#include <span>
+#include "Core/Text/Lines.h"
 
+// The sentences of a repair, at the bench and at a trader: the question, what
+// goes over it, the buttons and what is said after.
 namespace Text
 {
 	namespace
 	{
-		// One sentence in one language. code is what sLanguage says. The first
-		// row, English, is the fallback.
-		struct Line
-		{
-			std::string_view code;
-			const char*      text;
-		};
-
-		// Full condition, as a whole percent.
-		constexpr std::uint32_t FULL = 100;
-
-		// The languages the game is sold in, plus Simplified Chinese, which the
-		// executable names.
 		constexpr Line REPAIR_QUESTION[]{
 			{ "en", "{0} is at {1}% condition. Repair it to:" },
 			{ "fr", "{0} est à {1}\u00A0% d'état. Réparer jusqu'à\u00A0:" },
@@ -38,7 +24,7 @@ namespace Text
 		};
 
 		// Said over the repair question when the player holds a rank of the
-		// perk pricing the weapon. It names the rank, so the player sees their
+		// perk pricing the item. It names the rank, so the player sees their
 		// own rank at work, and it counts components, since a bench takes
 		// nothing else. See CraftingPerks.h.
 		constexpr Line REPAIR_DISCOUNT[]{
@@ -87,7 +73,7 @@ namespace Text
 			{ "zhhans", "状况需达{0}%以上才能改造。" },
 		};
 
-		// The word on the bench's REPAIR button over a weapon worn so little
+		// The word on the bench's REPAIR button over an item worn so little
 		// that repairing it is free. Capitals, like the game's own buttons.
 		constexpr Line MEND_BUTTON[]{
 			{ "en", "MEND" },
@@ -104,10 +90,10 @@ namespace Text
 			{ "zhhans", "修补" },
 		};
 
-		// Said when MEND repairs a weapon, with no confirmation box and no
+		// Said when MEND repairs an item, with no confirmation box and no
 		// components to show for it. Mended, not repaired, since nothing was
-		// spent.
-		constexpr Line MENDED[]{
+		// spent. One table per kind, since the kind is the subject.
+		constexpr Line MENDED_WEAPON[]{
 			{ "en", "Weapon mended." },
 			{ "fr", "Arme entretenue." },
 			{ "de", "Waffe ausgebessert." },
@@ -120,6 +106,21 @@ namespace Text
 			{ "ja", "武器を手入れしました" },
 			{ "zhhant", "武器已修補。" },
 			{ "zhhans", "武器已修补。" },
+		};
+
+		constexpr Line MENDED_ARMOR[]{
+			{ "en", "Armor mended." },
+			{ "fr", "Armure entretenue." },
+			{ "de", "Rüstung ausgebessert." },
+			{ "it", "Armatura aggiustata." },
+			{ "es", "Armadura retocada." },
+			{ "esmx", "Armadura retocada." },
+			{ "ptbr", "Armadura retocada." },
+			{ "pl", "Pancerz poprawiony." },
+			{ "ru", "Броня подправлена." },
+			{ "ja", "アーマーを手入れしました" },
+			{ "zhhant", "裝甲已修補。" },
+			{ "zhhans", "装甲已修补。" },
 		};
 
 		// The price in caps goes on the button beside the condition it buys, so
@@ -158,20 +159,22 @@ namespace Text
 
 		// Said over a trader's question, so the player sees why the buttons
 		// stop where they do. A trader who can go all the way says so in words,
-		// since "up to 100%" reads as a limit.
+		// since "up to 100%" reads as a limit. It says "this item" because a
+		// trader's limit is per kind, weapons or armor, and the question above
+		// it names the item.
 		constexpr Line REPAIR_UP_TO_FULL[]{
-			{ "en", "This trader can restore weapons to full condition." },
-			{ "fr", "Ce marchand peut remettre les armes en parfait état." },
-			{ "de", "Dieser Händler kann Waffen vollständig instand setzen." },
-			{ "it", "Questo commerciante può riportare le armi in condizioni perfette." },
-			{ "es", "Este comerciante puede dejar las armas en perfecto estado." },
-			{ "esmx", "Este comerciante puede dejar las armas en perfecto estado." },
-			{ "ptbr", "Este comerciante pode deixar as armas em perfeito estado." },
-			{ "pl", "Ten handlarz przywraca broni pełny stan." },
-			{ "ru", "Этот торговец может починить оружие до идеального состояния." },
-			{ "ja", "この商人は武器を完全な状態まで修理できます" },
-			{ "zhhant", "這名商人可以將武器修復至完美狀況。" },
-			{ "zhhans", "这名商人可以将武器修复至完美状况。" },
+			{ "en", "This trader can restore this item to full condition." },
+			{ "fr", "Ce marchand peut remettre cet objet en parfait état." },
+			{ "de", "Dieser Händler kann diesen Gegenstand vollständig instand setzen." },
+			{ "it", "Questo commerciante può riportare questo oggetto in condizioni perfette." },
+			{ "es", "Este comerciante puede dejar este objeto en perfecto estado." },
+			{ "esmx", "Este comerciante puede dejar este objeto en perfecto estado." },
+			{ "ptbr", "Este comerciante pode deixar este item em perfeito estado." },
+			{ "pl", "Ten handlarz przywraca temu przedmiotowi pełny stan." },
+			{ "ru", "Этот торговец может починить этот предмет до идеального состояния." },
+			{ "ja", "この商人はこのアイテムを完全な状態まで修理できます" },
+			{ "zhhant", "這名商人可以將此物品修復至完美狀況。" },
+			{ "zhhans", "这名商人可以将此物品修复至完美状况。" },
 		};
 
 		constexpr Line REPAIR_UP_TO[]{
@@ -189,7 +192,7 @@ namespace Text
 			{ "zhhans", "这名商人最多可将状况修理至{0}%。" },
 		};
 
-		// Said when REPAIR is pressed on a weapon already past what this trader
+		// Said when REPAIR is pressed on an item already past what this trader
 		// can do. The button stays on the bar, so the player learns that better
 		// traders exist.
 		constexpr Line REPAIR_CEILING[]{
@@ -224,74 +227,40 @@ namespace Text
 			{ "zhhans", "瓶盖不足，无法修理。" },
 		};
 
-		// Added to every rank of a crafting perk that takes something off a
-		// repair, with what that rank alone is worth, so the perk page shows
-		// what the next rank gives. It says weapons built mostly from the
-		// perk's mods because 1 perk prices the whole repair, see
-		// CraftingPerks.h.
-		constexpr Line PERK_DISCOUNT[]{
-			{ "en", "Weapons built mostly from this perk's mods take {0}% fewer components to repair at the workbench." },
-			{ "fr", "Les armes composées en majorité de modules de cette aptitude demandent {0}\u00A0% de composants en moins à réparer à l'établi." },
-			{ "de", "Waffen, die überwiegend aus Mods dieses Skills bestehen, benötigen an der Werkbank {0}\u00A0% weniger Komponenten für die Reparatur." },
-			{ "it", "Le armi composte perlopiù da modifiche di questo talento richiedono il {0}% di componenti in meno per la riparazione al banco da lavoro." },
-			{ "es", "Las armas compuestas en su mayoría por módulos de este extra necesitan un {0}% menos de componentes para repararse en el banco de trabajo." },
-			{ "esmx", "Las armas compuestas en su mayoría por módulos de este extra necesitan un {0}% menos de componentes para repararse en el banco de trabajo." },
-			{ "ptbr", "Armas compostas em sua maioria por mods desta vantagem exigem {0}% menos componentes para conserto na bancada." },
-			{ "pl", "Bronie zbudowane głównie z modyfikacji tego profitu wymagają o {0}% mniej komponentów do naprawy w pracowni." },
-			{ "ru", "Оружие, собранное в основном из модификаций этой способности, требует на {0}% меньше компонентов при ремонте на верстаке." },
-			{ "ja", "このPerkのモジュールで主に構成された武器は、作業台での修理に必要な部品が{0}%減少します" },
-			{ "zhhant", "主要由此輔助能力的改造配件組成的武器，在工作台修理時所需的元件減少{0}%。" },
-			{ "zhhans", "主要由此辅助能力的改造配件组成的武器，在工作台修理时所需的元件减少{0}%。" },
+		// Said when REPAIR is pressed on an item the bench has nothing to
+		// rebuild from, see Workbench/Cost.h. It says where to go instead,
+		// since the button stays on the bar.
+		constexpr Line BENCH_CANNOT_REPAIR[]{
+			{ "en", "This item can't be repaired at a workbench. A trader can restore it." },
+			{ "fr", "Cet objet ne peut pas être réparé à un établi. Un marchand peut le remettre en état." },
+			{ "de", "Dieser Gegenstand kann an keiner Werkbank repariert werden. Ein Händler kann ihn instand setzen." },
+			{ "it", "Questo oggetto non può essere riparato a un banco da lavoro. Un commerciante può ripristinarlo." },
+			{ "es", "Este objeto no se puede reparar en un banco de trabajo. Un comerciante puede restaurarlo." },
+			{ "esmx", "Este objeto no se puede reparar en un banco de trabajo. Un comerciante puede restaurarlo." },
+			{ "ptbr", "Este item não pode ser consertado em uma bancada. Um comerciante pode restaurá-lo." },
+			{ "pl", "Tego przedmiotu nie da się naprawić w pracowni. Handlarz może go naprawić." },
+			{ "ru", "Этот предмет нельзя починить на верстаке. Его может восстановить торговец." },
+			{ "ja", "このアイテムは作業台では修理できません。商人なら修理できます" },
+			{ "zhhant", "此物品無法在工作台修理。商人可以將其修復。" },
+			{ "zhhans", "此物品无法在工作台修理。商人可以将其修复。" },
 		};
 
-		// A loading screen tip in the game's own plain style. Each language
-		// names condition as the repair question does. See LoadingTips.h.
-		constexpr Line WEAR_TIP[]{
-			{ "en", "Weapons lose condition as they are used." },
-			{ "fr", "L'état des armes se dégrade à l'usage." },
-			{ "de", "Der Zustand von Waffen verschlechtert sich durch Gebrauch." },
-			{ "it", "Le condizioni delle armi peggiorano con l'uso." },
-			{ "es", "El estado de las armas empeora con el uso." },
-			{ "esmx", "El estado de las armas empeora con el uso." },
-			{ "ptbr", "A condição das armas piora com o uso." },
-			{ "pl", "Stan broni pogarsza się wraz z użytkowaniem." },
-			{ "ru", "Состояние оружия ухудшается по мере использования." },
-			{ "ja", "武器の状態は使うほど悪化する" },
-			{ "zhhant", "武器的狀況會隨著使用而下降。" },
-			{ "zhhans", "武器的状况会随着使用而下降。" },
+		// Said at the bench for an item listed only to be repaired, which stays
+		// greyed at full condition, see Workbench/Display.h.
+		constexpr Line CANNOT_MODIFY[]{
+			{ "en", "This item can't be modified." },
+			{ "fr", "Cet objet ne peut pas être modifié." },
+			{ "de", "Dieser Gegenstand kann nicht modifiziert werden." },
+			{ "it", "Questo oggetto non può essere modificato." },
+			{ "es", "Este objeto no se puede modificar." },
+			{ "esmx", "Este objeto no se puede modificar." },
+			{ "ptbr", "Este item não pode ser modificado." },
+			{ "pl", "Tego przedmiotu nie można modyfikować." },
+			{ "ru", "Этот предмет нельзя модифицировать." },
+			{ "ja", "このアイテムは改造できません" },
+			{ "zhhant", "此物品無法改造。" },
+			{ "zhhans", "此物品无法改造。" },
 		};
-
-		// The row in the player's language, or the English one.
-		[[nodiscard]] const char* Pick(std::span<const Line> a_lines)
-		{
-			const auto language = Language();
-			for (const auto& line : a_lines) {
-				if (line.code == language) {
-					return line.text;
-				}
-			}
-			return a_lines.front().text;
-		}
-
-		// That row with a_args filled into its {0} {1} slots. The arguments are
-		// taken by reference because std::make_format_args wants lvalues.
-		template <class... T>
-		[[nodiscard]] std::string Say(std::span<const Line> a_lines, const T&... a_args)
-		{
-			return std::vformat(Pick(a_lines), std::make_format_args(a_args...));
-		}
-	}
-
-	std::string Language()
-	{
-		// Read from the game's own setting at every call. The plugin loads before
-		// the game reads Fallout4.ini, and until then it holds its default, en.
-		// Read by ID, so a call does not search every INI setting by name.
-		static const REL::Relocation<RE::Setting*> setting{ RE::ID::Setting::sLanguage };
-		std::string out{ setting.get()->GetString() };
-		std::transform(out.begin(), out.end(), out.begin(),
-			[](unsigned char a_ch) { return static_cast<char>(std::tolower(a_ch)); });
-		return out.empty() ? std::string{ "en" } : out;
 	}
 
 	std::string RepairQuestion(std::string_view a_name, std::uint32_t a_percent)
@@ -314,9 +283,9 @@ namespace Text
 		return Pick(MEND_BUTTON);
 	}
 
-	std::string Mended()
+	std::string Mended(bool a_armor)
 	{
-		return Pick(MENDED);
+		return Pick(a_armor ? MENDED_ARMOR : MENDED_WEAPON);
 	}
 
 	std::string RepairPrice(std::uint32_t a_level, std::uint32_t a_caps)
@@ -344,13 +313,13 @@ namespace Text
 		return Pick(REPAIR_UNAFFORDABLE);
 	}
 
-	std::string PerkDiscount(std::uint32_t a_percent)
+	std::string BenchCannotRepair()
 	{
-		return Say(PERK_DISCOUNT, a_percent);
+		return Pick(BENCH_CANNOT_REPAIR);
 	}
 
-	std::string WearTip()
+	std::string CannotModify()
 	{
-		return Pick(WEAR_TIP);
+		return Pick(CANNOT_MODIFY);
 	}
 }

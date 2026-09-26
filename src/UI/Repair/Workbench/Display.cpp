@@ -9,6 +9,7 @@
 #include <cmath>
 #include <cstdint>
 #include <limits>
+#include <vector>
 
 namespace Workbench
 {
@@ -42,7 +43,7 @@ namespace Workbench
 			return row >= 0.0 && row < NO_ROW ? static_cast<std::uint32_t>(row) : NO_ROW;
 		}
 
-		// Whether a row is one FadeWorn faded. The bench marks every row live
+		// Whether a row is one MarkWorn greyed. The bench marks every row live
 		// as it builds it, so a row neither live nor buildable is one of this
 		// plugin's.
 		[[nodiscard]] bool Faded(const Value& a_row)
@@ -96,7 +97,7 @@ namespace Workbench
 						// written.
 						if (!said) {
 							said = true;
-							TraceLog::Line("menu", "Workbench faded the weapon in hand, {:s}",
+							TraceLog::Line("menu", "Workbench faded an equipped row, {:s}",
 								Flash::String(name, "text"sv));
 						}
 					}
@@ -114,6 +115,16 @@ namespace Workbench
 
 		// Lives as long as the plugin, the same way as the HUD's listeners.
 		FrameListener g_frameListener;
+
+		// The items MarkWorn has listed since the bench opened, by their
+		// inventory handle, which is the item's and not a stack's. The bench
+		// is a menu, so only the menu's own thread comes here.
+		std::vector<std::uint32_t> g_listed;
+
+		[[nodiscard]] bool Listed(std::uint32_t a_handle)
+		{
+			return std::ranges::find(g_listed, a_handle) != g_listed.end();
+		}
 	}
 
 	void Dim(RE::ExamineMenu* a_menu, Value& a_list, std::string_view a_what)
@@ -155,7 +166,7 @@ namespace Workbench
 		a_menu->menuObj.Invoke("UpdateButtons");
 	}
 
-	void FadeWorn(RE::ExamineMenu* a_menu)
+	void MarkWorn(RE::ExamineMenu* a_menu)
 	{
 		Value rows;
 		if (!a_menu || !a_menu->itemList.IsObject() ||
@@ -163,41 +174,77 @@ namespace Workbench
 			return;
 		}
 
+		// The flag the bench's own rows carry is the one its filter shows,
+		// weapons at the weapon bench and apparel at the armor bench. A row the
+		// bench left out carries 0, which the filter never shows.
+		const auto kind = WorksOn(a_menu);
+		Value      filterer;
+		Value      shown;
+		const bool lists = kind && a_menu->itemList.GetMember("filterer"sv, &filterer) && filterer.IsObject() &&
+		                   filterer.GetMember("itemFilter"sv, &shown) && Flash::AsNumber(shown) != 0.0;
+
 		const auto&   carried = a_menu->invInterface.stackedEntries;
 		const auto    count = std::min(rows.GetArraySize(), static_cast<std::uint32_t>(carried.size()));
+		std::uint32_t listed = 0;
 		std::uint32_t faded = 0;
 		std::uint32_t inHand = 0;
 
 		for (std::uint32_t i = 0; i < count; i++) {
 			Value row;
-			if (!rows.GetElement(i, &row) || !row.IsObject() ||
-				!Selection{ SelectedItem::Read(carried[static_cast<std::size_t>(i)]) }.TooWorn()) {
+			if (!rows.GetElement(i, &row) || !row.IsObject()) {
 				continue;
 			}
 
+			// A row left out is listed while its item is worn, and once listed
+			// it stays so.
+			const Selection item{ SelectedItem::Read(carried[static_cast<std::size_t>(i)]) };
+			const bool      list = lists && item.object && item.kind == *kind && (item.Worn() || Listed(item.handle)) &&
+			                  Flash::Number(row, "filterFlag"sv, 1.0) == 0.0;
+			if (!list && !item.TooWorn()) {
+				continue;
+			}
+
+			if (list) {
+				row.SetMember("filterFlag"sv, shown);
+				if (!Listed(item.handle)) {
+					g_listed.push_back(item.handle);
+				}
+				listed++;
+			}
+			if (item.TooWorn()) {
+				faded++;
+				if (Flash::Number(row, "equipState"sv, 0.0) > 0.0) {
+					inHand++;
+				}
+			}
 			row.SetMember("enabled"sv, Value(false));
 			row.SetMember("hasRequired"sv, Value(false));
-			faded++;
-
-			if (Flash::Number(row, "equipState"sv, 0.0) > 0.0) {
-				inHand++;
-			}
 		}
 
-		if (faded == 0) {
-			return;
+		if (listed > 0) {
+			TraceLog::Line("menu", "Workbench listed {:d} items no mod here fits, for repairs", listed);
 		}
-
-		a_menu->itemList.Invoke("RefreshList");
-		TraceLog::Line("menu", "Workbench faded {:d} of {:d} rows, {:d} of them equipped",
-			faded, count, inHand);
+		if (faded > 0) {
+			TraceLog::Line("menu", "Workbench faded {:d} of {:d} rows, {:d} of them equipped",
+				faded, count, inHand);
+		}
 	}
 
-	void WatchWeaponInHand(Scaleform::GFx::Movie& a_movie)
+	bool NoModFits(const SelectedItem::Item& a_item)
+	{
+		return a_item.object && Listed(a_item.handle);
+	}
+
+	void ForgetListed()
+	{
+		g_listed.clear();
+	}
+
+	void WatchEquipped(Scaleform::GFx::Movie& a_movie)
 	{
 		Value stage;
 		if (!a_movie.GetVariable(&stage, "_root.stage") || !stage.IsObject()) {
-			REX::WARN("The workbench has no stage to listen on, so a worn weapon in hand is drawn at full strength.");
+			REX::WARN("The workbench has no stage to listen on, so a worn item equipped is drawn at full strength.");
 			return;
 		}
 
@@ -207,7 +254,7 @@ namespace Workbench
 		Value listener;
 		a_movie.CreateFunction(&listener, &g_frameListener);
 		if (!stage.Invoke("addEventListener", std::array{ Value("enterFrame"), listener })) {
-			REX::WARN("The workbench refused the frame listener, so a worn weapon in hand is drawn at full strength.");
+			REX::WARN("The workbench refused the frame listener, so a worn item equipped is drawn at full strength.");
 		}
 	}
 }

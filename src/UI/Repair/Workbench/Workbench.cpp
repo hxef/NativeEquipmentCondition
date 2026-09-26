@@ -2,7 +2,8 @@
 
 #include "Condition/CraftingPerks/CraftingPerks.h"
 #include "Condition/Repair.h"
-#include "Core/Text.h"
+#include "Core/CallPatch.h"
+#include "Core/Text/Text.h"
 #include "Core/TraceLog.h"
 #include "UI/MenuMovies.h"
 #include "UI/Repair/Workbench/Bench.h"
@@ -10,6 +11,7 @@
 #include "UI/Repair/Workbench/Display.h"
 #include "UI/Repair/Workbench/Job.h"
 
+#include <cstddef>
 #include <cstdint>
 #include <cstdio>
 #include <format>
@@ -33,8 +35,8 @@ namespace Workbench
 		constexpr auto        PLAY_SOUND = static_cast<std::uintptr_t>(RE::WorkbenchMenuBase::CodeObjectFunction::kPlaySound);
 
 		// What the game does before this. Of the 14 functions patched on the
-		// bench's table, 3 are ones the weapon bench leaves empty or answers no
-		// to: OnSwitchBaseItem, GetCanRepairSelectedItem and
+		// bench's table, 3 are ones the weapon and armor benches leave empty or
+		// answer no to: OnSwitchBaseItem, GetCanRepairSelectedItem and
 		// RepairSelectedItem.
 		REL::Relocation<void (*)(RE::ExamineMenu*, bool)>                 _BuildConfirmed;
 		REL::Relocation<const ModChoice* (*)(RE::ExamineMenu*)>           _QCurrentModChoiceData;
@@ -52,8 +54,8 @@ namespace Workbench
 		// The same for the callback the bench hands its confirmation box.
 		REL::Relocation<RE::ExamineConfirmMenu::ICallback* (*)(RE::ExamineConfirmMenu::ICallback*, std::uint32_t)> _DeleteConfirmCallback;
 
-		// Every change of the highlighted weapon, one line before the Flash
-		// side redraws its buttons, which is what keeps RENAME on a gun at full
+		// Every change of the highlighted item, one line before the Flash side
+		// redraws its buttons, which is what keeps RENAME on an item at full
 		// condition.
 		void OnSwitchBaseItemHk(RE::ExamineMenu* a_menu)
 		{
@@ -83,9 +85,11 @@ namespace Workbench
 			return !Above(selection).empty();
 		}
 
-		// The button, and the only way into a repair. A barely worn weapon is
-		// repaired on the spot. One with a single level worth offering goes
-		// straight to the confirmation, through the task queue like the prompt.
+		// The button, and the only way into a repair. A barely worn item is
+		// repaired on the spot. One the bench has nothing to rebuild from is
+		// sent to a trader, see Cost.h. One with a single level worth offering
+		// goes straight to the confirmation, through the task queue like the
+		// prompt.
 		void RepairSelectedItemHk(RE::ExamineMenu* a_menu)
 		{
 			const auto selection = Selected(a_menu);
@@ -100,8 +104,18 @@ namespace Workbench
 				return;
 			}
 
+			const auto priced = PriceOf(selection);
+			if (priced.units == 0) {
+				const auto said = Text::BenchCannotRepair();
+				RE::SendHUDMessage::ShowHUDMessage(said.c_str(), nullptr, true, true);
+				RE::UIUtils::PlayMenuSound(REFUSED_SOUND);
+				TraceLog::Line("menu", "Workbench has nothing to rebuild {:s} from, so it sent the player to a trader",
+					selection.Name());
+				return;
+			}
+
 			const auto above = Above(selection);
-			const auto offered = Offered(selection);
+			const auto offered = Offered(selection, priced);
 			if (offered.size() < above.size()) {
 				TraceLog::Line("menu",
 					"Workbench dropped {:d} of {:d} levels for {:s}, each costing what the level above it costs",
@@ -152,8 +166,8 @@ namespace Workbench
 				}
 			}
 
-			// A mod at the weapon bench and an object at the other stations,
-			// a form either way.
+			// A mod at the weapon and armor benches and an object at the other
+			// stations, a form either way.
 			const RE::TESForm* made = choice->object;
 			TraceLog::Line("menu", "Workbench asks to build {:s} [{:08X}] for {:s}",
 				made ? RE::TESFullName::GetFullName(*made) : "nothing"sv, made ? made->formID : 0U,
@@ -213,7 +227,7 @@ namespace Workbench
 			Drop(a_menu);
 		}
 
-		// The last check on a weapon too worn to modify, in case its slot list
+		// The last check on an item too worn to modify, in case its slot list
 		// is reached anyway.
 		bool TryCreateHk(RE::ExamineMenu* a_menu)
 		{
@@ -226,8 +240,8 @@ namespace Workbench
 			return _TryCreate(a_menu);
 		}
 
-		// The bench colours the part of the gun the highlighted slot belongs
-		// to, reading the gun in the viewer without looking, and there is
+		// The bench colours the part of the item the highlighted slot belongs
+		// to, reading the model in the viewer without looking, and there is
 		// nothing there while the viewer is between models.
 		void HighlightWeaponPartHk(RE::ExamineMenu* a_menu)
 		{
@@ -241,8 +255,9 @@ namespace Workbench
 		// turned the player away from the mod slots, the moment to say why, and
 		// the only one, since the refusal happens inside the movie. That holds
 		// for the mouse, the key, the pad and MODIFY alike. The bench plays the
-		// same sound for a weapon with no slots, so the condition is checked
-		// first.
+		// same sound for an item with no slots, such as one listed only to be
+		// repaired, and that one is told so whatever its condition, since a
+		// repair would open nothing.
 		void CallHk(RE::ExamineMenu* a_menu, const Params& a_params)
 		{
 			_Call(a_menu, a_params);
@@ -258,6 +273,13 @@ namespace Workbench
 			}
 
 			const auto selection = Selected(a_menu);
+			if (NoModFits(selection)) {
+				const auto said = Text::CannotModify();
+				RE::SendHUDMessage::ShowHUDMessage(said.c_str(), nullptr, true, true);
+				TraceLog::Line("menu", "Workbench turned {:s} at {:d}% away from the mod slots, no mod fits it",
+					selection.Name(), selection.percent);
+				return;
+			}
 			if (!selection.TooWorn()) {
 				return;
 			}
@@ -268,15 +290,40 @@ namespace Workbench
 				selection.Name(), selection.percent);
 		}
 
-		// The bench's own inventory, rebuilt, with every weapon too worn to
-		// modify faded.
+		// Where the bench's rebuild of its item list hands the new rows to
+		// Flash, which draws them and puts the highlight back on the item it
+		// was on, or on the nearest row shown.
+		constexpr CallPatch::CallSite REFRESH_SITE{ 2223054, 0x245, "item list refresh" };
+
+		// The bench while it rebuilds its item list. The bench is a menu, so
+		// only its own thread comes here.
+		RE::ExamineMenu* g_rebuilding{ nullptr };
+
+		// The bench's own inventory, rebuilt, see RefreshItemListHk.
 		void UpdateItemListHk(RE::ExamineMenu* a_menu, std::int32_t a_selected)
 		{
+			g_rebuilding = a_menu;
 			_UpdateItemList(a_menu, a_selected);
-			FadeWorn(a_menu);
+			g_rebuilding = nullptr;
 		}
 
-		// A weapon too worn to modify is given no slots at all.
+		// The new rows on their way to Flash. Every worn item the bench left
+		// out is listed after all and every item too worn to modify is faded
+		// first, so the list is drawn once and the highlight comes back to a
+		// listed row as to any other. Listed any later, the row would still be
+		// hidden as the highlight came back, which moves it off a hazmat suit
+		// just repaired. The power armor station runs the same rebuild without
+		// the hook above, and its rows go as they are.
+		bool RefreshItemListHk(Scaleform::GFx::Value::ObjectInterface* a_interface, void* a_data, Scaleform::GFx::Value* a_result,
+			const char* a_name, const Scaleform::GFx::Value* a_args, std::size_t a_count, bool a_isDisplayObject)
+		{
+			if (g_rebuilding) {
+				MarkWorn(g_rebuilding);
+			}
+			return a_interface->Invoke(a_data, a_result, a_name, a_args, a_count, a_isDisplayObject);
+		}
+
+		// An item too worn to modify is given no slots at all.
 		void UpdateModSlotListHk(RE::ExamineMenu* a_menu)
 		{
 			_UpdateModSlotList(a_menu);
@@ -315,20 +362,25 @@ namespace Workbench
 		_UpdateModSlotList = menu.write_vfunc(0x3E, UpdateModSlotListHk);
 		_UpdateModChoiceList = menu.write_vfunc(0x3F, UpdateModChoiceListHk);
 
+		if (!CallPatch::PatchCall(REFRESH_SITE, Scaleform::ID::GFx::Value::Invoke.address(),
+				reinterpret_cast<std::uintptr_t>(&RefreshItemListHk))) {
+			REX::ERROR("The workbench will leave out a worn item no mod fits, so it cannot repair one, and draw an item too far gone like any other.");
+		}
+
 		// Index 0 is the callback's destructor. Every bench hands its build
 		// confirmation this callback, the power armor station included. The
 		// boxes for leaving a bench and for scrapping have their own.
 		REL::Relocation<std::uintptr_t> confirm{ RE::VTABLE::__ModConfirmCallback[0] };
 		_DeleteConfirmCallback = confirm.write_vfunc(0x00, DeleteConfirmCallbackHk);
 
-		REX::INFO("Weapon workbench modifies nothing below {:d}% condition. Wear above {:d}% is put right on the spot for nothing.",
+		REX::INFO("The workbench modifies nothing below {:d}% condition. Wear above {:d}% is put right on the spot for nothing.",
 			MODIFY_FLOOR, FREE_ABOVE);
 		std::string levels;
 		for (const auto level : Repair::LEVELS) {
 			levels += std::format("{:s}{:d}%", levels.empty() ? "" : " ", level);
 		}
-		REX::INFO("Weapon workbench repairs to {:s}", levels);
-		REX::INFO("Before any crafting perk, a weapon at nothing owes {:.2f} of what it is built from, and at each level {:s}",
+		REX::INFO("The workbench repairs weapons and armor to {:s}", levels);
+		REX::INFO("Before any crafting perk, an item at nothing owes {:.2f} of what it is built from, and at each level {:s}",
 			Repair::Debt(0, Scaled(WRECK_MULTIPLE)), Repair::Ladder(Scaled(WRECK_MULTIPLE)));
 		REX::INFO("The whole of a crafting perk brings that {:.2f} down to {:.2f}",
 			Scaled(WRECK_MULTIPLE), Scaled(CraftingPerks::SKILLED_MULTIPLE));
@@ -342,7 +394,8 @@ namespace Workbench
 	void OnMovieLoaded(Scaleform::GFx::Movie& a_movie, std::string_view a_file)
 	{
 		if (MenuMovies::IsMovie(a_file, "ExamineMenu.swf"sv)) {
-			WatchWeaponInHand(a_movie);
+			ForgetListed();
+			WatchEquipped(a_movie);
 		}
 	}
 }

@@ -7,9 +7,9 @@
 // all with the same ActionScript component, and native code hands the card an
 // array of entries such as { text: "$dmg", value: 19 }. The engine fills those
 // arrays in 2 functions, one for the Pip-Boy and one for the rest, and Install
-// patches the calls to both so a weapon's card gets one more entry:
-// $ItemInfo_CND, a key the game already carries, and the condition as a whole
-// percent.
+// patches the calls to both so the card of an item that wears gets one more
+// entry: $ItemInfo_CND, a key the game already carries, and the condition as a
+// whole percent.
 //
 // The card stacks the plain rows from the bottom and puts Damage above them
 // afterwards, so no position in the array lifts a plain row over Damage.

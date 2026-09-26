@@ -11,24 +11,24 @@
 
 // What a trader wants for each step of a repair. Private to this folder.
 //
-// The same price curve as the bench, see Repair.h, but based on what the weapon
+// The same price curve as the bench, see Repair.h, but based on what the item
 // is worth and always at the price with no perk: a crafting perk is the
 // player's own skill and no reason for a trader to charge less, and the bench
 // gets cheaper as the game goes on while the trader does not. Worth means the
 // sound price, without wear and without the trader's markup: with the wear in,
-// a broken weapon would cost almost nothing and a repair in steps would cost
+// a broken item would cost almost nothing and a repair in steps would cost
 // more, and the markup changes with which side the game priced last.
 namespace VendorRepair
 {
-	// What a trader charges to repair a broken weapon, as a multiple of what
-	// the weapon is worth.
+	// What a trader charges to repair a broken item, as a multiple of what the
+	// item is worth.
 	inline constexpr float WRECK_MULTIPLE = CraftingPerks::UNSKILLED_MULTIPLE;
 
 	// That multiple with fTraderPriceMult on it, see Settings.h, so the setting
 	// halves or doubles every price.
 	[[nodiscard]] float Scaled(float a_multiple);
 
-	// One condition the weapon can be brought back to, and the caps wanted.
+	// One condition the item can be brought back to, and the caps wanted.
 	using Quote = Repair::Step<std::uint32_t>;
 
 	// Every step worth offering, up to the trader's limit. What is owed now and

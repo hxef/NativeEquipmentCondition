@@ -20,71 +20,107 @@ namespace VendorRepair
 		std::int32_t g_row = -1;
 		bool         g_inContainer = false;
 
-		// How far this trader repairs a weapon, kept until the stock is built
-		// again. 0 is a trader outside the trade, and nothing is one nobody has
-		// looked at yet.
-		std::optional<std::uint32_t> g_ceiling;
+		// How far this trader repairs each kind, kept until the stock is built
+		// again. 0 is a trader outside that trade, and nothing at all is a
+		// trader nobody has looked at yet.
+		struct Ceilings
+		{
+			std::uint32_t weapons{ 0 };
+			std::uint32_t armor{ 0 };
+		};
+
+		std::optional<Ceilings> g_ceilings;
 
 		// The count last written to the trace log, which goes on only when it
 		// changes, since the screen builds the trader's side several times.
 		std::string g_logged;
 
+		// Whether a_trade rows of one trade, with a_filler rows of what goes
+		// with it, out of a_rows on the shelves, make this trader repair that
+		// kind, and how far if so.
+		[[nodiscard]] std::uint32_t CeilingOf(std::size_t a_trade, std::size_t a_filler, std::size_t a_rows)
+		{
+			const bool many = a_trade >= MANY_ROWS && a_trade * MANY_SHARE >= a_rows;
+			const bool some = a_trade > 0 &&
+			                  a_trade + a_filler >= SOME_ROWS &&
+			                  (a_trade + a_filler) * SOME_SHARE >= a_rows;
+			return many || some ? Reach(a_trade) : 0U;
+		}
+
+		// What the log calls what a trader repairs.
+		[[nodiscard]] std::string Repairs(const Ceilings& a_ceilings)
+		{
+			std::string out;
+			if (a_ceilings.weapons > 0) {
+				out += std::format("weapons to {:d}%", a_ceilings.weapons);
+			}
+			if (a_ceilings.armor > 0) {
+				out += std::format("{:s}armor to {:d}%", out.empty() ? "" : " and ", a_ceilings.armor);
+			}
+			return out.empty() ? std::string{ "nothing" } : out;
+		}
+
 		// What the shelves say about this trader. Everything is counted by row,
 		// so a single crate of pistols cannot push a general store past the
 		// threshold.
-		[[nodiscard]] std::uint32_t ReadShelves(RE::BarterMenu* a_menu)
+		[[nodiscard]] Ceilings ReadShelves(RE::BarterMenu* a_menu)
 		{
 			auto* inventory = RE::BGSInventoryInterface::GetSingleton();
 			if (!a_menu || !inventory) {
-				return 0;
+				return {};
 			}
 
 			std::size_t rows = 0;
-			std::size_t guns = 0;
+			std::size_t weapons = 0;
 			std::size_t rounds = 0;
+			std::size_t armor = 0;
+			std::size_t powerArmor = 0;
 			for (const auto& entry : a_menu->containerInv.stackedEntries) {
 				const auto* item = inventory->RequestInventoryItem(entry.invHandle.id);
 				if (!item || !item->object) {
 					continue;
 				}
 				rows++;
-				if (Condition::WearsOut(*item->object)) {
-					guns++;
-				} else if (item->object->Is(RE::ENUM_FORM_ID::kAMMO)) {
+				const auto& object = *item->object;
+				if (Condition::WearsOut(object)) {
+					if (Condition::KindOf(object) == Condition::Kind::kArmor) {
+						armor++;
+					} else {
+						weapons++;
+					}
+				} else if (object.Is(RE::ENUM_FORM_ID::kAMMO)) {
 					rounds++;
+				} else if (object.Is(RE::ENUM_FORM_ID::kARMO)) {
+					// The one wearable that does not wear, see ArmorWear.h.
+					powerArmor++;
 				}
 			}
 
-			const bool many = guns >= MANY_GUNS && guns * MANY_SHARE >= rows;
-			const bool some = guns > 0 &&
-			                  guns + rounds >= SOME_GUNS &&
-			                  (guns + rounds) * SOME_SHARE >= rows;
-			const auto ceiling = many || some ? Reach(guns) : 0U;
+			const Ceilings out{ CeilingOf(weapons, rounds, rows), CeilingOf(armor, powerArmor, rows) };
 
-			auto count = std::format("{:s} has {:d} rows of weapons and {:d} of ammunition out of {:d}, and repairs {:s}",
-				Trader(a_menu), guns, rounds, rows,
-				ceiling > 0 ? std::format("weapons to {:d}%", ceiling) : "nothing");
+			auto count = std::format("{:s} has {:d} rows of weapons, {:d} of ammunition, {:d} of armor and {:d} of power armor out of {:d}, and repairs {:s}",
+				Trader(a_menu), weapons, rounds, armor, powerArmor, rows, Repairs(out));
 			if (count != g_logged) {
 				TraceLog::Line("menu", "{:s}", count);
 				g_logged = std::move(count);
 			}
-			return ceiling;
+			return out;
 		}
 	}
 
-	std::uint32_t Reach(std::size_t a_guns)
+	std::uint32_t Reach(std::size_t a_rows)
 	{
-		if (a_guns == 0) {
+		if (a_rows == 0) {
 			return 0;
 		}
-		if (a_guns >= FULL_GUNS) {
+		if (a_rows >= FULL_ROWS) {
 			return Repair::FULL;
 		}
 
 		// Worked in whole numbers, so no count lands just under a step it has
 		// reached, then rounded down to the step at or below it.
 		const auto climb = static_cast<std::uint32_t>(
-			(Repair::FULL - MIN_CEILING) * (a_guns - 1) / (FULL_GUNS - 1));
+			(Repair::FULL - MIN_CEILING) * (a_rows - 1) / (FULL_ROWS - 1));
 		return (MIN_CEILING + climb) / STEP * STEP;
 	}
 
@@ -121,25 +157,28 @@ namespace VendorRepair
 		return out;
 	}
 
-	std::uint32_t Ceiling(RE::BarterMenu* a_menu)
+	std::uint32_t Ceiling(RE::BarterMenu* a_menu, Condition::Kind a_kind)
 	{
-		if (!g_ceiling && a_menu && !a_menu->containerInv.stackedEntries.empty()) {
-			g_ceiling = ReadShelves(a_menu);
+		if (!g_ceilings && a_menu && !a_menu->containerInv.stackedEntries.empty()) {
+			g_ceilings = ReadShelves(a_menu);
 		}
-		return g_ceiling.value_or(0U);
+		if (!g_ceilings) {
+			return 0;
+		}
+		return a_kind == Condition::Kind::kArmor ? g_ceilings->armor : g_ceilings->weapons;
 	}
 
 	void Forget()
 	{
 		g_row = -1;
 		g_inContainer = false;
-		g_ceiling.reset();
+		g_ceilings.reset();
 		g_logged.clear();
 	}
 
 	void ForgetShelves()
 	{
-		g_ceiling.reset();
+		g_ceilings.reset();
 	}
 
 	bool Shown(const Selection& a_selection, std::uint32_t a_ceiling)

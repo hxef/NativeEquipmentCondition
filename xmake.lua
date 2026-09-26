@@ -48,9 +48,9 @@ target("NEC")
     add_includedirs("src")
     set_pcxxheader("src/pch.h")
 
-    -- src/Core/Text.cpp holds strings in every language the game is sold in, so
-    -- the sources are UTF-8. Without this MSVC reads them in the machine's code
-    -- page and the accented letters come out as rubbish.
+    -- The files in src/Core/Text hold strings in every language the game is
+    -- sold in, so the sources are UTF-8. Without this MSVC reads them in the
+    -- machine's code page and the accented letters come out wrong.
     add_cxflags("/utf-8", { tools = { "cl", "clang_cl" } })
 
     -- NEC.ini ships beside the DLL. NEC_custom.ini is the player's own and is

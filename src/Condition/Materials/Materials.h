@@ -2,49 +2,64 @@
 
 #include "Core/Plugin.h"
 
+#include "Condition/Condition.h"
+
 #include <span>
 
-// What a weapon is built from. Fallout 4 has no weapon health and no field
-// saying how fast a gun should wear. It does say what every gun is made of: the
-// base form plus its mods, and nearly every mod has a recipe listing components
-// and counts. Each component has a worth, in vanilla wood 2, steel 3, screws
-// 12, aluminum 15, circuitry 25, gold 45, nuclear material 50. So the quality
-// of a weapon is the average worth of 1 unit of everything its parts take: a
-// pipe gun's standard grip, 1 steel and 1 screw, comes to 7.5, an Institute
-// laser's long barrel to 16.8.
+// What an item is built from. Fallout 4 has no item health and no field saying
+// how fast a gun or a piece of armor should wear. It does say what every item
+// is made of: the base form plus its mods, and nearly every mod has a recipe
+// listing components and counts. Each component has a worth, in vanilla wood 2,
+// steel 3, cloth 4, leather 10, screws 12, aluminum 15, circuitry 25, gold 45,
+// nuclear material 50. So the quality of an item is the average worth of 1 unit
+// of everything its parts take: a pipe gun's standard grip, 1 steel and 1
+// screw, comes to 7.5, an Institute laser's long barrel to 16.8, a suit's 2
+// cloth to 4.
 //
-// That is how the engine works out what a weapon scraps into, in
+// That is how the engine works out what an item scraps into, in
 // ExamineMenu::BuildWeaponScrappingArray: the recipe of every enabled mod, plus
-// the weapon's own scrap recipe where it has one. Vanilla gives scrap recipes
-// to weapons with few mods, knives and the super sledge into steel, pool cues
-// into wood. A combat rifle has none and needs none, since its mods cover the
-// whole gun.
+// the item's own scrap recipe where it has one. Vanilla gives scrap recipes to
+// weapons with few mods, knives and the super sledge into steel, pool cues into
+// wood, and to most wearables, a suit into 2 cloth, a helmet into 2 steel, a
+// leather chest piece into 2 leather. A combat rifle has none and needs none,
+// since its mods cover the whole gun. A wearable with none, which is every
+// piece of Nuka-World's raider armor, half the vault suits and Maxson's
+// battlecoat, borrows the recipe the load order gives most often to pieces of
+// its kind, clothing or armor, see ArmorWear::IsClothing: 2 cloth for clothing
+// and 2 steel for armor in vanilla. So it is priced and wears like similar
+// pieces, where the game itself would scrap it into nothing.
 //
 // None of these numbers are written in the code. Components, their worth and
 // the recipes are read from the load order, so another plugin repricing steel
 // or adding a weapon is picked up. Only which recipe builds which mod is worked
 // out in advance, at Load, since searching every recipe on every shot is far
-// too slow. WeaponWear/Rate.cpp turns the quality into a wear rate.
+// too slow. WeaponWear/Rate.cpp and ArmorWear/Rate.cpp turn the quality into a
+// wear rate.
 namespace Materials
 {
 	// Reads every recipe in the load order and remembers which builds each
-	// mod, weapon and piece of armor. Runs every time game data has loaded.
+	// mod, weapon and wearable, and which a wearable with none borrows. Runs
+	// every time game data has loaded.
 	void Load();
 
 	// Forgets everything Load found.
 	void Unload();
 
-	// The worth of 1 unit of an average component, the median across every mod,
-	// weapon and piece of armor the load order has a recipe for, so an overhaul
-	// repricing everything moves the median with it. An item with nothing
-	// priced on it counts as this.
-	float ReferenceQuality();
+	// The worth of 1 unit of an average component for an item of a_kind, the
+	// median of the recipes of that kind, so an overhaul repricing everything
+	// moves the median with it. For weapons those are the recipes that build a
+	// weapon or a weapon mod, 19 in vanilla, since a gun's mods are the gun.
+	// For armor they are the scrap recipes of the pieces alone, 4 in vanilla,
+	// since a piece's own recipe is the piece and its mods are upgrades on top:
+	// a plain piece wears at the ordinary rate and an upgraded one lasts
+	// longer. An item with nothing priced on it counts as this.
+	float ReferenceQuality(Condition::Kind a_kind);
 
 	// The average worth of 1 unit of everything an item is built from: its own
-	// scrap recipe where it has one, plus the recipes of its enabled mods.
-	// a_extra can be null. Mods no recipe builds, which is what legendary
-	// effects are, are skipped. An item with nothing priced returns
-	// ReferenceQuality.
+	// scrap recipe where it has one, the borrowed one for a wearable without,
+	// plus the recipes of its enabled mods. a_extra can be null. Mods no recipe
+	// builds, which is what legendary effects are, are skipped. An item with
+	// nothing priced returns ReferenceQuality.
 	float Quality(const RE::TESBoundObject& a_object, const RE::ExtraDataList* a_extra);
 
 	// One component, and how many of it something takes.
@@ -72,7 +87,7 @@ namespace Materials
 	};
 
 	// The same walk with the recipe behind every line kept, for a caller that
-	// prices one part of a weapon differently from another, since the recipe
+	// prices one part of an item differently from another, since the recipe
 	// says which perk unlocks the part. Lines merge within a recipe and never
 	// across 2, so a frame and a scope that both want steel give 2 steel lines.
 	std::vector<Line> BillOfLines(const RE::TESBoundObject& a_object, const RE::ExtraDataList* a_extra);

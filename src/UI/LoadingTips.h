@@ -25,7 +25,7 @@
 //
 // Adding them takes one patched call, where the loading screen collects
 // everything it may show. The tips are in LoadingTips.cpp, their words in
-// Text.cpp.
+// Tips.cpp.
 namespace LoadingTips
 {
 	// Patches the call, and with the trace logs on, the loading menu's

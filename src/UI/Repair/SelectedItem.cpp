@@ -1,7 +1,5 @@
 #include "UI/Repair/SelectedItem.h"
 
-#include "Condition/Condition.h"
-
 namespace SelectedItem
 {
 	std::string Item::Name() const
@@ -37,6 +35,7 @@ namespace SelectedItem
 		out.stack = stack;
 		out.count = held ? held->GetCount() : 0U;
 		out.percent = percent ? static_cast<std::uint32_t>(*percent) : Repair::FULL;
+		out.kind = Condition::KindOf(*item->object);
 		return out;
 	}
 }

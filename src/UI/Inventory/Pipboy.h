@@ -2,7 +2,7 @@
 
 #include "Core/Plugin.h"
 
-// Fading the name of a worn out weapon in the Pip-Boy's lists, since the game
+// Fading the name of a worn out item in the Pip-Boy's lists, since the game
 // refuses to equip one and the Pip-Boy gives no hint until it is tried. The
 // game and the menu each build their own object per item, and only the item's
 // number is shared, as nodeID. So MarkBroken writes down the numbers of worn

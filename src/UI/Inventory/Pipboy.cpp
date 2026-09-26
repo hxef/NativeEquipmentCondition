@@ -111,7 +111,7 @@ namespace Pipboy
 
 		// Called by the Pip-Boy every frame. The list is walked, not watched,
 		// since it is a plain clip that sends no event when it changes, and it
-		// changes for scrolling, sorting, tabs, dropping an item and a weapon
+		// changes for scrolling, sorting, tabs, dropping an item and one
 		// breaking with the Pip-Boy open. A few reads a frame.
 		class FrameListener final : public Scaleform::GFx::FunctionHandler
 		{
@@ -251,7 +251,7 @@ namespace Pipboy
 
 		Value stage;
 		if (!a_movie.GetVariable(&stage, "_root.stage") || !stage.IsObject()) {
-			REX::WARN("The Pip-Boy has no stage to listen on, so broken weapons read like any other.");
+			REX::WARN("The Pip-Boy has no stage to listen on, so broken items read like any other.");
 			return;
 		}
 
@@ -261,10 +261,10 @@ namespace Pipboy
 		Value listener;
 		a_movie.CreateFunction(&listener, &g_frameListener);
 		if (!stage.Invoke("addEventListener", std::array{ Value("enterFrame"), listener })) {
-			REX::WARN("The Pip-Boy refused the frame listener, so broken weapons read like any other.");
+			REX::WARN("The Pip-Boy refused the frame listener, so broken items read like any other.");
 			return;
 		}
 
-		TraceLog::Line("menu", "PipboyMenu.swf loaded, a worn out weapon's name is faded in the list");
+		TraceLog::Line("menu", "PipboyMenu.swf loaded, a worn out item's name is faded in the list");
 	}
 }

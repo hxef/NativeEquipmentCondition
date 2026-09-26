@@ -1,9 +1,9 @@
 # Native Equipment Condition
 
-An F4SE plugin that gives Fallout 4 weapons a condition that wears down with
-use, built on [CommonLibF4](https://github.com/libxse/commonlibf4). It is one
-DLL, `NEC.dll`, and its settings file, `NEC.ini`, which says what every
-setting does. Put your own changes in `NEC_custom.ini` beside it.
+An F4SE plugin that gives Fallout 4 weapons and armor a condition that wears
+down with use, built on [CommonLibF4](https://github.com/libxse/commonlibf4).
+It is one DLL, `NEC.dll`, and its settings file, `NEC.ini`, which says what
+every setting does. Put your own changes in `NEC_custom.ini` beside it.
 
 ### Requirements
 * [XMake](https://xmake.io) [3.0.0+]

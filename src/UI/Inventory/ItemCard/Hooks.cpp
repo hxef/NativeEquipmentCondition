@@ -104,13 +104,6 @@ namespace ItemCard
 		// Which of the 2 lists noted it, for the trace.
 		thread_local const char* t_list = nullptr;
 
-		// The condition a stack carries, or INVALID_HEALTH for one that carries
-		// none.
-		float Health(const RE::BGSInventoryItem::Stack* a_stack)
-		{
-			return a_stack && a_stack->extra ? a_stack->extra->GetHealthPerc() : Condition::INVALID_HEALTH;
-		}
-
 		// Moves the entry just appended to the front. The card turns entries
 		// into rows from last to first, so the first entry becomes the highest
 		// plain row, directly under Damage, which is where it stays in a menu
@@ -141,7 +134,7 @@ namespace ItemCard
 			const CompareItems& a_compareItems, bool a_compareArmorWeightAndValue)
 		{
 			const auto*    stack = a_item.GetStackByID(a_stackID);
-			const Building building{ Health(stack), &a_compareItems };
+			const Building building{ Condition::HealthOf(stack), &a_compareItems };
 
 			t_building = &building;
 			RE::InventoryUserUIUtils::PopulateItemCardInfo_Helper(a_target, a_item, a_stackID, a_compareItems,
@@ -175,7 +168,7 @@ namespace ItemCard
 		void PipboyPopulateHk(RE::PipboyInventoryData* a_this, const RE::BGSInventoryItem* a_item,
 			const RE::BGSInventoryItem::Stack* a_stack, RE::PipboyObject* a_data)
 		{
-			const Building building{ Health(a_stack), nullptr };
+			const Building building{ Condition::HealthOf(a_stack), nullptr };
 
 			t_building = &building;
 			a_this->PopulateItemCardInfo(a_item, a_stack, a_data);
@@ -216,7 +209,7 @@ namespace ItemCard
 		}
 
 		// PipboyPopulateHk where the Pip-Boy lists an item it has not listed
-		// before. The trace names every new entry of a weapon that wears, which
+		// before. The trace names every new entry of an item that wears, which
 		// shows a split stack reached the Pip-Boy as rows of its own.
 		void PipboyNewEntryHk(RE::PipboyInventoryData* a_this, const RE::BGSInventoryItem* a_item,
 			const RE::BGSInventoryItem::Stack* a_stack, RE::PipboyObject* a_data)
@@ -257,7 +250,7 @@ namespace ItemCard
 			if (t_building && t_building->compare) {
 				for (const auto& equipped : *t_building->compare) {
 					if (equipped.first && equipped.first->object == &a_weapon) {
-						health = Health(equipped.first->GetStackByID(equipped.second));
+						health = Condition::HealthOf(equipped.first->GetStackByID(equipped.second));
 						break;
 					}
 				}
@@ -270,7 +263,7 @@ namespace ItemCard
 		void BetterTypesHk(const RE::BGSInventoryItem& a_item, const RE::BGSInventoryItem::Stack* a_stack,
 			RE::BSScrapArray<RE::BSTTuple<std::uint32_t, float>>& a_damageValuesPerType)
 		{
-			t_listHealth = Health(a_stack);
+			t_listHealth = Condition::HealthOf(a_stack);
 			t_list = "The better check";
 			RE::PipboyInventoryUtils::FillDamageTypeInfo(a_item, a_stack, a_damageValuesPerType);
 		}
@@ -279,7 +272,7 @@ namespace ItemCard
 		// a weapon's mods.
 		RE::TBO_InstanceData* SortModsHk(const RE::BGSInventoryItem& a_item, std::uint32_t a_stackID)
 		{
-			t_listHealth = Health(a_item.GetStackByID(a_stackID));
+			t_listHealth = Condition::HealthOf(a_item.GetStackByID(a_stackID));
 			t_list = "The sort";
 			return a_item.GetInstanceData(a_stackID);
 		}

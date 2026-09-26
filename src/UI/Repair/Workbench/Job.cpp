@@ -1,13 +1,14 @@
 #include "UI/Repair/Workbench/Job.h"
 
-#include "Condition/Condition.h"
 #include "Condition/CraftingPerks/CraftingPerks.h"
 #include "Condition/Repair.h"
 #include "Core/ItemCards.h"
-#include "Core/Text.h"
+#include "Core/Text/Text.h"
 #include "Core/TraceLog.h"
 #include "UI/Repair/RepairPrompt.h"
+#include "UI/Repair/Restore.h"
 #include "UI/Repair/Workbench/Cost.h"
+#include "UI/Repair/Workbench/Display.h"
 
 #include <algorithm>
 #include <cmath>
@@ -63,10 +64,10 @@ namespace Workbench
 			return std::min(cap->GetFloat(), std::max(1.0F, xp));
 		}
 
-		// Hides the CURRENT MODS heading, or shows it again. A weapon too worn
-		// to modify has no slots, so the heading would be wrong. Hiding the
-		// field keeps the translated words for when the weapon is back at full
-		// condition.
+		// Hides the CURRENT MODS heading, or shows it again. An item too worn
+		// to modify has its slots closed and an item no mod fits has none, so
+		// for either one the heading would be wrong. Hiding the field keeps the
+		// translated words for when the item is back at full condition.
 		void ShowModsLabel(RE::ExamineMenu* a_menu, bool a_shown)
 		{
 			Value panel;
@@ -77,6 +78,19 @@ namespace Workbench
 				return;
 			}
 			label.SetMember("visible"sv, Value(a_shown));
+		}
+
+		// An item no mod fits stays greyed once a repair brings it to full, so
+		// the corner says why, after whatever the repair itself said. Told the
+		// item repaired and the level it reached.
+		void SayCannotModify(const Selection& a_item, std::uint32_t a_level)
+		{
+			if (a_level < FULL || !NoModFits(a_item)) {
+				return;
+			}
+			const auto said = Text::CannotModify();
+			RE::SendHUDMessage::ShowHUDMessage(said.c_str(), nullptr, true, true);
+			TraceLog::Line("menu", "Workbench said {:s} can't be modified, sound and still greyed", a_item.Name());
 		}
 
 		// Called by the bar's list of buttons once for each. The bench's REPAIR
@@ -120,8 +134,8 @@ namespace Workbench
 			return;
 		}
 
-		// Every rank of the perk pricing the weapon says on its page that such
-		// weapons need fewer components, and this is where that discount is
+		// Every rank of the perk pricing the item says on its page that such
+		// items need fewer components, and this is where that discount is
 		// applied. Left off where no rank is held.
 		const auto standing = PriceOf(a_selection).standing;
 		const auto off = CraftingPerks::Discount(standing.rank, standing.ranks);
@@ -157,7 +171,7 @@ namespace Workbench
 	{
 		const auto selection = Selected(a_menu);
 		if (!a_menu || !selection.Worn() || a_level <= selection.percent) {
-			TraceLog::Line("menu", "Workbench dropped the repair, the bench or the weapon is gone");
+			TraceLog::Line("menu", "Workbench dropped the repair, the bench or the item is gone");
 			return;
 		}
 
@@ -181,7 +195,7 @@ namespace Workbench
 		}
 
 		// How many component units count for each perk, only where the trace
-		// file is taking it, since working it out walks the weapon again.
+		// file is taking it, since working it out walks the item again.
 		if (TraceLog::IsOpen()) {
 			TraceLog::Line("menu", "Workbench read that off the parts on {:s}: {:s}",
 				selection.Name(), Vote(selection));
@@ -228,16 +242,9 @@ namespace Workbench
 			return;
 		}
 
-		const auto health = Condition::FromPercent(level);
-
-		// The engine's own way of writing to one stack, the helpers the power
-		// armor station repairs with. 6 identical pistols are one stack, and
-		// this repairs one: the engine splits the stack and moves the equipped
-		// marks onto the copy.
+		// The stack the bench shows, by its number, see Restore.h.
 		RE::BGSInventoryItem::CheckStackIDFunctor find{ selection.stack };
-		RE::BGSInventoryItem::SetHealthFunctor    set{ health };
-		set.transferEquippedToSplitStack = true;
-		player->FindAndWriteStackDataForInventoryItem(selection.object, find, set);
+		Restore::Write(*player, *selection.object, find, level);
 
 		// What crafting a mod from the same components pays, the game counting
 		// what they are worth as it counts a recipe. False is the path that
@@ -263,7 +270,7 @@ namespace Workbench
 		Drop(a_menu);
 
 		// Brings the bench up to date: the name in the list, the CND row on the
-		// card, and the slot list ungreyed once the weapon reaches the floor.
+		// card, and the slot list ungreyed once the item reaches the floor.
 		a_menu->UpdateItemList(static_cast<std::int32_t>(a_menu->GetSelectedIndex()));
 		RebuildModdedItem(a_menu);
 		a_menu->UpdateItemCard(false);
@@ -279,16 +286,20 @@ namespace Workbench
 				after.Name(), after.percent, after.count);
 		}
 
-		// The Pip-Boy keeps the card it built, so a weapon repaired here would
-		// go on printing the condition it arrived with. See ItemCards.h.
-		ItemCards::Refresh(RE::ENUM_FORM_ID::kWEAP);
+		// The Pip-Boy keeps the card it built, so an item repaired here would
+		// go on printing the condition it arrived with. Its own kind of card,
+		// so a chest piece rebuilds the apparel cards and a gun the weapon
+		// cards. See ItemCards.h.
+		ItemCards::Refresh(selection.object->GetFormType());
 
 		// Nothing else on the screen says a free repair was made, with no
-		// confirmation, no components leaving and no experience.
+		// confirmation, no components leaving and no experience. Then an item
+		// no mod fits says why it stays greyed.
 		if (InHand().parts.empty()) {
-			const auto said = Text::Mended();
+			const auto said = Text::Mended(selection.Armor());
 			RE::SendHUDMessage::ShowHUDMessage(said.c_str(), nullptr, true, true);
 		}
+		SayCannotModify(selection, level);
 	}
 
 	void Mend(RE::ExamineMenu* a_menu)
@@ -311,7 +322,7 @@ namespace Workbench
 			return;
 		}
 		a_menu->menuObj.SetMember("allowRepair"sv, Value(a_selection.Worn()));
-		ShowModsLabel(a_menu, !a_selection.TooWorn());
+		ShowModsLabel(a_menu, !a_selection.TooWorn() && !NoModFits(a_selection));
 	}
 
 	void Label(RE::ExamineMenu* a_menu, const Selection& a_selection)

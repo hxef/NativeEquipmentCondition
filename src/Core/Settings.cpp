@@ -99,12 +99,12 @@ namespace Settings
 		// Features and Log stand as the game started, Balance as this load.
 		REX::INFO("Settings: [Features] bJam={} bFireRate={} bCritMeter={} bSpawnCondition={} bVendorRepair={} "
 				  "bLoadingTips={} bHudCondition={} bQuickContainer={} bConfirmScroll={} "
-				  "[Balance] fWearRateMult={:g} fDamageFloor={:g} "
+				  "[Balance] fWearRateMult={:g} fArmorWearRateMult={:g} fDamageFloor={:g} fArmorFloor={:g} "
 				  "fValueExponent={:g} fFireRateFloor={:g} fCritMeterFloor={:g} fBenchCostMult={:g} fTraderPriceMult={:g} "
 				  "[Log] sLogLevel={:s} bTraceLogs={}",
 			bJam.GetValue(), bFireRate.GetValue(), bCritMeter.GetValue(), bSpawnCondition.GetValue(), bVendorRepair.GetValue(),
 			bLoadingTips.GetValue(), bHudCondition.GetValue(), bQuickContainer.GetValue(), bConfirmScroll.GetValue(),
-			fWearRateMult.GetValue(), fDamageFloor.GetValue(),
+			fWearRateMult.GetValue(), fArmorWearRateMult.GetValue(), fDamageFloor.GetValue(), fArmorFloor.GetValue(),
 			fValueExponent.GetValue(), fFireRateFloor.GetValue(), fCritMeterFloor.GetValue(), fBenchCostMult.GetValue(), fTraderPriceMult.GetValue(),
 			level, bTraceLogs.GetValue());
 	}

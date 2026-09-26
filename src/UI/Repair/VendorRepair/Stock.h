@@ -2,14 +2,15 @@
 
 #include "Core/Plugin.h"
 
+#include "Condition/Condition.h"
 #include "UI/Repair/SelectedItem.h"
 
 #include <cstddef>
 #include <cstdint>
 #include <string>
 
-// The weapon under the highlight, and whether this trader deals in weapons.
-// Private to this folder.
+// The item under the highlight, and whether this trader deals in weapons, in
+// armor, or in both. Private to this folder.
 //
 // The game nowhere says what kind of shop a shop is: 71 of the 81 vendor
 // factions in Fallout4.esm share one buy and sell list, and the
@@ -22,38 +23,46 @@
 // dealer or farm stand does. What is counted is the list as it stands, stock
 // plus everything the player ever sold them.
 //
-// How far a trader repairs a gun follows how many rows of guns they stock: the
+// Armor is counted the same way on rows of its own, with power armor pieces
+// counting as its filler the way ammunition does for weapons: 5 rows of armor
+// with 1 row in 6 a piece is the armorer, and 3 rows of armor and power armor
+// with half the shelves in them the small stand. Every wearable wears, a dress
+// and a scarf too, so a clothes shop is an armorer, and power armor pieces are
+// the one wearable a shop can sell that does not, see ArmorWear.h. A trader can
+// pass the tests of both kinds and repair both.
+//
+// How far a trader repairs a kind follows how many rows of it they stock: the
 // first 3 rows reach 30% and every 2 more add another 10%, so 10 rows reach 70%
 // and 16 reach full. In vanilla that puts Arturo, KL-E-O, Cricket and Corbett
-// at 90%, and only the 2 gunsmiths of Far Harbor reach full.
+// at 90% for weapons, and only the 2 gunsmiths of Far Harbor reach full.
 namespace VendorRepair
 {
-	// The 2 tests: MANY_GUNS rows of guns with one row in MANY_SHARE a gun,
-	// or SOME_GUNS rows of guns and ammunition with one row in SOME_SHARE one
-	// of those.
-	inline constexpr std::size_t MANY_GUNS = 5;
+	// The 2 tests: MANY_ROWS rows of the trade with one row in MANY_SHARE one
+	// of them, or SOME_ROWS rows of the trade and what goes with it, ammunition
+	// or power armor, with one row in SOME_SHARE one of those.
+	inline constexpr std::size_t MANY_ROWS = 5;
 	inline constexpr std::size_t MANY_SHARE = 6;
-	inline constexpr std::size_t SOME_GUNS = 3;
+	inline constexpr std::size_t SOME_ROWS = 3;
 	inline constexpr std::size_t SOME_SHARE = 2;
 
-	// The scale: the poorest weapon trader repairs a weapon to MIN_CEILING and
-	// one with FULL_GUNS repairs it to full, in a straight line between,
-	// rounded down to a level the question can offer.
+	// The scale: the poorest trader of a kind repairs it to MIN_CEILING and one
+	// with FULL_ROWS repairs it to full, in a straight line between, rounded
+	// down to a level the question can offer.
 	inline constexpr std::uint32_t MIN_CEILING = 30;
-	inline constexpr std::size_t   FULL_GUNS = 16;
+	inline constexpr std::size_t   FULL_ROWS = 16;
 
-	// How far a trader with a_guns rows of guns repairs a weapon.
-	[[nodiscard]] std::uint32_t Reach(std::size_t a_guns);
+	// How far a trader with a_rows rows of their trade repairs that kind.
+	[[nodiscard]] std::uint32_t Reach(std::size_t a_rows);
 
-	// The weapon highlighted on the player's side of the screen, with what it
-	// is worth.
+	// The item highlighted on the player's side of the screen, with what it is
+	// worth.
 	struct Selection : SelectedItem::Item
 	{
-		// What the weapon is worth as a sound price, without wear or the
-		// trader's markup, see ItemValue.h.
+		// What the item is worth as a sound price, without wear or the trader's
+		// markup, see ItemValue.h.
 		std::uint32_t worth{ 0 };
 
-		// True for a weapon below full condition that has a price.
+		// True for an item below full condition that has a price.
 		[[nodiscard]] bool Worn() const { return Item::Worn() && worth > 0; }
 	};
 
@@ -63,10 +72,10 @@ namespace VendorRepair
 
 	[[nodiscard]] Selection Selected(RE::BarterMenu* a_menu);
 
-	// How far this trader repairs a weapon, or 0 where weapons are not their
-	// trade. Read once per build of their stock, and not before the trader's
-	// side has been built.
-	[[nodiscard]] std::uint32_t Ceiling(RE::BarterMenu* a_menu);
+	// How far this trader repairs an item of a_kind, or 0 where that kind is
+	// not their trade. Read once per build of their stock, and not before the
+	// trader's side has been built.
+	[[nodiscard]] std::uint32_t Ceiling(RE::BarterMenu* a_menu, Condition::Kind a_kind);
 
 	// Forgets the highlight and the shelves, for a new screen.
 	void Forget();
@@ -74,9 +83,9 @@ namespace VendorRepair
 	// Forgets the shelves alone, for a stock built again.
 	void ForgetShelves();
 
-	// Whether the button belongs on the bar: a worn weapon on the player's side
-	// at a weapon trader. The limit and the player's caps do not matter here,
-	// so the button stays, greyed, and pressing it says why.
+	// Whether the button belongs on the bar: a worn item on the player's side
+	// at a trader of its kind. The limit and the player's caps do not matter
+	// here, so the button stays, greyed, and pressing it says why.
 	[[nodiscard]] bool Shown(const Selection& a_selection, std::uint32_t a_ceiling);
 
 	// The barter screen, or nothing if the player has walked away from it.

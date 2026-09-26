@@ -1,6 +1,7 @@
 #include "Condition/WeaponWear/WeaponWear.h"
 
 #include "Condition/Condition.h"
+#include "Condition/Equipped.h"
 #include "Condition/WeaponWear/Rate.h"
 #include "Core/TraceLog.h"
 
@@ -73,32 +74,10 @@ namespace WeaponWear
 			return const_cast<RE::TESObjectWEAP::Data*>(&weapon.weaponData);
 		}
 
-		// Picks the equipped stack out of the ones the engine walks. A stack
-		// with no extra data list is skipped: the engine's split locks the list
-		// it copies from without checking there is one, and would crash.
-		class EquippedStack final :
-			public RE::BGSInventoryItem::StackDataCompareFunctor
-		{
-		public:
-			bool CompareData(const RE::BGSInventoryItem::Stack& a_stack) override
-			{
-				if (!a_stack.IsEquipped() || !a_stack.extra) {
-					return false;
-				}
-				count = a_stack.count;
-				return true;
-			}
-
-			// How many items the stack held when picked, before the engine
-			// splits it.
-			std::uint32_t count{ 0 };
-		};
-
 		// Wears down the one stack the engine hands it, and remembers whether
 		// the health changed. The engine has already split the stack if it held
-		// more than one item, see Wear in WeaponWear.h, and
-		// transferEquippedToSplitStack moves the equipped flags onto the copy,
-		// so the weapon in hand and the weapon that wears stay the same one.
+		// more than one item, see Equipped::WriteEquipped, so the weapon in
+		// hand and the weapon that wears stay the same one.
 		class WearStack final :
 			public RE::BGSInventoryItem::StackDataWriteFunctor
 		{
@@ -106,9 +85,7 @@ namespace WeaponWear
 			WearStack(const char* a_source, float a_scale) noexcept :
 				source(a_source),
 				scale(a_scale)
-			{
-				transferEquippedToSplitStack = true;
-			}
+			{}
 
 			void WriteDataImpl(RE::TESBoundObject& a_object, RE::BGSInventoryItem::Stack& a_stack) override
 			{
@@ -160,10 +137,6 @@ namespace WeaponWear
 			bool        broke{ false };
 		};
 
-		// Any stack of this weapon: the all ones value the engine passes when
-		// it has no particular stack in mind.
-		constexpr std::uint32_t ANY_STACK = static_cast<std::uint32_t>(-1);
-
 		// Takes a weapon just worn to 0 out of the owner's hands. The game
 		// refuses to equip a broken weapon, see MIN_HEALTH in Condition.h, but
 		// has no rule for one that breaks while held, so the shot that breaks a
@@ -193,11 +166,11 @@ namespace WeaponWear
 				}
 
 				// Null instance data lets the engine work out which copy is in
-				// hand, as it does when it equips one. ANY_STACK does the same
-				// for the stack, and the rest is what the game passes for an
-				// unequip from the Pip-Boy.
+				// hand, as it does when it equips one. Equipped::ANY_STACK does
+				// the same for the stack, and the rest is what the game passes
+				// for an unequip from the Pip-Boy.
 				const RE::BGSObjectInstance instance{ weapon, nullptr };
-				equipment->UnequipObject(holder, &instance, 1, nullptr, ANY_STACK,
+				equipment->UnequipObject(holder, &instance, 1, nullptr, Equipped::ANY_STACK,
 					false, false, true, false, nullptr);
 
 				// Only the player is told, since only the player sees the
@@ -214,19 +187,13 @@ namespace WeaponWear
 
 	bool Wear(RE::TESObjectREFR& a_owner, RE::TESObjectWEAP& a_weapon, const char* a_source, float a_scale)
 	{
-		// The engine finds the entry for this weapon form, asks EquippedStack
-		// which stack, splits it when it holds more than one item and hands the
-		// result to WearStack, all under the inventory read lock. Afterwards it
-		// merges stacks that became identical and tells the game the inventory
-		// changed.
-		EquippedStack equipped;
-		WearStack     wear{ a_source, a_scale };
-		a_owner.FindAndWriteStackDataForInventoryItem(&a_weapon, equipped, wear);
+		WearStack  wear{ a_source, a_scale };
+		const auto count = Equipped::WriteEquipped(a_owner, a_weapon, wear);
 
 		// A split that leaves the health unchanged merges straight back, so
 		// only a change is worth reporting.
-		if (wear.moved && equipped.count > 1) {
-			TraceLog::Line("wear", "worn copy split off a stack of {:d}", equipped.count);
+		if (wear.moved && count > 1) {
+			TraceLog::Line("wear", "worn copy split off a stack of {:d}", count);
 		}
 
 		// The inventory lock is released by here, which is what makes this

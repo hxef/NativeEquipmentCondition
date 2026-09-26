@@ -84,6 +84,36 @@ namespace SpawnCondition
 			return a_list && a_list->owner == RE::ObjectRefHandle{ RE::PlayerCharacter::GetPlayerHandle() };
 		}
 
+		// The record that makes the owner of a_list essential, a companion's
+		// for example, or nothing. Read from the record, since the game marks
+		// the character only once they are up and about, long after their gear
+		// arrives. A leveled character is judged by the record placed in the
+		// world, as the game reads it.
+		[[nodiscard]] const RE::TESActorBase* Essential(const RE::BGSInventoryList* a_list)
+		{
+			if (!a_list) {
+				return nullptr;
+			}
+			const auto owner = a_list->owner.get();
+			if (!owner) {
+				return nullptr;
+			}
+
+			const RE::TESActorBase* base = nullptr;
+			if (owner->extraList) {
+				if (const auto* leveled = owner->extraList->GetByType<RE::ExtraLeveledCreature>()) {
+					base = leveled->originalBase;
+				}
+			}
+			if (!base) {
+				const auto* object = owner->GetObjectReference();
+				if (object && object->Is(RE::ENUM_FORM_ID::kNPC_)) {
+					base = static_cast<const RE::TESNPC*>(object);
+				}
+			}
+			return base && base->IsEssential() ? base : nullptr;
+		}
+
 		// A stack for the trace log: a line of its own where it is the
 		// player's, and otherwise a count by what became of it, with the line
 		// under the quiet loot tag for whoever needs it back, see TraceLog.h.
@@ -101,27 +131,27 @@ namespace SpawnCondition
 		// Gives one stack a condition, if it is the kind of thing that has one
 		// and has none yet. Returns the middle it rolled around, so the copies
 		// SplitOff takes out roll around it too, or nothing when the stack was
-		// left alone. Every weapon is logged to the trace log either way.
+		// left alone. Every item is logged to the trace log either way.
 		std::optional<float> Roll(RE::BGSInventoryList* a_list, RE::TESBoundObject* a_object, RE::BGSInventoryItem::Stack* a_stack)
 		{
 			if (!a_object || !a_stack) {
 				return std::nullopt;
 			}
 
-			// Anything that is not a weapon returns without logging. Every tin
-			// can and bottle cap comes through here.
-			if (!a_object->IsWeapon()) {
+			// Anything that is not a weapon or armor returns without logging.
+			// Every tin can and bottle cap comes through here.
+			if (!a_object->IsWeapon() && !a_object->Is(RE::ENUM_FORM_ID::kARMO)) {
 				return std::nullopt;
 			}
 
-			const auto name = NameOf(*a_object, "unnamed weapon");
+			const auto name = NameOf(*a_object, "unnamed item");
 			const auto id = a_object->formID;
 			const auto count = a_stack->count;
 			const auto players = Players(a_list);
 
-			// Weapons arrive in bursts, a whole area at once, so they share one
+			// Items arrive in bursts, a whole area at once, so they share one
 			// block in the trace log.
-			TraceLog::Group("SPAWN", "weapons entering inventories");
+			TraceLog::Group("SPAWN", "weapons and armor entering inventories");
 
 			if (const auto* why = Condition::WhyNoCondition(*a_object)) {
 				Report(players, why, "{:<30s} [{:08X}] x{:<3d} left alone, {:s}", name, id, count, why);
@@ -148,7 +178,7 @@ namespace SpawnCondition
 				return std::nullopt;
 			}
 
-			// -1 is a stack with no health extra data, which every weapon in an
+			// -1 is a stack with no health extra data, which every item in an
 			// unmodified game is until something writes to it. Once written it
 			// is the item's own history, so a gun that changes hands keeps its
 			// condition. At or above 0, not above: 0 is broken, and treating it
@@ -181,9 +211,9 @@ namespace SpawnCondition
 				return std::nullopt;
 			}
 
-			// Several weapons in one stack are rolled only where SplitOff can
+			// Several items in one stack are rolled only where SplitOff can
 			// give each its own condition afterwards. A stack copied out of an
-			// inventory that keeps it is left for the day the weapons really
+			// inventory that keeps it is left for the day the items really
 			// change hands.
 			if (count > 1 && !Private(*a_stack)) {
 				Report(players, "copied from an inventory that keeps it",
@@ -192,9 +222,19 @@ namespace SpawnCondition
 				return std::nullopt;
 			}
 
-			// Where this weapon came from and who is about to hold it. A list
+			// An essential character's weapons and armor arrive new, and the
+			// armor they are given never wears, see ArmorEvents.h.
+			if (const auto* essential = Essential(a_list)) {
+				a_stack->extra->SetHealthPerc(Condition::MAX_HEALTH);
+				Report(players, "for an essential character", "{:<30s} [{:08X}] x{:<3d} starts at {:.4f}, for {:s} [{:08X}], who is essential",
+					name, id, count, Condition::MAX_HEALTH, NameOf(*essential, "unnamed character"), essential->formID);
+				return std::nullopt;
+			}
+
+			// Where this item came from and who is about to hold it. A list
 			// with no owner leaves both halves unmeasured.
-			const auto origin = a_list ? Provenance::Of(*a_list, *a_stack) : Provenance::Origin{};
+			const auto origin = a_list ? Provenance::Of(*a_list, *a_stack, Condition::KindOf(*a_object)) :
+			                             Provenance::Origin{};
 			const auto centre = origin.Centre();
 
 			const auto rolled = RollHealth(centre);
@@ -212,7 +252,7 @@ namespace SpawnCondition
 
 		// Picks out the stack that just went in, by the extra data list it
 		// shares with the one handed to AddStack, while it still holds more
-		// than one weapon.
+		// than one item.
 		class Arrived final :
 			public RE::BGSInventoryItem::StackDataCompareFunctor
 		{
@@ -243,7 +283,7 @@ namespace SpawnCondition
 			void WriteDataImpl(RE::TESBoundObject&, RE::BGSInventoryItem::Stack& a_stack) override
 			{
 				// The copy starts with every flag the stack had, including the
-				// ones marking the weapon in hand, and 2 stacks marked that way
+				// ones marking the item in use, and 2 stacks marked that way
 				// would confuse the game about which one is in use. The marks
 				// stay with the stack that went in.
 				a_stack.flags.reset(RE::BGSInventoryItem::Stack::Flag::kSlotMask,
@@ -259,10 +299,10 @@ namespace SpawnCondition
 			Rolled rolled{};
 		};
 
-		// Gives every weapon in a stack that arrived several at once a
+		// Gives every item in a stack that arrived several at once a
 		// condition of its own. Roll gave the whole stack one condition between
 		// them. 2 kinds still arrive like that: TESObjectREFR::AddInventoryItem
-		// hands over a weapon without an object template all at once, and a
+		// hands over an item without an object template all at once, and a
 		// save made before this mod holds stacks the game merged. This splits
 		// the stack the way a workbench repair takes 1 gun out of 6, and rolls
 		// each copy. Runs straight after AddStack under the caller's write
@@ -270,7 +310,7 @@ namespace SpawnCondition
 		void SplitOff(RE::BGSInventoryList& a_list, RE::TESBoundObject& a_object, const RE::BGSInventoryItem::Stack& a_stack,
 			float a_centre)
 		{
-			const auto name = NameOf(a_object, "unnamed weapon");
+			const auto name = NameOf(a_object, "unnamed item");
 			const auto id = a_object.formID;
 			const auto count = a_stack.count;
 
@@ -331,7 +371,7 @@ namespace SpawnCondition
 	{
 		const auto patched = CallPatch::PatchAll(ADD_STACK_SITES, RE::ID::BGSInventoryList::AddStack,
 			CallPatch::Repeat<std::size(ADD_STACK_SITES)>(reinterpret_cast<std::uintptr_t>(&AddStackHk)),
-			"Weapons spawn at a condition that suits where they came from");
+			"Weapons and armor spawn at a condition that suits where they came from");
 
 		if (patched == std::size(ADD_STACK_SITES)) {
 			// The limits a weapon can actually arrive at, not the clamp, which
@@ -340,11 +380,11 @@ namespace SpawnCondition
 			const auto lowest = std::max(floor, Provenance::LowestCentre() - SPREAD);
 			const auto highest = std::min(ceiling, Provenance::HighestCentre() + SPREAD);
 
-			REX::INFO("Weapons spawn between {:.0f} and {:.0f} percent condition, worked out from the leveled list they came out of and who is carrying them. One in {:.0f} ignores that and lands anywhere between {:.0f} and {:.0f}.",
+			REX::INFO("Weapons and armor spawn between {:.0f} and {:.0f} percent condition, worked out from the leveled list they came out of and who is carrying them. One in {:.0f} ignores that and lands anywhere between {:.0f} and {:.0f}.",
 				lowest * 100.0F, highest * 100.0F, 1.0F / UPSET_CHANCE,
 				std::max(Condition::MIN_HEALTH, WORST_SPAWN) * 100.0F, Condition::MAX_HEALTH * 100.0F);
 		} else if (patched != 0) {
-			REX::WARN("Some ways of spawning a weapon will still hand it out at full condition.");
+			REX::WARN("Some ways of spawning a weapon or a piece of armor will still hand it out at full condition.");
 		}
 
 		InstallGuards();

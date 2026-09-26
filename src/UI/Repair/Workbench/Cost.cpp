@@ -18,7 +18,7 @@ namespace Workbench
 		// at a time, so a multiple in the millions runs the game out of memory.
 		constexpr float MAX_COST_MULT = 10.0F;
 
-		// The whole number of units a weapon at a condition still owes, rounded
+		// The whole number of units an item at a condition still owes, rounded
 		// once on the whole bill.
 		[[nodiscard]] std::uint32_t Owed(const Priced& a_priced, std::uint32_t a_percent)
 		{
@@ -42,7 +42,7 @@ namespace Workbench
 		}
 
 		// Its own scrap recipe plus the recipe behind every mod, so the bill
-		// reads as a smaller copy of the gun.
+		// reads as a smaller copy of the item.
 		const auto bill = Materials::BillOfLines(*a_selection.object, a_selection.extra);
 		out.built = Materials::BillOfParts(bill);
 		out.standing = CraftingPerks::Of(*a_selection.object, a_selection.extra, bill);
@@ -88,13 +88,11 @@ namespace Workbench
 		return Repair::Above(a_selection.percent);
 	}
 
-	std::vector<std::uint32_t> Offered(const Selection& a_selection)
+	std::vector<std::uint32_t> Offered(const Selection& a_selection, const Priced& a_priced)
 	{
-		const auto priced = PriceOf(a_selection);
-
 		std::vector<Repair::Step<std::vector<Materials::Part>>> steps;
 		for (const auto level : Above(a_selection)) {
-			steps.push_back({ level, CostOf(priced, a_selection.percent, level) });
+			steps.push_back({ level, CostOf(a_priced, a_selection.percent, level) });
 		}
 
 		std::vector<std::uint32_t> out;

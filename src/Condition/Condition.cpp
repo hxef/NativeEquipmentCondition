@@ -1,5 +1,6 @@
 #include "Condition/Condition.h"
 
+#include "Condition/ArmorWear/ArmorWear.h"
 #include "Condition/WeaponWear/WeaponWear.h"
 #include "Core/TraceLog.h"
 
@@ -12,18 +13,25 @@ namespace Condition
 {
 	const char* WhyNoCondition(const RE::TESBoundObject& a_object)
 	{
-		// One case per kind of item that wears. IsWeapon reads the form type
-		// byte, so it costs nothing and never comes back empty like a runtime
-		// cast can.
+		// One case per kind of item that wears. The form type byte costs
+		// nothing to read and never comes back empty like a runtime cast can.
 		if (a_object.IsWeapon()) {
 			return WeaponWear::WhyNoCondition(static_cast<const RE::TESObjectWEAP&>(a_object));
 		}
-		return "not a weapon";
+		if (a_object.Is(RE::ENUM_FORM_ID::kARMO)) {
+			return ArmorWear::WhyNoCondition(static_cast<const RE::TESObjectARMO&>(a_object));
+		}
+		return "not a weapon or armor";
 	}
 
 	bool WearsOut(const RE::TESBoundObject& a_object)
 	{
 		return WhyNoCondition(a_object) == nullptr;
+	}
+
+	Kind KindOf(const RE::TESBoundObject& a_object)
+	{
+		return a_object.Is(RE::ENUM_FORM_ID::kARMO) ? Kind::kArmor : Kind::kWeapon;
 	}
 
 	std::optional<double> Percent(const RE::BGSInventoryItem& a_item, const RE::BGSInventoryItem::Stack* a_stack)
@@ -34,7 +42,7 @@ namespace Condition
 
 		// Below 0, not at it. -1 is a stack with no health extra data, which
 		// counts as new. 0 is broken and shows as 0%.
-		auto health = a_stack && a_stack->extra ? a_stack->extra->GetHealthPerc() : INVALID_HEALTH;
+		auto health = HealthOf(a_stack);
 		if (health < 0.0F) {
 			health = 1.0F;
 		}
@@ -63,6 +71,11 @@ namespace Condition
 		return a_percent >= 100 ? MAX_HEALTH : static_cast<float>(a_percent) / 100.0F;
 	}
 
+	float HealthOf(const RE::BGSInventoryItem::Stack* a_stack)
+	{
+		return a_stack && a_stack->extra ? a_stack->extra->GetHealthPerc() : INVALID_HEALTH;
+	}
+
 	namespace
 	{
 		// Writes the health, clamped, and returns what was written.
@@ -78,10 +91,11 @@ namespace Condition
 		}
 	}
 
-	bool Decrease(RE::ExtraDataList& a_extra, const RE::TESBoundObject& a_object, float a_amount, const char* a_source, float a_scale)
+	bool Decrease(RE::ExtraDataList& a_extra, const RE::TESBoundObject& a_object, float a_amount, const char* a_source, float a_scale,
+		bool a_theirs)
 	{
-		// -1 is a weapon this has never touched. Subtracting from that would
-		// clamp the first hit to 0 and the weapon would arrive broken.
+		// -1 is an item this has never touched. Subtracting from that would
+		// clamp the first hit to 0 and the item would arrive broken.
 		auto curHealth = a_extra.GetHealthPerc();
 		if (curHealth < 0.0F) {
 			curHealth = MAX_HEALTH;
@@ -90,12 +104,12 @@ namespace Condition
 		// The scale is logged whenever there is one, so the log shows what a
 		// bash, a power attack or a charged shot cost.
 		const auto newHealth = SetHealth(a_extra, curHealth - a_amount);
-		TraceLog::Line("wear", "{:s} [{:08X}] {:.6f} -> {:.6f} (-{:.6f}) from {:s}{:s}",
-			RE::TESFullName::GetFullName(a_object), a_object.formID, curHealth, newHealth, a_amount, a_source,
-			a_scale != 1.0F ? std::format(" at x{:.2f}", a_scale) : std::string{});
+		const auto scale = a_scale != 1.0F ? std::format(" at x{:.2f}", a_scale) : std::string{};
+		TraceLog::For(a_theirs).Line("wear", "{:s} [{:08X}] {:.6f} -> {:.6f} (-{:.6f}) from {:s}{:s}",
+			RE::TESFullName::GetFullName(a_object), a_object.formID, curHealth, newHealth, a_amount, a_source, scale);
 
 		// Only a change of health is worth rebuilding the Pip-Boy cards for, so
-		// a weapon already at 0 does not ask for it on every shot.
+		// an item already at 0 does not ask for it on every shot or hit.
 		return newHealth != curHealth;
 	}
 }

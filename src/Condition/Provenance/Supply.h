@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Condition/Condition.h"
 #include "Core/Plugin.h"
 
 #include <cstddef>
@@ -13,24 +14,26 @@ namespace Provenance
 	// deep, so this guards against broken data and no real list reaches it.
 	inline constexpr std::size_t DEEPEST = 64;
 
-	// The result of measuring the leveled lists: how many were ranked, and how
-	// many could not be worked out.
+	// The result of measuring the leveled lists: how many were ranked for
+	// weapons, how many for armor, and how many could not be worked out.
 	struct SupplyCount
 	{
 		std::size_t ranked;
+		std::size_t armorRanked;
 		std::size_t spoiled;
 	};
 
-	// Walks every leveled list, ranks the ones that give out weapons, and keeps
+	// Walks every leveled list, ranks the ones that give out weapons against
+	// each other and the ones that give out armor against each other, and keeps
 	// what one pick from each is worth in armor for the care half.
 	SupplyCount MeasureSupply();
 
 	// Forgets everything MeasureSupply kept.
 	void ForgetSupply();
 
-	// Where a leveled list ranks against every other list that gives out a
-	// weapon, or nothing for a list that was not ranked.
-	std::optional<float> SupplyOf(RE::TESFormID a_list);
+	// Where a leveled list ranks against every other list that gives out an
+	// item of a_kind, or nothing for a list that was not ranked for it.
+	std::optional<float> SupplyOf(RE::TESFormID a_list, Condition::Kind a_kind);
 
 	// What one thing someone is given is worth in armor. A piece of armor is
 	// worth what its record says. A leveled list is worth what one pick from it

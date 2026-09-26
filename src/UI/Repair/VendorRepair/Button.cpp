@@ -1,12 +1,13 @@
 #include "UI/Repair/VendorRepair/Button.h"
 
-#include "Condition/Condition.h"
-#include "Core/Text.h"
+#include "Core/Text/Text.h"
 #include "Core/TraceLog.h"
 #include "UI/Repair/RepairPrompt.h"
+#include "UI/Repair/Restore.h"
 #include "UI/Repair/VendorRepair/Quote.h"
 #include "UI/Repair/VendorRepair/Stock.h"
 
+#include <algorithm>
 #include <array>
 #include <cstddef>
 #include <cstdint>
@@ -50,9 +51,9 @@ namespace VendorRepair
 		// built the same way, so if one refuses, they all will.
 		bool g_refused = false;
 
-		// Set once a repair has been paid for, until the hook that closes the
-		// screen asks.
-		bool g_cardsOwed = false;
+		// The kinds repaired since the hook that closes the screen last asked,
+		// as form types, each once.
+		std::vector<RE::ENUM_FORM_ID> g_cardsOwed;
 
 		// The native function the button calls when clicked. It lives as long
 		// as the plugin, the same way as the item card listener.
@@ -185,10 +186,10 @@ namespace VendorRepair
 			Hold(OpenBarter(), false);
 		}
 
-		// Pays the caps and repairs the weapon. Everything is checked again
+		// Pays the caps and repairs the item. Everything is checked again
 		// rather than remembered, since the answer comes back through F4SE's
-		// task queue a moment after, and the weapon has to be the one the
-		// player was looking at.
+		// task queue a moment after, and the item has to be the one the player
+		// was looking at.
 		void Pay(Quote a_quote, std::uint32_t a_handle, std::uint32_t a_stack)
 		{
 			auto*      menu = OpenBarter();
@@ -199,8 +200,8 @@ namespace VendorRepair
 
 			if (!menu || !player || !purse || !caps || !selection.Worn() ||
 				selection.handle != a_handle || selection.stack != a_stack ||
-				a_quote.level <= selection.percent || a_quote.level > Ceiling(menu)) {
-				TraceLog::Line("menu", "{:s} dropped the repair, the trade or the weapon is gone",
+				a_quote.level <= selection.percent || a_quote.level > Ceiling(menu, selection.kind)) {
+				TraceLog::Line("menu", "{:s} dropped the repair, the trade or the item is gone",
 					Trader(menu));
 				Release();
 				return;
@@ -226,30 +227,28 @@ namespace VendorRepair
 				player->RemoveItem(paid);
 			}
 
-			const auto health = Condition::FromPercent(a_quote.level);
-
-			// The engine's own way of writing to one stack. 6 identical pistols
-			// are one stack, and this repairs one.
+			// The stack under the highlight, by its number, see Restore.h.
 			RE::BGSInventoryItem::CheckStackIDFunctor find{ selection.stack };
-			RE::BGSInventoryItem::SetHealthFunctor    set{ health };
-			set.transferEquippedToSplitStack = true;
-			player->FindAndWriteStackDataForInventoryItem(selection.object, find, set);
+			Restore::Write(*player, *selection.object, find, a_quote.level);
 
 			TraceLog::Line("menu", "{:s} repaired {:s} from {:d}% to {:d}%, one of a stack of {:d}, for {:d} of the {:d} caps the player had",
 				Trader(menu), selection.Name(), selection.percent, a_quote.level, selection.count, a_quote.price, pocketHeld);
 
 			// Brings the screen up to date. A rebuild only redraws the rows on
 			// the screen's own list of what changed, and the caps are on it
-			// from paying while a weapon whose count stays the same is not, so
-			// the weapon is added here. The rebuild ends by redrawing the lists
+			// from paying while an item whose count stays the same is not, so
+			// the item is added here. The rebuild ends by redrawing the lists
 			// and the caps along the bottom.
 			Release();
 			menu->partialPlayerUpdateList.push_back(selection.object);
 			menu->UpdateList(false);
 
 			// The Pip-Boy's cards wait for the barter screen to close, see
-			// Button.h and ItemCards.h.
-			g_cardsOwed = true;
+			// Button.h and ItemCards.h. The item's own kind of card.
+			const auto kind = selection.object->GetFormType();
+			if (std::ranges::find(g_cardsOwed, kind) == g_cardsOwed.end()) {
+				g_cardsOwed.push_back(kind);
+			}
 
 			RE::UIUtils::PlayMenuSound(PAID_SOUND);
 
@@ -269,10 +268,10 @@ namespace VendorRepair
 			return;
 		}
 
-		// Greyed wherever there is nothing to buy: a gun past what this trader
-		// repairs, or a smallest step the player cannot pay for.
+		// Greyed wherever there is nothing to buy: an item past what this
+		// trader repairs, or a smallest step the player cannot pay for.
 		const auto selection = Selected(a_menu);
-		const auto ceiling = Ceiling(a_menu);
+		const auto ceiling = Ceiling(a_menu, selection.kind);
 		const auto shown = !g_asking && Shown(selection, ceiling);
 		hint.SetMember("ButtonVisible"sv, Value(shown));
 		hint.SetMember("ButtonDisabled"sv,
@@ -283,7 +282,7 @@ namespace VendorRepair
 	{
 		auto*      menu = OpenBarter();
 		const auto selection = Selected(menu);
-		const auto ceiling = menu ? Ceiling(menu) : 0U;
+		const auto ceiling = menu ? Ceiling(menu, selection.kind) : 0U;
 		if (g_asking || !menu || !Shown(selection, ceiling)) {
 			return;
 		}
@@ -340,8 +339,8 @@ namespace VendorRepair
 		return g_asking;
 	}
 
-	bool TakeCardsOwed()
+	std::vector<RE::ENUM_FORM_ID> TakeCardsOwed()
 	{
-		return std::exchange(g_cardsOwed, false);
+		return std::exchange(g_cardsOwed, {});
 	}
 }

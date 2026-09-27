@@ -21,7 +21,7 @@ namespace SpawnCondition
 		return { floor, std::max(floor, std::min(SPAWN_CEILING, Condition::MAX_HEALTH)) };
 	}
 
-	Rolled RollHealth(float a_centre)
+	Rolled RollHealth(const Aim& a_aim)
 	{
 		// Several threads build inventories at once, so each has its own
 		// generator, seeded from the system's random source so reloading a save
@@ -30,14 +30,28 @@ namespace SpawnCondition
 
 		// Exactly 1.0 is excluded, since SetHealthPerc treats it as deleting
 		// the health and the item would be rolled again the next time it
-		// changed hands. Exactly 0.0 is excluded too, see WORST_SPAWN.
-		const auto lowest = std::max(Condition::MIN_HEALTH, WORST_SPAWN);
+		// changed hands. Exactly 0.0 is excluded too, see WORST_SPAWN. A
+		// trader's own stock comes no worse than the worst the trader stocks,
+		// see StockBand.
+		auto       lowest = std::max(Condition::MIN_HEALTH, WORST_SPAWN);
 		const auto highest = Condition::MAX_HEALTH;
+		if (a_aim.stock) {
+			lowest = std::clamp(a_aim.stock->worst, lowest, highest);
+		}
 
 		std::bernoulli_distribution rare{ UPSET_CHANCE };
 		if (rare(engine)) {
 			std::uniform_real_distribution<float> whole{ lowest, highest };
 			return { std::clamp(whole(engine), lowest, highest), true };
+		}
+
+		// A trader's own stock rolls in the trader's band, see
+		// VendorRepair/Upkeep.h.
+		if (a_aim.stock) {
+			const auto low = std::clamp(a_aim.stock->low, lowest, highest);
+			const auto high = std::clamp(a_aim.stock->high, low, highest);
+			std::uniform_real_distribution<float> band{ low, high };
+			return { std::clamp(band(engine), low, high), false };
 		}
 
 		const auto [floor, ceiling] = OrdinaryEnds();
@@ -46,8 +60,8 @@ namespace SpawnCondition
 		// since clipping would put every roll outside onto the limit, and a
 		// weapon exactly at the top looks like one this mod never touched. A
 		// Courser's band would put half its rolls there.
-		auto low = a_centre - SPREAD;
-		auto high = a_centre + SPREAD;
+		auto low = a_aim.centre - SPREAD;
+		auto high = a_aim.centre + SPREAD;
 		if (high > ceiling) {
 			low -= high - ceiling;
 			high = ceiling;

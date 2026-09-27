@@ -41,7 +41,8 @@ src/
     Text/
       Text.h/.cpp            the plugin's own sentences, in every language
       Lines.h                what the folder's files share
-      Repair.cpp             the repair menus' sentences
+      Repair.cpp             the repair question and the bench's sentences
+      Trader.cpp             what a trader says about a repair
       Tips.cpp               the loading screen's tips
     TraceLog.h/.cpp          the trace logs, for lines that arrive in floods
 
@@ -89,8 +90,8 @@ src/
       Card.cpp               the item card's damage
     SpawnCondition/
       SpawnCondition.h/.cpp  the roll at the door of every inventory
-      Band.h/.cpp            how far either side of its middle an item rolls
-      Guards.h/.cpp          what marks a console command, a save and a script's gift
+      Band.h/.cpp            the roll, either side of an item's middle or in a trader's band
+      Guards.h/.cpp          what marks a console command, a save, a script's gift and a restock
     WeaponEvents/
       WeaponEvents.h/.cpp    the fire and reload calls, and the shot sink
       Hits.h/.cpp            the hit sink, and what a blow was
@@ -126,7 +127,7 @@ src/
       ConfirmScroll.h/.cpp   the box the bench puts up, scrolled
       ConsoleRepair.h/.cpp   setting the weapon in hand or the armor worn from the console
       Workbench/             repairing at the weapon and armor benches
-      VendorRepair/          paying a trader to repair
+      VendorRepair/          paying a trader to repair weapons, armor or clothing, and their stock
 ```
 
 A feature that has grown past one pair of files has a folder named after its

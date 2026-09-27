@@ -28,6 +28,9 @@ namespace VendorRepair
 	// halves or doubles every price.
 	[[nodiscard]] float Scaled(float a_multiple);
 
+	// What a trader is paid in, which no barter list shows as a row.
+	[[nodiscard]] RE::TESBoundObject* Caps();
+
 	// One condition the item can be brought back to, and the caps wanted.
 	using Quote = Repair::Step<std::uint32_t>;
 

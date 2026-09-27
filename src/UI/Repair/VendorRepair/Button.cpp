@@ -3,11 +3,10 @@
 #include "Core/Text/Text.h"
 #include "Core/TraceLog.h"
 #include "UI/Repair/RepairPrompt.h"
-#include "UI/Repair/Restore.h"
+#include "UI/Repair/VendorRepair/Payment.h"
 #include "UI/Repair/VendorRepair/Quote.h"
 #include "UI/Repair/VendorRepair/Stock.h"
 
-#include <algorithm>
 #include <array>
 #include <cstddef>
 #include <cstdint>
@@ -35,25 +34,16 @@ namespace VendorRepair
 		// back says whether the screen has a button yet.
 		constexpr std::string_view HINT_MEMBER = "NECRepairButton"sv;
 
-		// The sound the game plays when caps change hands in a trade, and the
-		// one its menus make for a refusal.
-		constexpr const char* PAID_SOUND = "ITMBarter";
+		// The sound the game's menus make for a refusal.
 		constexpr const char* REFUSED_SOUND = "UIMenuCancel";
 
-		// Caps, where the game's list of default objects fails to name them. A
-		// load order that replaces the currency says so in that list.
-		constexpr RE::TESFormID CAPS_FORM = 0x0000000F;
-
-		// Set while the question is on the screen.
+		// Set while the question is on the screen, so a second press cannot
+		// put a second copy of it behind the first.
 		bool g_asking = false;
 
 		// Set when a screen refuses the plugin's button. Every barter screen is
 		// built the same way, so if one refuses, they all will.
 		bool g_refused = false;
-
-		// The kinds repaired since the hook that closes the screen last asked,
-		// as form types, each once.
-		std::vector<RE::ENUM_FORM_ID> g_cardsOwed;
 
 		// The native function the button calls when clicked. It lives as long
 		// as the plugin, the same way as the item card listener.
@@ -73,32 +63,86 @@ namespace VendorRepair
 
 		Pressed g_pressed;
 
-		// Where the caps go: the trader's chest, or the trader where there is
-		// none, as the game's own trades pay.
-		[[nodiscard]] RE::TESObjectREFR* Purse(RE::BarterMenu* a_menu)
+		// The button this screen was given, not an object where it has none yet
+		// or refused one.
+		[[nodiscard]] Value Hint(RE::BarterMenu* a_menu)
 		{
-			if (!a_menu) {
-				return nullptr;
+			Value hint;
+			if (a_menu && a_menu->menuObj.IsObject()) {
+				a_menu->menuObj.GetMember(HINT_MEMBER, &hint);
 			}
-			const auto chest = a_menu->vendorChestRef.get();
-			if (chest) {
-				return chest.get();
-			}
-			const auto trader = a_menu->vendorActor.get();
-			return trader.get();
+			return hint;
 		}
 
-		[[nodiscard]] RE::TESBoundObject* Caps()
+		// Where REPAIR stands for the item under the highlight, the one answer
+		// the bar, the trace log and a press all use. Checked in this order, so
+		// an item past what the trader repairs says so even while a trade is
+		// pending.
+		enum class Stand
 		{
-			const auto* defaults = RE::BGSDefaultObjectManager::GetSingleton();
-			auto*       named = defaults ? defaults->GetDefaultObject<RE::TESBoundObject>(
-			                                   RE::DEFAULT_OBJECT::kGold) :
-			                               nullptr;
-			if (named) {
-				return named;
+			kOff,
+			kPastCeiling,
+			kTradePending,
+			kUnaffordable,
+			kLive,
+		};
+
+		[[nodiscard]] Stand StandOf(RE::BarterMenu* a_menu, const Selection& a_selection, std::uint32_t a_ceiling)
+		{
+			if (g_asking || !a_menu || !Shown(a_selection, a_ceiling)) {
+				return Stand::kOff;
 			}
-			auto* form = RE::TESForm::GetFormByID(CAPS_FORM);
-			return form ? form->As<RE::TESBoundObject>() : nullptr;
+			if (a_selection.percent >= a_ceiling) {
+				return Stand::kPastCeiling;
+			}
+			if (TradePending(a_menu)) {
+				return Stand::kTradePending;
+			}
+			return Afforded(Quotes(a_selection, a_ceiling)).empty() ? Stand::kUnaffordable : Stand::kLive;
+		}
+
+		// A refused press, explained in the corner with the menus' refusal
+		// sound.
+		void Refuse(const std::string& a_said)
+		{
+			RE::SendHUDMessage::ShowHUDMessage(a_said.c_str(), nullptr, true, true);
+			RE::UIUtils::PlayMenuSound(REFUSED_SOUND);
+		}
+
+		// Tells the trace log what the button does for a worn item under the
+		// highlight, once for each thing said, see TraceLog::First, so a row
+		// passed over again and again is not written again.
+		void Tell(RE::BarterMenu* a_menu, const Selection& a_selection, std::uint32_t a_ceiling, Stand a_stand)
+		{
+			if (!a_selection.Worn() || g_asking || !TraceLog::IsOpen()) {
+				return;
+			}
+
+			const auto trader = Trader(a_menu);
+			const auto name = a_selection.Name();
+			const auto trade = Named(a_selection.trade);
+			switch (a_stand) {
+			case Stand::kOff:
+				TraceLog::First("menu", "{:s} repairs no {:s}, so REPAIR stays off {:s} at {:d}%",
+					trader, trade, name, a_selection.percent);
+				break;
+			case Stand::kPastCeiling:
+				TraceLog::First("menu", "{:s} greys REPAIR on {:s} at {:d}%, since they take {:s} no further than {:d}%",
+					trader, name, a_selection.percent, trade, a_ceiling);
+				break;
+			case Stand::kTradePending:
+				TraceLog::First("menu", "{:s} greys REPAIR on {:s} at {:d}%, as {:s}, since a trade is pending",
+					trader, name, a_selection.percent, trade);
+				break;
+			case Stand::kUnaffordable:
+				TraceLog::First("menu", "{:s} greys REPAIR on {:s} at {:d}%, as {:s}, since the player cannot pay the smallest step",
+					trader, name, a_selection.percent, trade);
+				break;
+			case Stand::kLive:
+				TraceLog::First("menu", "{:s} shows REPAIR on {:s} at {:d}%, as {:s}, up to {:d}%",
+					trader, name, a_selection.percent, trade, a_ceiling);
+				break;
+			}
 		}
 
 		// Puts the button on the bar, once for each barter screen.
@@ -107,9 +151,7 @@ namespace VendorRepair
 			if (!a_menu || !a_menu->uiMovie || !a_menu->menuObj.IsObject()) {
 				return false;
 			}
-
-			Value already;
-			if (a_menu->menuObj.GetMember(HINT_MEMBER, &already) && already.IsObject()) {
+			if (Hint(a_menu).IsObject()) {
 				return true;
 			}
 			if (g_refused) {
@@ -162,8 +204,6 @@ namespace VendorRepair
 			const Value again = bar->sourceButtons;
 			bar->Invoke("SetButtonHintData", nullptr, &again, 1);
 
-			Forget();
-			g_asking = false;
 			TraceLog::Line("menu", "{:s} offers REPAIR on the bar, keyed to {:s}",
 				Trader(a_menu), HINT_EVENT);
 			return true;
@@ -180,81 +220,11 @@ namespace VendorRepair
 			}
 			Refresh(a_menu);
 		}
+	}
 
-		void Release()
-		{
-			Hold(OpenBarter(), false);
-		}
-
-		// Pays the caps and repairs the item. Everything is checked again
-		// rather than remembered, since the answer comes back through F4SE's
-		// task queue a moment after, and the item has to be the one the player
-		// was looking at.
-		void Pay(Quote a_quote, std::uint32_t a_handle, std::uint32_t a_stack)
-		{
-			auto*      menu = OpenBarter();
-			const auto selection = Selected(menu);
-			auto*      purse = Purse(menu);
-			auto*      caps = Caps();
-			auto*      player = RE::PlayerCharacter::GetSingleton();
-
-			if (!menu || !player || !purse || !caps || !selection.Worn() ||
-				selection.handle != a_handle || selection.stack != a_stack ||
-				a_quote.level <= selection.percent || a_quote.level > Ceiling(menu, selection.kind)) {
-				TraceLog::Line("menu", "{:s} dropped the repair, the trade or the item is gone",
-					Trader(menu));
-				Release();
-				return;
-			}
-
-			const auto pocketHeld = player->GetGoldAmount();
-			if (pocketHeld < static_cast<std::int64_t>(a_quote.price)) {
-				TraceLog::Line("menu", "{:s} wanted {:d} caps for {:s} and the player had {:d}",
-					Trader(menu), a_quote.price, selection.Name(), pocketHeld);
-				Release();
-				return;
-			}
-
-			// From the player to the trader, the same transfer the game makes
-			// when a trade goes through, with the same flag that hides the
-			// message about losing caps.
-			{
-				const RE::PlayerCharacter::ScopedInventoryChangeMessageContext quiet{ true, false };
-
-				RE::TESObjectREFR::RemoveItemData paid{ caps, static_cast<std::int32_t>(a_quote.price) };
-				paid.reason = RE::ITEM_REMOVE_REASON::kStoreContainer;
-				paid.otherContainer = purse;
-				player->RemoveItem(paid);
-			}
-
-			// The stack under the highlight, by its number, see Restore.h.
-			RE::BGSInventoryItem::CheckStackIDFunctor find{ selection.stack };
-			Restore::Write(*player, *selection.object, find, a_quote.level);
-
-			TraceLog::Line("menu", "{:s} repaired {:s} from {:d}% to {:d}%, one of a stack of {:d}, for {:d} of the {:d} caps the player had",
-				Trader(menu), selection.Name(), selection.percent, a_quote.level, selection.count, a_quote.price, pocketHeld);
-
-			// Brings the screen up to date. A rebuild only redraws the rows on
-			// the screen's own list of what changed, and the caps are on it
-			// from paying while an item whose count stays the same is not, so
-			// the item is added here. The rebuild ends by redrawing the lists
-			// and the caps along the bottom.
-			Release();
-			menu->partialPlayerUpdateList.push_back(selection.object);
-			menu->UpdateList(false);
-
-			// The Pip-Boy's cards wait for the barter screen to close, see
-			// Button.h and ItemCards.h. The item's own kind of card.
-			const auto kind = selection.object->GetFormType();
-			if (std::ranges::find(g_cardsOwed, kind) == g_cardsOwed.end()) {
-				g_cardsOwed.push_back(kind);
-			}
-
-			RE::UIUtils::PlayMenuSound(PAID_SOUND);
-
-			const auto said = Text::RepairPaid(a_quote.level, a_quote.price);
-			RE::SendHUDMessage::ShowHUDMessage(said.c_str(), nullptr, true, true);
-		}
+	void Release()
+	{
+		Hold(OpenBarter(), false);
 	}
 
 	void Refresh(RE::BarterMenu* a_menu)
@@ -263,52 +233,60 @@ namespace VendorRepair
 			return;
 		}
 
-		Value hint;
-		if (!a_menu->menuObj.GetMember(HINT_MEMBER, &hint) || !hint.IsObject()) {
+		auto hint = Hint(a_menu);
+		if (!hint.IsObject()) {
 			return;
 		}
 
 		// Greyed wherever there is nothing to buy: an item past what this
-		// trader repairs, or a smallest step the player cannot pay for.
+		// trader repairs, or a smallest step the player cannot pay for. Greyed
+		// too while a trade is pending, see Payment.h.
 		const auto selection = Selected(a_menu);
-		const auto ceiling = Ceiling(a_menu, selection.kind);
-		const auto shown = !g_asking && Shown(selection, ceiling);
-		hint.SetMember("ButtonVisible"sv, Value(shown));
-		hint.SetMember("ButtonDisabled"sv,
-			Value(shown && Afforded(Quotes(selection, ceiling)).empty()));
+		const auto ceiling = Ceiling(a_menu, selection);
+		const auto stand = StandOf(a_menu, selection, ceiling);
+		hint.SetMember("ButtonVisible"sv, Value(stand != Stand::kOff));
+		hint.SetMember("ButtonDisabled"sv, Value(stand != Stand::kOff && stand != Stand::kLive));
+		Tell(a_menu, selection, ceiling, stand);
 	}
 
-	void Press()
+	bool Press()
 	{
 		auto*      menu = OpenBarter();
 		const auto selection = Selected(menu);
-		const auto ceiling = menu ? Ceiling(menu, selection.kind) : 0U;
-		if (g_asking || !menu || !Shown(selection, ceiling)) {
-			return;
+		const auto ceiling = Ceiling(menu, selection);
+		const auto stand = StandOf(menu, selection, ceiling);
+		if (stand == Stand::kOff) {
+			return false;
 		}
 
-		if (selection.percent >= ceiling) {
-			const auto said = Text::RepairCeiling(ceiling);
-			RE::SendHUDMessage::ShowHUDMessage(said.c_str(), nullptr, true, true);
-			RE::UIUtils::PlayMenuSound(REFUSED_SOUND);
-			TraceLog::Line("menu", "{:s} can take {:s} no further than {:d}%, and it is at {:d}%",
-				Trader(menu), selection.Name(), ceiling, selection.percent);
-			return;
+		if (stand == Stand::kPastCeiling) {
+			const auto said = Text::RepairCeiling(ceiling, selection.trade);
+			Refuse(said);
+			TraceLog::Line("menu", "{:s} can take {:s} no further than {:d}%, and it is at {:d}%, saying \"{:s}\"",
+				Trader(menu), selection.Name(), ceiling, selection.percent, said);
+			return true;
 		}
 
-		TraceLog::Line("menu", "{:s} was asked to repair {:s} at {:d}%, and will go to {:d}%",
-			Trader(menu), selection.Name(), selection.percent, ceiling);
+		if (stand == Stand::kTradePending) {
+			const auto said = Text::RepairTradePending();
+			Refuse(said);
+			TraceLog::Line("menu", "{:s} waits for the pending trade before repairing {:s} at {:d}%, saying \"{:s}\"",
+				Trader(menu), selection.Name(), selection.percent, said);
+			return true;
+		}
 
-		const auto quotes = Afforded(Quotes(selection, ceiling));
-		if (quotes.empty()) {
+		TraceLog::Line("menu", "{:s} was asked to repair {:s} at {:d}%, as {:s}, and will go to {:d}%",
+			Trader(menu), selection.Name(), selection.percent, Named(selection.trade), ceiling);
+
+		if (stand == Stand::kUnaffordable) {
 			const auto said = Text::RepairUnaffordable();
-			RE::SendHUDMessage::ShowHUDMessage(said.c_str(), nullptr, true, true);
-			RE::UIUtils::PlayMenuSound(REFUSED_SOUND);
-			TraceLog::Line("menu", "{:s} asked for more than the player has for {:s} at {:d}%",
-				Trader(menu), selection.Name(), selection.percent);
-			return;
+			Refuse(said);
+			TraceLog::Line("menu", "{:s} asked for more than the player has for {:s} at {:d}%, saying \"{:s}\"",
+				Trader(menu), selection.Name(), selection.percent, said);
+			return true;
 		}
 
+		const auto               quotes = Afforded(Quotes(selection, ceiling));
 		std::vector<std::string> buttons;
 		std::string              spelled;
 		for (const auto& quote : quotes) {
@@ -316,13 +294,15 @@ namespace VendorRepair
 			spelled += std::format("{:s}{:d}%:{:d}", spelled.empty() ? "" : " ", quote.level, quote.price);
 		}
 
-		TraceLog::Line("menu", "{:s} asks how far to repair {:s} at {:d}%, a stack of {:d}, worth {:d}, offering {:s}",
-			Trader(menu), selection.Name(), selection.percent, selection.count, selection.worth, spelled);
+		// How far this trader goes with this kind, above the question, since
+		// the buttons stop at the limit and nothing else on the screen says
+		// why, and the same trader may repair another kind further.
+		const auto over = Text::RepairUpTo(ceiling, selection.trade);
+		TraceLog::Line("menu", "{:s} asks how far to repair {:s} at {:d}%, a stack of {:d}, worth {:d}, under \"{:s}\", offering {:s}",
+			Trader(menu), selection.Name(), selection.percent, selection.count, selection.worth, over, spelled);
 
-		// How far this trader goes, above the question, since the buttons stop
-		// at the limit and nothing else on the screen says why.
 		Hold(menu, true);
-		RepairPrompt::Ask(Text::RepairUpTo(ceiling), selection.Name(), selection.percent, std::move(buttons),
+		RepairPrompt::Ask(over, selection.Name(), selection.percent, std::move(buttons),
 			[quotes, handle = selection.handle, stack = selection.stack](std::size_t a_index) {
 				const auto& quote = quotes[a_index];
 				TraceLog::Line("menu", "The repair was set to {:d}% for {:d} caps", quote.level, quote.price);
@@ -332,15 +312,16 @@ namespace VendorRepair
 				TraceLog::Line("menu", "The repair was called off");
 				Release();
 			});
+		return true;
 	}
 
-	bool Asking()
+	void ForgetButton()
 	{
-		return g_asking;
+		g_asking = false;
 	}
 
-	std::vector<RE::ENUM_FORM_ID> TakeCardsOwed()
+	bool Offered(RE::BarterMenu* a_menu)
 	{
-		return std::exchange(g_cardsOwed, {});
+		return Hint(a_menu).IsObject();
 	}
 }

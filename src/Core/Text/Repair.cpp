@@ -2,8 +2,10 @@
 
 #include "Core/Text/Lines.h"
 
-// The sentences of a repair, at the bench and at a trader: the question, what
-// goes over it, the buttons and what is said after.
+// The question both repair menus ask, and what the bench says around it: the
+// perk over the question, the floor for modding, MEND for a free fix, an item
+// it has nothing to rebuild from and an item no mod fits. A trader's own words
+// are in Trader.cpp.
 namespace Text
 {
 	namespace
@@ -123,110 +125,6 @@ namespace Text
 			{ "zhhans", "装甲已修补。" },
 		};
 
-		// The price in caps goes on the button beside the condition it buys, so
-		// picking a button pays at once. The bench shows its components in the
-		// game's own confirmation box instead.
-		constexpr Line REPAIR_PRICE[]{
-			{ "en", "{0}% for {1} caps" },
-			{ "fr", "{0}\u00A0% pour {1} capsules" },
-			{ "de", "{0}\u00A0% für {1} Kronkorken" },
-			{ "it", "{0}% per {1} tappi" },
-			{ "es", "{0}% por {1} chapas" },
-			{ "esmx", "{0}% por {1} tapas" },
-			{ "ptbr", "{0}% por {1} tampas" },
-			{ "pl", "{0}% za {1} kaps." },
-			{ "ru", "{0}% за {1} крыш." },
-			{ "ja", "{0}%: {1}キャップ" },
-			{ "zhhant", "{0}%，{1}枚瓶蓋" },
-			{ "zhhans", "{0}%，{1}枚瓶盖" },
-		};
-
-		// Said once the caps have changed hands.
-		constexpr Line REPAIR_PAID[]{
-			{ "en", "Repaired to {0}% for {1} caps." },
-			{ "fr", "Réparé à {0}\u00A0% pour {1} capsules." },
-			{ "de", "Auf {0}\u00A0% repariert für {1} Kronkorken." },
-			{ "it", "Riparato al {0}% per {1} tappi." },
-			{ "es", "Reparado al {0}% por {1} chapas." },
-			{ "esmx", "Reparado al {0}% por {1} tapas." },
-			{ "ptbr", "Consertado para {0}% por {1} tampas." },
-			{ "pl", "Naprawiono do {0}% za {1} kaps." },
-			{ "ru", "Починено до {0}% за {1} крыш." },
-			{ "ja", "{1}キャップで{0}%まで修理しました" },
-			{ "zhhant", "已花費{1}枚瓶蓋修理至{0}%。" },
-			{ "zhhans", "已花费{1}枚瓶盖修理至{0}%。" },
-		};
-
-		// Said over a trader's question, so the player sees why the buttons
-		// stop where they do. A trader who can go all the way says so in words,
-		// since "up to 100%" reads as a limit. It says "this item" because a
-		// trader's limit is per kind, weapons or armor, and the question above
-		// it names the item.
-		constexpr Line REPAIR_UP_TO_FULL[]{
-			{ "en", "This trader can restore this item to full condition." },
-			{ "fr", "Ce marchand peut remettre cet objet en parfait état." },
-			{ "de", "Dieser Händler kann diesen Gegenstand vollständig instand setzen." },
-			{ "it", "Questo commerciante può riportare questo oggetto in condizioni perfette." },
-			{ "es", "Este comerciante puede dejar este objeto en perfecto estado." },
-			{ "esmx", "Este comerciante puede dejar este objeto en perfecto estado." },
-			{ "ptbr", "Este comerciante pode deixar este item em perfeito estado." },
-			{ "pl", "Ten handlarz przywraca temu przedmiotowi pełny stan." },
-			{ "ru", "Этот торговец может починить этот предмет до идеального состояния." },
-			{ "ja", "この商人はこのアイテムを完全な状態まで修理できます" },
-			{ "zhhant", "這名商人可以將此物品修復至完美狀況。" },
-			{ "zhhans", "这名商人可以将此物品修复至完美状况。" },
-		};
-
-		constexpr Line REPAIR_UP_TO[]{
-			{ "en", "This trader can repair up to {0}% condition." },
-			{ "fr", "Ce marchand peut réparer jusqu'à {0}\u00A0% d'état." },
-			{ "de", "Dieser Händler kann bis zu {0}\u00A0% Zustand reparieren." },
-			{ "it", "Questo commerciante può riparare fino al {0}% di condizioni." },
-			{ "es", "Este comerciante puede reparar hasta el {0}% de estado." },
-			{ "esmx", "Este comerciante puede reparar hasta el {0}% de estado." },
-			{ "ptbr", "Este comerciante pode consertar até {0}% de condição." },
-			{ "pl", "Ten handlarz naprawia do {0}% stanu." },
-			{ "ru", "Этот торговец может починить до {0}% состояния." },
-			{ "ja", "この商人は状態{0}%まで修理できます" },
-			{ "zhhant", "這名商人最多可將狀況修理至{0}%。" },
-			{ "zhhans", "这名商人最多可将状况修理至{0}%。" },
-		};
-
-		// Said when REPAIR is pressed on an item already past what this trader
-		// can do. The button stays on the bar, so the player learns that better
-		// traders exist.
-		constexpr Line REPAIR_CEILING[]{
-			{ "en", "This trader can't repair past {0}%." },
-			{ "fr", "Ce marchand ne peut pas réparer au-delà de {0}\u00A0%." },
-			{ "de", "Dieser Händler kann nicht über {0}\u00A0% hinaus reparieren." },
-			{ "it", "Questo commerciante non può riparare oltre il {0}%." },
-			{ "es", "Este comerciante no puede reparar más allá del {0}%." },
-			{ "esmx", "Este comerciante no puede reparar más allá del {0}%." },
-			{ "ptbr", "Este comerciante não consegue consertar além de {0}%." },
-			{ "pl", "Ten handlarz nie naprawi powyżej {0}%." },
-			{ "ru", "Этот торговец не может починить выше {0}%." },
-			{ "ja", "この商人は{0}%までしか修理できません" },
-			{ "zhhant", "這名商人最多只能修理至{0}%。" },
-			{ "zhhans", "这名商人最多只能修理至{0}%。" },
-		};
-
-		// Said when REPAIR is pressed and the player cannot pay for the
-		// smallest step. The button is greyed already, this says why.
-		constexpr Line REPAIR_UNAFFORDABLE[]{
-			{ "en", "Not enough caps to repair." },
-			{ "fr", "Pas assez de capsules pour réparer." },
-			{ "de", "Nicht genug Kronkorken für die Reparatur." },
-			{ "it", "Tappi insufficienti per riparare." },
-			{ "es", "No tienes suficientes chapas para reparar." },
-			{ "esmx", "No tienes suficientes tapas para reparar." },
-			{ "ptbr", "Tampas insuficientes para consertar." },
-			{ "pl", "Za mało kapsli na naprawę." },
-			{ "ru", "Недостаточно крышек для ремонта." },
-			{ "ja", "修理に必要なキャップが足りません" },
-			{ "zhhant", "瓶蓋不足，無法修理。" },
-			{ "zhhans", "瓶盖不足，无法修理。" },
-		};
-
 		// Said when REPAIR is pressed on an item the bench has nothing to
 		// rebuild from, see Workbench/Cost.h. It says where to go instead,
 		// since the button stays on the bar.
@@ -286,31 +184,6 @@ namespace Text
 	std::string Mended(bool a_armor)
 	{
 		return Pick(a_armor ? MENDED_ARMOR : MENDED_WEAPON);
-	}
-
-	std::string RepairPrice(std::uint32_t a_level, std::uint32_t a_caps)
-	{
-		return Say(REPAIR_PRICE, a_level, a_caps);
-	}
-
-	std::string RepairPaid(std::uint32_t a_level, std::uint32_t a_caps)
-	{
-		return Say(REPAIR_PAID, a_level, a_caps);
-	}
-
-	std::string RepairUpTo(std::uint32_t a_ceiling)
-	{
-		return a_ceiling >= FULL ? Pick(REPAIR_UP_TO_FULL) : Say(REPAIR_UP_TO, a_ceiling);
-	}
-
-	std::string RepairCeiling(std::uint32_t a_ceiling)
-	{
-		return Say(REPAIR_CEILING, a_ceiling);
-	}
-
-	std::string RepairUnaffordable()
-	{
-		return Pick(REPAIR_UNAFFORDABLE);
 	}
 
 	std::string BenchCannotRepair()

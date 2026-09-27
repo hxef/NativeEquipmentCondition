@@ -6,6 +6,26 @@
 
 namespace VendorRepair
 {
+	namespace
+	{
+		// Caps, where the game's list of default objects fails to name them. A
+		// load order that replaces the currency says so in that list.
+		constexpr RE::TESFormID CAPS_FORM = 0x0000000F;
+	}
+
+	RE::TESBoundObject* Caps()
+	{
+		const auto* defaults = RE::BGSDefaultObjectManager::GetSingleton();
+		auto*       named = defaults ? defaults->GetDefaultObject<RE::TESBoundObject>(
+		                                   RE::DEFAULT_OBJECT::kGold) :
+		                               nullptr;
+		if (named) {
+			return named;
+		}
+		auto* form = RE::TESForm::GetFormByID(CAPS_FORM);
+		return form ? form->As<RE::TESBoundObject>() : nullptr;
+	}
+
 	float Scaled(float a_multiple)
 	{
 		return a_multiple * Settings::fTraderPriceMult.GetValue();

@@ -14,8 +14,9 @@ namespace MessageBox
 	// Puts the question up and hands a_callback the number of the button
 	// pressed, counting from 0. The last button is cancel, and the Cancel key,
 	// Tab or B, presses it too. The game frees the callback with its own
-	// allocator, so it has to be built with the heap macro, and it is freed
-	// here when the box never opens. The box pauses whatever is under it.
+	// allocator, so it has to be built with the heap macro. When the box never
+	// opens, the callback gets the cancel button and is freed here. The box
+	// pauses whatever is under it.
 	void Ask(const char* a_title, const char* a_body,
 		const std::vector<std::string>& a_buttons, RE::IMessageBoxCallback* a_callback);
 }

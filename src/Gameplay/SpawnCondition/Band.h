@@ -1,8 +1,12 @@
 #pragma once
 
 #include "Core/Plugin.h"
+#include "Gameplay/SpawnCondition/SpawnCondition.h"
 
-// How far either side of its middle an item rolls. Private to this folder.
+#include <optional>
+
+// The roll itself, either side of an item's middle or in a trader's band.
+// Private to this folder.
 namespace SpawnCondition
 {
 	// How far either side of its middle an item rolls. Fallout 3 had no
@@ -14,9 +18,10 @@ namespace SpawnCondition
 
 	// How often an item ignores its band and rolls across the whole scale. 1
 	// item in 100 does, a Courser's beaten rifle or a raider's pristine one.
-	// The rare roll nearly always lands outside its band, and the further the
-	// band is from the middle, the bigger the surprise. Kept rare, since at
-	// about 1 in 20 it would stop being a surprise.
+	// For loot the rare roll nearly always lands outside its band, and the
+	// further the band is from the middle, the bigger the surprise. Kept rare,
+	// since at about 1 in 20 it would stop being a surprise. A trader's own
+	// stock never rolls lower than its StockBand's worst.
 	inline constexpr float UPSET_CHANCE = 0.01F;
 
 	// The worst condition an item arrives at. A weapon at 0 cannot be equipped,
@@ -36,6 +41,14 @@ namespace SpawnCondition
 
 	Ends OrdinaryEnds();
 
+	// What a roll aims at: the middle of its band, or for a trader's own stock
+	// the trader's band, which takes its place.
+	struct Aim
+	{
+		float                    centre{ 0.0F };
+		std::optional<StockBand> stock;
+	};
+
 	// What one roll came out as, and whether it was one of the rare ones.
 	struct Rolled
 	{
@@ -43,5 +56,5 @@ namespace SpawnCondition
 		bool  upset{ false };
 	};
 
-	Rolled RollHealth(float a_centre);
+	Rolled RollHealth(const Aim& a_aim);
 }

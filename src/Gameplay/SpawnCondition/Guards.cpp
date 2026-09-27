@@ -3,6 +3,7 @@
 #include "Core/CallPatch.h"
 
 #include <cstdint>
+#include <utility>
 
 namespace SpawnCondition
 {
@@ -127,6 +128,11 @@ namespace SpawnCondition
 			const Raise fromCharacter{ g_fromCharacter, Giver(source.get()) };
 			return _RunScriptRemoveItem(a_functor, a_result);
 		}
+
+		// The restock this thread is part way through, see ScopedRestock. A
+		// trader's chest restocks inside the barter screen's own call, on the
+		// thread that runs it.
+		thread_local const Restock* t_restock = nullptr;
 	}
 
 	bool FromConsole()
@@ -174,6 +180,23 @@ namespace SpawnCondition
 	bool Private(const RE::BGSInventoryItem::Stack& a_stack)
 	{
 		return a_stack.QRefCount() == 0 || g_loadingSavedStack;
+	}
+
+	ScopedRestock::ScopedRestock(const Restock& a_restock) :
+		_was(std::exchange(t_restock, &a_restock))
+	{}
+
+	ScopedRestock::~ScopedRestock()
+	{
+		t_restock = _was;
+	}
+
+	// Compared as handles, like Players in SpawnCondition.cpp, since this is
+	// asked under the inventory write lock for every weapon and piece of
+	// armor that comes in.
+	const Restock* Restocking(const RE::BGSInventoryList* a_list)
+	{
+		return t_restock && a_list && a_list->owner == t_restock->chest ? t_restock : nullptr;
 	}
 
 	void InstallGuards()

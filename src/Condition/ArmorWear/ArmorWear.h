@@ -29,15 +29,15 @@ namespace ArmorWear
 	// above.
 	const char* WhyNoCondition(const RE::TESObjectARMO& a_armor);
 
-	// Whether a piece is clothing rather than armor, for the recipe a piece
-	// with none of its own borrows, see Materials.h. The game keeps no flag
-	// for it: the clothing and armor keywords it ships sit on no record. What
-	// it does keep is the layering. Every outfit, suit, vault suit and under
-	// armor sits on the body slot, 33, and no arm, leg or chest piece and no
-	// helmet does. So clothing is a piece on the body slot or one that
-	// protects nothing, like a hat or a pair of glasses, and armor is the
-	// rest, a chest piece, a helmet, a gas mask. A hazmat suit is clothing
-	// under this and a hard hat is armor.
+	// Whether a piece is clothing rather than armor, to a trader and for the
+	// recipe a piece with none of its own borrows, see Materials.h. The game
+	// keeps no flag for it: the clothing and armor keywords it ships sit on
+	// no record. What it does keep is the layering. Every outfit, suit, vault
+	// suit and under armor sits on the body slot, 33, and no arm, leg or chest
+	// piece and no helmet does. So clothing is a piece on the body slot or one
+	// that protects nothing, like a hat or a pair of glasses, and armor is
+	// the rest, a chest piece, a helmet, a gas mask. A hazmat suit is
+	// clothing under this and a hard hat is armor.
 	bool IsClothing(const RE::TESObjectARMO& a_armor);
 
 	// Wears down the copy of a piece a_owner has on, and that copy alone, see

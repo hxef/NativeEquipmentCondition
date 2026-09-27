@@ -2,6 +2,10 @@
 
 #include "Core/Plugin.h"
 
+#include <cstdint>
+#include <functional>
+#include <string>
+
 namespace SpawnCondition
 {
 	// Gives a weapon or a piece of armor a condition the first time it enters
@@ -22,12 +26,52 @@ namespace SpawnCondition
 	// a save made before this mod was installed, see SplitOff in
 	// SpawnCondition.cpp.
 	//
-	// An essential character's weapons and armor, a companion's for example,
-	// arrive new.
+	// A trader's own stock rolls in a band set by how far the trader repairs
+	// it, see VendorRepair/Upkeep.h. An essential character's weapons and
+	// armor, a companion's for example, arrive new.
 	//
-	// Band.cpp is how far either side of its middle an item rolls, and
-	// Guards.cpp what marks a console command, a save loading and a script
-	// giving an item. Band.h and Guards.h are what they share with
-	// SpawnCondition.cpp.
+	// Band.cpp is the roll itself, either side of an item's middle or in a
+	// trader's band, and Guards.cpp what marks a console command, a save
+	// loading, a script giving an item and a restock. Band.h and Guards.h are
+	// what they share with SpawnCondition.cpp.
 	void Install();
+
+	// What a trader's stock of one item rolls in, low to high. worst is the
+	// lowest the rare roll that ignores the band can land, and repairs how far
+	// the trader repairs the item for the trace log, a whole percent or 0 for
+	// not at all.
+	struct StockBand
+	{
+		float         low{ 0.0F };
+		float         high{ 0.0F };
+		float         worst{ 0.0F };
+		std::uint32_t repairs{ 0 };
+	};
+
+	// A trader's chest restocking: the chest, by the handle its inventory
+	// names its owner with, the trader's name for the trace log, and the band
+	// each item rolls in.
+	struct Restock
+	{
+		RE::ObjectRefHandle                                 chest;
+		std::string                                         trader;
+		std::function<StockBand(const RE::TESBoundObject&)> band;
+	};
+
+	// Marks what enters a_restock's chest on this thread, while alive, as that
+	// trader's stock. Nested, so an inner restock puts the outer one back.
+	class ScopedRestock
+	{
+	public:
+		explicit ScopedRestock(const Restock& a_restock);
+		~ScopedRestock();
+
+		ScopedRestock(const ScopedRestock&) = delete;
+		ScopedRestock(ScopedRestock&&) = delete;
+		ScopedRestock& operator=(const ScopedRestock&) = delete;
+		ScopedRestock& operator=(ScopedRestock&&) = delete;
+
+	private:
+		const Restock* _was;
+	};
 }

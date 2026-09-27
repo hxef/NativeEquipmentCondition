@@ -2,8 +2,10 @@
 
 #include "Core/Plugin.h"
 
-// What marks a console command, a save loading and a script giving an item.
-// Private to this folder.
+#include "Gameplay/SpawnCondition/SpawnCondition.h"
+
+// What marks a console command, a save loading, a script giving an item and a
+// restock. Private to this folder.
 namespace SpawnCondition
 {
 	// Whether this thread is part way through a console command, see
@@ -38,6 +40,10 @@ namespace SpawnCondition
 	// shares its extra data list with the original, so splitting it would leave
 	// 2 inventories disagreeing about the same weapons.
 	bool Private(const RE::BGSInventoryItem::Stack& a_stack);
+
+	// The restock this thread is part way through when a_list is the chest
+	// being restocked, see ScopedRestock, or nothing.
+	const Restock* Restocking(const RE::BGSInventoryList* a_list);
 
 	// Patches the call that runs console commands, the call that loads a saved
 	// inventory and a script's AddItem and RemoveItem, and says so in the log.

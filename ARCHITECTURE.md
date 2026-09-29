@@ -101,6 +101,7 @@ src/
     MenuMovies.h/.cpp        the one doorway into the game's menu movies
     MessageBox.h/.cpp        a question with as many answers as it is given
     LoadingTips.h/.cpp       the plugin's own tips on the loading screen
+    InspectPrice.h/.cpp      the price on the inspect screen at a trader
     Hud/
       HudParts.h/.cpp        what the HUD readouts share
       HudCondition.h/.cpp    the CND bar in the ammo counter

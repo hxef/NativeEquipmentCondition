@@ -20,6 +20,7 @@
 #include "UI/Hud/HudParts.h"
 #include "UI/Hud/PowerArmorCondition/PowerArmorCondition.h"
 #include "UI/Hud/QuickContainer/QuickContainer.h"
+#include "UI/InspectPrice.h"
 #include "UI/Inventory/ItemCard/ItemCard.h"
 #include "UI/Inventory/PaperDoll.h"
 #include "UI/Inventory/Pipboy.h"
@@ -107,6 +108,9 @@ namespace
 		// Paying a trader who deals in weapons, armor or clothing to repair
 		// one, for caps.
 		{ .name = "VendorRepair", .on = &Settings::bVendorRepair, .Install = VendorRepair::Install },
+		// The inspect screen at a trader shows the price for the side the
+		// item is on, where the game shows whichever side it priced last.
+		{ .name = "InspectPrice", .on = &Settings::bInspectPrice, .Install = InspectPrice::Install },
 		// Setting the weapon in hand or the armor worn to any condition from
 		// the console.
 		{ .name = "ConsoleRepair", .Install = ConsoleRepair::Install },

@@ -72,6 +72,10 @@ namespace Settings
 	// see ConfirmScroll.h.
 	inline REX::TIniSetting<bool> bConfirmScroll{ "Features", "bConfirmScroll", true };
 
+	// The inspect screen at a trader shows the price for the side the item
+	// is on, see InspectPrice.h.
+	inline REX::TIniSetting<bool> bInspectPrice{ "Features", "bInspectPrice", true };
+
 	// Balance. Read again on every save load.
 
 	// What every weapon's wear rate is multiplied by, see WeaponWear/Rate.cpp.

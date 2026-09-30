@@ -2,8 +2,10 @@
 
 An F4SE plugin that gives Fallout 4 weapons and armor a condition that wears
 down with use, built on [CommonLibF4](https://github.com/libxse/commonlibf4).
-It is one DLL, `NEC.dll`, and its settings file, `NEC.ini`, which says what
-every setting does. Put your own changes in `NEC_custom.ini` beside it.
+It is one DLL, `NEC.dll`, and its settings file, [`NEC.ini`](publish/NEC.ini),
+which says what every setting does. Put your own changes in `NEC_custom.ini`
+beside it. For what it does in game, see
+[`publish/README.txt`](publish/README.txt).
 
 ### Requirements
 * [XMake](https://xmake.io) [3.0.0+]

@@ -14,8 +14,8 @@
 // starts. Balance is read again on every save load, so tuning a number takes a
 // load and no restart. Read a setting where it is used, never copy it out.
 //
-// A setting added here is added to NEC.ini too, with a line saying what it
-// does.
+// A setting added here is added to publish/NEC.ini too, with a line saying
+// what it does.
 namespace Settings
 {
 	// The store the Balance settings sit in, read again on every save load.

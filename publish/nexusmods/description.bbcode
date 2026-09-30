@@ -1,0 +1,174 @@
+[center][size=4][b][font=Georgia][color=#1AFF80]Native Equipment Condition (NEC)[/color][/font][/b][/size][/center]
+
+[center]Born as a concept in 2019, it quickly outgrew what the Creation Kit and Papyrus could reach, so I took the standalone DLL route and built it around one idea: weapon and armor condition that looks like it was always in the base game.
+
+Fallout 4 shipped a fairly deep crafting system, with scrap, components and weapon mods, and still left out repair, a missed chance if there ever was one. Wear and repair add another layer to the game's economy, giving all that junk and those caps a real use, and they go hand in hand with Survival, where every bullet and every scrap already counts.
+
+In 2026, the game finally got the condition system it should've shipped with, one that looks like part of the game itself and not a mod bolted on as an afterthought. No feature creep, no bloat. [i]It just works™[/i], except this time it actually does.[/center]
+
+[size=3][b][font=Georgia][color=#1AFF80]Does what, exactly?[/color][/font][/b][/size]
+
+Your weapons and armor [b]wear down as you use them[/b], the way they did in Fallout 3 and New Vegas. Worn weapons do less damage, worn armor protects less, and both sell for less. Keep them in shape at a workbench with components, or pay a trader in caps.
+
+[b]Worn gear can't be modded[/b] until it is repaired to full, so swapping in cheap mods can't cut the repair bill.
+
+[b]Done natively[/b], in one F4SE plugin: [b]no ESP, no scripts, no new assets[/b]. It reads weapons, armor, recipes, perks, leveled lists and game settings from your load order as the game loads, for easier compatibility with other mods, including ones that add new gear.
+
+[size=3][b][font=Georgia][color=#1AFF80]Wear and tear[/color][/font][/b][/size]
+
+[list]
+[*]Your weapon wears with every shot you fire and every melee hit you land. Bashes and power attacks wear it harder.
+[*]Every hit that lands wears the armor and clothing on the limb it struck, yours and NPCs' alike. Explosions wear every piece. Pieces that cover no limb, like a mask or a super mutant's armor, share each hit between them.
+[*]The armor companions and other essential NPCs come with never wears on them, since some of it can never be handed to you to repair. Once a piece has passed through your hands, it becomes yours, so it wears like any other piece you own, on you or on them.
+[*]Worn weapons do less damage and worn armor protects less, both down to 66% at 0 condition.
+[*]A [b]broken piece[/b] of armor or clothing stays on and keeps its bonuses, like a +1 to a stat or a legendary effect, until you take it off.
+[*]A weapon that breaks is [b]unequipped automatically[/b], and broken gear can't be equipped again until it is repaired.
+[*]Your worn guns can jam, from below 50% condition.
+[*]Worn automatic weapons fire slower, down to 75% of their rate at 0 condition.
+[*]A worn weapon fills the VATS critical meter slower, down to 50% of its rate at 0 condition, like in Fallout 3, where worn weapons landed fewer critical hits.
+[*]Price drops faster than condition, on the Fallout 3 and New Vegas curve: an item at half condition is worth 35% of its full price, whether you buy it or sell it.
+[*][b]Power armor[/b] wears and is repaired at the power armor station as it always was, but a damaged piece now sells for less, and so does a drained fusion core.
+[/list]
+
+[size=3][b][font=Georgia][color=#1AFF80]Loot with a history[/color][/font][/b][/size]
+
+[list]
+[*]Weapons and armor turn up [b]already worn[/b]. Each gets its condition the first time it lands in an inventory: an NPC's, a container's, a trader's stock, or yours when you pick up one that was lying around. That happens only once, so its condition is never rerolled, no matter who carries it or where it gets dropped.
+[*]The condition is a roll, weighted by where the item came from and who carried it. A raider's pipe gun has seen better days, while a well equipped faction like the Brotherhood or the Gunners keeps its gear in better shape. Gear lying around, and your own gear if you install mid playthrough, lands at around 45 to 70%, while [b]most quest rewards arrive new[/b], and so does everything companions and other essential NPCs start with.
+[*]About 1 item in 100 ignores all that: a raider can drop a pristine rifle, and a Courser a beaten one.
+[*]NPC weapons don't lose condition from use, but NPCs still fight at the condition their gear is in: their worn weapons deal less damage, and their worn armor protects them less.
+[/list]
+
+[size=3][b][font=Georgia][color=#1AFF80]Repair at the workbench[/color][/font][/b][/size]
+
+[list]
+[*]At the weapon or armor workbench, select a worn item and a REPAIR button appears. Press it, choose how far to repair it in steps of 10%, and pay in the components it is built from.
+[*]Barely worn gear, above 95%, gets a MEND button instead, which fixes it on the spot [b]for free[/b].
+[*][b]Crafting perks[/b] like Gun Nut, Science!, Blacksmith and Armorer make repairs take fewer components, down to half at the top rank. The perk behind most of an item's components sets the discount, and each rank's description says how much.
+[*]A repair [b]earns the same XP[/b] as crafting a mod from those components.
+[/list]
+
+[size=3][b][font=Georgia][color=#1AFF80]Repair at a trader[/color][/font][/b][/size]
+
+[list]
+[*]Out of spare components? Gun shops, armorers and clothiers repair their kind of gear [b]for caps[/b], and those caps stay in the trader's till, ready to buy the loot you haul in next. On the barter screen, select a worn item on your side and a REPAIR button appears if they fix that kind of gear. Click it, or press C on the keyboard or the left bumper on a pad.
+[*]What a trader repairs, and how far, depends on what they restock. Plenty of guns on the shelves, or a few beside plenty of ammunition, grenades and mines, means they fix guns, and the more different guns, the further. Armor and clothing work the same way, and so do traders from other mods. A new settlement weapon stand stops at 30%, Lucas Miller's armor caravan at 70% and Ronnie Shaw's fully upgraded store at 90%, give or take with your level. [b]Only the best stocked shops repair to 100%[/b], and finding them is up to you.
+[*]Traders also sell each kind of gear in better shape the further they repair that kind. Their own stock of it comes at 30% to 50% where they repair it to 30% or not at all, and 85% to 100% at the best shops. So a gun shop that repairs guns to 90% sells its guns in good shape, but the odd piece of armor on its shelves comes in much worse shape, since it doesn't repair armor.
+[/list]
+
+[size=3][b][font=Georgia][color=#1AFF80]See it at a glance[/color][/font][/b][/size]
+
+[list]
+[*]CND on the item cards, with the worn damage, resistances and fire rate.
+[*]CND bars on the HUD ammo counter, the power armor dash and the Pip-Boy apparel figure, and condition meters on the quick container rows.
+[*]Broken items fade out in the Pip-Boy lists.
+[/list]
+
+[size=3][b][font=Georgia][color=#1AFF80]Little extras[/color][/font][/b][/size]
+
+[list]
+[*]6 loading screen tips on wear, repairs, broken gear, jams and loot, in the game's own style and as likely to show as any ordinary loading screen. A tip about a feature you switch off never shows.
+[*]Vanilla fix: the inspect screen at a trader shows the right price for the side the item is on.
+[*]Vanilla fix: a workbench confirmation box with a long list of components shows more rows and scrolls with the mouse wheel, the arrow keys, the D-pad and W and S.
+[*]A console command for testing: [font=Courier New]srm[/font] brings the weapon in hand back to full, and [font=Courier New]srm 25[/font] sets it to 25%, any number from 0 to 100. Add armor, as in [font=Courier New]srm armor[/font] or [font=Courier New]srm 25 armor[/font], for every piece you have on that wears.
+[/list]
+
+[size=3][b][font=Georgia][color=#1AFF80]Make it yours[/color][/font][/b][/size]
+
+[list]
+[*][b]NEC.ini[/b] in Data\F4SE\Plugins explains every setting. Switch off jams, slower fire, spawned wear, trader repairs, the CND bars and meters on the HUD and more, or tune wear speed, damage and armor floors, prices and repair costs.
+[*][b]Keep your changes in NEC_custom.ini[/b] beside it, with the same sections and keys, and leave NEC.ini as it ships. The mod comes without a NEC_custom.ini, so installing an update over the old files never wipes your settings, and NEC.ini stays a clean copy of every default. With Mod Organizer 2, keep it in its own mod or in overwrite.
+[*]Balance changes take effect on the next save load or new game, the on and off switches after a restart.
+[/list]
+
+[size=3][b][font=Georgia][color=#1AFF80]Compatibility[/color][/font][/b][/size]
+
+[list]
+[*]No ESP, so it takes no plugin slot.
+[*]The plugin's own text comes in every language the game ships in. The rest is the game's own words. Every language but English was translated by AI, not by a person, so some lines may read a little off.
+[*]Both vanilla fixes under Little extras can be switched off in NEC.ini, for a load order where another mod already fixes them.
+[*]A UI replacer that moves the HUD ammo counter, the quick container, the item cards or the Pip-Boy can hide the condition shown there. Wear, damage and prices work as ever. Repairs use the workbench's own REPAIR button and a button on the barter bar, which replacers usually keep.
+[*]Where another DLL mod already patches the same game code, it keeps it and that part of NEC stands down, as NEC.log says.
+[/list]
+
+[size=3][b][font=Georgia][color=#1AFF80]Requirements[/color][/font][/b][/size]
+
+[list]
+[*]Fallout 4 1.11.240
+[*][url=https://www.nexusmods.com/fallout4/mods/42147]Fallout 4 Script Extender (F4SE)[/url]
+[*][url=https://www.nexusmods.com/fallout4/mods/47327]Address Library for F4SE Plugins[/url]
+[/list]
+
+[size=3][b][font=Georgia][color=#1AFF80]Installation[/color][/font][/b][/size]
+
+Install with your mod manager, or copy the F4SE folder into Fallout 4's Data folder. Launch the game through F4SE.
+
+NEC.pdb, beside NEC.dll, is only there for crash logs. The game itself never uses it. If the game ever crashes, a crash logger like [url=https://www.nexusmods.com/fallout4/mods/84214]Addictol[/url] can read it to point at the exact line of NEC's code involved, which makes a bug report much easier to fix. You can delete it without changing anything in play, but then a crash log can only say that NEC was involved, not where.
+
+Adding it to a playthrough in progress? Weapons and armor with no condition yet, [b]yours included[/b], get one as the save loads, rolled the same way. Set bSpawnCondition=false first to keep your current gear as new, though loot then turns up new as well.
+
+[size=3][b][font=Georgia][color=#1AFF80]Uninstalling[/color][/font][/b][/size]
+
+[b]Repair anything broken first[/b], at a workbench, at a trader or, for gear you still have on, with [font=Courier New]srm[/font] in the console. Fallout 4 still has the rule from Fallout 3 and New Vegas that an item at 0 condition can't be equipped, and once NEC is gone nothing in the game can repair it, so it stays unusable.
+
+After that, [b]removing the mod is safe.[/b] It has no ESP and keeps no save data of its own. NEC keeps each item's condition in its health, a kind of extra data Fallout 4 already has and power armor pieces use too. Extra data are small tags the game saves on an item, like its custom name. That health is all that stays in your save. On anything but power armor the game ignores it for damage, protection and price, so what is left behind does nothing there, except that identical items at different conditions stay in separate stacks in your inventory.
+
+[size=3][b][font=Georgia][color=#1AFF80]Under the hood[/color][/font][/b][/size]
+
+[spoiler]
+
+[b]Where condition lives[/b]
+
+[list]
+[*]Condition is stored in ExtraHealth on the item's inventory stack, the same place power armor keeps its health and a fusion core its charge. 1.0 means new and 0 means broken. An item with no ExtraHealth counts as new. Full is stored as 0.9999999, because setting ExtraHealth to 1.0 deletes it.
+[*]Papyrus can read it with ObjectReference.GetItemHealthPercent, but only on an item lying in the world, not on one inside an inventory. It returns -1 for an item with no condition.
+[/list]
+
+[b]Leftovers from Fallout 3 and Skyrim[/b]
+
+[list]
+[*]Fallout 3's check that stops you from equipping an item at 0 health is still in the game, message and all. In vanilla you only see it with a broken power armor piece at the station. The check also blocked taking a broken item off, and putting it back on after the barber chair, so NEC limits it to putting an item on. sWeaponBreak, a weapon break message the game never showed, is used again.
+[*]Jams use Fallout 3's fWeaponConditionReloadJam1 to 10 settings, which are still in the game and can still be edited.
+[*][font=Courier New]srm[/font] is Fallout 3's ShowRepairMenu console command, which does nothing in vanilla.
+[*]The Item Condition on a leveled list or container entry still works, but only for armor or ammo that has a Health value, which in vanilla means power armor and fusion cores. NEC leaves it as it is.
+[*]The game's damage, armor rating and price formulas already read item health, but only as Skyrim's tempering bonus, so health below full changes none of them. NEC scales each result where the game works it out, which is also why damaged power armor and drained fusion cores now sell for less.
+[/list]
+
+[b]Read from the load order[/b]
+
+[list]
+[*]How much a weapon wears per use depends on its damage compared with the median damage of every weapon in the load order that wears, and on the average component value of its recipes. So new weapons and weapon mods need no patch.
+[*]Which armor wears depends on the body part in the hit event, which the wearer's race maps to biped slots. A hit with no body part, like a blast, wears every piece on a mapped slot, and pieces on slots no body part maps to share each hit between them. On an essential actor, a piece from its own outfit (marked with ExtraOutfitItem) or from its record's inventory never wears, unless it has an owner (ExtraOwnership). Anything you give a companion through its trade menu has one, naming you or whoever you stole it from, so it wears as usual.
+[*]Loot condition is rolled once, when the item first enters any inventory. The roll uses the leveled list the item came from (ExtraLeveledItem), ranked against every other list of its kind, and the armor its owner was given. Items of an NPC whose base record is essential start at 100%.
+[*]An item with no health that reaches the player through a Papyrus AddItem or RemoveItem, or the console, starts at 100%. The same 2 calls also reset an item to 100% when it is a quest item (in a Quest Object alias) from anyone but the player, or when it comes from a living character who is not a player teammate, like the gun Paladin Brandis gives you. Corpse loot otherwise keeps its roll.
+[*]Which crafting perk discounts a repair comes from the HasPerk conditions on the item's recipes.
+[*]What a trader repairs comes from the leveled lists their vendor chests restock from, because no item carries the weapon, armor and clothing VendorItem keywords. Without those keywords, NEC counts a piece as clothing if it sits on body slot 33 or protects against nothing.
+[*]NEC leaves out grenades, mines, unplayable weapons, power armor and wearables that give no protection or bonus.
+[/list]
+[/spoiler]
+
+[size=3][b][font=Georgia][color=#1AFF80]Found a bug?[/color][/font][/b][/size]
+
+Turn on NEC's full logs, restart the game and play until the bug happens again. Add this to NEC_custom.ini in Data\F4SE\Plugins (see Make it yours):
+[code][Log]
+sLogLevel=debug
+bTraceLogs=true[/code]
+Then share these files from Documents\My Games\Fallout4\F4SE:
+[list]
+[*]NEC.log
+[*]NEC.trace.log, NEC.ui.trace.log and NEC.npc.trace.log
+[*]The crash log if the game crashed, like crash-2026-10-01-21-15-31.log from [url=https://www.nexusmods.com/fallout4/mods/84214]Addictol[/url]
+[/list]
+Say what you did right before it went wrong, and post it all on the Bugs tab here or [url=https://github.com/hxef/NativeEquipmentCondition/issues]as an issue on GitHub[/url]. The trace logs get big fast, so switch them off again once you're done.
+
+[size=3][b][font=Georgia][color=#1AFF80]Source code[/color][/font][/b][/size]
+
+NEC is open source under the GPL 3.0 license. Browse the code, report a bug or send a fix [url=https://github.com/hxef/NativeEquipmentCondition]on GitHub[/url].
+
+[size=3][b][font=Georgia][color=#1AFF80]Credits[/color][/font][/b][/size]
+
+[list]
+[*]The F4SE Team, for the Fallout 4 Script Extender.
+[*]Ryan (Ryan-rsm-McKenzie), for CommonLibF4 and the Address Library for F4SE Plugins.
+[*]shad0wshayd3, qudix and every contributor to libxse's CommonLibF4, the fork NEC is built on.
+[/list]

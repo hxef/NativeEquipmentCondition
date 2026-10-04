@@ -22,6 +22,6 @@ namespace HealthDamage
 
 	// The condition of the weapon whose item card is being drawn, recorded at
 	// the display site in Combat.cpp and read by the card's blast hook in
-	// Card.cpp, on the thread drawing the card.
+	// Card.cpp, on the thread drawing the card. Reading it clears it to -1.
 	float DisplayHealth();
 }

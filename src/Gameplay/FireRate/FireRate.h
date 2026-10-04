@@ -39,14 +39,13 @@ namespace FireRate
 	// else after a full reset.
 	void Unload();
 
-	// Whether a worn weapon fires slower at all: not while bFireRate is off,
-	// and not when the patch did not take. The menus ask before patching their
-	// own fire rate calls, see ItemCard.cpp.
+	// Whether the patches are in: not when another mod has fire rate. The
+	// menus ask once before patching their own fire rate calls.
 	[[nodiscard]] bool Slows();
 
 	// The share of its own rate a copy of a weapon fires at in this condition,
-	// for the menus, see ItemCard.cpp. 1 for a weapon that is not automatic,
-	// carries no condition, or while Slows says no.
+	// for the menus, see ItemCard/Hooks.cpp. 1 for a weapon that is not automatic,
+	// carries no condition, or while bFireRate is off.
 	[[nodiscard]] float RateShare(const RE::TESObjectWEAP& a_weapon, const RE::TESObjectWEAP::InstanceData* a_data, float a_health);
 
 	// Reads the condition of the weapon an NPC just used, for the pace its

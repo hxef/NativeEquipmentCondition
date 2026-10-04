@@ -1,10 +1,11 @@
-#include "Gameplay/FireRate.h"
+#include "Gameplay/FireRate/FireRate.h"
 
 #include "Condition/Condition.h"
 #include "Condition/Equipped.h"
-#include "Core/CallPatch.h"
+#include "Core/CallPatch/CallPatch.h"
 #include "Core/Settings.h"
 #include "Core/TraceLog.h"
+#include "Gameplay/FireRate/Cuts.h"
 #include "Gameplay/WeaponEvents/WeaponEvents.h"
 
 #include <algorithm>
@@ -33,11 +34,9 @@ namespace FireRate
 		// engine's Fire, as a burst starts.
 		constexpr CallPatch::CallSite SOUND_SITE{ 2196901, 0x2F, "fire sound" };
 
-		// The blow HitFrameHandler queues for each HitFrame event of an attack
-		// animation. A held attack like the Ripper's sends one every 0.2 s from
-		// a clip that plays at the same pace whatever the speed, so the pace is
-		// kept here, see CutHk.
-		constexpr CallPatch::CallSite CUT_SITE{ 2235282, 0x3E, "blade cut" };
+		CallPatch::Link<float(const RE::Actor*, const RE::BGSObjectInstanceT<RE::TESObjectWEAP>&, std::uint32_t)> g_speedLink;
+		CallPatch::Link<float(const RE::TESObjectWEAP&, const RE::TESObjectWEAP::InstanceData*)>                  g_countdownLink;
+		CallPatch::Link<float(const RE::TESObjectWEAP&, const RE::TESObjectWEAP::InstanceData*)>                  g_soundLink;
 
 		// The slowest a worn gun's animation plays. A gun at 0 would never get
 		// through its attack.
@@ -78,17 +77,6 @@ namespace FireRate
 		// lock.
 		std::shared_mutex                          g_npcLock;
 		std::unordered_map<RE::TESFormID, Reading> g_npcReadings;
-
-		// How far each actor's worn blade is towards its next cut, by form ID.
-		// Every HitFrame adds the blade's share and a cut costs 1, so a blade
-		// at 0.75 lands 3 cuts in 4. HitFrames come from whichever thread
-		// updates the actor, hence the lock.
-		std::mutex                               g_cutLock;
-		std::unordered_map<RE::TESFormID, float> g_cutCredits;
-
-		// Whether the animation's call took. Written once while the plugin
-		// loads.
-		bool g_patched = false;
 
 		// Measures the share for the player's equipped copy. The weapon arrives
 		// as a form ID and is looked up again, so a form the game has freed is
@@ -137,56 +125,11 @@ namespace FireRate
 			});
 		}
 
-		// The share for a_weapon, or 1 when the last measurement was for
-		// another gun, the case for a frame after a swap.
-		float ShareOf(const RE::TESObjectWEAP& a_weapon)
+		// Whether worn weapons slow right now. Asked on every call, so the
+		// switch works while the game runs.
+		bool On()
 		{
-			const auto reading = g_reading.load();
-			return reading.weapon == a_weapon.formID ? reading.share : 1.0F;
-		}
-
-		// The share for the weapon an NPC holds, or 1 when it has not used that
-		// weapon since.
-		float NpcShareOf(const RE::TESForm& a_actor, const RE::TESObjectWEAP& a_weapon)
-		{
-			const std::shared_lock l{ g_npcLock };
-			const auto             it = g_npcReadings.find(a_actor.formID);
-			return it != g_npcReadings.end() && it->second.weapon == a_weapon.formID ? it->second.share : 1.0F;
-		}
-
-		// Whether this copy keeps attacking while the trigger is held: an
-		// automatic gun or a motor driven blade. The copy's own data where it
-		// has any, since a receiver is what makes most guns automatic.
-		bool IsAutomatic(const RE::TESObjectWEAP& a_weapon, const RE::TESObjectWEAP::InstanceData* a_data)
-		{
-			const auto& stats = a_data ? *a_data : a_weapon.weaponData;
-			return stats.flags.any(RE::WEAPON_FLAGS::kAutomatic);
-		}
-
-		// Whether the attack an actor is in runs on while the button is held,
-		// as a blade cuts, the Ripper's and the minigun's Shredder bash. A bash
-		// or a power attack with the Ripper does not, and lands whole.
-		bool IsHeldAttack(const RE::Actor& a_actor)
-		{
-			const auto* process = a_actor.currentProcess;
-			const auto* high = process ? process->high : nullptr;
-			const auto* attack = high ? high->attackData.get() : nullptr;
-			return attack && attack->data.flags.any(RE::AttackData::Flag::kContinuousAttack);
-		}
-
-		// Whether the next HitFrame of an actor's blade at this share lands,
-		// see g_cutCredits. The credit carries from one press to the next, so
-		// the long run is the share exactly.
-		bool CutLands(RE::TESFormID a_actor, float a_share)
-		{
-			const std::scoped_lock l{ g_cutLock };
-			auto&                  credit = g_cutCredits[a_actor];
-			credit += a_share;
-			if (credit < 1.0F) {
-				return false;
-			}
-			credit -= 1.0F;
-			return true;
+			return Settings::bFireRate.GetValue();
 		}
 
 		// Stands in for CombatFormulas::CalcWeaponSpeedMult where the animation
@@ -194,12 +137,12 @@ namespace FireRate
 		// number.
 		float SpeedHk(const RE::Actor* a_actor, const RE::BGSObjectInstanceT<RE::TESObjectWEAP>& a_weapon, std::uint32_t a_equipIndex)
 		{
-			const auto speed = RE::CombatFormulas::CalcWeaponSpeedMult(a_actor, a_weapon, RE::BGSEquipIndex{ a_equipIndex });
+			const auto speed = g_speedLink(a_actor, a_weapon, a_equipIndex);
 
 			// Both slots of every actor are asked every frame, so anything but
 			// an automatic weapon in the first slot returns at once.
 			const auto* object = a_weapon.object;
-			if (a_equipIndex != 0 || !a_actor || !object || !object->IsWeapon()) {
+			if (!On() || !g_speedLink.Live() || a_equipIndex != 0 || !a_actor || !object || !object->IsWeapon()) {
 				return speed;
 			}
 
@@ -210,9 +153,11 @@ namespace FireRate
 			}
 
 			// An NPC's share was read as it last used the weapon, see
-			// NoteNpcWeapon.
+			// NoteNpcWeapon. A gun's is read by the fire call, so it counts
+			// only while that call is NEC's.
 			if (a_actor != RE::PlayerCharacter::GetSingleton()) {
-				return speed * NpcShareOf(*a_actor, weapon);
+				const auto gun = weapon.weaponData.type.get() == RE::WEAPON_TYPE::kGun;
+				return gun && !WeaponEvents::FireLive() ? speed : speed * NpcShareOf(*a_actor, weapon);
 			}
 
 			// The player's is measured for the next frame and read from the
@@ -226,8 +171,8 @@ namespace FireRate
 		// The handler and the gun are the player's.
 		float CountdownHk(const RE::TESObjectWEAP& a_weapon, const RE::TESObjectWEAP::InstanceData* a_data)
 		{
-			const auto rate = RE::TESObjectWEAP::GetRateOfFire(a_weapon, a_data);
-			if (rate <= 0.0F || !IsAutomatic(a_weapon, a_data)) {
+			const auto rate = g_countdownLink(a_weapon, a_data);
+			if (!On() || !g_countdownLink.Live() || rate <= 0.0F || !IsAutomatic(a_weapon, a_data)) {
 				return rate;
 			}
 
@@ -244,12 +189,12 @@ namespace FireRate
 		// slower burst gets a slower loop where the gun has one.
 		float SoundHk(const RE::TESObjectWEAP& a_weapon, const RE::TESObjectWEAP::InstanceData* a_data)
 		{
-			const auto rate = RE::TESObjectWEAP::GetRateOfFire(a_weapon, a_data);
+			const auto rate = g_soundLink(a_weapon, a_data);
 
 			// Every actor's shots start their sound here, and WeaponEvents says
 			// whose shot is on its way through Fire.
 			const auto* shooter = WeaponEvents::Shooter();
-			if (rate <= 0.0F || !shooter || !IsAutomatic(a_weapon, a_data)) {
+			if (!On() || !g_soundLink.Live() || rate <= 0.0F || !shooter || !IsAutomatic(a_weapon, a_data)) {
 				return rate;
 			}
 
@@ -271,100 +216,31 @@ namespace FireRate
 			}
 			return rate * share;
 		}
-
-		// Whether the clip of a held attack already plays at the weapon speed,
-		// see SpeedHk. No melee clip does. The minigun's Shredder bash does in
-		// the 3rd person graph every NPC uses, and so for the player everywhere
-		// but in first person. Aiming keeps the first person camera, the game
-		// never enters its iron sights camera.
-		bool PlaysAtSpeed(const RE::TESObjectWEAP& a_weapon, bool a_player)
-		{
-			if (a_weapon.IsMeleeWeapon()) {
-				return false;
-			}
-			const auto* camera = a_player ? RE::PlayerCamera::GetSingleton() : nullptr;
-			return !camera || !camera->QCameraEquals(RE::CameraState::kFirstPerson);
-		}
-
-		// Whether the blow of this HitFrame lands. Only the held attack of a
-		// worn automatic weapon whose clip ignores the speed is paced, see
-		// PlaysAtSpeed, so a bash or a power attack with the Ripper and every
-		// other blow land as ever. VATS keeps its own count of cuts, as it
-		// keeps a burst's shots.
-		bool Cuts(RE::Actor& a_actor, std::uint32_t a_equipIndex)
-		{
-			if (!IsHeldAttack(a_actor)) {
-				return true;
-			}
-
-			RE::BGSObjectInstance item{ nullptr, nullptr };
-			a_actor.GetEquippedItem(&item, RE::BGSEquipIndex{ a_equipIndex });
-			const auto* object = item.object;
-			if (!object || !object->IsWeapon()) {
-				return true;
-			}
-
-			const auto& weapon = static_cast<const RE::TESObjectWEAP&>(*object);
-			const auto* data = static_cast<const RE::TESObjectWEAP::InstanceData*>(item.instanceData.get());
-			const bool  player = &a_actor == RE::PlayerCharacter::GetSingleton();
-			if (!IsAutomatic(weapon, data) || PlaysAtSpeed(weapon, player)) {
-				return true;
-			}
-
-			if (player) {
-				const auto* vats = RE::VATS::GetSingleton();
-				if (vats && vats->mode == RE::VATS::VATS_MODE_ENUM::kPlayback) {
-					return true;
-				}
-			}
-
-			// The share SpeedHk hands the animation.
-			const auto share = player ? ShareOf(weapon) : NpcShareOf(a_actor, weapon);
-			if (share >= 1.0F) {
-				return true;
-			}
-
-			const auto lands = CutLands(a_actor.formID, share);
-			TraceLog::For(!player).Line("blade cut", "{:s} with {:s}  x {:.4f}  {:s}",
-				TraceLog::Who{ &a_actor }, TraceLog::Who{ &weapon }, share, lands ? "lands" : "skipped");
-			return lands;
-		}
-
-		// Stands in for Actor::QueueMeleeHit where HitFrameHandler queues the
-		// blow of a HitFrame. A worn blade lets through only its share of them,
-		// the way a worn gun's animation fires only its share of the shots.
-		void CutHk(RE::Actor* a_actor, std::uint32_t a_equipIndex, bool a_deal)
-		{
-			if (Cuts(*a_actor, a_equipIndex)) {
-				a_actor->QueueMeleeHit(RE::BGSEquipIndex{ a_equipIndex }, a_deal);
-			}
-		}
 	}
 
 	void Install()
 	{
-		// The animation is what fires a burst. Without it the other 2 would
-		// slow the presses and the sound of a gun firing as fast as ever, so
-		// nothing is patched.
-		if (!CallPatch::PatchCall(SPEED_SITE, RE::ID::CombatFormulas::CalcWeaponSpeedMult.address(),
-				reinterpret_cast<std::uintptr_t>(&SpeedHk))) {
+		// Every place is noted before any is judged, so each mod that has one
+		// is named. The animation is what fires a burst, and the 3 main places
+		// work as one: with any of them left to another mod NEC writes none of
+		// the row, see End in CallPatch.h.
+		const auto rateOfFire = RE::ID::TESObjectWEAP::GetRateOfFire.address();
+		const auto speed = CallPatch::PatchCall(SPEED_SITE, RE::ID::CombatFormulas::CalcWeaponSpeedMult.address(),
+			reinterpret_cast<std::uintptr_t>(&SpeedHk), g_speedLink);
+		const auto rate = CallPatch::PatchCall(RATE_SITE, rateOfFire, reinterpret_cast<std::uintptr_t>(&CountdownHk), g_countdownLink);
+		// A smaller part: without it a worn gun still fires slower and sounds
+		// as fast as a new one.
+		const auto sound = CallPatch::PatchCall(SOUND_SITE, rateOfFire, reinterpret_cast<std::uintptr_t>(&SoundHk), g_soundLink, Part::kFireSound);
+		const auto cuts = InstallCuts();
+		if (!speed || !rate || !cuts) {
 			REX::ERROR("A worn automatic weapon will keep firing at its full rate.");
 			return;
 		}
-		g_patched = true;
-
-		const auto rateOfFire = RE::ID::TESObjectWEAP::GetRateOfFire.address();
-		if (!CallPatch::PatchCall(RATE_SITE, rateOfFire, reinterpret_cast<std::uintptr_t>(&CountdownHk))) {
-			REX::ERROR("A worn automatic weapon will not wait any longer between two presses.");
-		}
-		if (!CallPatch::PatchCall(SOUND_SITE, rateOfFire, reinterpret_cast<std::uintptr_t>(&SoundHk))) {
+		if (!sound) {
 			REX::ERROR("A worn automatic weapon will sound as fast as a new one.");
 		}
-		if (!CallPatch::PatchCall(CUT_SITE, RE::ID::Actor::QueueMeleeHit.address(), reinterpret_cast<std::uintptr_t>(&CutHk))) {
-			REX::ERROR("A worn Ripper will keep cutting as often as a new one.");
-		}
 
-		REX::INFO("A worn automatic weapon fires slower, in anybody's hands, down to {:.2f} of its rate at nothing.", Floor());
+		REX::INFO("A worn automatic weapon fires slower, for anyone, down to {:.2f} of its rate at 0 condition.", Floor());
 	}
 
 	void Unload()
@@ -373,24 +249,23 @@ namespace FireRate
 			const std::unique_lock l{ g_npcLock };
 			g_npcReadings.clear();
 		}
-		const std::scoped_lock l{ g_cutLock };
-		g_cutCredits.clear();
+		ForgetCuts();
 	}
 
 	bool Slows()
 	{
-		return g_patched;
+		return !CallPatch::IsYielded(Settings::bFireRate);
 	}
 
 	float RateShare(const RE::TESObjectWEAP& a_weapon, const RE::TESObjectWEAP::InstanceData* a_data, float a_health)
 	{
-		return Slows() && IsAutomatic(a_weapon, a_data) ? Share(a_health) : 1.0F;
+		return On() && IsAutomatic(a_weapon, a_data) ? Share(a_health) : 1.0F;
 	}
 
 	void NoteNpcWeapon(RE::Actor& a_actor, const RE::BGSObjectInstanceT<RE::TESObjectWEAP>& a_weapon)
 	{
 		const auto* object = a_weapon.object;
-		if (!Slows() || !object || !object->IsWeapon()) {
+		if (!On() || !object || !object->IsWeapon()) {
 			return;
 		}
 
@@ -432,5 +307,24 @@ namespace FireRate
 			TraceLog::Npc::Line("fire speed", "{:s} with {:s}  health {:.6f}  played at x {:.4f}",
 				TraceLog::Who{ &a_actor }, TraceLog::Who{ &weapon }, *health, now.share);
 		}
+	}
+
+	bool IsAutomatic(const RE::TESObjectWEAP& a_weapon, const RE::TESObjectWEAP::InstanceData* a_data)
+	{
+		const auto& stats = a_data ? *a_data : a_weapon.weaponData;
+		return stats.flags.any(RE::WEAPON_FLAGS::kAutomatic);
+	}
+
+	float ShareOf(const RE::TESObjectWEAP& a_weapon)
+	{
+		const auto reading = g_reading.load();
+		return reading.weapon == a_weapon.formID ? reading.share : 1.0F;
+	}
+
+	float NpcShareOf(const RE::TESForm& a_actor, const RE::TESObjectWEAP& a_weapon)
+	{
+		const std::shared_lock l{ g_npcLock };
+		const auto             it = g_npcReadings.find(a_actor.formID);
+		return it != g_npcReadings.end() && it->second.weapon == a_weapon.formID ? it->second.share : 1.0F;
 	}
 }

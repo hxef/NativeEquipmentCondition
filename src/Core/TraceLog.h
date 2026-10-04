@@ -37,12 +37,17 @@
 // full reset.
 namespace TraceLog
 {
-	// Opens the 3 files beside NEC.log. Call it after F4SE::Init, which creates
-	// NEC.log.
+	// Opens the 3 files beside NEC.log when bTraceLogs is on. Call it after
+	// F4SE::Init, which creates NEC.log.
 	void Open();
 
-	// False until Open has succeeded. Every function below asks first, so a
-	// trace call costs almost nothing without a file.
+	// Lets lines through to the 3 files, or stops them. The files open the
+	// first time and stay open, since another thread may be part way into a
+	// line. Open calls it with bTraceLogs as the game starts.
+	void Switch(bool a_on);
+
+	// False while the trace logs are switched off. Every function below asks
+	// first, so a trace call costs almost nothing while they are.
 	bool IsOpen();
 
 	// Tags switched off. Each floods the log once its code works: 1 shot

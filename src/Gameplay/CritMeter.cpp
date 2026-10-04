@@ -2,7 +2,7 @@
 
 #include "Condition/Condition.h"
 #include "Condition/Equipped.h"
-#include "Core/CallPatch.h"
+#include "Core/CallPatch/CallPatch.h"
 #include "Core/Settings.h"
 #include "Core/TraceLog.h"
 
@@ -32,16 +32,16 @@ namespace CritMeter
 			return Condition::Share(a_health, Settings::fCritMeterFloor.GetValue());
 		}
 
+		CallPatch::Link<float(const RE::ActorValueOwner*, const RE::BGSObjectInstanceT<RE::TESObjectWEAP>&)> g_chargeLink;
+
 		float CritChargeHk(const RE::ActorValueOwner* a_avOwner, const RE::BGSObjectInstanceT<RE::TESObjectWEAP>& a_weapon)
 		{
-			// The patch replaced the call, not the function, so this does not
-			// recurse.
-			const auto base = RE::CombatFormulas::CalcVATSCriticalCharge(a_avOwner, a_weapon);
+			const auto base = g_chargeLink(a_avOwner, a_weapon);
 
 			// Nothing to scale in an empty charge. Unarmed names the race's
 			// bare hands weapon, and the condition lookup below leaves those
 			// alone.
-			if (base <= 0.0F || !a_weapon.object) {
+			if (base <= 0.0F || !a_weapon.object || !Settings::bCritMeter.GetValue() || !g_chargeLink.Live()) {
 				return base;
 			}
 
@@ -73,6 +73,11 @@ namespace CritMeter
 
 		thread_local Blow t_blow{};
 
+		// The chance and roll hooks.
+		CallPatch::Held                                                                                                     g_rolled;
+		CallPatch::Link<void(RE::BGSEntryPoint::ENTRY_POINT, RE::Actor*, const RE::BGSObjectInstanceT<RE::TESObjectWEAP>*, const void*, float*)> g_chanceLink;
+		CallPatch::Link<float()>                                                                                            g_rollLink;
+
 		// Stands in for BGSEntryPoint::HandleEntryPoint where the roll asks the
 		// perks about the chance, and notes whose blow it is. The arguments are
 		// the attacker, the weapon, the target as an object instance and the
@@ -80,12 +85,15 @@ namespace CritMeter
 		void ChanceHk(RE::BGSEntryPoint::ENTRY_POINT a_entryPoint, RE::Actor* a_attacker,
 			const RE::BGSObjectInstanceT<RE::TESObjectWEAP>* a_weapon, const void* a_target, float* a_chance)
 		{
-			RE::BGSEntryPoint::HandleEntryPoint(a_entryPoint, a_attacker, a_weapon, a_target, a_chance);
+			g_chanceLink(a_entryPoint, a_attacker, a_weapon, a_target, a_chance);
 
 			const auto* object = a_weapon ? a_weapon->object : nullptr;
 			const auto* weapon = object && object->IsWeapon() ? static_cast<const RE::TESObjectWEAP*>(object) : nullptr;
 			const bool  npc = a_attacker && a_attacker != RE::PlayerCharacter::GetSingleton();
-			t_blow = npc && weapon && Condition::WearsOut(*weapon) ? Blow{ a_attacker, weapon, a_chance } : Blow{};
+			// The set is asked before the switch, so a pair that waits still
+			// sees this hook run while bCritMeter is off.
+			const bool runs = g_rolled.Runs(g_chanceLink);
+			t_blow = runs && Settings::bCritMeter.GetValue() && npc && weapon && Condition::WearsOut(*weapon) ? Blow{ a_attacker, weapon, a_chance } : Blow{};
 		}
 
 		// Stands in for BSRandom::Float0To1 where the roll is made. The blow is
@@ -94,9 +102,9 @@ namespace CritMeter
 		// chance by it.
 		float RollHk()
 		{
-			const auto roll = RE::BSRandom::Float0To1();
+			const auto roll = g_rollLink();
 			const auto blow = std::exchange(t_blow, Blow{});
-			if (!blow.attacker || !blow.chance || !(*blow.chance > 0.0F)) {
+			if (!g_rolled.Runs(g_rollLink) || !blow.attacker || !blow.chance || !(*blow.chance > 0.0F)) {
 				return roll;
 			}
 
@@ -122,19 +130,26 @@ namespace CritMeter
 	{
 		const auto floor = Settings::fCritMeterFloor.GetValue();
 
-		if (!CallPatch::PatchCall(CHARGE_SITE, RE::ID::CombatFormulas::CalcVATSCriticalCharge.address(),
-				reinterpret_cast<std::uintptr_t>(&CritChargeHk))) {
-			REX::ERROR("A worn weapon will keep filling the VATS critical meter as fast as a new one.");
-		} else {
-			REX::INFO("A worn weapon fills the VATS critical meter slower, down to {:.2f} of the rate at nothing.", floor);
-		}
+		// Both are noted before either is judged, so each mod that has one is
+		// named. A held pair is never written while the meter is another
+		// mod's, so its hooks give the game's own result.
+		const auto meter = CallPatch::PatchCall(CHARGE_SITE, RE::ID::CombatFormulas::CalcVATSCriticalCharge.address(),
+			reinterpret_cast<std::uintptr_t>(&CritChargeHk), g_chargeLink);
 
-		// The roll reads what the chance noted, so the 2 go in together.
-		const auto rolled = CallPatch::PatchTogether({
-			{ CHANCE_SITE, RE::ID::BGSEntryPoint::HandleEntryPoint.address(), reinterpret_cast<std::uintptr_t>(&ChanceHk) },
-			{ ROLL_SITE, RE::ID::BSRandom::Float0To1.address(), reinterpret_cast<std::uintptr_t>(&RollHk) },
-		});
-		if (!rolled) {
+		// The roll reads what the chance noted, so the 2 go in together. A
+		// smaller part: without them an NPC's worn weapon lands criticals as
+		// often as a new one, and the meter still fills slower.
+		g_rolled = CallPatch::PatchTogether({
+			{ CHANCE_SITE, RE::ID::BGSEntryPoint::HandleEntryPoint.address(), reinterpret_cast<std::uintptr_t>(&ChanceHk), &g_chanceLink },
+			{ ROLL_SITE, RE::ID::BSRandom::Float0To1.address(), reinterpret_cast<std::uintptr_t>(&RollHk), &g_rollLink },
+		}, Part::kNpcCrits);
+
+		if (!meter) {
+			REX::ERROR("A worn weapon will keep filling the VATS critical meter as fast as a new one.");
+			return;
+		}
+		REX::INFO("A worn weapon fills the VATS critical meter slower, down to {:.2f} of the rate at nothing.", floor);
+		if (!g_rolled) {
 			REX::ERROR("An NPC's worn weapon will keep landing critical hits as often as a new one.");
 		} else {
 			REX::INFO("An NPC's worn weapon lands fewer critical hits, down to {:.2f} of the chance at nothing.", floor);

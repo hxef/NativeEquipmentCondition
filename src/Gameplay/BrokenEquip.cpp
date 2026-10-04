@@ -1,8 +1,10 @@
 #include "Gameplay/BrokenEquip.h"
 
-#include "Core/CallPatch.h"
+#include "Core/CallPatch/CallPatch.h"
 #include "Core/TraceLog.h"
 
+#include <array>
+#include <cstddef>
 #include <optional>
 #include <utility>
 
@@ -26,11 +28,20 @@ namespace BrokenEquip
 		// asked inside the toggle on the same thread, about the same handle.
 		thread_local std::optional<std::uint32_t> t_puttingBack;
 
+		// The equip pair.
+		CallPatch::Held                                                      g_held;
+		using CanEquip_t = Result (*)(RE::ActorEquipManager*, RE::Actor*, const std::uint32_t&, std::uint32_t);
+		using Toggle_t = bool (*)(RE::ActorEquipManager*, RE::Actor*, const std::uint32_t&, std::uint32_t, const RE::BGSEquipSlot*, bool, bool);
+		std::array<CallPatch::Link<CanEquip_t>, 2>                           g_canEquipLinks;
+		CallPatch::Link<Toggle_t>                                            g_putBackLink;
+
+		template <std::size_t I>
 		Result CanEquipHk(RE::ActorEquipManager* a_manager, RE::Actor* a_actor, const std::uint32_t& a_handleID, std::uint32_t a_stackID)
 		{
-			// The patch replaced the call, not the function, so this does not
-			// recurse.
-			const auto result = a_manager->CanEquip(a_actor, a_handleID, a_stackID);
+			const auto result = g_canEquipLinks[I](a_manager, a_actor, a_handleID, a_stackID);
+			if (!g_held.Runs(g_canEquipLinks[I])) {
+				return result;
+			}
 
 			// A yes, a locked item and the broken refusal are decided here.
 			// Every other result refuses the item for its own reason and is
@@ -74,11 +85,17 @@ namespace BrokenEquip
 		}
 
 		// Marks the item being put back for CanEquipHk while the toggle runs.
+		// Marked whether the pair runs or not: CanEquipHk reads the mark only
+		// while the pair runs, and a pair that waits can run again inside the
+		// toggle.
 		bool PutBackHk(RE::ActorEquipManager* a_manager, RE::Actor* a_actor, const std::uint32_t& a_handleID, std::uint32_t a_stackID,
 			const RE::BGSEquipSlot* a_slot, bool a_allowUnequip, bool a_locked)
 		{
+			if (!g_putBackLink.Live()) {
+				return g_putBackLink(a_manager, a_actor, a_handleID, a_stackID, a_slot, a_allowUnequip, a_locked);
+			}
 			const auto outer = std::exchange(t_puttingBack, a_handleID);
-			const auto done = a_manager->ToggleEquipInventoryItem(a_actor, a_handleID, a_stackID, a_slot, a_allowUnequip, a_locked);
+			const auto done = g_putBackLink(a_manager, a_actor, a_handleID, a_stackID, a_slot, a_allowUnequip, a_locked);
 			t_puttingBack = outer;
 			return done;
 		}
@@ -89,8 +106,9 @@ namespace BrokenEquip
 		// Both or neither: the button without the toggle offers what the
 		// toggle refuses.
 		const auto canEquip = RE::ID::ActorEquipManager::CanEquip.address();
-		const auto check = reinterpret_cast<std::uintptr_t>(&CanEquipHk);
-		if (!CallPatch::PatchTogether({ { TOGGLE_SITE, canEquip, check }, { BUTTON_SITE, canEquip, check } })) {
+		g_held = CallPatch::PatchTogether({ { TOGGLE_SITE, canEquip, reinterpret_cast<std::uintptr_t>(&CanEquipHk<0>), &g_canEquipLinks[0] },
+			{ BUTTON_SITE, canEquip, reinterpret_cast<std::uintptr_t>(&CanEquipHk<1>), &g_canEquipLinks[1] } });
+		if (!g_held) {
 			REX::ERROR("A broken item that is on will be stuck on.");
 			return;
 		}
@@ -99,8 +117,13 @@ namespace BrokenEquip
 		// The put back hook only marks what CanEquipHk reads, so it goes in
 		// after it or not at all.
 		const auto toggle = RE::ID::ActorEquipManager::ToggleEquipInventoryItem.address();
-		if (!CallPatch::PatchCall(PUT_BACK_SITE, toggle, reinterpret_cast<std::uintptr_t>(&PutBackHk))) {
+		if (!CallPatch::PatchCall(PUT_BACK_SITE, toggle, reinterpret_cast<std::uintptr_t>(&PutBackHk), g_putBackLink)) {
 			REX::ERROR("A broken piece taken off for the barber chair or the surgeon stays off.");
 		}
+	}
+
+	bool Works()
+	{
+		return g_held.Intact();
 	}
 }

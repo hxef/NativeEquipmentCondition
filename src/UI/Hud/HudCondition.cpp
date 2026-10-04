@@ -1,13 +1,15 @@
 #include "UI/Hud/HudCondition.h"
 
 #include "UI/Flash.h"
-#include "UI/Hud/HudParts.h"
+#include "UI/Hud/HudParts/HudParts.h"
 #include "UI/MenuMovies.h"
+#include "Core/Settings.h"
 #include "Core/TraceLog.h"
 
 #include <algorithm>
 #include <array>
 #include <chrono>
+#include <cmath>
 #include <cstdint>
 
 namespace HudCondition
@@ -68,6 +70,26 @@ namespace HudCondition
 			bool operator==(const Transform&) const = default;
 		};
 
+		// How far the player moved the bar from the divider, from fHudBarX and
+		// fHudBarY, above 0 to the right and up. 0 and 0 is the divider's own
+		// place.
+		struct Shift
+		{
+			double x = 0.0;
+			double y = 0.0;
+
+			bool operator==(const Shift&) const = default;
+		};
+
+		Shift ShiftNow()
+		{
+			const Shift shift{ Settings::fHudBarX.GetValue(), Settings::fHudBarY.GetValue() };
+
+			// A nan typed into the ini never equals itself, so the bar would be
+			// placed again every frame. It counts as 0 and 0.
+			return std::isfinite(shift.x) && std::isfinite(shift.y) ? shift : Shift{};
+		}
+
 		Transform TransformOf(const Value& a_clip)
 		{
 			return Transform{ Flash::Number(a_clip, "x"sv), Flash::Number(a_clip, "y"sv),
@@ -104,13 +126,14 @@ namespace HudCondition
 			HudParts::Readout::SetTrack(a_readout, a_divider.width, BAR_DEEP);
 		}
 
-		// Puts the readout where the divider is. It sits beside the counter in
-		// the same parent, so the counter's position and scale are copied onto
-		// it.
-		void Place(Value& a_readout, const Transform& a_counter, const Divider& a_divider)
+		// Puts the readout where the divider is, moved by the player's shift.
+		// It sits beside the counter in the same parent, so the counter's
+		// position and scale are copied onto it. The HUD's y runs down, so the
+		// shift's y is taken off.
+		void Place(Value& a_readout, const Transform& a_counter, const Divider& a_divider, const Shift& a_shift)
 		{
-			a_readout.SetMember("x"sv, Value(a_counter.x + a_divider.x * a_counter.scaleX));
-			a_readout.SetMember("y"sv, Value(a_counter.y + a_divider.y * a_counter.scaleY));
+			a_readout.SetMember("x"sv, Value(a_counter.x + a_divider.x * a_counter.scaleX + a_shift.x));
+			a_readout.SetMember("y"sv, Value(a_counter.y + a_divider.y * a_counter.scaleY - a_shift.y));
 			a_readout.SetMember("scaleX"sv, Value(a_counter.scaleX));
 			a_readout.SetMember("scaleY"sv, Value(a_counter.scaleY));
 		}
@@ -176,11 +199,13 @@ namespace HudCondition
 				}
 
 				// A HUD mod or a power armor HUD can move the counter, and the
-				// bar goes with it.
+				// bar goes with it. The MCM page can move the bar.
 				const auto shape = TransformOf(counter);
-				if (!placed || shape != placedAgainst) {
-					Place(readout, shape, divider);
+				const auto shift = ShiftNow();
+				if (!placed || shape != placedAgainst || shift != placedShift) {
+					Place(readout, shape, divider, shift);
 					placedAgainst = shape;
+					placedShift = shift;
 					placed = true;
 				}
 
@@ -207,14 +232,16 @@ namespace HudCondition
 				}
 
 				// The divider hides while the bar is drawn over it. With no
-				// condition to show, the counter keeps its divider.
-				const auto covered = counterShows && percent >= 0;
+				// condition to show, or the bar moved off it, the counter keeps
+				// its divider.
+				const auto covered = counterShows && percent >= 0 && shift == Shift{};
 				if (covered != dividerHidden) {
 					Value drawn;
 					if (counter.GetMember(DIVIDER_NAME, &drawn) && drawn.IsDisplayObject()) {
 						drawn.SetMember("visible"sv, Value(!covered));
 					}
 					dividerHidden = covered;
+					TraceLog::Line("menu", "HUD ammo divider {:s}, the bar moved by {:.0f},{:.0f}", covered ? "hides under the CND bar" : "shows", shift.x, shift.y);
 				}
 
 				if (opacity != shownOpacity) {
@@ -236,6 +263,7 @@ namespace HudCondition
 				fade = 0.0;
 				divider = Divider{};
 				placedAgainst = Transform{};
+				placedShift = Shift{};
 				placed = false;
 				laidOut = false;
 				colored = false;
@@ -251,6 +279,7 @@ namespace HudCondition
 			double            fade = 0.0;
 			Divider           divider;
 			Transform         placedAgainst;
+			Shift             placedShift;
 			bool              placed = false;
 			bool              laidOut = false;
 			bool              colored = false;
@@ -262,45 +291,51 @@ namespace HudCondition
 
 		// Lives as long as the plugin, the same way as the item card listener.
 		FrameListener g_frameListener;
+
+		// Adds the readout and its frame listener to the HUD movie.
+		void Build(Scaleform::GFx::Movie& a_movie)
+		{
+			Value meters;
+			Value counter;
+			if (!a_movie.GetVariable(&meters, METERS_PATH) || !meters.IsDisplayObject() ||
+				!meters.GetMember(COUNTER_NAME, &counter) || !counter.IsDisplayObject()) {
+				REX::WARN("The HUD has no ammo counter at {:s}.{:s}, so it shows no CND. A HUD replacer may have moved it.", METERS_PATH, COUNTER_NAME);
+				return;
+			}
+
+			// One readout beside the counter, in the same parent, so it stays
+			// when the counter hides. The first frames measure the divider, lay
+			// the parts out and colour them. Nothing is added to the HUD until
+			// the whole readout is built, so a movie that refuses any part
+			// keeps its own divider.
+			auto readout = HudParts::Readout::Create(a_movie, READOUT_NAME);
+			if (!readout.IsDisplayObject()) {
+				REX::WARN("The HUD movie would not take a CND bar, so it shows no CND.");
+				return;
+			}
+			meters.Invoke("addChild", std::array{ readout });
+
+			// A new HUD movie starts with nothing drawn.
+			g_frameListener.Reset();
+
+			Value listener;
+			a_movie.CreateFunction(&listener, &g_frameListener);
+			if (!readout.Invoke("addEventListener", std::array{ Value("enterFrame"), listener })) {
+				REX::WARN("The HUD refused the frame listener, so its CND bar never updates.");
+				return;
+			}
+
+			HudParts::Weapon::Queue();
+			TraceLog::Line("menu", "HUDMenu.swf loaded, CND takes the divider's place between the ammo numbers");
+		}
+
+		HudParts::Waiter g_waiter{ Settings::bHudCondition, &Build };
 	}
 
 	void OnMovieLoaded(Scaleform::GFx::Movie& a_movie, std::string_view a_file)
 	{
-		if (!MenuMovies::IsMovie(a_file, "HUDMenu.swf"sv)) {
-			return;
+		if (MenuMovies::IsMovie(a_file, "HUDMenu.swf"sv)) {
+			g_waiter.Watch(a_movie, "the CND bar");
 		}
-
-		Value meters;
-		Value counter;
-		if (!a_movie.GetVariable(&meters, METERS_PATH) || !meters.IsDisplayObject() ||
-			!meters.GetMember(COUNTER_NAME, &counter) || !counter.IsDisplayObject()) {
-			REX::WARN("The HUD has no ammo counter at {:s}.{:s}, so it shows no CND. A HUD replacer may have moved it.", METERS_PATH, COUNTER_NAME);
-			return;
-		}
-
-		// One readout beside the counter, in the same parent, so it stays when
-		// the counter hides. The first frames measure the divider, lay the
-		// parts out and colour them. Nothing is added to the HUD until the
-		// whole readout is built, so a movie that refuses any part keeps its
-		// own divider.
-		auto readout = HudParts::Readout::Create(a_movie, READOUT_NAME);
-		if (!readout.IsDisplayObject()) {
-			REX::WARN("The HUD movie would not take a CND bar, so it shows no CND.");
-			return;
-		}
-		meters.Invoke("addChild", std::array{ readout });
-
-		// A new HUD movie starts with nothing drawn.
-		g_frameListener.Reset();
-
-		Value listener;
-		a_movie.CreateFunction(&listener, &g_frameListener);
-		if (!readout.Invoke("addEventListener", std::array{ Value("enterFrame"), listener })) {
-			REX::WARN("The HUD refused the frame listener, so its CND bar never updates.");
-			return;
-		}
-
-		HudParts::Weapon::Queue();
-		TraceLog::Line("menu", "HUDMenu.swf loaded, CND takes the divider's place between the ammo numbers");
 	}
 }

@@ -3,6 +3,7 @@
 #include "Condition/Condition.h"
 #include "Condition/Equipped.h"
 #include "Condition/Repair.h"
+#include "Core/CallPatch/CallPatch.h"
 #include "Core/ItemCards.h"
 #include "Core/TraceLog.h"
 #include "UI/Repair/Restore.h"
@@ -36,6 +37,9 @@ namespace ConsoleRepair
 			{ "Percent or armor", RE::SCRIPT_PARAM_TYPE::kChar, true },
 			{ "Percent or armor", RE::SCRIPT_PARAM_TYPE::kChar, true },
 		};
+
+		// The help srm shows while it is NEC's.
+		constexpr const char HELP[] = "Sets the weapon in hand, or with the word armor every worn piece, to a condition in percent, or to full without one";
 
 		// What was typed: the level, full where no number was, and whether the
 		// word armor was among it.
@@ -107,9 +111,32 @@ namespace ConsoleRepair
 			return out;
 		}
 
-		bool Execute(const RE::SCRIPT_PARAMETER* a_parameters, const char* a_compiledParams, RE::TESObjectREFR* a_refObject,
-			RE::TESObjectREFR* a_container, RE::Script* a_script, RE::ScriptLocals* a_scriptLocals, float&, std::uint32_t& a_offset)
+		// The command's own function before NEC, null for none, and whether
+		// the place still runs. Once it is cut, srm hands the call on to it.
+		RE::SCRIPT_FUNCTION::ExecuteFunction_t* _Execute = nullptr;
+		CallPatch::LinkBase                     g_srmLink;
+
+		// The command and its help and parameters as NEC found them, which
+		// Settle puts back.
+		struct Found
 		{
+			RE::SCRIPT_FUNCTION*  command = nullptr;
+			const char*           help = nullptr;
+			std::uint16_t         count = 0;
+			RE::SCRIPT_PARAMETER* parameters = nullptr;
+		};
+
+		Found g_found;
+
+		bool ExecuteHk(const RE::SCRIPT_PARAMETER* a_parameters, const char* a_compiledParams, RE::TESObjectREFR* a_refObject,
+			RE::TESObjectREFR* a_container, RE::Script* a_script, RE::ScriptLocals* a_scriptLocals, float& a_result,
+			std::uint32_t& a_offset)
+		{
+			if (!g_srmLink.Live()) {
+				return !_Execute ||
+				       _Execute(a_parameters, a_compiledParams, a_refObject, a_container, a_script, a_scriptLocals, a_result, a_offset);
+			}
+
 			// The engine writes only the words that were typed, so a bare srm
 			// keeps both empty.
 			char first[WORD]{};
@@ -182,10 +209,41 @@ namespace ConsoleRepair
 			return;
 		}
 
-		command->helpString = "Sets the weapon in hand, or with the word armor every worn piece, to a condition in percent, or to full without one";
+		// The help and the parameters go with the command, so they stay as
+		// they are when the command is left alone, and Settle puts them back
+		// once its place is cut. A command with no function of its own is
+		// free too.
+		// srm replaces the command and hands the call on only once its place
+		// is cut, so NEC never runs on top of a mod here, which it would skip.
+		const auto held = CallPatch::PatchPointer(reinterpret_cast<std::uintptr_t>(&command->executeFunction),
+			reinterpret_cast<std::uintptr_t>(&ExecuteHk), "console srm", Part::kNone, CallPatch::NEVER_HANDS_ON, &g_srmLink);
+		if (!held) {
+			REX::WARN("The console command srm stays as it was, with no repairs from NEC.");
+			return;
+		}
+		_Execute = reinterpret_cast<RE::SCRIPT_FUNCTION::ExecuteFunction_t*>(*held);
+
+		g_found = { command, command->helpString, command->paramCount, command->parameters };
+		command->helpString = HELP;
 		command->SetParameters(PARAMETERS);
-		command->executeFunction = Execute;
 
 		REX::INFO("The console command srm repairs the weapon in hand, or with the word armor every worn piece, or sets them to the percent typed after it.");
+	}
+
+	// Each is put back only while it is still NEC's, so a mod that set its
+	// own keeps it.
+	void Settle()
+	{
+		auto* const command = g_found.command;
+		if (!command || g_srmLink.Live()) {
+			return;
+		}
+		if (command->helpString == HELP) {
+			command->helpString = g_found.help;
+		}
+		if (command->parameters == PARAMETERS) {
+			command->paramCount = g_found.count;
+			command->parameters = g_found.parameters;
+		}
 	}
 }

@@ -2,6 +2,8 @@
 
 #include "Core/Plugin.h"
 
+#include "Core/Settings.h"
+
 #include <cstdint>
 #include <string_view>
 
@@ -9,7 +11,7 @@
 // twice, in the ammo counter out of power armor and on the dash in it.
 // HudCondition.cpp and PowerArmorCondition.cpp each place it by their own
 // rules, and both share the readout, the colour and the condition of the weapon
-// in hand kept here.
+// in hand kept here. Readout.cpp draws the readout, HudParts.cpp the rest.
 namespace HudParts
 {
 	using Value = Scaleform::GFx::Value;
@@ -32,7 +34,9 @@ namespace HudParts
 	// The condition of the weapon in the player's hands, as the HUD knows it.
 	// It is checked through F4SE's task queue and read from an atomic a frame
 	// later, and both readouts share it. F4SE runs the task on a worker thread
-	// during play, so the check holds the inventory lock while it reads.
+	// during play, so the check holds the inventory lock while it reads. While
+	// bHudCondition is off nothing is checked and Percent says NONE, so both
+	// readouts fade as for a weapon with no condition.
 	namespace Weapon
 	{
 		// What Percent returns when nothing in hand wears out, which hides a
@@ -145,4 +149,32 @@ namespace HudParts
 	// whether the current HUD mode lets it be seen, or null. The game writes
 	// the byte and the HUD reads it, so no lock.
 	[[nodiscard]] const bool* ComponentCanBeVisible(const RE::HUDMenu& a_menu, std::uintptr_t a_vtable);
+
+	// Builds a HUD part of NEC's the first frame its switch reads on, so while
+	// it is off the HUD movie gets nothing of NEC's but this listener on its
+	// stage. One per part, living as long as the plugin. A built part's
+	// listener stays and does nothing, since it could only take itself off
+	// through a reference to the movie held past the movie.
+	class Waiter final : public Scaleform::GFx::FunctionHandler
+	{
+	public:
+		Waiter(const Settings::Live<bool>& a_on, void (*a_build)(Scaleform::GFx::Movie&)) noexcept :
+			on(&a_on),
+			build(a_build)
+		{}
+
+		// Builds at once while the switch is on, or listens for the first
+		// frame it is. a_what names the part in the log.
+		void Watch(Scaleform::GFx::Movie& a_movie, const char* a_what);
+
+		void Call(const Params& a_params) override;
+
+	private:
+		const Settings::Live<bool>* on;
+		void (*build)(Scaleform::GFx::Movie&);
+
+		// The HUD movie still waiting for its part, or null. Only the HUD's
+		// thread reads or writes it.
+		const Scaleform::GFx::Movie* waiting = nullptr;
+	};
 }

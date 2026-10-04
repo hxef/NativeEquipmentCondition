@@ -1,15 +1,16 @@
 #include "UI/Inventory/ItemCard/Cards.h"
 
 #include "Condition/Condition.h"
-#include "Core/CallPatch.h"
+#include "Core/CallPatch/CallPatch.h"
 #include "Core/TraceLog.h"
-#include "Gameplay/FireRate.h"
+#include "Gameplay/FireRate/FireRate.h"
 #include "UI/Inventory/Pipboy.h"
 
 #include <algorithm>
 #include <array>
 #include <cstdint>
 #include <optional>
+#include <utility>
 
 namespace ItemCard
 {
@@ -18,55 +19,45 @@ namespace ItemCard
 		using CallPatch::CallSite;
 		using Scaleform::GFx::Value;
 
-		// The equipped items a card is compared with, each an item and the
-		// stack of it that is equipped.
+		// The equipped items a card is compared with, each with its stack.
 		using CompareItems = RE::BSScrapArray<RE::BSTTuple<const RE::BGSInventoryItem*, std::uint32_t>>;
 
 		// The calls to InventoryUserUIUtils::PopulateItemCardInfo_Helper, which
-		// builds the card for every menu except the Pip-Boy.
+		// builds the card for every menu except the Pip-Boy: containers and
+		// bartering, the workbench and inspect and the power armor station,
+		// and cooking.
 		constexpr CallSite HELPER_SITES[] = {
-			// InventoryUserUIUtils::PopulateItemCardInfo, for containers and
-			// bartering
 			{ 2222624, 0x0E6, "container card" },
-			// ExamineMenu::UpdateItemCard, for the workbench, inspecting an
-			// item and the power armor station
 			{ 2223053, 0x281, "examine card" },
-			// CookingMenu::UpdateItemCard
 			{ 2222904, 0x0E9, "cooking card" },
 		};
 
 		// The calls to PipboyInventoryData::PopulateItemCardInfo, the same job
-		// for the Pip-Boy, a card for every item it lists.
+		// for the Pip-Boy. The first, in InitializeItem, is when an item first
+		// appears, a tail call whose return nothing reads, see PatchCall. The
+		// second is a category rebuilt, which ItemCards::Refresh asks after
+		// wear.
 		constexpr CallSite PIPBOY_SITES[] = {
-			// PipboyInventoryData::InitializeItem, when an item first appears
-			// in the Pip-Boy. A tail call, see CallPatch::PatchCall, whose
-			// return value nothing reads.
-			{ RE::ID::PipboyInventoryData::InitializeItem.id(), 0x651, "pipboy card" },
-			// PipboyInventoryData::RepopulateItemCardOnSection, when a category
-			// of cards is rebuilt, which ItemCards::Refresh asks for after wear
+			{ RE::ID::PipboyInventoryData::InitializeItem.id(), 0x651, "pipboy card", true },
 			{ RE::ID::PipboyInventoryData::RepopulateItemCardOnSection.id(), 0x40F, "pipboy card rebuild" },
 		};
 
 		// The calls to CombatFormulas::GetWeaponDisplayRateOfFire inside the 2
-		// functions above. The game hands them the weapon and its mods and
-		// nothing saying which copy, so the hooks read that from Building.
+		// functions above. The game hands them the weapon and its mods, not
+		// which copy, so the hooks read that from Building.
 		constexpr CallSite RATE_SITES[] = {
-			// PopulateItemCardInfo_Helper, for the item on the card
+			// PopulateItemCardInfo_Helper, the item on the card and the
+			// equipped weapon it is compared with, then the Pip-Boy's card.
 			{ RE::ID::InventoryUserUIUtils::PopulateItemCardInfo_Helper.id(), 0x7E7, "card fire rate" },
-			// PopulateItemCardInfo_Helper again, for the equipped weapon the
-			// item is compared with. The card shows the difference between the
-			// 2.
 			{ RE::ID::InventoryUserUIUtils::PopulateItemCardInfo_Helper.id(), 0x7FF, "card fire rate compared" },
-			// PipboyInventoryData::PopulateItemCardInfo, which compares nothing
 			{ RE::ID::PipboyInventoryData::PopulateItemCardInfo.id(), 0x454, "pipboy card fire rate" },
 		};
 
 		// 2 lists compare weapons by fire rate without a card. Each reads a
 		// weapon's stack just before asking for the rate, so hooks on those
 		// calls note the stack's condition for the rate hook, see t_listHealth.
-		// The first is the check whether an item beats the equipped weapon, for
-		// the quick container's better mark, which adds up damage types through
-		// PipboyInventoryUtils::FillDamageTypeInfo and multiplies by the rate.
+		// The first is the better mark of the quick container, which adds up
+		// damage types through FillDamageTypeInfo and multiplies by the rate.
 		constexpr CallSite BETTER_TYPES_SITES[] = {
 			{ 2222626, 0x198, "better check types" },
 			{ 2222626, 0x210, "better check equipped types" },
@@ -76,38 +67,58 @@ namespace ItemCard
 			{ 2222626, 0x242, "better check equipped fire rate" },
 		};
 
-		// The second is the comparator a container or a trader sorts with. By
-		// fire rate, it reads each weapon's mods through
-		// BGSInventoryItem::GetInstanceData and asks for the rate right after.
-		// The Pip-Boy sorts by the rates on its cards.
+		// The second is the sort a container or a trader uses. By fire rate it
+		// reads each weapon's mods through GetInstanceData and asks for the
+		// rate right after. The Pip-Boy sorts by the rates on its cards.
 		constexpr CallSite SORT_MODS_SITE{ 2222850, 0x2EB, "sort mods" };
 		constexpr CallSite SORT_RATE_SITE{ 2222850, 0x33E, "sort fire rate" };
 
-		// The card the game is building on this thread, set while the game's
-		// own builder runs.
+		// The card the game is building on this thread, set while the game's own
+		// builder runs: the condition of the item on it, and the equipped
+		// items it is compared with, none for the Pip-Boy.
 		struct Building
 		{
-			// The condition of the item on the card.
-			float health;
-
-			// The equipped items it is compared with. The Pip-Boy has none.
+			float               health;
 			const CompareItems* compare;
 		};
 
 		thread_local const Building* t_building = nullptr;
 
-		// The condition of the stack a list asks the fire rate of next, noted
-		// by the call just before on the same thread. A list's note hooks and
-		// rate hooks go in together or not at all.
-		thread_local float t_listHealth = Condition::INVALID_HEALTH;
+		// The rate hooks of the cards. A list that weighs fire rates keeps its
+		// name for the trace and its own Held for its note and rate hooks.
+		CallPatch::Held g_cards;
+		struct List
+		{
+			const char*     name;
+			CallPatch::Held held;
+		};
 
-		// Which of the 2 lists noted it, for the trace.
-		thread_local const char* t_list = nullptr;
+		List g_better{ "The better check", {} };
+		List g_sort{ "The sort", {} };
+
+		// The condition of the stack a list asks the rate of next, and the list.
+		thread_local float       t_listHealth = Condition::INVALID_HEALTH;
+		thread_local const List* t_list = nullptr;
+
+		// The rate Link's type serves the card, compared and list rate sites
+		// alike.
+		using Helper_t = void (*)(Scaleform::GFx::Value&, const RE::BGSInventoryItem&, std::uint32_t, const CompareItems&, bool);
+		using Pipboy_t = void (*)(RE::PipboyInventoryData*, const RE::BGSInventoryItem*, const RE::BGSInventoryItem::Stack*, RE::PipboyObject*);
+		using Rate_t = float (*)(const RE::TESObjectWEAP&, const RE::TESObjectWEAP::InstanceData*);
+		using Types_t = void (*)(const RE::BGSInventoryItem&, const RE::BGSInventoryItem::Stack*, RE::BSScrapArray<RE::BSTTuple<std::uint32_t, float>>&);
+		using Mods_t = RE::TBO_InstanceData* (*)(const RE::BGSInventoryItem&, std::uint32_t);
+
+		std::array<CallPatch::Link<Helper_t>, std::size(HELPER_SITES)> g_helperLinks;
+		std::array<CallPatch::Link<Pipboy_t>, std::size(PIPBOY_SITES)> g_pipboyLinks;
+		std::array<CallPatch::Link<Rate_t>, std::size(RATE_SITES)>     g_cardLinks;
+		std::array<CallPatch::Link<Types_t>, std::size(BETTER_TYPES_SITES)> g_betterTypeLinks;
+		std::array<CallPatch::Link<Rate_t>, 3>                        g_listLinks;  // better rate x2, sort rate
+		CallPatch::Link<Mods_t>                                       g_sortModsLink;
 
 		// Moves the entry just appended to the front. The card turns entries
 		// into rows from last to first, so the first entry becomes the highest
-		// plain row, directly under Damage, which is where it stays in a menu
-		// the render listener in Raise.cpp cannot reach.
+		// plain row, directly under Damage, where it stays in a menu the
+		// render listener in Raise.cpp cannot reach.
 		void MoveLastToFront(Value& a_entries)
 		{
 			const auto size = a_entries.GetArraySize();
@@ -126,22 +137,21 @@ namespace ItemCard
 		}
 
 		// Stands in for InventoryUserUIUtils::PopulateItemCardInfo_Helper. A
-		// menu refreshing its card passes the card's array. A menu building its
-		// list passes a list entry, which gets the array as its
-		// ItemCardInfoList member. a_compareItems and
-		// a_compareArmorWeightAndValue go through untouched.
+		// menu refreshing its card passes the card's array. A menu building
+		// its list passes a list entry, which gets the array as its
+		// ItemCardInfoList member. The last 2 arguments go through untouched.
+		template <std::size_t I>
 		void PopulateHelperHk(Value& a_target, const RE::BGSInventoryItem& a_item, std::uint32_t a_stackID,
 			const CompareItems& a_compareItems, bool a_compareArmorWeightAndValue)
 		{
 			const auto*    stack = a_item.GetStackByID(a_stackID);
 			const Building building{ Condition::HealthOf(stack), &a_compareItems };
 
-			t_building = &building;
-			RE::InventoryUserUIUtils::PopulateItemCardInfo_Helper(a_target, a_item, a_stackID, a_compareItems,
-				a_compareArmorWeightAndValue);
-			t_building = nullptr;
+			t_building = g_helperLinks[I].Live() ? &building : nullptr;
+			g_helperLinks[I](a_target, a_item, a_stackID, a_compareItems, a_compareArmorWeightAndValue);
+			const auto live = std::exchange(t_building, nullptr) != nullptr;
 
-			const auto percent = Condition::Percent(a_item, stack);
+			const auto percent = live ? Condition::Percent(a_item, stack) : std::nullopt;
 			if (!percent) {
 				return;
 			}
@@ -163,18 +173,18 @@ namespace ItemCard
 
 		// Stands in for PipboyInventoryData::PopulateItemCardInfo. The Pip-Boy
 		// keeps its cards as a tree of values of its own, copied into Scaleform
-		// objects when a page shows a card, so the row is built from those
-		// values.
-		void PipboyPopulateHk(RE::PipboyInventoryData* a_this, const RE::BGSInventoryItem* a_item,
-			const RE::BGSInventoryItem::Stack* a_stack, RE::PipboyObject* a_data)
+		// objects when a page shows a card, so the row is built from those.
+		// a_link is the calling site's.
+		void PopulatePipboy(RE::PipboyInventoryData* a_this, const RE::BGSInventoryItem* a_item,
+			const RE::BGSInventoryItem::Stack* a_stack, RE::PipboyObject* a_data, const CallPatch::Link<Pipboy_t>& a_link)
 		{
 			const Building building{ Condition::HealthOf(a_stack), nullptr };
 
-			t_building = &building;
-			a_this->PopulateItemCardInfo(a_item, a_stack, a_data);
-			t_building = nullptr;
+			t_building = a_link.Live() ? &building : nullptr;
+			a_link(a_this, a_item, a_stack, a_data);
+			const auto live = std::exchange(t_building, nullptr) != nullptr;
 
-			const auto percent = a_item && a_data ? Condition::Percent(*a_item, a_stack) : std::nullopt;
+			const auto percent = live && a_item && a_data ? Condition::Percent(*a_item, a_stack) : std::nullopt;
 			if (!percent) {
 				return;
 			}
@@ -208,13 +218,13 @@ namespace ItemCard
 			std::rotate(elements.begin(), elements.end() - 1, elements.end());
 		}
 
-		// PipboyPopulateHk where the Pip-Boy lists an item it has not listed
-		// before. The trace names every new entry of an item that wears, which
-		// shows a split stack reached the Pip-Boy as rows of its own.
+		// PopulatePipboy for the first site, where the Pip-Boy lists an item
+		// for the first time. The trace names each new entry of an item that
+		// wears, which shows a split stack reached the Pip-Boy as its own rows.
 		void PipboyNewEntryHk(RE::PipboyInventoryData* a_this, const RE::BGSInventoryItem* a_item,
 			const RE::BGSInventoryItem::Stack* a_stack, RE::PipboyObject* a_data)
 		{
-			PipboyPopulateHk(a_this, a_item, a_stack, a_data);
+			PopulatePipboy(a_this, a_item, a_stack, a_data, g_pipboyLinks[0]);
 
 			if (!TraceLog::IsOpen() || !a_item || !a_item->object || !a_stack) {
 				return;
@@ -226,26 +236,41 @@ namespace ItemCard
 			}
 		}
 
+		// The second site, where a card is rebuilt.
+		void PipboyPopulateHk(RE::PipboyInventoryData* a_this, const RE::BGSInventoryItem* a_item,
+			const RE::BGSInventoryItem::Stack* a_stack, RE::PipboyObject* a_data)
+		{
+			PopulatePipboy(a_this, a_item, a_stack, a_data, g_pipboyLinks[1]);
+		}
+
 		// The fire rate a card prints for a copy in this condition: the game's
 		// own figure at the share the copy fires at, see FireRate.h.
-		float RateAt(const RE::TESObjectWEAP& a_weapon, const RE::TESObjectWEAP::InstanceData* a_data, float a_health)
+		float RateAt(const RE::TESObjectWEAP& a_weapon, const RE::TESObjectWEAP::InstanceData* a_data, float a_health,
+			const CallPatch::Link<Rate_t>& a_link)
 		{
-			return RE::CombatFormulas::GetWeaponDisplayRateOfFire(a_weapon, a_data) *
-			       FireRate::RateShare(a_weapon, a_data, a_health);
+			return a_link(a_weapon, a_data) * FireRate::RateShare(a_weapon, a_data, a_health);
 		}
 
 		// Stands in for CombatFormulas::GetWeaponDisplayRateOfFire where a card
-		// works out the fire rate of the item it is about.
+		// works out the fire rate of the item it is about. One per rate site.
+		template <std::size_t I>
 		float CardRateHk(const RE::TESObjectWEAP& a_weapon, const RE::TESObjectWEAP::InstanceData* a_data)
 		{
-			return RateAt(a_weapon, a_data, t_building ? t_building->health : Condition::INVALID_HEALTH);
+			if (!g_cards.Runs(g_cardLinks[I])) {
+				return g_cardLinks[I](a_weapon, a_data);
+			}
+			return RateAt(a_weapon, a_data, t_building ? t_building->health : Condition::INVALID_HEALTH, g_cardLinks[I]);
 		}
 
 		// Stands in for it where the card works out the rate of the equipped
 		// weapon the item is compared with. Only one copy of a weapon can be
 		// equipped, so its condition is that copy's.
+		template <std::size_t I>
 		float ComparedRateHk(const RE::TESObjectWEAP& a_weapon, const RE::TESObjectWEAP::InstanceData* a_data)
 		{
+			if (!g_cards.Runs(g_cardLinks[I])) {
+				return g_cardLinks[I](a_weapon, a_data);
+			}
 			auto health = Condition::INVALID_HEALTH;
 			if (t_building && t_building->compare) {
 				for (const auto& equipped : *t_building->compare) {
@@ -255,42 +280,57 @@ namespace ItemCard
 					}
 				}
 			}
-			return RateAt(a_weapon, a_data, health);
+			return RateAt(a_weapon, a_data, health, g_cardLinks[I]);
 		}
 
 		// Stands in for PipboyInventoryUtils::FillDamageTypeInfo where the
-		// better check adds up a weapon's damage types.
+		// better check adds up a weapon's damage types. One per site.
+		template <std::size_t I>
 		void BetterTypesHk(const RE::BGSInventoryItem& a_item, const RE::BGSInventoryItem::Stack* a_stack,
 			RE::BSScrapArray<RE::BSTTuple<std::uint32_t, float>>& a_damageValuesPerType)
 		{
-			t_listHealth = Condition::HealthOf(a_stack);
-			t_list = "The better check";
-			RE::PipboyInventoryUtils::FillDamageTypeInfo(a_item, a_stack, a_damageValuesPerType);
+			if (g_better.held.Runs(g_betterTypeLinks[I])) {
+				t_listHealth = Condition::HealthOf(a_stack);
+				t_list = &g_better;
+			}
+			g_betterTypeLinks[I](a_item, a_stack, a_damageValuesPerType);
 		}
 
 		// Stands in for BGSInventoryItem::GetInstanceData where the sort reads
 		// a weapon's mods.
 		RE::TBO_InstanceData* SortModsHk(const RE::BGSInventoryItem& a_item, std::uint32_t a_stackID)
 		{
-			t_listHealth = Condition::HealthOf(a_item.GetStackByID(a_stackID));
-			t_list = "The sort";
-			return a_item.GetInstanceData(a_stackID);
+			if (g_sort.held.Runs(g_sortModsLink)) {
+				t_listHealth = Condition::HealthOf(a_item.GetStackByID(a_stackID));
+				t_list = &g_sort;
+			}
+			return g_sortModsLink(a_item, a_stackID);
 		}
 
 		// Stands in for CombatFormulas::GetWeaponDisplayRateOfFire in both
-		// lists.
+		// lists, I being 0 or 1 at the better check and 2 at the sort. It asks
+		// its own list's set on every call, so a rate place another DLL shares
+		// shows its hook ran with no note, and scales only what its list noted.
+		template <std::size_t I>
 		float ListRateHk(const RE::TESObjectWEAP& a_weapon, const RE::TESObjectWEAP::InstanceData* a_data)
 		{
-			const auto rate = RateAt(a_weapon, a_data, t_listHealth);
+			// Read once, so a rate asked without its note never takes the
+			// condition of the stack before it.
+			const auto  health = std::exchange(t_listHealth, Condition::INVALID_HEALTH);
+			const auto* list = std::exchange(t_list, nullptr);
+			const auto& own = I < 2 ? g_better : g_sort;
+			if (!own.held.Runs(g_listLinks[I]) || list != &own) {
+				return g_listLinks[I](a_weapon, a_data);
+			}
+			const auto rate = RateAt(a_weapon, a_data, health, g_listLinks[I]);
 
-			// A worn automatic compared at less than its full rate is what the
-			// hooks are for, so that is what the trace says. A sort asks about
-			// the same gun many times, hence Once.
+			// The trace names a worn automatic weighed below its full rate. A
+			// sort asks about the same gun many times, hence Once.
 			if (TraceLog::IsOpen()) {
-				const auto share = FireRate::RateShare(a_weapon, a_data, t_listHealth);
+				const auto share = FireRate::RateShare(a_weapon, a_data, health);
 				if (share < 1.0F) {
 					TraceLog::Once("menu", "{:s} weighs {:s} [{:08X}] at condition {:.3f} at a card rate of {:.2f}, {:.3f} of its own",
-						t_list ? t_list : "A list", RE::TESFullName::GetFullName(a_weapon), a_weapon.formID, t_listHealth, rate, share);
+						own.name, RE::TESFullName::GetFullName(a_weapon), a_weapon.formID, health, rate, share);
 				}
 			}
 			return rate;
@@ -299,13 +339,13 @@ namespace ItemCard
 
 	bool PatchCards()
 	{
-		const auto helper = CallPatch::PatchAll(HELPER_SITES, RE::ID::InventoryUserUIUtils::PopulateItemCardInfo_Helper,
-			CallPatch::Repeat<std::size(HELPER_SITES)>(reinterpret_cast<std::uintptr_t>(&PopulateHelperHk)),
-			"Menu item cards show a CND row");
+		const auto helperHooks = CallPatch::PerSite<std::size(HELPER_SITES)>([]<std::size_t I>() { return &PopulateHelperHk<I>; });
+		const auto helper = CallPatch::PatchAll(HELPER_SITES, RE::ID::InventoryUserUIUtils::PopulateItemCardInfo_Helper, helperHooks,
+			g_helperLinks, "Menu item cards show a CND row");
 
 		const auto pipboy = CallPatch::PatchAll(PIPBOY_SITES, RE::ID::PipboyInventoryData::PopulateItemCardInfo,
 			std::array{ reinterpret_cast<std::uintptr_t>(&PipboyNewEntryHk), reinterpret_cast<std::uintptr_t>(&PipboyPopulateHk) },
-			"Pip-Boy item cards show a CND row");
+			g_pipboyLinks, "Pip-Boy item cards show a CND row");
 
 		const bool patched = helper > 0 || pipboy > 0;
 
@@ -318,39 +358,36 @@ namespace ItemCard
 		// Each set goes in whole or not at all, so every card prints the same
 		// rate for the same gun and a list's rate hook always has its note.
 		const auto rate = RE::ID::CombatFormulas::GetWeaponDisplayRateOfFire.address();
-		const auto cardRate = reinterpret_cast<std::uintptr_t>(&CardRateHk);
-		const auto listRate = reinterpret_cast<std::uintptr_t>(&ListRateHk);
 
-		const auto cards = CallPatch::PatchTogether({
-			{ RATE_SITES[0], rate, cardRate },
-			{ RATE_SITES[1], rate, reinterpret_cast<std::uintptr_t>(&ComparedRateHk) },
-			{ RATE_SITES[2], rate, cardRate },
-		});
-		if (cards) {
+		g_cards = CallPatch::PatchTogether({
+			{ RATE_SITES[0], rate, reinterpret_cast<std::uintptr_t>(&CardRateHk<0>), &g_cardLinks[0] },
+			{ RATE_SITES[1], rate, reinterpret_cast<std::uintptr_t>(&ComparedRateHk<1>), &g_cardLinks[1] },
+			{ RATE_SITES[2], rate, reinterpret_cast<std::uintptr_t>(&CardRateHk<2>), &g_cardLinks[2] },
+		}, Part::kCardRate);
+		if (g_cards) {
 			REX::INFO("Item cards print the fire rate a worn gun fires at.");
 		} else {
 			REX::ERROR("Item cards will keep printing a worn gun at the fire rate of a new one.");
 		}
 
 		const auto types = RE::ID::PipboyInventoryUtils::FillDamageTypeInfo.address();
-		const auto betterTypes = reinterpret_cast<std::uintptr_t>(&BetterTypesHk);
-		const auto better = CallPatch::PatchTogether({
-			{ BETTER_TYPES_SITES[0], types, betterTypes },
-			{ BETTER_TYPES_SITES[1], types, betterTypes },
-			{ BETTER_RATE_SITES[0], rate, listRate },
-			{ BETTER_RATE_SITES[1], rate, listRate },
-		});
-		if (better) {
+		g_better.held = CallPatch::PatchTogether({
+			{ BETTER_TYPES_SITES[0], types, reinterpret_cast<std::uintptr_t>(&BetterTypesHk<0>), &g_betterTypeLinks[0] },
+			{ BETTER_TYPES_SITES[1], types, reinterpret_cast<std::uintptr_t>(&BetterTypesHk<1>), &g_betterTypeLinks[1] },
+			{ BETTER_RATE_SITES[0], rate, reinterpret_cast<std::uintptr_t>(&ListRateHk<0>), &g_listLinks[0] },
+			{ BETTER_RATE_SITES[1], rate, reinterpret_cast<std::uintptr_t>(&ListRateHk<1>), &g_listLinks[1] },
+		}, Part::kCardRate);
+		if (g_better.held) {
 			REX::INFO("The quick container weighs a worn gun at the fire rate it fires at before it marks an item better.");
 		} else {
 			REX::ERROR("The quick container will keep weighing a worn gun at the fire rate of a new one.");
 		}
 
-		const auto sort = CallPatch::PatchTogether({
-			{ SORT_MODS_SITE, RE::ID::BGSInventoryItem::GetInstanceData.address(), reinterpret_cast<std::uintptr_t>(&SortModsHk) },
-			{ SORT_RATE_SITE, rate, listRate },
-		});
-		if (sort) {
+		g_sort.held = CallPatch::PatchTogether({
+			{ SORT_MODS_SITE, RE::ID::BGSInventoryItem::GetInstanceData.address(), reinterpret_cast<std::uintptr_t>(&SortModsHk), &g_sortModsLink },
+			{ SORT_RATE_SITE, rate, reinterpret_cast<std::uintptr_t>(&ListRateHk<2>), &g_listLinks[2] },
+		}, Part::kCardRate);
+		if (g_sort.held) {
 			REX::INFO("Containers and traders sort a worn gun by the fire rate it fires at.");
 		} else {
 			REX::ERROR("Containers and traders will keep sorting a worn gun by the fire rate of a new one.");

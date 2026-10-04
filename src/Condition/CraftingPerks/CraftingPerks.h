@@ -54,6 +54,11 @@ namespace CraftingPerks
 	// Forgets every perk and recipe Load found.
 	void Unload();
 
+	// Takes the workbench's check, so a rank's line shows only while the
+	// bench repairs, the one place the discount is given. Workbench::Install
+	// hands it over, since this layer cannot include UI.
+	void SetBench(bool (*a_repairs)());
+
 	// What repairing a broken item costs with no rank of the perk, as a
 	// multiple of its components. 2, so a broken gun is better scrapped than
 	// repaired, and keeping a gun in shape is always cheaper than buying it

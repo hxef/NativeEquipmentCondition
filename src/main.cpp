@@ -1,8 +1,11 @@
+#include "Core/CallPatch/CallPatch.h"
 #include "Core/Feature.h"
 #include "Core/Plugin.h"
 #include "Core/Settings.h"
+#include "Core/Text/Text.h"
 #include "Core/TraceLog.h"
 #include "UI/MenuMovies.h"
+#include "UI/Repair/ConsoleRepair.h"
 
 #include <spdlog/details/os.h>
 
@@ -40,9 +43,49 @@ namespace
 		return text.substr(0, text.find('\0'));
 	}
 
+	// Patches the game for every row, in the order of the list.
+	void Install()
+	{
+		for (const auto& feature : Features()) {
+			if (!feature.Install) {
+				continue;
+			}
+			// A row whose switch went off with a part an earlier row lost, as
+			// Jamming goes with Gun wear from firing. That row's turn already
+			// said so in NEC.log.
+			if (!feature.Runs()) {
+				continue;
+			}
+			if (feature.on && !feature.on->GetValue()) {
+				REX::INFO("{:s}: switched off with {:s}=false, so it changes nothing while it is off.",
+					Text::PartLogName(feature.part), feature.on->key);
+			}
+			CallPatch::Begin(feature);
+			feature.Install();
+			CallPatch::End();
+		}
+		CallPatch::SayOnTop();
+
+		// What the install left to other mods and what it shares with them, at
+		// once, with the switches it turned off.
+		if (!CallPatch::LeftLine().empty() || !CallPatch::SharedLine().empty()) {
+			Settings::ReportLine();
+		}
+	}
+
 	void MessageHandler(F4SE::MessagingInterface::Message* a_msg)
 	{
 		if (!a_msg) {
+			return;
+		}
+
+		// Every plugin has loaded and run its PostLoad, and no game thread
+		// runs yet. A DLL that patched the same code as it loaded got there
+		// first. NEC runs on top of a plain hook it finds there and leaves
+		// anything else to that DLL, see CallPatch.h.
+		if (a_msg->type == F4SE::MessagingInterface::kPostPostLoad) {
+			REX::INFO("Every plugin has loaded, so NEC patches the game now.");
+			Install();
 			return;
 		}
 
@@ -53,9 +96,8 @@ namespace
 			return;
 		}
 
-		// A save loaded or a new game begun. The Balance settings are read
-		// again, so a change in NEC.ini takes a load and no restart, see
-		// Settings.h.
+		// A save loaded or a new game begun. The settings are not read again,
+		// see Settings.h.
 		if (a_msg->type == F4SE::MessagingInterface::kPostLoadGame ||
 			a_msg->type == F4SE::MessagingInterface::kNewGame) {
 			if (a_msg->type == F4SE::MessagingInterface::kNewGame) {
@@ -66,8 +108,14 @@ namespace
 				REX::INFO("The save {:s}.", loaded ? "has loaded" : "did not load");
 				TraceLog::Mark("LOADED", "the save {:s}", loaded ? "has loaded" : "did not load");
 			}
-			Settings::Reload();
-			Settings::Report();
+			// Every patch is read back before the save plays, see
+			// CallPatch::Recheck.
+			CallPatch::Recheck(a_msg->type == F4SE::MessagingInterface::kNewGame ? "a new game has begun" :
+			                   static_cast<bool>(a_msg->data)                       ? "the save has loaded" :
+			                                                                          "the save did not load");
+			ConsoleRepair::Settle();
+			// The Settings line, with what the recheck left to another mod.
+			Settings::ReportLine();
 			return;
 		}
 
@@ -89,7 +137,7 @@ namespace
 			// Backward, so a feature releases its forms before anything it read
 			// from does.
 			for (const auto& feature : std::views::reverse(features)) {
-				if (feature.IsOn() && feature.Unload) {
+				if (feature.Unload) {
 					feature.Unload();
 				}
 			}
@@ -103,10 +151,19 @@ namespace
 
 		TraceLog::Mark("DATA", "every file has loaded");
 		for (const auto& feature : features) {
-			if (feature.IsOn() && feature.Load) {
+			if (feature.Load) {
 				feature.Load();
 			}
 		}
+
+		// A check of the patches once every file has loaded, which finds a DLL
+		// that patched as game data loaded. The summary is due as well when it
+		// reads differently with the game settings loaded, since some places
+		// count for a piece only then, see RestocksAnyDay in Core/Pieces.cpp.
+		if (CallPatch::Recheck("every file has loaded") || CallPatch::KeepSummary(CallPatch::Summary())) {
+			Settings::ReportLine();
+		}
+		ConsoleRepair::Settle();
 	}
 }
 
@@ -116,16 +173,20 @@ F4SE_PLUGIN_LOAD(const F4SE::LoadInterface* a_f4se)
 	// was read is reported after F4SE::Init.
 	Settings::Load();
 
+	// Every place NEC patches is checked against the game version F4SE runs.
+	CallPatch::SetGameVersion(a_f4se->RuntimeVersion());
+
 	// The log is named after the DLL, NEC.log, and TraceLog puts the trace
 	// files beside it. The trampoline is a block of executable memory near the
 	// game that patched calls jump through, since a call can only reach 2
-	// gigabytes and Windows can load the plugin anywhere. Each hook takes one
-	// 14 byte stub, and 2 dozen hooks do not fit in the default 64 bytes.
+	// gigabytes and Windows can load the plugin anywhere. Each hooked call
+	// takes its own 14 byte stub so NEC can hand each site on to what it found
+	// there, about 1100 bytes, so 2048 leaves room.
 	F4SE::Init(a_f4se, {
 						  .logLevel = Settings::LogLevel(),
 						  .logName = "NEC",
 						  .trampoline = true,
-						  .trampolineSize = 1024,
+						  .trampolineSize = 2048,
 					  });
 
 	// After F4SE::Init, which creates the main log the trace logs sit beside.
@@ -140,18 +201,6 @@ F4SE_PLUGIN_LOAD(const F4SE::LoadInterface* a_f4se)
 	if (!messaging || !messaging->RegisterListener(MessageHandler)) {
 		REX::ERROR("Failed to register messaging listener.");
 		return false;
-	}
-
-	for (const auto& feature : Features()) {
-		// A row switched off in NEC.ini is skipped in every walk of the list,
-		// and the log says so once.
-		if (!feature.IsOn()) {
-			REX::INFO("{:s} is switched off in NEC.ini.", feature.name);
-			continue;
-		}
-		if (feature.Install) {
-			feature.Install();
-		}
 	}
 
 	// The one entry point for the menu movies. F4SE takes one registration per

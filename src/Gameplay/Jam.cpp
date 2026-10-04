@@ -1,6 +1,8 @@
 #include "Gameplay/Jam.h"
 
+#include "Condition/Condition.h"
 #include "Condition/Equipped.h"
+#include "Core/CallPatch/CallPatch.h"
 #include "Core/Settings.h"
 #include "Core/TraceLog.h"
 
@@ -128,6 +130,119 @@ namespace Jam
 				TraceLog::Line("jam", "the magazine holds {:d} after the jam", a_actor.GetCurrentAmmoCount(a_index));
 			}
 		}
+
+		// How many rounds the weapon in one of an actor's equip slots holds.
+		std::uint32_t LoadedRounds(const RE::Actor& a_actor, std::uint32_t a_equipIndex)
+		{
+			return a_actor.GetCurrentAmmoCount(RE::BGSEquipIndex{ a_equipIndex });
+		}
+
+		// Rolls for a jam as a reload of the player's gun finishes. Only guns
+		// that fire once per reload roll here. a_loadedBefore is how many
+		// rounds the magazine held before.
+		void RollReload(RE::PlayerCharacter& a_player, const RE::BGSObjectInstanceT<RE::TESObjectWEAP>& a_weapon, std::uint32_t a_equipIndex,
+			std::uint32_t a_loadedBefore)
+		{
+			if (!Settings::bJam.GetValue()) {
+				return;
+			}
+
+			auto* object = a_weapon.object;
+			if (!object || !object->IsWeapon()) {
+				return;
+			}
+			auto&       weapon = static_cast<RE::TESObjectWEAP&>(*object);
+			const auto& stats = StatsOf(a_weapon, weapon);
+			if (!FiresOncePerReload(stats)) {
+				return;
+			}
+
+			// Only the reload that puts the first round in rolls. A Laser Musket
+			// finishes a reload per charge cranked in.
+			const auto loaded = LoadedRounds(a_player, a_equipIndex);
+			TraceLog::Begin("RELOAD", "{:s} [{:08X}] from {:d} to {:d} loaded", RE::TESFullName::GetFullName(weapon), weapon.formID,
+				a_loadedBefore, loaded);
+			if (a_loadedBefore != 0 || loaded == 0) {
+				TraceLog::Line("jam", "no roll, only a reload that loads an empty gun rolls");
+				return;
+			}
+
+			// The reload after a jam always loads. Under 10% every reload jams, and
+			// this keeps such guns firing at all.
+			const RE::TESObjectWEAP* retry = &weapon;
+			if (g_retryLoads.compare_exchange_strong(retry, nullptr)) {
+				TraceLog::Line("jam", "clear, the reload after a jam always loads");
+				return;
+			}
+
+			// A gun this mod has not given a condition to yet counts as new.
+			const auto health = Equipped::WeaponHealth(&a_player, &weapon);
+			if (health < 0.0F) {
+				TraceLog::Line("jam", "clear, no condition yet");
+				return;
+			}
+
+			// The magazine is 1 round, so the magazine's chance is this reload's.
+			const auto perMagazine = ChancePerMagazine(health);
+			if (perMagazine <= 0.0F) {
+				TraceLog::Line("jam", "clear, no chance at condition {:.3f}", health);
+				return;
+			}
+			const bool jammed = RollChance(perMagazine);
+
+			TraceLog::Line("jam", "{:s} at {:.2f}% on the reload, condition {:.3f}",
+				jammed ? "JAMMED" : "clear", perMagazine * 100.0, health);
+			if (jammed) {
+				g_retryLoads = &weapon;
+				JamGun(a_player, RE::BGSEquipIndex{ a_equipIndex }, stats);
+			}
+		}
+
+		// The one call to Actor::ReloadWeapon inside
+		// ReloadCompleteHandler::Handle, the function the reloadComplete
+		// animation event runs, through the actor's vtable slot 0xEF.
+		constexpr CallPatch::CallSite RELOAD_SITE{ 2235362, 0xAE, "reload" };
+		constexpr std::size_t         RELOAD_WEAPON_SLOT = 0xEF;
+
+		// Set when NEC runs on top of a mod's hook at this vtable call, so the
+		// reload goes on to that mod. Empty for the game's own, which the hook
+		// reaches through the actor's table itself.
+		CallPatch::Link<bool(RE::Actor*, const RE::BGSObjectInstanceT<RE::TESObjectWEAP>&, std::uint32_t)> g_reloadLink;
+
+		// Stands in for the actor's ReloadWeapon when the reloadComplete
+		// animation event finishes a reload. A gun that fires once per reload
+		// can jam here.
+		bool ReloadHk(RE::Actor* a_actor, const RE::BGSObjectInstanceT<RE::TESObjectWEAP>& a_weapon, std::uint32_t a_equipIndex)
+		{
+			// For every actor, so only the player's guns that wear are watched.
+			auto*      object = a_weapon.object;
+			auto*      player = RE::PlayerCharacter::GetSingleton();
+			const bool watched = player && a_actor == player && object && object->IsWeapon() && g_reloadLink.Live();
+			const auto before = watched ? LoadedRounds(*a_actor, a_equipIndex) : 0;
+
+			// On to the mod NEC runs on top of, or through the actor's vtable,
+			// as the call this replaced, so the player's own ReloadWeapon runs
+			// for the player.
+			const bool loaded = g_reloadLink ? g_reloadLink(a_actor, a_weapon, a_equipIndex) :
+			                                   a_actor->ReloadWeapon(a_weapon, RE::BGSEquipIndex{ a_equipIndex });
+
+			if (watched) {
+				auto& weapon = static_cast<RE::TESObjectWEAP&>(*object);
+				if (!Condition::WhyNoCondition(weapon) && weapon.weaponData.type.get() == RE::WEAPON_TYPE::kGun) {
+					RollReload(*player, a_weapon, a_equipIndex, before);
+				}
+			}
+			return loaded;
+		}
+	}
+
+	void Install()
+	{
+		if (CallPatch::PatchVirtualCall(RELOAD_SITE, RELOAD_WEAPON_SLOT, reinterpret_cast<std::uintptr_t>(&ReloadHk), g_reloadLink, Part::kReloadJam)) {
+			REX::INFO("Guns that fire once per reload can jam as the reload finishes.");
+		} else {
+			REX::ERROR("Guns that fire once per reload will not jam.");
+		}
 	}
 
 	void Unload()
@@ -161,15 +276,10 @@ namespace Jam
 		REX::INFO("Worn guns can jam. The message reads \"{:s}\".", g_message);
 	}
 
-	std::uint32_t LoadedRounds(const RE::Actor& a_actor, std::uint32_t a_equipIndex)
-	{
-		return a_actor.GetCurrentAmmoCount(RE::BGSEquipIndex{ a_equipIndex });
-	}
-
 	bool Roll(RE::PlayerCharacter& a_player, const RE::BGSObjectInstanceT<RE::TESObjectWEAP>& a_weapon, std::uint32_t a_equipIndex)
 	{
-		// Switched off in NEC.ini, nothing rolls. The switch skips Load, but
-		// the fire and reload hooks still call in here.
+		// Switched off, nothing rolls. The fire hook belongs to WeaponEvents
+		// and calls in here whatever the switch says.
 		if (!Settings::bJam.GetValue()) {
 			return false;
 		}
@@ -226,61 +336,4 @@ namespace Jam
 		return jammed;
 	}
 
-	void RollReload(RE::PlayerCharacter& a_player, const RE::BGSObjectInstanceT<RE::TESObjectWEAP>& a_weapon, std::uint32_t a_equipIndex,
-		std::uint32_t a_loadedBefore)
-	{
-		if (!Settings::bJam.GetValue()) {
-			return;
-		}
-
-		auto* object = a_weapon.object;
-		if (!object || !object->IsWeapon()) {
-			return;
-		}
-		auto&       weapon = static_cast<RE::TESObjectWEAP&>(*object);
-		const auto& stats = StatsOf(a_weapon, weapon);
-		if (!FiresOncePerReload(stats)) {
-			return;
-		}
-
-		// Only the reload that puts the first round in rolls. A Laser Musket
-		// finishes a reload per charge cranked in.
-		const auto loaded = LoadedRounds(a_player, a_equipIndex);
-		TraceLog::Begin("RELOAD", "{:s} [{:08X}] from {:d} to {:d} loaded", RE::TESFullName::GetFullName(weapon), weapon.formID,
-			a_loadedBefore, loaded);
-		if (a_loadedBefore != 0 || loaded == 0) {
-			TraceLog::Line("jam", "no roll, only a reload that loads an empty gun rolls");
-			return;
-		}
-
-		// The reload after a jam always loads. Under 10% every reload jams, and
-		// this keeps such guns firing at all.
-		const RE::TESObjectWEAP* retry = &weapon;
-		if (g_retryLoads.compare_exchange_strong(retry, nullptr)) {
-			TraceLog::Line("jam", "clear, the reload after a jam always loads");
-			return;
-		}
-
-		// A gun this mod has not given a condition to yet counts as new.
-		const auto health = Equipped::WeaponHealth(&a_player, &weapon);
-		if (health < 0.0F) {
-			TraceLog::Line("jam", "clear, no condition yet");
-			return;
-		}
-
-		// The magazine is 1 round, so the magazine's chance is this reload's.
-		const auto perMagazine = ChancePerMagazine(health);
-		if (perMagazine <= 0.0F) {
-			TraceLog::Line("jam", "clear, no chance at condition {:.3f}", health);
-			return;
-		}
-		const bool jammed = RollChance(perMagazine);
-
-		TraceLog::Line("jam", "{:s} at {:.2f}% on the reload, condition {:.3f}",
-			jammed ? "JAMMED" : "clear", perMagazine * 100.0, health);
-		if (jammed) {
-			g_retryLoads = &weapon;
-			JamGun(a_player, RE::BGSEquipIndex{ a_equipIndex }, stats);
-		}
-	}
 }

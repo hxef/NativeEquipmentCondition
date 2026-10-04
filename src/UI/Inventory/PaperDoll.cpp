@@ -3,7 +3,7 @@
 #include "Condition/Equipped.h"
 #include "Core/TraceLog.h"
 #include "UI/Flash.h"
-#include "UI/Hud/HudParts.h"
+#include "UI/Hud/HudParts/HudParts.h"
 #include "UI/MenuMovies.h"
 
 #include <algorithm>

@@ -1,12 +1,19 @@
 #include "Core/Text/Text.h"
 
+#include "Core/Feature.h"
 #include "Core/Text/Lines.h"
 
 #include <algorithm>
 #include <cctype>
+#include <cstddef>
+#include <initializer_list>
+#include <span>
+#include <string>
+#include <string_view>
 
-// Picking the language, and the sentences shown outside a repair: the perk page
-// and the corner of the screen. The loading screen's are in Tips.cpp.
+// Picking the language, and the sentences shown outside a repair: the perk page,
+// the corner of the screen, and the section titles of the MCM page. Text.h
+// says where the other tables are.
 namespace Text
 {
 	namespace
@@ -78,6 +85,149 @@ namespace Text
 			{ "zhhant", "主要由此輔助能力的改造配件組成的武器和裝甲，在工作台修理時所需的元件減少{0}%。" },
 			{ "zhhans", "主要由此辅助能力的改造配件组成的武器和装甲，在工作台修理时所需的元件减少{0}%。" },
 		};
+
+		constexpr Line WEAR_TITLE[]{
+			{ "en", "Wear" },
+			{ "fr", "Usure" },
+			{ "de", "Abnutzung" },
+			{ "it", "Usura" },
+			{ "es", "Desgaste" },
+			{ "esmx", "Desgaste" },
+			{ "ptbr", "Desgaste" },
+			{ "pl", "Zużycie" },
+			{ "ru", "Износ" },
+			{ "ja", "消耗" },
+			{ "zhhant", "損耗" },
+			{ "zhhans", "损耗" },
+		};
+
+		constexpr Line WEAPONS_TITLE[]{
+			{ "en", "Weapons" },
+			{ "fr", "Armes" },
+			{ "de", "Waffen" },
+			{ "it", "Armi" },
+			{ "es", "Armas" },
+			{ "esmx", "Armas" },
+			{ "ptbr", "Armas" },
+			{ "pl", "Broń" },
+			{ "ru", "Оружие" },
+			{ "ja", "武器" },
+			{ "zhhant", "武器" },
+			{ "zhhans", "武器" },
+		};
+
+		constexpr Line LOOT_TITLE[]{
+			{ "en", "Loot and prices" },
+			{ "fr", "Butin et prix" },
+			{ "de", "Beute und Preise" },
+			{ "it", "Bottino e prezzi" },
+			{ "es", "Botín y precios" },
+			{ "esmx", "Botín y precios" },
+			{ "ptbr", "Saque e preços" },
+			{ "pl", "Łupy i ceny" },
+			{ "ru", "Трофеи и цены" },
+			{ "ja", "戦利品と価格" },
+			{ "zhhant", "戰利品與價格" },
+			{ "zhhans", "战利品与价格" },
+		};
+
+		constexpr Line REPAIRS_TITLE[]{
+			{ "en", "Repairs" },
+			{ "fr", "Réparations" },
+			{ "de", "Reparaturen" },
+			{ "it", "Riparazioni" },
+			{ "es", "Reparaciones" },
+			{ "esmx", "Reparaciones" },
+			{ "ptbr", "Consertos" },
+			{ "pl", "Naprawy" },
+			{ "ru", "Ремонт" },
+			{ "ja", "修理" },
+			{ "zhhant", "修理" },
+			{ "zhhans", "修理" },
+		};
+
+		constexpr Line HUD_TITLE[]{
+			{ "en", "HUD" },
+			{ "fr", "ATH" },
+			{ "de", "HUD" },
+			{ "it", "Interfaccia" },
+			{ "es", "HUD" },
+			{ "esmx", "HUD" },
+			{ "ptbr", "HUD" },
+			{ "pl", "Interfejs" },
+			{ "ru", "Интерфейс" },
+			{ "ja", "HUD" },
+			{ "zhhant", "狀態欄" },
+			{ "zhhans", "状态栏" },
+		};
+
+		constexpr Line EXTRAS_TITLE[]{
+			{ "en", "Little extras" },
+			{ "fr", "Petits plus" },
+			{ "de", "Kleine Extras" },
+			{ "it", "Piccole aggiunte" },
+			{ "es", "Pequeños detalles" },
+			{ "esmx", "Pequeños detalles" },
+			{ "ptbr", "Pequenos extras" },
+			{ "pl", "Drobne dodatki" },
+			{ "ru", "Приятные мелочи" },
+			{ "ja", "おまけ" },
+			{ "zhhant", "其他小功能" },
+			{ "zhhans", "其他小功能" },
+		};
+
+		constexpr Line LOG_TITLE[]{
+			{ "en", "Log" },
+			{ "fr", "Journal" },
+			{ "de", "Protokoll" },
+			{ "it", "Registro" },
+			{ "es", "Registro" },
+			{ "esmx", "Registro" },
+			{ "ptbr", "Registro" },
+			{ "pl", "Dziennik" },
+			{ "ru", "Журнал" },
+			{ "ja", "ログ" },
+			{ "zhhant", "日誌" },
+			{ "zhhans", "日志" },
+		};
+
+		// The section titles by their id on the page. NEC.ini's sections stay
+		// Features, Balance, HUD and Log, the ids of the settings.
+		struct Section
+		{
+			std::string_view      id;
+			std::span<const Line> title;
+		};
+
+		constexpr Section SECTIONS[]{
+			{ "Wear", WEAR_TITLE },
+			{ "Weapons", WEAPONS_TITLE },
+			{ "Loot", LOOT_TITLE },
+			{ "Repairs", REPAIRS_TITLE },
+			{ "HUD", HUD_TITLE },
+			{ "Extras", EXTRAS_TITLE },
+			{ "Log", LOG_TITLE },
+		};
+
+		constexpr std::string_view HELP = ".help";
+
+		// A part's name in every language, from PartsPlay.cpp or PartsUi.cpp.
+		// Empty for kNone and kTrace.
+		std::span<const Line> NameOf(Part a_part)
+		{
+			const auto index = static_cast<std::size_t>(a_part);
+			const auto play = PlayParts();
+			const auto ui = UiParts();
+			const auto firstPlay = static_cast<std::size_t>(Part::kPerks);
+			const auto firstUi = static_cast<std::size_t>(Part::kCardCnd);
+			if (index >= firstPlay && index < firstPlay + play.size()) {
+				return play[index - firstPlay].name;
+			}
+			if (index >= firstUi && index < firstUi + ui.size()) {
+				return ui[index - firstUi].name;
+			}
+			return {};
+		}
 	}
 
 	const char* Pick(std::span<const Line> a_lines)
@@ -89,6 +239,11 @@ namespace Text
 			}
 		}
 		return a_lines.front().text;
+	}
+
+	const char* PickFor(std::span<const Line> a_lines, Out a_out)
+	{
+		return a_out == Out::kLog ? a_lines.front().text : Pick(a_lines);
 	}
 
 	std::string Language()
@@ -114,5 +269,52 @@ namespace Text
 	std::string ArmorWornOut(std::string_view a_name)
 	{
 		return Say(ARMOR_WORN_OUT, a_name);
+	}
+
+	std::string MenuLine(std::string_view a_id)
+	{
+		const auto help = a_id.ends_with(HELP);
+		const auto key = help ? a_id.substr(0, a_id.size() - HELP.size()) : a_id;
+		for (const auto rows : { MenuSwitches(), MenuNumbers(), MenuHudLog() }) {
+			for (const auto& row : rows) {
+				if (row.setting->key != key) {
+					continue;
+				}
+				if (help) {
+					return Pick(row.help);
+				}
+				return row.name.empty() ? PartName(PartOf(*row.setting)) : Pick(row.name);
+			}
+		}
+		for (const auto& section : SECTIONS) {
+			if (!help && section.id == a_id) {
+				return Pick(section.title);
+			}
+		}
+		return {};
+	}
+
+	std::string PartName(Part a_part)
+	{
+		const auto name = NameOf(a_part);
+		return name.empty() ? std::string{} : Pick(name);
+	}
+
+	std::string_view PartLogName(Part a_part)
+	{
+		const auto name = NameOf(a_part);
+		return name.empty() ? std::string_view{} : std::string_view{ name.front().text };
+	}
+
+	std::string SettingLogName(const Settings::Named& a_setting)
+	{
+		for (const auto rows : { MenuSwitches(), MenuNumbers(), MenuHudLog() }) {
+			for (const auto& row : rows) {
+				if (row.setting == &a_setting) {
+					return std::string{ row.name.empty() ? PartLogName(PartOf(a_setting)) : std::string_view{ row.name.front().text } };
+				}
+			}
+		}
+		return std::string{ a_setting.key };
 	}
 }

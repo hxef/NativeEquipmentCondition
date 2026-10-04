@@ -2,11 +2,10 @@
 
 #include "Condition/Condition.h"
 #include "Condition/WeaponWear/WeaponWear.h"
-#include "Core/CallPatch.h"
+#include "Core/CallPatch/CallPatch.h"
 #include "Core/ItemCards.h"
-#include "Core/Settings.h"
 #include "Core/TraceLog.h"
-#include "Gameplay/FireRate.h"
+#include "Gameplay/FireRate/FireRate.h"
 #include "Gameplay/Jam.h"
 #include "Gameplay/WeaponEvents/Hits.h"
 
@@ -21,11 +20,7 @@ namespace WeaponEvents
 		// the function the weaponFire animation event runs. See FireHk.
 		constexpr CallPatch::CallSite FIRE_SITE{ 2235360, 0x11D, "fire" };
 
-		// The one call to Actor::ReloadWeapon inside
-		// ReloadCompleteHandler::Handle, the function the reloadComplete
-		// animation event runs, through the actor's vtable slot 0xEF.
-		constexpr CallPatch::CallSite RELOAD_SITE{ 2235362, 0xAE, "reload" };
-		constexpr std::size_t         RELOAD_WEAPON_SLOT = 0xEF;
+		CallPatch::Link<void(const RE::BGSObjectInstanceT<RE::TESObjectWEAP>*, RE::TESObjectREFR*, std::uint32_t, RE::TESAmmo*, RE::AlchemyItem*)> g_fire;
 
 		// The player's shot while Fire sends it on its way. Power is what its
 		// rounds carry between them, see ShotSink.
@@ -92,6 +87,11 @@ namespace WeaponEvents
 		void FireHk(const RE::BGSObjectInstanceT<RE::TESObjectWEAP>* a_weapon, RE::TESObjectREFR* a_source,
 			std::uint32_t a_equipIndex, RE::TESAmmo* a_ammo, RE::AlchemyItem* a_poison)
 		{
+			if (!g_fire.Live()) {
+				g_fire(a_weapon, a_source, a_equipIndex, a_ammo, a_poison);
+				return;
+			}
+
 			// The player's gun, when this shot wears it.
 			RE::TESObjectWEAP* worn = nullptr;
 
@@ -146,13 +146,12 @@ namespace WeaponEvents
 			// The shot counts as a_source's while Fire runs, see Shooter, and a
 			// shot that wears is measured as it goes, see ShotSink. Both are
 			// restored afterwards.
-			const REL::Relocation<decltype(&FireHk)> original{ RE::ID::TESObjectWEAP::Fire };
-			Shot                                     shot;
-			const auto*                              outerShooter = t_shooter;
-			auto*                                    outerShot = t_shot;
+			Shot        shot;
+			const auto* outerShooter = t_shooter;
+			auto*       outerShot = t_shot;
 			t_shooter = a_source;
 			t_shot = worn ? &shot : nullptr;
-			original(a_weapon, a_source, a_equipIndex, a_ammo, a_poison);
+			g_fire(a_weapon, a_source, a_equipIndex, a_ammo, a_poison);
 			t_shooter = outerShooter;
 			t_shot = outerShot;
 
@@ -174,50 +173,15 @@ namespace WeaponEvents
 			registered = true;
 			REX::INFO("A gun wears by the power each shot leaves with, so a tap of a Gauss rifle costs less than a full charge.");
 		}
-
-		// Stands in for the actor's ReloadWeapon when the reloadComplete
-		// animation event finishes a reload. A gun that fires once per reload
-		// can jam here, see Jam.h.
-		bool ReloadHk(RE::Actor* a_actor, const RE::BGSObjectInstanceT<RE::TESObjectWEAP>& a_weapon, std::uint32_t a_equipIndex)
-		{
-			// For every actor, so only the player's guns that wear are watched.
-			auto*      object = a_weapon.object;
-			auto*      player = RE::PlayerCharacter::GetSingleton();
-			const bool watched = player && a_actor == player && object && object->IsWeapon();
-			const auto before = watched ? Jam::LoadedRounds(*a_actor, a_equipIndex) : 0;
-
-			// Through the actor's vtable, as the call this replaced, so the
-			// player's own ReloadWeapon runs for the player.
-			const bool loaded = a_actor->ReloadWeapon(a_weapon, RE::BGSEquipIndex{ a_equipIndex });
-
-			if (watched) {
-				auto& weapon = static_cast<RE::TESObjectWEAP&>(*object);
-				if (!Condition::WhyNoCondition(weapon) && weapon.weaponData.type.get() == RE::WEAPON_TYPE::kGun) {
-					Jam::RollReload(*player, a_weapon, a_equipIndex, before);
-				}
-			}
-			return loaded;
-		}
 	}
 
 	void Install()
 	{
-		// Speak of jams only while bJam is on. Jam itself logs that it is off.
-		const bool jam = Settings::bJam.GetValue();
-
 		const REL::Relocation<std::uintptr_t> fire{ RE::ID::TESObjectWEAP::Fire };
-		if (CallPatch::PatchCall(FIRE_SITE, fire.address(), reinterpret_cast<std::uintptr_t>(&FireHk))) {
-			REX::INFO("Guns wear down{:s} with every shot the game fires.", jam ? ", and can jam," : "");
+		if (CallPatch::PatchCall(FIRE_SITE, fire.address(), reinterpret_cast<std::uintptr_t>(&FireHk), g_fire)) {
+			REX::INFO("Guns wear down with every shot the game fires.");
 		} else {
-			REX::ERROR("Guns will not wear down{:s} when fired.", jam ? " or jam" : "");
-		}
-
-		if (CallPatch::PatchVirtualCall(RELOAD_SITE, RELOAD_WEAPON_SLOT, reinterpret_cast<std::uintptr_t>(&ReloadHk))) {
-			if (jam) {
-				REX::INFO("Guns that fire once per reload can jam as the reload finishes.");
-			}
-		} else if (jam) {
-			REX::ERROR("Guns that fire once per reload will not jam.");
+			REX::ERROR("Guns will not wear down when fired.");
 		}
 	}
 
@@ -230,5 +194,10 @@ namespace WeaponEvents
 	const RE::TESObjectREFR* Shooter()
 	{
 		return t_shooter;
+	}
+
+	bool FireLive()
+	{
+		return g_fire.Live();
 	}
 }

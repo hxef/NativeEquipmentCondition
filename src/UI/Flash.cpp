@@ -67,4 +67,26 @@ namespace Flash
 		}
 		return child;
 	}
+
+	std::string HtmlEscaped(std::string_view a_text)
+	{
+		std::string escaped;
+		for (const auto c : a_text) {
+			switch (c) {
+			case '&':
+				escaped += "&amp;";
+				break;
+			case '<':
+				escaped += "&lt;";
+				break;
+			case '>':
+				escaped += "&gt;";
+				break;
+			default:
+				escaped += c;
+				break;
+			}
+		}
+		return escaped;
+	}
 }

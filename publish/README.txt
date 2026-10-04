@@ -26,10 +26,10 @@ components, or pay a trader in caps.
 Worn gear can't be modded until it is repaired to full, so swapping in cheap
 mods can't cut the repair bill.
 
-Done natively, in one F4SE plugin: no ESP, no scripts, no new assets. It reads
-weapons, armor, recipes, perks, leveled lists and game settings from your load
-order as the game loads, for easier compatibility with other mods, including
-ones that add new gear.
+Done natively, in one F4SE plugin: no ESP, no scripts, no new assets besides
+an optional MCM page. It reads weapons, armor, recipes, perks, leveled lists
+and game settings from your load order as the game loads, for easier
+compatibility with other mods, including ones that add new gear.
 
 WEAR AND TEAR
 * Your weapon wears with every shot you fire and every melee hit you land.
@@ -129,30 +129,32 @@ LITTLE EXTRAS
   in "srm armor" or "srm 25 armor", for every piece you have on that wears.
 
 MAKE IT YOURS
-* NEC.ini in Data\F4SE\Plugins explains every setting. Switch off jams, slower
-  fire, spawned wear, trader repairs, the CND bars and meters on the HUD and
-  more, or tune wear speed, damage and armor floors, prices and repair costs.
-* Keep your changes in NEC_custom.ini beside it, with the same sections and
-  keys, and leave NEC.ini as it ships. The mod comes without a NEC_custom.ini,
-  so installing an update over the old files never wipes your settings, and
-  NEC.ini stays a clean copy of every default. With Mod Organizer 2, keep it
-  in its own mod or in overwrite.
-* Balance changes take effect on the next save load or new game, the on and
-  off switches after a restart.
+* With MCM, NEC's page changes any setting on the spot. Switch off jamming,
+  slower fire, worn loot, trader repairs, the HUD condition bars and more, or
+  tune wear speed, damage and protection at 0 condition, prices and repair
+  costs.
+* Without MCM, NEC.ini in Data\F4SE\Plugins explains every setting. Copy a
+  line into NEC_custom.ini beside it, under the same section heading, change
+  the value and restart the game.
+* Either way your changes go in NEC_custom.ini, and NEC.ini stays as it ships.
+  The mod comes without a NEC_custom.ini, so an update never wipes your
+  settings. With Mod Organizer 2, keep NEC_custom.ini in its own mod or in
+  overwrite.
 
 COMPATIBILITY
 * No ESP, so it takes no plugin slot.
 * The plugin's own text comes in every language the game ships in. The rest is
   the game's own words. Every language but English was translated by AI, not
   by a person, so some lines may read a little off.
-* Both vanilla fixes under Little extras can be switched off in NEC.ini, for a
-  load order where another mod already fixes them.
+* Both vanilla fixes under Little extras can be switched off, for a load order
+  where another mod already fixes them.
 * A UI replacer that moves the HUD ammo counter, the quick container, the item
   cards or the Pip-Boy can hide the condition shown there. Wear, damage and
   prices work as ever. Repairs use the workbench's own REPAIR button and a
   button on the barter bar, which replacers usually keep.
-* Where another DLL mod already patches the same game code, it keeps it and
-  that part of NEC stands down, as NEC.log says.
+* NEC works alongside other DLL mods that change the same things. When one
+  takes over something NEC changes, NEC lets it, and NEC's MCM page and
+  NEC.log name that mod and what is off.
 
 REQUIREMENTS
 * Fallout 4 1.11.240
@@ -160,10 +162,12 @@ REQUIREMENTS
   https://www.nexusmods.com/fallout4/mods/42147
 * Address Library for F4SE Plugins
   https://www.nexusmods.com/fallout4/mods/47327
+* Optional: Mod Configuration Menu
+  https://www.nexusmods.com/fallout4/mods/21497
 
 INSTALLATION
-Install with your mod manager, or copy the F4SE folder into Fallout 4's Data
-folder. Launch the game through F4SE.
+Install with your mod manager, or copy the F4SE and MCM folders into
+Fallout 4's Data folder. Launch the game through F4SE.
 
 NEC.pdb, beside NEC.dll, is only there for crash logs. The game itself never
 uses it. If the game ever crashes, a crash logger like Addictol can read it to
@@ -174,9 +178,11 @@ Mods:
   https://www.nexusmods.com/fallout4/mods/84214
 
 Adding it to a playthrough in progress? Weapons and armor with no condition
-yet, yours included, get one as the save loads, rolled the same way. Set
-bSpawnCondition=false first to keep your current gear as new, though loot then
-turns up new as well.
+yet, yours included, get one as the save loads, rolled the same way. To keep
+what you carry as new, set bSpawnCondition=false under [Features] in
+NEC_custom.ini before you start the game. Once the save has loaded, switch
+Worn loot back on in MCM, not in the ini, and save. Stored gear is still
+rolled.
 
 UNINSTALLING
 Repair anything broken first, at a workbench, at a trader or, for gear you
@@ -194,8 +200,12 @@ except that identical items at different conditions stay in separate stacks
 in your inventory.
 
 FOUND A BUG?
-Turn on NEC's full logs, restart the game and play until the bug happens
-again. Add this to NEC_custom.ini in Data\F4SE\Plugins (see MAKE IT YOURS):
+If a feature seems to do nothing, another DLL mod may have taken it over. Look
+at the top of NEC's MCM page, or for "left to" in NEC.log.
+
+Otherwise, turn on NEC's full logs and play until the bug happens again. With
+MCM, set Log detail to debug and switch on Bug report logs. Without it, add
+this to NEC_custom.ini in Data\F4SE\Plugins and restart the game:
   [Log]
   sLogLevel=debug
   bTraceLogs=true
@@ -205,8 +215,8 @@ Then share these files from Documents\My Games\Fallout4\F4SE:
 * The crash log if the game crashed, like crash-2026-10-01-21-15-31.log from
   Addictol
 Say what you did right before it went wrong, and post it all on the Bugs tab
-of the mod's Nexus Mods page or as an issue on GitHub (link below). The trace
-logs get big fast, so switch them off again once you're done.
+of the mod's Nexus Mods page or as an issue on GitHub (link below). The bug
+report logs get big fast, so switch them off again once you're done.
 
 SOURCE CODE
 NEC is open source under the GPL 3.0 license. Browse the code, report a bug or
@@ -219,3 +229,4 @@ CREDITS
   Plugins.
 * shad0wshayd3, qudix and every contributor to libxse's CommonLibF4, the fork
   NEC is built on.
+* The F4MCM authors, for the Mod Configuration Menu.

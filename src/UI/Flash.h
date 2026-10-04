@@ -6,10 +6,11 @@
 #include <string>
 #include <string_view>
 
-// Reading values from a menu movie's objects. Every readout and menu hook reads
-// clips through these. A number comes back whichever of the 3 number types the
-// movie keeps it in. Each accepts whatever it is handed, including a clip a UI
-// replacer removed, and returns as if the member were not there.
+// Reading values from a menu movie's objects, and writing text for it. Every
+// readout and menu hook reads clips through these. A number comes back
+// whichever of the 3 number types the movie keeps it in. Each accepts whatever
+// it is handed, including a clip a UI replacer removed, and returns as if the
+// member were not there.
 namespace Flash
 {
 	using Value = Scaleform::GFx::Value;
@@ -38,4 +39,7 @@ namespace Flash
 	// A clip's child by index from 0, or a value that is not a display object
 	// when there is none.
 	[[nodiscard]] Value ChildAt(Value& a_parent, std::uint32_t a_index);
+
+	// a_text with &, < and > written for an htmlText field.
+	[[nodiscard]] std::string HtmlEscaped(std::string_view a_text);
 }

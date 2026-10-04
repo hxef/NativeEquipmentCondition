@@ -2,9 +2,16 @@
 
 #include "Core/Plugin.h"
 
+#include "Core/CallPatch/CallPatch.h"
+#include "Core/Parts.h"
+#include "Core/Pieces.h"
+
+#include <cstddef>
 #include <cstdint>
+#include <span>
 #include <string>
 #include <string_view>
+#include <vector>
 
 // The sentences the plugin puts on the screen itself. Most of what it draws is
 // a $KEY the game translates. The rest has no key, so it lives here in every
@@ -15,7 +22,12 @@
 // bench, in Trader.cpp, for what a trader says, in Tips.cpp, for the loading
 // screen, or in Text.cpp, for the rest, and one function here. A sentence that
 // names the kind of item takes a bool, or a Trade where a trader tells
-// clothing from armor, since Core cannot ask Condition which kind it is.
+// clothing from armor, since Core cannot ask Condition which kind it is. An
+// option of the MCM page is a row in MenuSwitches.cpp, MenuNumbers.cpp or
+// MenuHudLog.cpp, which MenuLine finds, with no function of its own. A part's
+// name is a table in PartsPlay.cpp or PartsUi.cpp, a piece's in PiecesPlay.cpp,
+// PiecesArmor.cpp or PiecesUi.cpp. A grey line of the MCM page is a table in
+// MenuNotes.cpp, or in MenuPieces.cpp where it names pieces.
 namespace Text
 {
 	// What a trader deals in, named in what a trader says. A trader repairs
@@ -102,6 +114,78 @@ namespace Text
 	[[nodiscard]] std::string BrokenTip();
 	[[nodiscard]] std::string JamTip();
 	[[nodiscard]] std::string LootTip();
+
+	// A line of the MCM page by its id: a setting's key for its name, the key
+	// and ".help" for its help, or a section's id, Wear, Weapons, Loot,
+	// Repairs, HUD, Extras or Log, for its title. Empty for an id it does not
+	// know. Each row of the word tables points at its setting and takes the
+	// key from it.
+	[[nodiscard]] std::string MenuLine(std::string_view a_id);
+
+	// A part's name, "Workbench repairs", in the player's language.
+	[[nodiscard]] std::string PartName(Part a_part);
+
+	// The same in English, for NEC.log.
+	[[nodiscard]] std::string_view PartLogName(Part a_part);
+
+	// Who reads a line: the player on the MCM page, in their language, or
+	// NEC.log, in English with every piece named. PartLogName and the English
+	// rows never ask the game's language, so they are safe during install and
+	// under a lock.
+	enum class Out
+	{
+		kPage,
+		kLog,
+	};
+
+	// The grey lines of the MCM page about a part with pieces off, 1 a cause,
+	// the last saying what still works: "Worn armor protection (how NPCs rank
+	// armor): off, left to NECClashTest.dll. Still works: damage resistance,
+	// energy and radiation resistance, best item marks in menus.", "Jamming:
+	// off, since Gun wear from firing is left to ...", or "...: off, as this
+	// game version (1.10.984) is not supported."
+	[[nodiscard]] std::vector<std::string> PartLines(const CallPatch::Loss& a_loss, Out a_out = Out::kPage);
+
+	// A part with the pieces of it that are off, "CND on item cards
+	// (containers and traders)", or the part alone when they are all of it.
+	// Then the pieces alone, "containers and traders, cooking and chemistry
+	// stations".
+	[[nodiscard]] std::string PartPieces(Part a_part, std::span<const Piece> a_pieces, Out a_out = Out::kPage);
+	[[nodiscard]] std::string PieceNames(std::span<const Piece> a_pieces, Out a_out = Out::kPage);
+
+	// The lines of a setting with some pieces off: "Weapon wear speed: no
+	// effect on gun wear from firing for now. Still changes melee wear.", and
+	// "Repair prices follow the item's barter price for now." while Worn item
+	// prices is off. Empty while it works in full or is idle. a_named are
+	// pieces a part line right above names as off, which the page leaves out,
+	// with no sentence when none is left.
+	[[nodiscard]] std::vector<std::string> SettingLines(const SettingLink& a_link, const CallPatch::Effect& a_effect,
+		Out a_out = Out::kPage, std::span<const Piece> a_named = {});
+
+	// The line a block of the page ends with, "No effect for now: Workbench
+	// repair cost.", and a setting's English name for NEC.log.
+	[[nodiscard]] std::string MenuNoEffect(std::span<const std::string> a_names, Out a_out = Out::kPage);
+	[[nodiscard]] std::string SettingLogName(const Settings::Named& a_setting);
+
+	// The list at the top of the page: its first line, shown while a mod has
+	// a part, 1 line per mod with the parts it has, "Left to NECClashTest.dll:
+	// CND on item cards (containers and traders), Workbench repairs.", and the
+	// line that ends a list too long to show whole.
+	[[nodiscard]] std::string MenuTopIntro();
+	[[nodiscard]] std::string MenuTopOwner(const CallPatch::Owner& a_owner, std::span<const std::string> a_parts);
+	[[nodiscard]] std::string MenuTopMore(std::size_t a_count);
+
+	// The help line under every grey row, and the one shown instead while
+	// only this game version keeps parts off and no mod has any.
+	[[nodiscard]] std::string MenuNoteHelp();
+	[[nodiscard]] std::string MenuVersionHelp();
+
+	// "NEC.log names the rest.", the last line of a grey row cut to fit the
+	// page.
+	[[nodiscard]] std::string MenuNoteRest();
+
+	// "A, B and C" in the player's language, or in English for NEC.log.
+	[[nodiscard]] std::string List(std::span<const std::string> a_items, Out a_out = Out::kPage);
 
 	// What sLanguage says, lowercased, for the log. The game reads it from
 	// Fallout4.ini only after the plugin loads, so a Load asks, not an Install.

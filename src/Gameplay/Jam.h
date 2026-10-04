@@ -30,6 +30,10 @@
 // The settings are read on every roll, so setgs or a plugin retunes all of it.
 namespace Jam
 {
+	// Patches the reload call, a detail of the switch: without it only the
+	// guns that fire once per reload stop jamming.
+	void Install();
+
 	// Finds the settings and reads the message text.
 	void Load();
 
@@ -37,17 +41,8 @@ namespace Jam
 	void Unload();
 
 	// Rolls for a jam on one shot of the player's gun, before the engine fires
-	// it. Guns that fire once per reload never jam here, see RollReload. True
-	// when it jammed: the magazine is empty, the player has been told, and the
-	// caller must not fire the shot.
+	// it. Guns that fire once per reload never jam here, they jam as the
+	// reload finishes. True when it jammed: the magazine is empty, the player
+	// has been told, and the caller must not fire the shot.
 	bool Roll(RE::PlayerCharacter& a_player, const RE::BGSObjectInstanceT<RE::TESObjectWEAP>& a_weapon, std::uint32_t a_equipIndex);
-
-	// Rolls for a jam as a reload of the player's gun finishes. Only guns that
-	// fire once per reload roll here. a_loadedBefore is how many rounds the
-	// magazine held before.
-	void RollReload(RE::PlayerCharacter& a_player, const RE::BGSObjectInstanceT<RE::TESObjectWEAP>& a_weapon, std::uint32_t a_equipIndex,
-		std::uint32_t a_loadedBefore);
-
-	// How many rounds the weapon in one of an actor's equip slots holds.
-	std::uint32_t LoadedRounds(const RE::Actor& a_actor, std::uint32_t a_equipIndex);
 }

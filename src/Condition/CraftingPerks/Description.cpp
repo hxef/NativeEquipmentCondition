@@ -2,11 +2,12 @@
 
 #include "Condition/CraftingPerks/CraftingPerks.h"
 #include "Condition/CraftingPerks/Ladder.h"
-#include "Core/CallPatch.h"
+#include "Core/CallPatch/CallPatch.h"
 #include "Core/Text/Text.h"
 #include "Core/TraceLog.h"
 
 #include <algorithm>
+#include <array>
 #include <cstdint>
 #include <string>
 #include <vector>
@@ -31,14 +32,19 @@ namespace CraftingPerks
 		// plain loop is fast enough.
 		std::vector<Told> g_told;
 
-		REL::Relocation<void (*)(RE::TESDescription*, RE::BSString&, const RE::TESForm*)> _GetDescription;
-
 		// The 2 places a perk's words are read for the screen: the level up
 		// chart and the Pip-Boy's perks page.
 		constexpr CallPatch::CallSite DESCRIPTION_SITES[]{
 			{ 2206559, 0x434, "perk chart" },
 			{ 2225718, 0x36A, "Pip-Boy perks page" },
 		};
+
+		using GetDescription_t = void (*)(RE::TESDescription*, RE::BSString&, const RE::TESForm*);
+
+		std::array<CallPatch::Link<GetDescription_t>, std::size(DESCRIPTION_SITES)> g_links;
+
+		// Whether the bench repairs, see SetBench. Set once at install.
+		bool (*g_benchRepairs)() = nullptr;
 
 		[[nodiscard]] const Told* Ours(const RE::TESDescription* a_description)
 		{
@@ -51,11 +57,13 @@ namespace CraftingPerks
 		// rewritten by another plugin or read in another language comes
 		// through. Joined with a space, never a line break: the level up chart
 		// keeps only the first 2 pieces split on newlines and would drop the
-		// whole sentence.
+		// whole sentence. One per site, and only while the bench repairs.
+		template <std::size_t I>
 		void DescriptionHk(RE::TESDescription* a_description, RE::BSString& a_out, const RE::TESForm* a_form)
 		{
-			_GetDescription(a_description, a_out, a_form);
-			const auto* ours = Ours(a_description);
+			g_links[I](a_description, a_out, a_form);
+			const auto  bench = g_benchRepairs && g_benchRepairs();
+			const auto* ours = g_links[I].Live() && bench ? Ours(a_description) : nullptr;
 			if (!ours) {
 				return;
 			}
@@ -91,12 +99,14 @@ namespace CraftingPerks
 
 	void InstallDescriptions()
 	{
-		_GetDescription = RE::ID::TESDescription::GetDescription;
-
-		const auto hooks = CallPatch::Repeat<std::size(DESCRIPTION_SITES)>(
-			reinterpret_cast<std::uintptr_t>(DescriptionHk));
-		CallPatch::PatchAll(DESCRIPTION_SITES, RE::ID::TESDescription::GetDescription, hooks,
+		const auto hooks = CallPatch::PerSite<std::size(DESCRIPTION_SITES)>([]<std::size_t I>() { return &DescriptionHk<I>; });
+		CallPatch::PatchAll(DESCRIPTION_SITES, RE::ID::TESDescription::GetDescription, hooks, g_links,
 			"Crafting perks say what they do to a repair");
+	}
+
+	void SetBench(bool (*a_repairs)())
+	{
+		g_benchRepairs = a_repairs;
 	}
 
 	void TellRanks(std::span<const RE::BGSPerk* const> a_first)

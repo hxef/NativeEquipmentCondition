@@ -27,18 +27,21 @@
 // and put on the screen through the same camera, so it lands in the right place
 // at the dash's own slant on any screen, field of view or ini key. The dash
 // sways as the player breathes, so it is measured every frame and the bar
-// follows, its word anti-aliased for animation. Only its size waits for a
-// change before it is laid out again, since that means measuring text. If
-// anything fails, or the bar would fall outside the movie, nothing is drawn.
+// follows, its word anti-aliased for animation. fPowerArmorBarX and
+// fPowerArmorBarY move it off the digits, and it still follows the dash. Only
+// its size waits for a change before it is laid out again, since that means
+// measuring text. If anything fails, or the bar would fall outside the movie,
+// nothing is drawn.
 //
 // Dash.cpp finds the dash through its camera, and Layout.cpp lays the bar out
 // in the movie. Dash.h and Layout.h are what they share.
 namespace PowerArmorCondition
 {
 	// Writes a trace line each time the player steps out of power armor, from
-	// the thread that lets go of the dash. Only while there is a trace.
+	// the thread that lets go of the dash, whenever there is a trace.
 	void Load();
 
-	// Adds the bar to the HUD movie and ignores every other movie.
+	// Adds the bar to the HUD movie through HudParts::Waiter. Ignores every
+	// other movie.
 	void OnMovieLoaded(Scaleform::GFx::Movie& a_movie, std::string_view a_file);
 }

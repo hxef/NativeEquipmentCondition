@@ -10,8 +10,6 @@
 // its work, the highlighted row is priced the way the quantity slider prices
 // it, which points the markup at the item's owner: the trader's charge for
 // theirs and their offer for the player's, a pending trade included.
-// bInspectPrice in NEC.ini switches it off for a load order where another mod
-// already fixes it.
 namespace InspectPrice
 {
 	// Hooks the barter screen's calls from its movie.

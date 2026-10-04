@@ -15,8 +15,7 @@
 // into arrows, and the mouse wheel, each a row at a time, repeating at the pace
 // of the game's lists. The Flash side is left alone, since the game sends the
 // stick to the movie a second time as arrow keys and a listener there would
-// scroll 2 rows a push. bConfirmScroll in NEC.ini switches it off for a load
-// order where another mod already fixes the box.
+// scroll 2 rows a push.
 namespace ConfirmScroll
 {
 	// Hooks the box.

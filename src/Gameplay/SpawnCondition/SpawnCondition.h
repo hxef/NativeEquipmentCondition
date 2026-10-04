@@ -31,10 +31,17 @@ namespace SpawnCondition
 	// armor, a companion's for example, arrive new.
 	//
 	// Band.cpp is the roll itself, either side of an item's middle or in a
-	// trader's band, and Guards.cpp what marks a console command, a save
-	// loading, a script giving an item and a restock. Band.h and Guards.h are
-	// what they share with SpawnCondition.cpp.
+	// trader's band, Guards.cpp holds KeepCarried and what marks a console
+	// command, a save loading, a script giving an item and a restock, and
+	// Trace.cpp what the trace log is told about a stack. Band.h, Guards.h and Trace.h are what they share
+	// with SpawnCondition.cpp.
 	void Install();
+
+	// Sets every weapon and piece of armor the player carries with no
+	// condition yet, in a stack that is the player's alone, to full, so what
+	// arrived while Worn loot was off stays as it came. Called as Worn loot is
+	// switched back on, and does nothing while a save loads.
+	void KeepCarried();
 
 	// What a trader's stock of one item rolls in, low to high. worst is the
 	// lowest the rare roll that ignores the band can land, and repairs how far

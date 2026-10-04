@@ -1,7 +1,7 @@
 #include "Gameplay/HealthDamage/Hooks.h"
 
 #include "Condition/Equipped.h"
-#include "Core/CallPatch.h"
+#include "Core/CallPatch/CallPatch.h"
 #include "Core/TraceLog.h"
 #include "Gameplay/HealthDamage/Curve.h"
 #include "Gameplay/HealthDamage/Trace.h"
@@ -25,6 +25,8 @@ namespace HealthDamage
 		// blow.
 		constexpr CallSite HIT_EFFECT_SITE{ 2226293, 0x0E4, "hit effect" };
 
+		CallPatch::Link<bool(RE::MagicCaster*, float, std::uint32_t*, RE::TESBoundObject*, bool, bool)> g_hitEffect;
+
 		// -------------------------------------------------------------------
 		// The object effect hooks
 		// -------------------------------------------------------------------
@@ -40,9 +42,9 @@ namespace HealthDamage
 		{
 			const auto* spell = a_caster->currentSpell;
 			const auto* effect = spell ? spell->As<RE::EnchantmentItem>() : nullptr;
-			auto*       actor = effect ? a_caster->GetCasterAsActor() : nullptr;
+			auto*       actor = effect && g_hitEffect.Live() ? a_caster->GetCasterAsActor() : nullptr;
 			if (!actor) {
-				return a_caster->Cast(a_power, a_targets, a_source, a_noHitArt, a_hostileOnly);
+				return g_hitEffect(a_caster, a_power, a_targets, a_source, a_noHitArt, a_hostileOnly);
 			}
 
 			const auto health = Equipped::WeaponHealth(actor, a_source, effect);
@@ -64,7 +66,7 @@ namespace HealthDamage
 				}
 			}
 
-			return a_caster->Cast(a_power * mult, a_targets, a_source, a_noHitArt, a_hostileOnly);
+			return g_hitEffect(a_caster, a_power * mult, a_targets, a_source, a_noHitArt, a_hostileOnly);
 		}
 	}
 
@@ -72,7 +74,7 @@ namespace HealthDamage
 	{
 		const auto cast = RE::ID::MagicCaster::Cast.address();
 
-		if (!CallPatch::PatchCall(HIT_EFFECT_SITE, cast, reinterpret_cast<std::uintptr_t>(&HitEffectHk))) {
+		if (!CallPatch::PatchCall(HIT_EFFECT_SITE, cast, reinterpret_cast<std::uintptr_t>(&HitEffectHk), g_hitEffect)) {
 			REX::ERROR("A worn weapon's object effects will keep landing at full strength.");
 		} else {
 			REX::INFO("A weapon's object effects land at the condition the weapon is in.");

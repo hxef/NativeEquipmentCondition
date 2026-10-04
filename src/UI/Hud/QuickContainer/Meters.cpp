@@ -1,5 +1,6 @@
 #include "UI/Hud/QuickContainer/Meters.h"
 
+#include "Core/Settings.h"
 #include "Core/TraceLog.h"
 #include "UI/Flash.h"
 #include "UI/Hud/QuickContainer/Rows.h"
@@ -113,6 +114,18 @@ namespace QuickContainer
 					return;
 				}
 
+				// Switched off, a row NEC drew into goes back to how the game
+				// draws it, once, and every other row is left as it is.
+				if (!Settings::bQuickContainer.GetValue()) {
+					for (std::size_t i = 0; i < MAX_ROWS; i++) {
+						auto row = Flash::Child(list, ROW_NAMES[i]);
+						if (a_afterRedraw || !Flash::Bool(row, "bIsDirty"sv)) {
+							Withdraw(row, i);
+						}
+					}
+					return;
+				}
+
 				// The rows fill from the top, and a row without data hides
 				// itself and its meter.
 				std::array<Value, MAX_ROWS> rows;
@@ -166,6 +179,34 @@ namespace QuickContainer
 					a_meter.SetMember("visible"sv, Value(false));
 					a_drawn.visible = false;
 				}
+			}
+
+			// Hides the meter of a row NEC drew into, and gives the name back
+			// the width the meter took, but only while the name still has the
+			// width it had with a meter.
+			void Withdraw(Value& a_row, std::size_t a_index)
+			{
+				auto& last = drawn[a_index];
+				if (last.percent == NOT_DRAWN && !last.visible) {
+					return;
+				}
+
+				Value field;
+				auto  meter = Flash::Child(a_row, METER_NAME);
+				if (!a_row.IsDisplayObject() || !a_row.GetMember("ItemName_tf"sv, &field) || !field.IsDisplayObject() || !meter.IsDisplayObject()) {
+					return;
+				}
+				Hide(meter, last);
+
+				Value iconsWidth;
+				a_row.Invoke("CalcIconWidth", &iconsWidth);
+				const auto withoutMeter = nameWidth - Flash::AsNumber(iconsWidth);
+				const auto withMeter = withoutMeter - METER_GAP - METER_WIDTH;
+				if (std::abs(Flash::Number(field, "width"sv) - withMeter) < 0.5) {
+					field.SetMember("width"sv, Value(withoutMeter));
+					a_row.Invoke("AddIconsToEntry");
+				}
+				last = Drawn{};
 			}
 
 			// Lays out one row. a_percent is NO_CONDITION for an item that does

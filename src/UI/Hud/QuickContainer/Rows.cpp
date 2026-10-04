@@ -1,10 +1,11 @@
 #include "UI/Hud/QuickContainer/Rows.h"
 
 #include "Condition/Condition.h"
-#include "Core/CallPatch.h"
+#include "Core/CallPatch/CallPatch.h"
 #include "Core/TraceLog.h"
 
 #include <algorithm>
+#include <array>
 #include <format>
 #include <mutex>
 #include <string_view>
@@ -31,6 +32,10 @@ namespace QuickContainer
 		constexpr CallSite ROW_SITES[] = {
 			{ RE::ID::HUDQuickContainerDataModel::AddItemRows.id(), 0x26F, "quick container row" },
 		};
+
+		// The row AddItemRows adds last when more entries follow, see
+		// HUDQuickContainerDataModel.h. RowHk never sees it.
+		constexpr std::string_view DOTS_ROW{ "..." };
 
 		// -------------------------------------------------------------------
 		// The rows of one build
@@ -153,15 +158,17 @@ namespace QuickContainer
 
 		thread_local Building* t_building = nullptr;
 
+		std::array<CallPatch::Link<RE::InventoryItemDisplayData*(RE::InventoryItemDisplayData*, const RE::ObjectRefHandle&, const RE::InventoryUserUIInterfaceEntry&)>, 1> g_rowLink;
+		std::array<CallPatch::Link<void(RE::HUDQuickContainerDataModel*, RE::QuickContainerStateData&)>, 1> g_rowsLink;
+
 		// Stands in for InventoryItemDisplayData's constructor in AddItemRows.
 		// The owner's handle arrives by address.
 		RE::InventoryItemDisplayData* RowHk(RE::InventoryItemDisplayData* a_this, const RE::ObjectRefHandle& a_inventoryRef,
 			const RE::InventoryUserUIInterfaceEntry& a_entry)
 		{
-			const REL::Relocation<decltype(&RowHk)> original{ RE::ID::InventoryItemDisplayData::ctor };
-			const auto                              result = original(a_this, a_inventoryRef, a_entry);
+			const auto result = g_rowLink[0](a_this, a_inventoryRef, a_entry);
 
-			if (auto* building = t_building; building && building->made < MAX_ROWS) {
+			if (auto* building = t_building; building && building->made < MAX_ROWS && g_rowLink[0].Live()) {
 				building->percents[building->made++] = ConditionOf(a_entry);
 			}
 			return result;
@@ -170,21 +177,30 @@ namespace QuickContainer
 		// Stands in for AddItemRows. a_state is the state it fills.
 		void RowsHk(RE::HUDQuickContainerDataModel* a_model, RE::QuickContainerStateData& a_state)
 		{
+			if (!g_rowsLink[0].Live()) {
+				g_rowsLink[0](a_model, a_state);
+				return;
+			}
 			Building building;
 			t_building = &building;
-			a_model->AddItemRows(a_state);
+			g_rowsLink[0](a_model, a_state);
 			t_building = nullptr;
 
-			// AddItemRows makes its item rows before the row of dots, so the
-			// conditions line up with the first rows.
+			// AddItemRows makes its item rows first, each through RowHk, then
+			// the row of dots when more entries follow. Rows are matched to
+			// conditions by order, so a skipped row would shift every later
+			// meter. A build whose item rows do not line up with the
+			// conditions noted shows no meters, which is safe.
 			Rows        rows;
 			const auto& items = a_state.itemData;
 			rows.size = std::min<std::size_t>(items.size(), MAX_ROWS);
+			const bool dots = rows.size == building.made + 1 && items[rows.size - 1].itemName == DOTS_ROW;
+			const bool aligned = building.made == rows.size || dots;
 			for (std::size_t i = 0; i < rows.size; i++) {
 				auto& row = rows.rows[i];
 				row.name = items[i].itemName;
 				row.count = items[i].itemCount;
-				row.percent = i < building.made ? building.percents[i] : NO_CONDITION;
+				row.percent = aligned && i < building.made ? building.percents[i] : NO_CONDITION;
 				row.better = items[i].isBetterThanEquippedItem;
 			}
 			Publish(rows);
@@ -224,12 +240,12 @@ namespace QuickContainer
 
 	bool PatchRows()
 	{
-		const auto row = CallPatch::PatchAll(ROW_SITES, RE::ID::InventoryItemDisplayData::ctor,
-			CallPatch::Repeat<std::size(ROW_SITES)>(reinterpret_cast<std::uintptr_t>(&RowHk)),
+		const auto rowHooks = CallPatch::PerSite<std::size(ROW_SITES)>([]<std::size_t I>() { return &RowHk; });
+		const auto row = CallPatch::PatchAll(ROW_SITES, RE::ID::InventoryItemDisplayData::ctor, rowHooks, g_rowLink,
 			"Quick container rows note their CND");
 
-		const auto rows = CallPatch::PatchAll(ROWS_SITES, RE::ID::HUDQuickContainerDataModel::AddItemRows,
-			CallPatch::Repeat<std::size(ROWS_SITES)>(reinterpret_cast<std::uintptr_t>(&RowsHk)),
+		const auto rowsHooks = CallPatch::PerSite<std::size(ROWS_SITES)>([]<std::size_t I>() { return &RowsHk; });
+		const auto rows = CallPatch::PatchAll(ROWS_SITES, RE::ID::HUDQuickContainerDataModel::AddItemRows, rowsHooks, g_rowsLink,
 			"Quick container rows hand their CND to the HUD");
 
 		return row > 0 && rows > 0;

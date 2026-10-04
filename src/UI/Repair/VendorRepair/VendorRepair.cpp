@@ -1,8 +1,8 @@
 #include "UI/Repair/VendorRepair/VendorRepair.h"
 
 #include "Condition/Repair.h"
+#include "Core/CallPatch/CallPatch.h"
 #include "Core/ItemCards.h"
-#include "Core/Settings.h"
 #include "UI/Repair/VendorRepair/Button.h"
 #include "UI/Repair/VendorRepair/Payment.h"
 #include "UI/Repair/VendorRepair/Quote.h"
@@ -23,12 +23,21 @@ namespace VendorRepair
 		REL::Relocation<void (*)(RE::BarterMenu*, std::int32_t, bool, std::int32_t)> _UpdateItemPickpocketInfo;
 		REL::Relocation<void (*)(RE::BarterMenu*, bool)>                             _UpdateList;
 
+		// Whether each of the 4 places still runs, see CallPatch::PatchSlot.
+		CallPatch::LinkBase g_messagesLink;
+		CallPatch::LinkBase g_keyLink;
+		CallPatch::LinkBase g_highlightLink;
+		CallPatch::LinkBase g_listLink;
+
 		// The movie telling code where the highlight landed. It asks for the
 		// pickpocket odds once per change of highlight and from nowhere else.
 		void UpdateItemPickpocketInfoHk(RE::BarterMenu* a_menu, std::int32_t a_index, bool a_inContainer,
 			std::int32_t a_count)
 		{
 			_UpdateItemPickpocketInfo(a_menu, a_index, a_inContainer, a_count);
+			if (!g_highlightLink.Live()) {
+				return;
+			}
 			Highlight(a_index, a_inContainer);
 			Refresh(a_menu);
 		}
@@ -39,6 +48,10 @@ namespace VendorRepair
 		// off reads it again.
 		void UpdateListHk(RE::BarterMenu* a_menu, bool a_inContainer)
 		{
+			if (!g_listLink.Live()) {
+				_UpdateList(a_menu, a_inContainer);
+				return;
+			}
 			if (a_inContainer) {
 				ForgetStock();
 			}
@@ -52,7 +65,7 @@ namespace VendorRepair
 		// leaves the key to the game.
 		bool OnButtonEventReleaseHk(RE::BarterMenu* a_menu, const RE::BSFixedString& a_event)
 		{
-			if (a_event == HINT_EVENT && Offered(a_menu) && Press()) {
+			if (g_keyLink.Live() && a_event == HINT_EVENT && Offered(a_menu) && Press()) {
 				return true;
 			}
 			return _OnButtonEventRelease(a_menu, a_event);
@@ -64,6 +77,9 @@ namespace VendorRepair
 		// through F4SE's task queue, once for each kind repaired.
 		RE::UI_MESSAGE_RESULTS ProcessMessageHk(RE::BarterMenu* a_menu, RE::UIMessage& a_message)
 		{
+			if (!g_messagesLink.Live()) {
+				return _ProcessMessage(a_menu, a_message);
+			}
 			if (*a_message.type == RE::UI_MESSAGE_TYPE::kShow) {
 				Forget();
 				ForgetButton();
@@ -85,10 +101,18 @@ namespace VendorRepair
 	{
 		REL::Relocation<std::uintptr_t> menu{ RE::BarterMenu::VTABLE[0] };
 
-		_ProcessMessage = menu.write_vfunc(0x03, ProcessMessageHk);
-		_OnButtonEventRelease = menu.write_vfunc(0x0F, OnButtonEventReleaseHk);
-		_UpdateItemPickpocketInfo = menu.write_vfunc(0x1F, UpdateItemPickpocketInfoHk);
-		_UpdateList = menu.write_vfunc(0x20, UpdateListHk);
+		const auto messages = CallPatch::PatchSlot(menu, 0x03, ProcessMessageHk, "barter messages", Part::kNone, true, &g_messagesLink);
+		const auto key = CallPatch::PatchSlot(menu, 0x0F, OnButtonEventReleaseHk, "barter key", Part::kNone, true, &g_keyLink);
+		const auto highlight = CallPatch::PatchSlot(menu, 0x1F, UpdateItemPickpocketInfoHk, "barter highlight", Part::kNone, true,
+			&g_highlightLink);
+		const auto list = CallPatch::PatchSlot(menu, 0x20, UpdateListHk, "barter list", Part::kNone, true, &g_listLink);
+		if (!messages || !key || !highlight || !list) {
+			return;
+		}
+		_ProcessMessage = *messages;
+		_OnButtonEventRelease = *key;
+		_UpdateItemPickpocketInfo = *highlight;
+		_UpdateList = *list;
 
 		REX::INFO("Traders who restock {:d} rows of weapons with one row in {:d} a weapon, "
 				  "or {:d} rows of weapons, ammunition, grenades and mines with one row in {:d} one of those, "
@@ -105,10 +129,7 @@ namespace VendorRepair
 		REX::INFO("An item at nothing owes a trader {:.2f} times what it is worth, and at each level {:s}",
 			Repair::Debt(0, Scaled(WRECK_MULTIPLE)), Repair::Ladder(Scaled(WRECK_MULTIPLE)));
 
-		// The stock is rolled as it enters the chest, so with spawned wear off
-		// it arrives new like everything else.
-		if (Settings::bSpawnCondition.GetValue()) {
-			InstallUpkeep();
-		}
+		// RestockHk asks both switches on every restock.
+		InstallUpkeep();
 	}
 }

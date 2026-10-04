@@ -19,4 +19,7 @@
 namespace BrokenEquip
 {
 	void Install();
+
+	// Whether the equip pair is in, so a broken piece that is on can come off.
+	[[nodiscard]] bool Works();
 }

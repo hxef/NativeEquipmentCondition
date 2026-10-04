@@ -2,17 +2,18 @@
 
 #include "Condition/Condition.h"
 #include "Condition/Provenance/Provenance.h"
-#include "Core/CallPatch.h"
+#include "Core/CallPatch/CallPatch.h"
+#include "Core/Settings.h"
 #include "Core/TraceLog.h"
 #include "Gameplay/SpawnCondition/Band.h"
 #include "Gameplay/SpawnCondition/Guards.h"
+#include "Gameplay/SpawnCondition/Trace.h"
 
 #include <algorithm>
-#include <format>
+#include <array>
+#include <cstddef>
+#include <cstdint>
 #include <optional>
-#include <string>
-#include <string_view>
-#include <utility>
 
 namespace SpawnCondition
 {
@@ -33,47 +34,6 @@ namespace SpawnCondition
 			{ 2194196, 0x12F, "container locked" },
 			{ 2194196, 0x155, "container" },
 		};
-
-		// What to call something in the trace log. A generic guard and every
-		// creature's weapon are nameless on purpose, and an empty name would
-		// leave a hole in the line. An editor ID would read better but costs
-		// another engine call under the inventory lock.
-		std::string_view NameOf(const RE::TESForm& a_form, std::string_view a_whenNameless)
-		{
-			const auto name = RE::TESFullName::GetFullName(a_form);
-			return name.empty() ? a_whenNameless : name;
-		}
-
-		// Which halves were measured, for the trace log, so a weapon at a
-		// surprising condition shows whether the list, the owner or neither
-		// caused it.
-		std::string Describe(const Provenance::Origin& a_origin)
-		{
-			std::string text;
-
-			// The list by form ID, since a leveled list carries no name and the
-			// ID finds it in the editor.
-			if (a_origin.supply == Provenance::UNMEASURED) {
-				text = "supply unknown";
-			} else {
-				text = std::format("supply {:.2f} [{:08X}]", a_origin.supply, a_origin.pipeline);
-			}
-
-			// 3 cases, not 2: a character with a rank, a character this could
-			// not rank, and no character. Merging the middle into the last
-			// would hide whether the scale is missing people.
-			if (a_origin.care != Provenance::UNMEASURED && a_origin.keeper) {
-				text += std::format(", care {:.2f} {:s} [{:08X}]", a_origin.care,
-					NameOf(*a_origin.keeper, "unnamed character"), a_origin.keeper->formID);
-			} else if (a_origin.keeper) {
-				text += std::format(", care unmeasured for {:s} [{:08X}]",
-					NameOf(*a_origin.keeper, "unnamed character"), a_origin.keeper->formID);
-			} else {
-				text += ", no owner";
-			}
-
-			return text;
-		}
 
 		// Whether a stack is going to the player. The player's own are
 		// listed one by one and everybody else's counted, since a save
@@ -112,29 +72,6 @@ namespace SpawnCondition
 				}
 			}
 			return base && base->IsEssential() ? base : nullptr;
-		}
-
-		// A stack for the trace log: a line of its own where it is the
-		// player's or a trader's restock, and otherwise a count by what became
-		// of it, with the line under the quiet loot tag for whoever needs it
-		// back, see TraceLog.h.
-		template <class... T>
-		void Report(bool a_listed, std::string_view a_what, std::format_string<T...> a_fmt, T&&... a_args)
-		{
-			if (a_listed) {
-				TraceLog::Line("spawn", a_fmt, std::forward<T>(a_args)...);
-			} else {
-				TraceLog::Count("spawn", a_what);
-				TraceLog::Line("loot", a_fmt, std::forward<T>(a_args)...);
-			}
-		}
-
-		// Whose stock an item is and the band it rolled in, for the trace log.
-		std::string Stocked(const Restock& a_restock, const StockBand& a_band)
-		{
-			return std::format("stock of {:s}, who {:s}, rolled in {:.0f}% to {:.0f}%", a_restock.trader,
-				a_band.repairs > 0 ? std::format("repairs it to {:d}%", a_band.repairs) : "does not repair it",
-				a_band.low * 100.0F, a_band.high * 100.0F);
 		}
 
 		// Gives one stack a condition, if it is the kind of thing that has one
@@ -370,6 +307,10 @@ namespace SpawnCondition
 			}
 		}
 
+		using AddStack_t = void (*)(RE::BGSInventoryList*, RE::TESBoundObject*, RE::BGSInventoryItem::Stack*, std::uint32_t*, std::uint32_t*);
+		std::array<CallPatch::Link<AddStack_t>, std::size(ADD_STACK_SITES)> g_links;
+
+		template <std::size_t I>
 		void AddStackHk(RE::BGSInventoryList* a_list, RE::TESBoundObject* a_object, RE::BGSInventoryItem::Stack* a_stack,
 			std::uint32_t* a_oldCount, std::uint32_t* a_newCount)
 		{
@@ -378,8 +319,8 @@ namespace SpawnCondition
 			// extra data matches. Rolling first keeps 2 pipe pistols from one
 			// footlocker as 2 entries with their own health. Rolling afterwards
 			// would merge them and give the pair one condition.
-			const auto aim = Roll(a_list, a_object, a_stack);
-			a_list->AddStack(a_object, a_stack, a_oldCount, a_newCount);
+			const auto aim = Settings::bSpawnCondition.GetValue() && g_links[I].Live() ? Roll(a_list, a_object, a_stack) : std::nullopt;
+			g_links[I](a_list, a_object, a_stack, a_oldCount, a_newCount);
 
 			// Splitting waits until the stack is in, since the split is the
 			// engine's own and works on a stack inside an inventory.
@@ -391,23 +332,23 @@ namespace SpawnCondition
 
 	void Install()
 	{
-		const auto patched = CallPatch::PatchAll(ADD_STACK_SITES, RE::ID::BGSInventoryList::AddStack,
-			CallPatch::Repeat<std::size(ADD_STACK_SITES)>(reinterpret_cast<std::uintptr_t>(&AddStackHk)),
+		const auto hooks = CallPatch::PerSite<std::size(ADD_STACK_SITES)>([]<std::size_t I>() { return &AddStackHk<I>; });
+		const auto patched = CallPatch::PatchAll(ADD_STACK_SITES, RE::ID::BGSInventoryList::AddStack, hooks, g_links,
 			"Weapons and armor spawn at a condition that suits where they came from");
 
-		if (patched == std::size(ADD_STACK_SITES)) {
-			// The limits a weapon can actually arrive at, not the clamp, which
-			// is wider than anything Provenance asks for.
-			const auto [floor, ceiling] = OrdinaryEnds();
-			const auto lowest = std::max(floor, Provenance::LowestCentre() - SPREAD);
-			const auto highest = std::min(ceiling, Provenance::HighestCentre() + SPREAD);
-
-			REX::INFO("Weapons and armor spawn between {:.0f} and {:.0f} percent condition, worked out from the leveled list they came out of and who is carrying them. One in {:.0f} ignores that and lands anywhere between {:.0f} and {:.0f}.",
-				lowest * 100.0F, highest * 100.0F, 1.0F / UPSET_CHANCE,
-				std::max(Condition::MIN_HEALTH, WORST_SPAWN) * 100.0F, Condition::MAX_HEALTH * 100.0F);
-		} else if (patched != 0) {
-			REX::WARN("Some ways of spawning a weapon or a piece of armor will still hand it out at full condition.");
+		if (patched != std::size(ADD_STACK_SITES)) {
+			return;
 		}
+
+		// The limits a weapon can actually arrive at, not the clamp, which is
+		// wider than anything Provenance asks for.
+		const auto [floor, ceiling] = OrdinaryEnds();
+		const auto lowest = std::max(floor, Provenance::LowestCentre() - SPREAD);
+		const auto highest = std::min(ceiling, Provenance::HighestCentre() + SPREAD);
+
+		REX::INFO("Weapons and armor spawn between {:.0f} and {:.0f} percent condition, worked out from the leveled list they came out of and who is carrying them. One in {:.0f} ignores that and lands anywhere between {:.0f} and {:.0f}.",
+			lowest * 100.0F, highest * 100.0F, 1.0F / UPSET_CHANCE,
+			std::max(Condition::MIN_HEALTH, WORST_SPAWN) * 100.0F, Condition::MAX_HEALTH * 100.0F);
 
 		InstallGuards();
 	}

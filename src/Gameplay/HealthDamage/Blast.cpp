@@ -2,7 +2,7 @@
 
 #include "Condition/Condition.h"
 #include "Condition/Equipped.h"
-#include "Core/CallPatch.h"
+#include "Core/CallPatch/CallPatch.h"
 #include "Core/TraceLog.h"
 #include "Gameplay/HealthDamage/Curve.h"
 #include "Gameplay/HealthDamage/Trace.h"
@@ -53,6 +53,8 @@ namespace HealthDamage
 		// Explosion::GetDamage: the explosion in, what it is worth out.
 		using BlastDamage_t = float (*)(RE::Explosion*);
 
+		std::array<CallPatch::Link<BlastDamage_t>, NUM_BLAST_SITES> g_blastLinks;
+
 		// Who set a blast off, and how worn the weapon it came out of is.
 		struct Blast
 		{
@@ -92,7 +94,10 @@ namespace HealthDamage
 		float BlastDamageHk(RE::Explosion* a_explosion)
 		{
 			// All 3 sites hand this a live explosion.
-			const auto base = a_explosion->GetDamage();
+			const auto base = g_blastLinks[I](a_explosion);
+			if (!g_blastLinks[I].Live()) {
+				return base;
+			}
 
 			const auto blast = BlastOf(*a_explosion);
 			if (!blast.actor) {
@@ -120,16 +125,6 @@ namespace HealthDamage
 			return base * mult;
 		}
 
-		// Entry i holds the hook for BLAST_SITES[i], as MakeCalcHooks in
-		// Combat.cpp.
-		template <std::size_t... I>
-		constexpr auto MakeBlastHooks(std::index_sequence<I...>)
-		{
-			return std::array<BlastDamage_t, sizeof...(I)>{ &BlastDamageHk<I>... };
-		}
-
-		constexpr auto BLAST_HOOKS = MakeBlastHooks(std::make_index_sequence<NUM_BLAST_SITES>{});
-
 		// -------------------------------------------------------------------
 		// The object effect hooks
 		// -------------------------------------------------------------------
@@ -139,13 +134,22 @@ namespace HealthDamage
 		// the same thread.
 		thread_local const RE::Explosion* t_blast = nullptr;
 
+		// The blast targets and blast effect hooks.
+		CallPatch::Held                              g_blastEffect;
+		CallPatch::Link<void(RE::Explosion*)>        g_blastTargetsLink;
+		CallPatch::Link<bool(RE::MagicCaster*, float, std::uint32_t*, RE::TESBoundObject*, bool, bool)> g_blastEffectLink;
+
 		// Marks the blast for BlastEffectHk while it damages its targets. The
 		// cast names no weapon and no blast, so the mark is the only way to
 		// tell.
 		void BlastTargetsHk(RE::Explosion* a_explosion)
 		{
+			if (!g_blastEffect.Runs(g_blastTargetsLink)) {
+				g_blastTargetsLink(a_explosion);
+				return;
+			}
 			const auto outer = std::exchange(t_blast, a_explosion);
-			a_explosion->ProcessTargets();
+			g_blastTargetsLink(a_explosion);
 			t_blast = outer;
 		}
 
@@ -155,12 +159,15 @@ namespace HealthDamage
 		bool BlastEffectHk(RE::MagicCaster* a_caster, float a_power, std::uint32_t* a_targets, RE::TESBoundObject* a_source,
 			bool a_noHitArt, bool a_hostileOnly)
 		{
+			if (!g_blastEffect.Runs(g_blastEffectLink)) {
+				return g_blastEffectLink(a_caster, a_power, a_targets, a_source, a_noHitArt, a_hostileOnly);
+			}
 			const auto* form = t_blast ? t_blast->GetObjectReference() : nullptr;
 			const auto* explosion = form ? form->As<RE::BGSExplosion>() : nullptr;
 			const auto* effect = explosion ? explosion->GetBaseEnchanting() : nullptr;
 			const auto  blast = effect && a_caster->currentSpell == effect ? BlastOf(*t_blast) : Blast{};
 			if (!blast.actor) {
-				return a_caster->Cast(a_power, a_targets, a_source, a_noHitArt, a_hostileOnly);
+				return g_blastEffectLink(a_caster, a_power, a_targets, a_source, a_noHitArt, a_hostileOnly);
 			}
 
 			const auto mult = DamageMult(blast.health);
@@ -181,24 +188,26 @@ namespace HealthDamage
 				}
 			}
 
-			return a_caster->Cast(a_power * mult, a_targets, a_source, a_noHitArt, a_hostileOnly);
+			return g_blastEffectLink(a_caster, a_power * mult, a_targets, a_source, a_noHitArt, a_hostileOnly);
 		}
 	}
 
 	void InstallBlast()
 	{
-		CallPatch::PatchAll(BLAST_SITES, RE::ID::Explosion::GetDamage, CallPatch::AsAddresses(BLAST_HOOKS),
+		const auto blastHooks = CallPatch::PerSite<NUM_BLAST_SITES>([]<std::size_t I>() { return &BlastDamageHk<I>; });
+		CallPatch::PatchAll(BLAST_SITES, RE::ID::Explosion::GetDamage, blastHooks, g_blastLinks,
 			"An explosion is worth what the weapon that set it off is worth");
 
 		const auto cast = RE::ID::MagicCaster::Cast.address();
 
 		// The first only marks the blast and the second reads the mark, so the
 		// second is not installed alone.
-		const auto blastEffect =
-			CallPatch::PatchCall(BLAST_TARGETS_SITE, RE::ID::Explosion::ProcessTargets.address(), reinterpret_cast<std::uintptr_t>(&BlastTargetsHk)) &&
-			CallPatch::PatchCall(BLAST_EFFECT_SITE, cast, reinterpret_cast<std::uintptr_t>(&BlastEffectHk));
+		g_blastEffect = CallPatch::PatchTogether({
+			{ BLAST_TARGETS_SITE, RE::ID::Explosion::ProcessTargets.address(), reinterpret_cast<std::uintptr_t>(&BlastTargetsHk), &g_blastTargetsLink },
+			{ BLAST_EFFECT_SITE, cast, reinterpret_cast<std::uintptr_t>(&BlastEffectHk), &g_blastEffectLink },
+		});
 
-		if (!blastEffect) {
+		if (!g_blastEffect) {
 			REX::ERROR("A worn weapon's blast will keep casting its object effect at full strength.");
 		} else {
 			REX::INFO("A blast casts its object effect at the condition of the weapon that set it off.");

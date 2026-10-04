@@ -1,5 +1,6 @@
 #include "UI/Repair/VendorRepair/Button.h"
 
+#include "Core/Settings.h"
 #include "Core/Text/Text.h"
 #include "Core/TraceLog.h"
 #include "UI/Repair/RepairPrompt.h"
@@ -89,7 +90,7 @@ namespace VendorRepair
 
 		[[nodiscard]] Stand StandOf(RE::BarterMenu* a_menu, const Selection& a_selection, std::uint32_t a_ceiling)
 		{
-			if (g_asking || !a_menu || !Shown(a_selection, a_ceiling)) {
+			if (!Settings::bVendorRepair.GetValue() || g_asking || !a_menu || !Shown(a_selection, a_ceiling)) {
 				return Stand::kOff;
 			}
 			if (a_selection.percent >= a_ceiling) {
@@ -229,6 +230,15 @@ namespace VendorRepair
 
 	void Refresh(RE::BarterMenu* a_menu)
 	{
+		// Switched off, the screen shows no REPAIR. A screen built on the last
+		// one's movie still has the button, so it is hidden, and none is wired.
+		if (!Settings::bVendorRepair.GetValue()) {
+			if (auto hint = Hint(a_menu); hint.IsObject()) {
+				hint.SetMember("ButtonVisible"sv, Value(false));
+			}
+			return;
+		}
+
 		if (!Wire(a_menu)) {
 			return;
 		}

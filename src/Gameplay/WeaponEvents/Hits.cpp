@@ -5,7 +5,7 @@
 #include "Condition/WeaponWear/WeaponWear.h"
 #include "Core/ItemCards.h"
 #include "Core/TraceLog.h"
-#include "Gameplay/FireRate.h"
+#include "Gameplay/FireRate/FireRate.h"
 
 #include <string>
 #include <string_view>

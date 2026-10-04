@@ -1,0 +1,9 @@
+1.1.0
+* Adds an optional Mod Configuration Menu page with every setting.
+* A change on the page applies on the spot and is saved to NEC_custom.ini.
+* The CND bars on the HUD can be moved, on the MCM page or in NEC_custom.ini.
+* Works alongside other DLL mods that change the same things. NEC's MCM page and NEC.log name the mod and what is off.
+* Changes typed into NEC_custom.ini by hand need a game restart, MCM changes do not.
+
+1.0.0
+* First release.

@@ -1,7 +1,8 @@
 #include "UI/Hud/PowerArmorCondition/PowerArmorCondition.h"
 
+#include "Core/Settings.h"
 #include "Core/TraceLog.h"
-#include "UI/Hud/HudParts.h"
+#include "UI/Hud/HudParts/HudParts.h"
 #include "UI/Hud/PowerArmorCondition/Dash.h"
 #include "UI/Hud/PowerArmorCondition/Layout.h"
 #include "UI/MenuMovies.h"
@@ -71,7 +72,13 @@ namespace PowerArmorCondition
 				const auto measured = anchor.miss == Miss::kNone;
 				const auto percent = HudParts::Weapon::Percent();
 				const auto frame = FrameOf(*a_params.movie);
-				const auto box = measured ? Place(frame, anchor) : Box{};
+				auto       box = measured ? Place(frame, anchor) : Box{};
+
+				// The MCM page can move the bar off the digits. It still sways
+				// with the dash, and only its place changes, never its size.
+				// The movie's y runs down, so above 0 is taken off to go up.
+				box.x += Settings::fPowerArmorBarX.GetValue();
+				box.y -= Settings::fPowerArmorBarY.GetValue();
 
 				// Laying out again means measuring text, so it waits for the
 				// dash to be drawn at a different size. Moving and turning is 3
@@ -177,6 +184,51 @@ namespace PowerArmorCondition
 				return RE::BSEventNotifyControl::kContinue;
 			}
 		};
+
+		// Adds the readout and its frame listener to the HUD movie.
+		void Build(Scaleform::GFx::Movie& a_movie)
+		{
+			Value root;
+			if (!a_movie.GetVariable(&root, "_root") || !root.IsDisplayObject()) {
+				REX::WARN("The HUD movie has no _root, so power armor shows no CND.");
+				return;
+			}
+
+			// One readout, the same kind the ammo counter uses, put straight on
+			// the movie's root, since it is placed by the dash and a parent
+			// clip's own position would only have to be undone. Nothing is
+			// added to the HUD until the whole readout is built.
+			auto readout = HudParts::Readout::Create(a_movie, READOUT_NAME);
+			if (!readout.IsDisplayObject()) {
+				REX::WARN("The HUD movie would not take a power armor CND bar, so power armor shows no CND.");
+				return;
+			}
+
+			// The bar follows the dash every frame, so its word is drawn where
+			// it is rather than snapped to pixels.
+			HudParts::Readout::AntiAliasForAnimation(readout);
+
+			if (!root.Invoke("addChild", std::array{ readout })) {
+				REX::WARN("The HUD movie would not take the power armor CND bar on its root, so power armor shows no CND.");
+				return;
+			}
+
+			// A new HUD movie starts with nothing drawn.
+			g_frameListener.Reset();
+
+			Value listener;
+			a_movie.CreateFunction(&listener, &g_frameListener);
+			if (!readout.Invoke("addEventListener", std::array{ Value("enterFrame"), listener })) {
+				REX::WARN("The HUD refused the frame listener, so power armor never shows CND.");
+				return;
+			}
+
+			HudParts::Weapon::Queue();
+			QueueAnchor();
+			TraceLog::Line("menu", "HUDMenu.swf loaded, power armor CND will follow the dash's ammo box");
+		}
+
+		HudParts::Waiter g_waiter{ Settings::bHudCondition, &Build };
 	}
 
 	void Load()
@@ -184,7 +236,7 @@ namespace PowerArmorCondition
 		// Once, since the event source lasts as long as the game and a second
 		// sink would write every trace line twice.
 		static bool registered = false;
-		if (registered || !TraceLog::IsOpen()) {
+		if (registered) {
 			return;
 		}
 		RE::ExitPowerArmor::GetEventSource()->RegisterSink(new StepOutSink());
@@ -193,47 +245,8 @@ namespace PowerArmorCondition
 
 	void OnMovieLoaded(Scaleform::GFx::Movie& a_movie, std::string_view a_file)
 	{
-		if (!MenuMovies::IsMovie(a_file, "HUDMenu.swf"sv)) {
-			return;
+		if (MenuMovies::IsMovie(a_file, "HUDMenu.swf"sv)) {
+			g_waiter.Watch(a_movie, "the power armor CND bar");
 		}
-
-		Value root;
-		if (!a_movie.GetVariable(&root, "_root") || !root.IsDisplayObject()) {
-			REX::WARN("The HUD movie has no _root, so power armor shows no CND.");
-			return;
-		}
-
-		// One readout, the same kind the ammo counter uses, put straight on the
-		// movie's root, since it is placed by the dash and a parent clip's own
-		// position would only have to be undone. Nothing is added to the HUD
-		// until the whole readout is built.
-		auto readout = HudParts::Readout::Create(a_movie, READOUT_NAME);
-		if (!readout.IsDisplayObject()) {
-			REX::WARN("The HUD movie would not take a power armor CND bar, so power armor shows no CND.");
-			return;
-		}
-
-		// The bar follows the dash every frame, so its word is drawn where it
-		// is rather than snapped to pixels.
-		HudParts::Readout::AntiAliasForAnimation(readout);
-
-		if (!root.Invoke("addChild", std::array{ readout })) {
-			REX::WARN("The HUD movie would not take the power armor CND bar on its root, so power armor shows no CND.");
-			return;
-		}
-
-		// A new HUD movie starts with nothing drawn.
-		g_frameListener.Reset();
-
-		Value listener;
-		a_movie.CreateFunction(&listener, &g_frameListener);
-		if (!readout.Invoke("addEventListener", std::array{ Value("enterFrame"), listener })) {
-			REX::WARN("The HUD refused the frame listener, so power armor never shows CND.");
-			return;
-		}
-
-		HudParts::Weapon::Queue();
-		QueueAnchor();
-		TraceLog::Line("menu", "HUDMenu.swf loaded, power armor CND will follow the dash's ammo box");
 	}
 }

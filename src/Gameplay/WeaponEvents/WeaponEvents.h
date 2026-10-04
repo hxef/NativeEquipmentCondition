@@ -12,14 +12,14 @@
 //
 // Nobody else's weapon wears. An NPC's shots and blows are logged to the NPC
 // trace log, see TraceLog.h, and read for the pace an automatic weapon keeps,
-// see FireRate.h. A reload is watched too: guns that fire once per reload jam
-// as the reload finishes, see Jam.h.
+// see FireRate.h. Each of the player's shots rolls for a jam before it fires,
+// see Jam.h, which watches the reload itself.
 //
 // Hits.cpp is the hit sink and what a blow was, and Hits.h what it shares with
 // WeaponEvents.cpp.
 namespace WeaponEvents
 {
-	// Patches the fire and reload calls.
+	// Patches the fire call.
 	void Install();
 
 	// Registers the hit sink and the shot sink once. The game keeps both
@@ -31,4 +31,9 @@ namespace WeaponEvents
 	// it. Code that Fire reaches, such as the automatic weapon sound in
 	// FireRate.cpp, asks it whose shot it is.
 	[[nodiscard]] const RE::TESObjectREFR* Shooter();
+
+	// Whether NEC's fire hook still runs, false once another mod cut the fire
+	// call. 1 relaxed atomic load. An NPC gun's pace is read there, see
+	// FireRate.cpp.
+	[[nodiscard]] bool FireLive();
 }

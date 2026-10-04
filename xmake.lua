@@ -9,7 +9,7 @@ end
 
 -- set project constants
 set_project("NativeEquipmentCondition")
-set_version("1.0.0")
+set_version("1.1.0")
 set_license("GPL-3.0")
 set_languages("c++23")
 set_warnings("allextra")
@@ -22,14 +22,15 @@ add_rules("plugin.vsxmake.autoupdate")
 set_config("commonlib_ini", true)
 
 -- Copies the plugin into a folder after every build, for example a Mod
--- Organizer 2 mod. Off unless set, and remembered once configured:
+-- Organizer 2 mod, into F4SE/Plugins and MCM/Config/NEC. Off unless set, and
+-- remembered once configured:
 --
 --     xmake f --deploy_dir="C:/MO2/mods/Native Equipment Condition"
 --
 option("deploy_dir")
     set_default("")
     set_showmenu(true)
-    set_description("Copy the plugin into <deploy_dir>/F4SE/Plugins after every build")
+    set_description("Copy the plugin into <deploy_dir>/F4SE/Plugins and <deploy_dir>/MCM/Config/NEC after every build")
 option_end()
 
 -- define targets
@@ -53,10 +54,12 @@ target("NEC")
     -- machine's code page and the accented letters come out wrong.
     add_cxflags("/utf-8", { tools = { "cl", "clang_cl" } })
 
-    -- NEC.ini ships beside the DLL, kept in publish with the rest of what the
-    -- archive carries. NEC_custom.ini is the player's own and is never
-    -- written.
+    -- NEC.ini ships beside the DLL, and the MCM page's config.json in the
+    -- folder MCM reads, both kept in publish with the rest of what the archive
+    -- carries. NEC_custom.ini is the player's own, and NEC writes a key there
+    -- only when the MCM page changes it.
     add_installfiles("publish/NEC.ini", { prefixdir = "F4SE/Plugins" })
+    add_installfiles("publish/MCM/Config/NEC/config.json", { prefixdir = "MCM/Config/NEC" })
 
     after_build(function (target)
         local dir = get_config("deploy_dir")
@@ -64,24 +67,33 @@ target("NEC")
             return
         end
         local plugins = path.join(dir, "F4SE", "Plugins")
-        os.mkdir(plugins)
-        local ini = path.join(os.projectdir(), "publish", "NEC.ini")
-        for _, file in ipairs({ target:targetfile(), target:symbolfile(), ini }) do
+        local mcm = path.join(dir, "MCM", "Config", "NEC")
+        local publish = path.join(os.projectdir(), "publish")
+        local files = {
+            { target:targetfile(), plugins },
+            { target:symbolfile(), plugins },
+            { path.join(publish, "NEC.ini"), plugins },
+            { path.join(publish, "MCM", "Config", "NEC", "config.json"), mcm },
+        }
+        for _, entry in ipairs(files) do
+            local file, into = entry[1], entry[2]
             if file and os.isfile(file) then
                 -- Written beside the old file and then renamed over it, so a game
                 -- that still has the old DLL loaded keeps reading an intact copy.
-                local dest = path.join(plugins, path.filename(file))
+                os.mkdir(into)
+                local dest = path.join(into, path.filename(file))
                 os.cp(file, dest .. ".new")
                 os.mv(dest .. ".new", dest)
             end
         end
-        cprint("${bright green}deployed${clear} to %s", plugins)
+        cprint("${bright green}deployed${clear} to %s", dir)
     end)
 
 -- Builds the plugin and packs build/NativeEquipmentCondition-<version>.zip for
 -- Nexus Mods. The archive holds F4SE/Plugins with NEC.dll, NEC.pdb and NEC.ini,
--- and README.txt at the root, so Mod Organizer 2 installs it as it is. The PDB
--- lets a player's crash log name the file and line in NEC.dll.
+-- MCM/Config/NEC with the MCM page's config.json, and README.txt at the root,
+-- so Mod Organizer 2 installs it as it is. The PDB lets a player's crash log
+-- name the file and line in NEC.dll.
 --
 --     xmake release
 --
@@ -102,12 +114,15 @@ task("release")
 
         local stage = path.join(config.builddir(), "release")
         local plugins = path.join(stage, "F4SE", "Plugins")
+        local mcm = path.join(stage, "MCM", "Config", "NEC")
         os.tryrm(stage)
         os.mkdir(plugins)
+        os.mkdir(mcm)
         local target = project.target("NEC")
         os.cp(target:targetfile(), plugins)
         os.cp(target:symbolfile(), plugins)
         os.cp(path.join(os.projectdir(), "publish", "NEC.ini"), plugins)
+        os.cp(path.join(os.projectdir(), "publish", "MCM", "Config", "NEC", "config.json"), mcm)
         os.cp(path.join(os.projectdir(), "publish", "README.txt"), stage)
 
         local file = path.absolute(path.join(config.builddir(), "NativeEquipmentCondition-" .. project.version() .. ".zip"))
@@ -116,7 +131,7 @@ task("release")
         -- UTC, so the gap between the 2 gives away the packer's time zone. On
         -- Linux, TZ set to UTC makes both the same.
         os.setenv("TZ", "UTC")
-        archive.archive(file, { "F4SE", "README.txt" }, { curdir = stage })
+        archive.archive(file, { "F4SE", "MCM", "README.txt" }, { curdir = stage })
         cprint("${bright green}packed${clear} %s", file)
     end)
 task_end()

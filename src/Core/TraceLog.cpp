@@ -90,6 +90,10 @@ namespace TraceLog
 		File g_ui;
 		File g_npc;
 
+		// Whether lines go through, set by Switch under the lock.
+		std::mutex        g_switchLock;
+		std::atomic<bool> g_open{ false };
+
 		File& FileFor(detail::Target a_target)
 		{
 			switch (a_target) {
@@ -236,7 +240,7 @@ namespace TraceLog
 				auto sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>(a_path.string(), true);
 				logger = std::make_shared<spdlog::logger>(a_name, std::move(sink));
 			} catch (const std::exception& e) {
-				REX::WARN("Could not open the trace log {:s}: {:s}", a_path.string(), e.what());
+				REX::WARN("Could not open the bug report log {:s}: {:s}", a_path.string(), e.what());
 				return nullptr;
 			}
 
@@ -248,38 +252,41 @@ namespace TraceLog
 			// Lines arrive already formatted, times, tags and threads included.
 			logger->set_pattern("%v");
 
-			REX::INFO("Trace log: {:s}", a_path.string());
+			REX::INFO("Bug report log: {:s}", a_path.string());
 			return logger;
 		}
 	}
 
 	void Open()
 	{
-		if (IsOpen()) {
-			return;
-		}
-
-		// Off in the settings, so IsOpen stays false and every trace call costs
-		// its check alone.
 		if (!Settings::bTraceLogs.GetValue()) {
-			REX::INFO("The trace logs are switched off in NEC.ini.");
+			REX::INFO("The bug report logs are switched off.");
 			return;
 		}
+		Switch(true);
+	}
 
-		const auto path = MainLogPath();
-		if (path.empty()) {
-			REX::WARN("No main log file to sit beside, so there are no trace logs this session.");
-			return;
+	void Switch(bool a_on)
+	{
+		const std::scoped_lock l{ g_switchLock };
+		if (a_on && !g_game.logger && !g_ui.logger && !g_npc.logger) {
+			const auto path = MainLogPath();
+			if (path.empty()) {
+				REX::WARN("No main log file to sit beside, so there are no bug report logs this session.");
+				return;
+			}
+			g_game.logger = OpenFile(path, "trace.log", "trace");
+			g_ui.logger = OpenFile(path, "ui.trace.log", "ui trace");
+			g_npc.logger = OpenFile(path, "npc.trace.log", "npc trace");
 		}
-
-		g_game.logger = OpenFile(path, "trace.log", "trace");
-		g_ui.logger = OpenFile(path, "ui.trace.log", "ui trace");
-		g_npc.logger = OpenFile(path, "npc.trace.log", "npc trace");
+		// Released after the loggers are in place, so a thread that reads the
+		// gate open finds them.
+		g_open.store(a_on && (g_game.logger || g_ui.logger || g_npc.logger), std::memory_order_release);
 	}
 
 	bool IsOpen()
 	{
-		return g_game.logger || g_ui.logger || g_npc.logger;
+		return g_open.load(std::memory_order_acquire);
 	}
 
 	namespace detail

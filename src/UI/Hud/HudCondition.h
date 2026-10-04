@@ -14,7 +14,8 @@
 // game hides the counter, so the bar shows alone while the weapon is out. It
 // hides when the HUD mode hides the counter, in the Pip-Boy for example, or in
 // power armor, where PowerArmorCondition.h takes over. With no condition to
-// show, the divider comes back and the HUD is exactly as it was.
+// show, the divider comes back and the HUD is exactly as it was. fHudBarX and
+// fHudBarY move the bar off the divider, and the divider shows again.
 //
 // The bar is a HUD part of its own, with the native object the game gives each
 // part, so the HUD tints it with its colour. It is updated from the HUD's own
@@ -22,6 +23,7 @@
 // HudParts::Weapon.
 namespace HudCondition
 {
-	// Adds the bar to the HUD movie and ignores every other movie.
+	// Adds the bar to the HUD movie through HudParts::Waiter. Ignores every
+	// other movie.
 	void OnMovieLoaded(Scaleform::GFx::Movie& a_movie, std::string_view a_file);
 }

@@ -1,6 +1,6 @@
 #include "UI/Hud/PowerArmorCondition/Layout.h"
 
-#include "UI/Hud/HudParts.h"
+#include "UI/Hud/HudParts/HudParts.h"
 
 #include <cmath>
 

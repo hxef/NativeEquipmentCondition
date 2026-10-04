@@ -2,9 +2,10 @@
 
 An F4SE plugin that gives Fallout 4 weapons and armor a condition that wears
 down with use, built on [CommonLibF4](https://github.com/libxse/commonlibf4).
-It is one DLL, `NEC.dll`, and its settings file, [`NEC.ini`](publish/NEC.ini),
-which says what every setting does. Put your own changes in `NEC_custom.ini`
-beside it. For what it does in game, see
+It is one DLL, `NEC.dll`, its settings file, [`NEC.ini`](publish/NEC.ini),
+which says what every setting does, and the Mod Configuration Menu page,
+[`config.json`](publish/MCM/Config/NEC/config.json). Put your own changes in
+`NEC_custom.ini` beside `NEC.ini`. For what it does in game, see
 [`publish/README.txt`](publish/README.txt).
 
 ### Requirements
@@ -32,7 +33,7 @@ If you want to redirect the build output, set one of the following environment v
 or
 - Path to a Fallout 4 install folder: `XSE_FO4_GAME_PATH`
 
-To copy the DLL, the PDB and `NEC.ini` into a mod folder after every build instead, point `deploy_dir` at it once:
+To copy the DLL, the PDB, `NEC.ini` and the MCM `config.json` into a mod folder after every build instead, point `deploy_dir` at it once:
 ```bat
 xmake f --deploy_dir="C:/MO2/mods/Native Equipment Condition"
 ```

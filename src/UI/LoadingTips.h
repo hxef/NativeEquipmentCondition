@@ -18,18 +18,18 @@
 // number's last 4 digits as its catalogue number.
 //
 // Each tip is made once, the first time game data loads, and kept until the
-// game shuts down. A tip about a feature switched off in NEC.ini is never made.
-// Its picture belongs to the vanilla screen, which the game deletes on a full
-// reset, so the tips hand their pictures back just before and borrow them again
-// after.
+// game shuts down. A tip about a feature switched off is made and never
+// offered. Its picture belongs to the vanilla screen, which the game deletes
+// on a full reset, so the tips hand their pictures back just before and borrow
+// them again after.
 //
 // Adding them takes one patched call, where the loading screen collects
 // everything it may show. The tips are in LoadingTips.cpp, their words in
 // Tips.cpp.
 namespace LoadingTips
 {
-	// Patches the call, and with the trace logs on, the loading menu's
-	// messages, to log each pick.
+	// Patches the call, and the loading menu's messages, to log each pick
+	// while there is a trace.
 	void Install();
 
 	// Makes and numbers a loading screen for every tip the first time, and

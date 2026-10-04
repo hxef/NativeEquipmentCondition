@@ -2,11 +2,12 @@
 
 #include "Condition/Condition.h"
 #include "Condition/Equipped.h"
-#include "Core/CallPatch.h"
+#include "Core/CallPatch/CallPatch.h"
 #include "Core/Settings.h"
 #include "Core/TraceLog.h"
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
@@ -50,6 +51,15 @@ namespace ArmorRating
 			{ RE::ID::PipboyInventoryData::UpdateSlotResists.id(), 0x159, "paper doll resistances" },
 		};
 
+		using Visitor_t = std::int64_t (*)(RE::ActorUtils::ArmorRatingVisitorBase*, const RE::BGSInventoryItem*, std::uint32_t);
+		using Sum_t = bool (*)(const RE::BSTArray<RE::BGSInventoryItem>&, RE::BSTScrapHashMap<RE::BGSDamageType*, std::int32_t>* const&);
+		using Fill_t = void (*)(const RE::BGSInventoryItem&, const RE::BGSInventoryItem::Stack*,
+			RE::BSScrapArray<RE::BSTTuple<std::uint32_t, float>>&, float);
+
+		std::array<CallPatch::Link<Visitor_t>, std::size(VISITOR_SITES)> g_visitorLinks;
+		CallPatch::Link<Sum_t>                                          g_sumLink;
+		std::array<CallPatch::Link<Fill_t>, std::size(FILL_SITES)>       g_fillLinks;
+
 		// The stack the visitor read: the equipped one for ANY_STACK with the
 		// check on, the first otherwise, or the one named.
 		const RE::BGSInventoryItem::Stack* StackRead(const RE::ActorUtils::ArmorRatingVisitorBase& a_visitor,
@@ -69,12 +79,13 @@ namespace ArmorRating
 		// Stands in for the visitor's operator(). The visitor adds the piece's
 		// rating, through the perk entry point and rounded up, to its total,
 		// and this scales what it added.
+		template <std::size_t I>
 		std::int64_t VisitorHk(RE::ActorUtils::ArmorRatingVisitorBase* a_visitor, const RE::BGSInventoryItem* a_item, std::uint32_t a_stackID)
 		{
 			const auto before = a_visitor->rating;
-			const auto result = (*a_visitor)(a_item, a_stackID);
+			const auto result = g_visitorLinks[I](a_visitor, a_item, a_stackID);
 			const auto added = a_visitor->rating - before;
-			if (added <= 0.0F || !a_item || !a_item->object || !Condition::WearsOut(*a_item->object)) {
+			if (!g_visitorLinks[I].Live() || added <= 0.0F || !a_item || !a_item->object || !Condition::WearsOut(*a_item->object)) {
 				return result;
 			}
 
@@ -100,7 +111,10 @@ namespace ArmorRating
 		// its rating.
 		bool SumHk(const RE::BSTArray<RE::BGSInventoryItem>& a_items, RE::BSTScrapHashMap<RE::BGSDamageType*, std::int32_t>* const& a_sums)
 		{
-			const auto result = RE::ActorUtils::SumEquippedArmorDamageTypes(a_items, a_sums);
+			const auto result = g_sumLink(a_items, a_sums);
+			if (!g_sumLink.Live()) {
+				return result;
+			}
 
 			// What the wear took off each type, added up over the pieces.
 			std::unordered_map<const RE::BGSDamageType*, float> lost;
@@ -157,12 +171,13 @@ namespace ArmorRating
 		// copy was added in is kept, so the copy's own part can be scaled and
 		// the rest left alone: the paper doll adds a region's pieces into one
 		// list, and the card holds the piece against the equipped one.
+		template <std::size_t I>
 		void FillHk(const RE::BGSInventoryItem& a_item, const RE::BGSInventoryItem::Stack* a_stack,
 			RE::BSScrapArray<RE::BSTTuple<std::uint32_t, float>>& a_values, float a_scale)
 		{
-			const auto share = a_item.object && Condition::WearsOut(*a_item.object) ? Share(Condition::HealthOf(a_stack)) : 1.0F;
+			const auto share = g_fillLinks[I].Live() && a_item.object && Condition::WearsOut(*a_item.object) ? Share(Condition::HealthOf(a_stack)) : 1.0F;
 			if (share >= 1.0F) {
-				RE::PipboyInventoryUtils::FillResistTypeInfo(a_item, a_stack, a_values, a_scale);
+				g_fillLinks[I](a_item, a_stack, a_values, a_scale);
 				return;
 			}
 
@@ -172,7 +187,7 @@ namespace ArmorRating
 				before.push_back(entry.second);
 			}
 
-			RE::PipboyInventoryUtils::FillResistTypeInfo(a_item, a_stack, a_values, a_scale);
+			g_fillLinks[I](a_item, a_stack, a_values, a_scale);
 
 			for (std::size_t i = 0; i < a_values.size(); i++) {
 				const auto was = i < before.size() ? before[i] : 0.0F;
@@ -199,20 +214,20 @@ namespace ArmorRating
 
 	void Install()
 	{
-		CallPatch::PatchAll(VISITOR_SITES, RE::ID::ActorUtils::ArmorRatingVisitorBase::_operator,
-			CallPatch::Repeat<std::size(VISITOR_SITES)>(reinterpret_cast<std::uintptr_t>(&VisitorHk)),
+		const auto visitorHooks = CallPatch::PerSite<std::size(VISITOR_SITES)>([]<std::size_t I>() { return &VisitorHk<I>; });
+		CallPatch::PatchAll(VISITOR_SITES, RE::ID::ActorUtils::ArmorRatingVisitorBase::_operator, visitorHooks, g_visitorLinks,
 			"A worn piece of armor counts for less of its rating");
 
 		if (CallPatch::PatchCall(SUM_SITE, RE::ID::ActorUtils::SumEquippedArmorDamageTypes.address(),
-				reinterpret_cast<std::uintptr_t>(&SumHk))) {
+				reinterpret_cast<std::uintptr_t>(&SumHk), g_sumLink)) {
 			REX::INFO("A worn piece of armor counts for less of its energy and radiation resistance.");
 		} else {
 			REX::ERROR("A worn piece of armor will keep its full energy and radiation resistance.");
 		}
 
-		CallPatch::PatchAll(FILL_SITES, RE::ID::PipboyInventoryUtils::FillResistTypeInfo,
-			CallPatch::Repeat<std::size(FILL_SITES)>(reinterpret_cast<std::uintptr_t>(&FillHk)),
-			"Item cards and the paper doll print a worn piece's resistances");
+		const auto fillHooks = CallPatch::PerSite<std::size(FILL_SITES)>([]<std::size_t I>() { return &FillHk<I>; });
+		CallPatch::PatchAll(FILL_SITES, RE::ID::PipboyInventoryUtils::FillResistTypeInfo, fillHooks, g_fillLinks,
+			"Item cards and the paper doll print a worn piece's resistances", Part::kCardArmor);
 
 		REX::INFO("A piece of armor at nothing protects for {:.0f}% of its resistances.",
 			Settings::fArmorFloor.GetValue() * 100.0F);

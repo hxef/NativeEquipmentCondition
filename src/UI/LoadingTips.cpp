@@ -1,9 +1,12 @@
 #include "UI/LoadingTips.h"
 
-#include "Core/CallPatch.h"
+#include "Core/CallPatch/CallPatch.h"
 #include "Core/Settings.h"
 #include "Core/Text/Text.h"
 #include "Core/TraceLog.h"
+#include "Gameplay/BrokenEquip.h"
+#include "Gameplay/ItemValue.h"
+#include "UI/Repair/Workbench/Workbench.h"
 
 #include <algorithm>
 #include <array>
@@ -17,28 +20,41 @@ namespace LoadingTips
 	{
 		// One tip: its words, the vanilla loading screen in Fallout4.esm whose
 		// picture it shows, and the switch of the feature it tells of, or
-		// nothing for one that always holds. A tip whose switch is off is
-		// never made.
+		// nothing for one that always holds. A tip whose switch is off is made
+		// and never offered.
 		struct Tip
 		{
 			std::string (*words)();
 			RE::TESFormID picture;
-			const REX::TIniSetting<bool>* on = nullptr;
+			const Settings::Live<bool>* on = nullptr;
 
-			[[nodiscard]] bool IsOn() const { return !on || on->GetValue(); }
+			// Whether the code the tip tells of is in, or nothing when it
+			// always is.
+			bool (*in)() = nullptr;
+
+			[[nodiscard]] bool IsOn() const { return (!on || on->GetValue()) && (!in || in()); }
 		};
+
+		// The wear tip tells of damage, protection and price, so it shows only
+		// while no piece of those is off for another mod. The player's own
+		// switches do not hide it. LossOf takes the ledger's lock, and no holder
+		// of that lock ever waits on the loading menu, so this cannot hang.
+		bool WearWorks()
+		{
+			return ItemValue::Works() && !CallPatch::LossOf(Part::kDamage) && !CallPatch::LossOf(Part::kArmor);
+		}
 
 		// Every tip, each on a picture of what it tells of. Another one is a
 		// table in Tips.cpp, its function in Text.h and a row here.
 		constexpr Tip TIPS[]{
 			// Weapons1610mm, the 10mm pistol.
-			{ .words = &Text::WearTip, .picture = 0x001F6DBD },
+			{ .words = &Text::WearTip, .picture = 0x001F6DBD, .in = &WearWorks },
 			// GeneralGameplay11WeaponsWorkbench, the weapons workbench.
-			{ .words = &Text::BenchTip, .picture = 0x001F9609 },
+			{ .words = &Text::BenchTip, .picture = 0x001F9609, .in = &Workbench::Repairs },
 			// GeneralGameplay22Shops, a shop counter.
 			{ .words = &Text::TraderTip, .picture = 0x001F9624, .on = &Settings::bVendorRepair },
 			// Armor06Metal, metal armor.
-			{ .words = &Text::BrokenTip, .picture = 0x001F6DCB },
+			{ .words = &Text::BrokenTip, .picture = 0x001F6DCB, .in = &BrokenEquip::Works },
 			// Weapons13SubmachineGun, the submachine gun.
 			{ .words = &Text::JamTip, .picture = 0x001F6DB9, .on = &Settings::bJam },
 			// CreatureRaider, a raider.
@@ -56,6 +72,8 @@ namespace LoadingTips
 		// LoadingMenu::PopulateLoadScreens, which gathers every loading screen
 		// that may show, straight before one is picked.
 		constexpr CallPatch::CallSite COLLECT_SITE{ RE::ID::LoadingMenu::PopulateLoadScreens.id(), 0xB6, "loading screens" };
+
+		CallPatch::Link<void(RE::TESDataHandler*, RE::ENUM_FORM_ID, RE::LoadingMenu::LoadScreenCandidates*)> g_collectLink;
 
 		// A loading screen of the plugin's own for every row of TIPS, made once
 		// and kept until the game shuts down. One without a borrowed picture is
@@ -103,10 +121,13 @@ namespace LoadingTips
 		// words from validScreens and the picture from artCandidates. The tips
 		// have no conditions and a picture, so they go on both lists. Nothing
 		// is offered during a full reset, while the pictures are being handed
-		// back and borrowed again.
+		// back and borrowed again. Nothing at all while bLoadingTips is off.
 		void CollectHk(RE::TESDataHandler* a_handler, RE::ENUM_FORM_ID a_type, RE::LoadingMenu::LoadScreenCandidates* a_candidates)
 		{
-			RE::LoadingMenu::CollectLoadScreens(a_handler, a_type, a_candidates);
+			g_collectLink(a_handler, a_type, a_candidates);
+			if (!Settings::bLoadingTips.GetValue() || !g_collectLink.Live()) {
+				return;
+			}
 
 			const auto* main = RE::Main::GetSingleton();
 			if (main && main->resetGame) {
@@ -114,8 +135,9 @@ namespace LoadingTips
 			}
 
 			std::size_t added = 0;
-			for (auto* screen : g_tips) {
-				if (screen && screen->loadNIFData) {
+			for (std::size_t i = 0; i < std::size(TIPS); i++) {
+				auto* screen = g_tips[i];
+				if (TIPS[i].IsOn() && screen && screen->loadNIFData) {
 					a_candidates->artCandidates->push_back(screen);
 					a_candidates->validScreens->push_back(screen);
 					added++;
@@ -134,13 +156,12 @@ namespace LoadingTips
 		// Every message to the loading menu. The one that gathers and picks is
 		// the update carrying the menu's data, not the show before it.
 		// loadScreenShown turns on once per loading screen, on that message,
-		// and the pick is still on the menu as it returns. Put in only while
-		// there is a trace to write.
+		// and the pick is still on the menu as it returns.
 		RE::UI_MESSAGE_RESULTS ProcessMessageHk(RE::LoadingMenu* a_menu, RE::UIMessage& a_message)
 		{
 			const bool shown = a_menu->loadScreenShown;
 			const auto result = _ProcessMessage(a_menu, a_message);
-			if (shown || !a_menu->loadScreenShown) {
+			if (!TraceLog::IsOpen() || shown || !a_menu->loadScreenShown) {
 				return result;
 			}
 
@@ -158,16 +179,14 @@ namespace LoadingTips
 
 	void Install()
 	{
-		if (CallPatch::PatchCall(COLLECT_SITE, RE::ID::LoadingMenu::CollectLoadScreens.address(), reinterpret_cast<std::uintptr_t>(&CollectHk))) {
+		if (CallPatch::PatchCall(COLLECT_SITE, RE::ID::LoadingMenu::CollectLoadScreens.address(), reinterpret_cast<std::uintptr_t>(&CollectHk), g_collectLink)) {
 			REX::INFO("Loading screen tips join the screens the game picks from.");
 		} else {
 			REX::ERROR("Loading screen tips will not show.");
 		}
 
-		if (TraceLog::IsOpen()) {
-			REL::Relocation<std::uintptr_t> menu{ RE::LoadingMenu::VTABLE[0] };
-			_ProcessMessage = menu.write_vfunc(0x03, ProcessMessageHk);
-		}
+		REL::Relocation<std::uintptr_t> menu{ RE::LoadingMenu::VTABLE[0] };
+		_ProcessMessage = CallPatch::PatchSlot(menu, 0x03, ProcessMessageHk, "loading screen messages", Part::kTrace).value_or(0);
 	}
 
 	void Load()
@@ -179,11 +198,7 @@ namespace LoadingTips
 		std::size_t ready = 0;
 		for (std::size_t i = 0; i < std::size(TIPS); i++) {
 			const auto& tip = TIPS[i];
-			if (!tip.IsOn()) {
-				continue;
-			}
-
-			auto*& screen = g_tips[i];
+			auto*&      screen = g_tips[i];
 			if (!screen) {
 				const auto number = FreeNumber(next);
 				if (!number) {
@@ -214,11 +229,8 @@ namespace LoadingTips
 				screen->formID, CatalogueNumber(*screen));
 		}
 
-		// Counted apart from the loop, which stops early once numbers or
-		// screens run out.
-		const auto offered = std::ranges::count_if(TIPS, &Tip::IsOn);
 		REX::INFO("{:d} of {:d} loading screen tips ready, each as likely to show as any one ordinary loading screen.",
-			ready, offered);
+			ready, std::size(TIPS));
 	}
 
 	void Unload()

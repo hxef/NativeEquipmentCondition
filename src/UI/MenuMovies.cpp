@@ -1,6 +1,9 @@
 #include "UI/MenuMovies.h"
 
+#include "Core/CallPatch/CallPatch.h"
 #include "Core/Feature.h"
+#include "Core/Settings.h"
+#include "UI/Repair/ConsoleRepair.h"
 
 #include <Scaleform/G/GFx_MovieDef.h>
 
@@ -28,8 +31,21 @@ namespace MenuMovies
 			const auto slash = path.find_last_of("/\\");
 			const auto file = slash == std::string_view::npos ? path : path.substr(slash + 1);
 
+			// The main and pause menus share this movie. Checked before any row
+			// adds to it, so what shows there is up to date. The Settings line
+			// and the summary follow only when what they say changed, by the
+			// recheck or by a held set that ran again since the last summary.
+			if (IsMovie(file, "MainMenu.swf"sv)) {
+				if (CallPatch::Recheck("the main or pause menu opens") || CallPatch::KeepSummary(CallPatch::Summary())) {
+					Settings::ReportLine();
+				}
+				ConsoleRepair::Settle();
+			}
+
 			for (const auto& feature : Features()) {
-				if (feature.IsOn() && feature.OnMovieLoaded) {
+				// A row left to another mod adds nothing, so the HUD readouts
+				// never make colour targets without the hook that frees them.
+				if (feature.Runs() && feature.OnMovieLoaded) {
 					feature.OnMovieLoaded(*a_movie, file);
 				}
 			}

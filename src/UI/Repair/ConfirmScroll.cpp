@@ -1,5 +1,7 @@
 #include "UI/Repair/ConfirmScroll.h"
 
+#include "Core/CallPatch/CallPatch.h"
+#include "Core/Settings.h"
 #include "Core/TraceLog.h"
 #include "UI/Flash.h"
 
@@ -25,6 +27,12 @@ namespace ConfirmScroll
 		REL::Relocation<RE::UI_MESSAGE_RESULTS (*)(RE::ExamineConfirmMenu*, RE::UIMessage&)> _ProcessMessage;
 		REL::Relocation<bool (*)(RE::BSInputEventUser*, const RE::InputEvent*)>              _ShouldHandleEvent;
 		REL::Relocation<void (*)(RE::BSInputEventUser*, const RE::ButtonEvent*)>             _OnButtonEvent;
+
+		// Whether each of the 3 places that scroll still runs, see
+		// CallPatch::PatchSlot.
+		CallPatch::LinkBase g_messagesLink;
+		CallPatch::LinkBase g_handlesLink;
+		CallPatch::LinkBase g_keysLink;
 
 		// The numbers the movie calls the box's own 2 buttons by, from
 		// ExamineConfirmMenu::MapCodeObjectFunctions.
@@ -240,11 +248,11 @@ namespace ConfirmScroll
 		}
 
 		// The box's own 2 buttons, clicked, so an answer can be told apart from
-		// a key release. Only installed while there is a trace.
+		// a key release.
 		void CallHk(RE::ExamineConfirmMenu* a_menu, const Params& a_params)
 		{
 			const auto pressed = reinterpret_cast<std::uintptr_t>(a_params.userData);
-			if (pressed == ACCEPT_PRESS || pressed == CANCEL_PRESS) {
+			if (TraceLog::IsOpen() && (pressed == ACCEPT_PRESS || pressed == CANCEL_PRESS)) {
 				TraceLog::Line("menu", "Confirmation box {:X} had its own {:s} button clicked", Id(a_menu),
 					pressed == ACCEPT_PRESS ? "accept" : "cancel");
 			}
@@ -265,7 +273,9 @@ namespace ConfirmScroll
 				if (TraceLog::IsOpen()) {
 					TraceLog::Line("menu", "Confirmation box {:X} opens, asking \"{:s}\"", Id(a_menu), Question(*a_menu));
 				}
-				Grow(*a_menu);
+				if (Settings::bConfirmScroll.GetValue() && g_messagesLink.Live()) {
+					Grow(*a_menu);
+				}
 				break;
 			case RE::UI_MESSAGE_TYPE::kHide:
 			case RE::UI_MESSAGE_TYPE::kForceHide:
@@ -282,7 +292,8 @@ namespace ConfirmScroll
 		bool ShouldHandleEventHk(RE::BSInputEventUser* a_this, const RE::InputEvent* a_event)
 		{
 			const auto* const button = a_event->As<RE::ButtonEvent>();
-			return (button && Way(*button) != DIRECTION_VAL::kNone) || _ShouldHandleEvent(a_this, a_event);
+			return (Settings::bConfirmScroll.GetValue() && g_handlesLink.Live() && button && Way(*button) != DIRECTION_VAL::kNone) ||
+			       _ShouldHandleEvent(a_this, a_event);
 		}
 
 		// A button the box took. The game answers Accept and Cancel as they are
@@ -290,7 +301,7 @@ namespace ConfirmScroll
 		void OnButtonEventHk(RE::BSInputEventUser* a_this, const RE::ButtonEvent* a_event)
 		{
 			auto*      menu = static_cast<RE::ExamineConfirmMenu*>(a_this);
-			const auto way = Way(*a_event);
+			const auto way = Settings::bConfirmScroll.GetValue() && g_keysLink.Live() ? Way(*a_event) : DIRECTION_VAL::kNone;
 			if (way == DIRECTION_VAL::kNone) {
 				// Said before the answer closes the box, and only on a release,
 				// since that is when the game answers.
@@ -322,12 +333,16 @@ namespace ConfirmScroll
 		REL::Relocation<std::uintptr_t> menu{ RE::ExamineConfirmMenu::VTABLE[0] };
 		REL::Relocation<std::uintptr_t> input{ RE::ExamineConfirmMenu::VTABLE[1] };
 
-		_ProcessMessage = menu.write_vfunc(0x03, ProcessMessageHk);
-		_ShouldHandleEvent = input.write_vfunc(0x01, ShouldHandleEventHk);
-		_OnButtonEvent = input.write_vfunc(0x08, OnButtonEventHk);
-		if (TraceLog::IsOpen()) {
-			_Call = menu.write_vfunc(0x01, CallHk);
+		const auto messages = CallPatch::PatchSlot(menu, 0x03, ProcessMessageHk, "confirm box messages", Part::kNone, true, &g_messagesLink);
+		const auto handles = CallPatch::PatchSlot(input, 0x01, ShouldHandleEventHk, "confirm box input", Part::kNone, true, &g_handlesLink);
+		const auto keys = CallPatch::PatchSlot(input, 0x08, OnButtonEventHk, "confirm box keys", Part::kNone, true, &g_keysLink);
+		_Call = CallPatch::PatchSlot(menu, 0x01, CallHk, "confirm box clicks", Part::kTrace).value_or(0);
+		if (!messages || !handles || !keys) {
+			return;
 		}
+		_ProcessMessage = *messages;
+		_ShouldHandleEvent = *handles;
+		_OnButtonEvent = *keys;
 
 		REX::INFO("A workbench's confirmation box grows to show as much of a long list as the screen allows, "
 				  "and scrolls the rest with the mouse wheel, the arrow keys, the D-pad and W and S, "

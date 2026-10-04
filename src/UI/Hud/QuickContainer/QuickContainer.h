@@ -19,9 +19,10 @@
 // the HUD's rows. Rows.h and Meters.h are what they share.
 namespace QuickContainer
 {
-	// Patches the calls that build the rows. Call it while the plugin loads.
+	// Patches the calls that build the rows.
 	void Install();
 
-	// Adds the meters to the HUD movie and ignores every other movie.
+	// Adds the meters to the HUD movie through HudParts::Waiter. Ignores
+	// every other movie.
 	void OnMovieLoaded(Scaleform::GFx::Movie& a_movie, std::string_view a_file);
 }

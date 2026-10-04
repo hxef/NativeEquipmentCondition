@@ -1,0 +1,6 @@
+1.1.0
+Version 1.1.0 enhances customization by adding MCM support, where every change applies on the spot with no game restart. NEC also works alongside other DLL mods that change the same things.
+For Fallout 4 1.11.240.
+
+1.0.0
+First release. For Fallout 4 1.11.240.

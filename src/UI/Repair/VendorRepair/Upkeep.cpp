@@ -1,12 +1,14 @@
 #include "UI/Repair/VendorRepair/Upkeep.h"
 
 #include "Condition/Repair.h"
-#include "Core/CallPatch.h"
+#include "Core/CallPatch/CallPatch.h"
+#include "Core/Settings.h"
 #include "Core/TraceLog.h"
 #include "Gameplay/SpawnCondition/SpawnCondition.h"
 #include "UI/Repair/VendorRepair/Stock.h"
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <cstdint>
 #include <format>
@@ -75,25 +77,41 @@ namespace VendorRepair
 
 		thread_local Making* t_making = nullptr;
 
+		using Build_t = RE::ObjectRefHandle* (*)(RE::TESDataHandler*, RE::ObjectRefHandle*, RE::TESObjectREFR*);
+		std::array<CallPatch::Link<Build_t>, std::size(BUILD_SITES)>              g_buildLinks;
+		std::array<CallPatch::Link<void(RE::TESObjectREFR*, bool)>, std::size(RESTOCK_SITES)> g_restockLinks;
+
+		template <std::size_t I>
 		RE::ObjectRefHandle* BuildHk(RE::TESDataHandler* a_this, RE::ObjectRefHandle* a_out, RE::TESObjectREFR* a_vendor)
 		{
-			const REL::Relocation<decltype(&BuildHk)> original{ RE::ID::TESDataHandler::BuildBarterContainer };
-
-			Making     making{ a_vendor ? a_vendor->As<RE::Actor>() : nullptr, std::nullopt };
+			Making     making{ a_vendor && g_buildLinks[I].Live() ? a_vendor->As<RE::Actor>() : nullptr, std::nullopt };
 			const auto outer = std::exchange(t_making, &making);
-			const auto out = original(a_this, a_out, a_vendor);
+			const auto out = g_buildLinks[I](a_this, a_out, a_vendor);
 			t_making = outer;
 			return out;
+		}
+
+		// Restocks a_chest as site I did, see CallPatch::PatchVirtualCall.
+		template <std::size_t I>
+		void ResetChest(RE::TESObjectREFR* a_chest, bool a_leveledOnly)
+		{
+			if (g_restockLinks[I]) {
+				g_restockLinks[I](a_chest, a_leveledOnly);
+			} else {
+				a_chest->ResetInventory(a_leveledOnly);
+			}
 		}
 
 		// Marks what a_chest restocks with as the trader's stock. How far the
 		// trader repairs is worked out once, at the first chest, before
 		// anything of the restock arrives.
+		template <std::size_t I>
 		void RestockHk(RE::TESObjectREFR* a_chest, bool a_leveledOnly)
 		{
 			auto* making = t_making;
-			if (!making || !making->trader) {
-				a_chest->ResetInventory(a_leveledOnly);
+			if (!making || !making->trader || !Settings::bVendorRepair.GetValue() || !Settings::bSpawnCondition.GetValue() ||
+				!g_restockLinks[I].Live()) {
+				ResetChest<I>(a_chest, a_leveledOnly);
 				return;
 			}
 
@@ -118,7 +136,7 @@ namespace VendorRepair
 				a_chest->formID, base ? base->formID : 0, Repairs(ceilings));
 
 			const SpawnCondition::ScopedRestock marked{ restock };
-			a_chest->ResetInventory(a_leveledOnly);
+			ResetChest<I>(a_chest, a_leveledOnly);
 		}
 	}
 
@@ -126,13 +144,14 @@ namespace VendorRepair
 	{
 		// Without the trader, the restocks roll like any other loot. Without
 		// the restocks, the trader is noted and nothing more.
-		const auto built = CallPatch::PatchAll(BUILD_SITES, RE::ID::TESDataHandler::BuildBarterContainer,
-			CallPatch::Repeat<std::size(BUILD_SITES)>(reinterpret_cast<std::uintptr_t>(&BuildHk)),
-			"The trader's half of the barter screen names the trader to their restock");
+		const auto buildHooks = CallPatch::PerSite<std::size(BUILD_SITES)>([]<std::size_t I>() { return &BuildHk<I>; });
+		const auto built = CallPatch::PatchAll(BUILD_SITES, RE::ID::TESDataHandler::BuildBarterContainer, buildHooks, g_buildLinks,
+			"The trader's half of the barter screen names the trader to their restock", Part::kStock);
 
+		const auto  restockHooks = CallPatch::PerSite<std::size(RESTOCK_SITES)>([]<std::size_t I>() { return &RestockHk<I>; });
 		std::size_t restocked = 0;
-		for (const auto& site : RESTOCK_SITES) {
-			if (CallPatch::PatchVirtualCall(site, RESET_INVENTORY_SLOT, reinterpret_cast<std::uintptr_t>(&RestockHk))) {
+		for (std::size_t i = 0; i < std::size(RESTOCK_SITES); i++) {
+			if (CallPatch::PatchVirtualCall(RESTOCK_SITES[i], RESET_INVENTORY_SLOT, restockHooks[i], g_restockLinks[i], Part::kStock)) {
 				restocked++;
 			}
 		}
@@ -147,8 +166,8 @@ namespace VendorRepair
 					band.high * 100.0F);
 			}
 			REX::INFO("A trader's weapons and armor restock by how far they repair them, {:s}", bands);
-		} else {
-			REX::WARN("Some traders' stock will restock as worn as any loot.");
+		} else if (built == 0 || restocked == 0) {
+			REX::WARN("Trader stock will restock as worn as any loot.");
 		}
 	}
 }

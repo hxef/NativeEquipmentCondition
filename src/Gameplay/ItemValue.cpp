@@ -1,11 +1,12 @@
 #include "Gameplay/ItemValue.h"
 
 #include "Condition/Condition.h"
-#include "Core/CallPatch.h"
+#include "Core/CallPatch/CallPatch.h"
 #include "Core/Settings.h"
 #include "Core/TraceLog.h"
 
 #include <cmath>
+#include <utility>
 
 namespace ItemValue
 {
@@ -77,6 +78,11 @@ namespace ItemValue
 		// t_cardHealth in HealthDamage/Card.cpp.
 		thread_local float t_valueHealth = Condition::INVALID_HEALTH;
 
+		// The value health and value hooks.
+		CallPatch::Held                           g_held;
+		CallPatch::Link<float(RE::ExtraDataList*)> g_valueHealthLink;
+		CallPatch::Link<float(float, float)>       g_valueLink;
+
 		// Set while a caller wants prices without the wear, see
 		// ScopedSoundPrice.
 		thread_local bool t_soundPrice = false;
@@ -88,7 +94,10 @@ namespace ItemValue
 		// back.
 		float ValueHealthHk(RE::ExtraDataList* a_extra)
 		{
-			t_valueHealth = a_extra->GetHealthPerc();
+			if (!g_held.Runs(g_valueHealthLink)) {
+				return g_valueHealthLink(a_extra);
+			}
+			t_valueHealth = g_valueHealthLink(a_extra);
 			return t_valueHealth;
 		}
 
@@ -101,15 +110,22 @@ namespace ItemValue
 		// see ScopedSoundPrice.
 		float ItemValueHk(float a_baseValue, float a_health)
 		{
-			const auto base = t_soundPrice ? a_baseValue : RE::GamePlayFormulas::CalculateItemValue(a_baseValue, a_health);
-			const auto mult = t_soundPrice ? 1.0F : ValueMult(t_valueHealth);
+			if (!g_held.Runs(g_valueLink)) {
+				return g_valueLink(a_baseValue, a_health);
+			}
+
+			// Read once, so an item priced without the first hook never
+			// takes the condition of the one before it.
+			const auto health = std::exchange(t_valueHealth, Condition::INVALID_HEALTH);
+			const auto base = t_soundPrice ? a_baseValue : g_valueLink(a_baseValue, a_health);
+			const auto mult = t_soundPrice ? 1.0F : ValueMult(health);
 
 			// Opening a container prices every item in it, so this line is one
 			// of the most frequent. It stays for every item with a condition,
 			// since a wrong price only makes sense next to its condition.
-			if (t_valueHealth >= 0.0F) {
+			if (health >= 0.0F) {
 				TraceLog::Line("price", "health {:.6f}  {:.0f} caps x {:.4f} = {:.0f} caps",
-					t_valueHealth, base, mult, base * mult);
+					health, base, mult, base * mult);
 			}
 
 			return base * mult;
@@ -120,18 +136,24 @@ namespace ItemValue
 	{
 		// The second patch does the work and reads what the first recorded, so
 		// it is not installed alone.
-		const auto value =
-			CallPatch::PatchCall(VALUE_HEALTH_SITE, RE::ID::ExtraDataList::GetHealthPerc.address(), reinterpret_cast<std::uintptr_t>(&ValueHealthHk)) &&
-			CallPatch::PatchCall(VALUE_SITE, RE::ID::GamePlayFormulas::CalculateItemValue.address(), reinterpret_cast<std::uintptr_t>(&ItemValueHk));
+		g_held = CallPatch::PatchTogether({
+			{ VALUE_HEALTH_SITE, RE::ID::ExtraDataList::GetHealthPerc.address(), reinterpret_cast<std::uintptr_t>(&ValueHealthHk), &g_valueHealthLink },
+			{ VALUE_SITE, RE::ID::GamePlayFormulas::CalculateItemValue.address(), reinterpret_cast<std::uintptr_t>(&ItemValueHk), &g_valueLink },
+		});
 
-		if (!value) {
+		if (!g_held) {
 			REX::ERROR("A worn item will keep selling for the price of a new one.");
 		} else {
 			REX::INFO("Item value falls with condition, everywhere the game prints a price.");
 			const auto exponent = Settings::fValueExponent.GetValue();
-			REX::INFO("Price curve is condition to the power of {:.2f}{:s}", exponent,
+			REX::INFO("Worn items lose value with condition to the power of {:.2f}{:s}", exponent,
 				exponent == 1.5F ? ", the Fallout 3 and New Vegas curve." : ".");
 		}
+	}
+
+	bool Works()
+	{
+		return g_held.Intact();
 	}
 
 	// Nested, so asking for a sound price inside a call that already asked

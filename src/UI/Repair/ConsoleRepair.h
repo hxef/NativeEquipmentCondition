@@ -18,4 +18,10 @@ namespace ConsoleRepair
 {
 	// Hands ShowRepairMenu the repair.
 	void Install();
+
+	// Puts back the help and parameters NEC found once a recheck cut srm's
+	// place, so the console no longer shows NEC's help or expects NEC's
+	// number and armor word for the mod that has srm now. Called after every
+	// CallPatch::Recheck.
+	void Settle();
 }

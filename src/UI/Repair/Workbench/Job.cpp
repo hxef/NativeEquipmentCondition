@@ -311,8 +311,12 @@ namespace Workbench
 		job.choice.recipe = &JobRecipe();
 		job.choice.requiredItems = &job.parts;
 
-		TraceLog::Line("menu", "Workbench mended {:s} for nothing, it was above {:d}%",
-			Selected(a_menu).Name(), FREE_ABOVE);
+		if (FreeRepairs()) {
+			TraceLog::Line("menu", "Workbench mended {:s} for nothing, fBenchCostMult is 0", Selected(a_menu).Name());
+		} else {
+			TraceLog::Line("menu", "Workbench mended {:s} for nothing, it was above {:d}%",
+				Selected(a_menu).Name(), FreeAbove());
+		}
 		Finish(a_menu);
 	}
 

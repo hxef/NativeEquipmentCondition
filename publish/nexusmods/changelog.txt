@@ -1,3 +1,10 @@
+1.1.1
+* A new setting, Free mend above, sets the condition above which the workbench mends gear for free.
+* With Workbench repair cost at 0, every repair is free and done on the spot.
+* Legendary gear you find in chests or buy from traders arrives new. One NEC already rolled keeps its condition.
+* Workbench repairs keep working alongside mods that change the workbench item list, like Examine Lag Fix.
+* A repair never asks for the components of an item's legendary effect, even where a mod like AWKCR gives legendary effects a recipe.
+
 1.1.0
 * Adds an optional Mod Configuration Menu page with every setting.
 * A change on the page applies on the spot and is saved to NEC_custom.ini.

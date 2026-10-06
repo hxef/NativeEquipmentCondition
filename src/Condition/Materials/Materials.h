@@ -58,8 +58,9 @@ namespace Materials
 	// The average worth of 1 unit of everything an item is built from: its own
 	// scrap recipe where it has one, the borrowed one for a wearable without,
 	// plus the recipes of its enabled mods. a_extra can be null. Mods no recipe
-	// builds, which is what legendary effects are, are skipped. An item with
-	// nothing priced returns ReferenceQuality.
+	// builds are skipped, and so is the 1 legendary effect the game names for
+	// the item, even where a plugin gives it a recipe. An item with nothing
+	// priced returns ReferenceQuality.
 	float Quality(const RE::TESBoundObject& a_object, const RE::ExtraDataList* a_extra);
 
 	// One component, and how many of it something takes.

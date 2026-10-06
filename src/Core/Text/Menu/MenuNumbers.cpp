@@ -236,18 +236,50 @@ namespace Text
 		};
 
 		constexpr Line BENCH_COST_HELP[]{
-			{ "en", "How many components a workbench repair takes. 0.5 halves the cost and 2 doubles it." },
-			{ "fr", "Le nombre de composants que demande une réparation à l'établi. 0.5 divise le coût par 2 et 2 le double." },
-			{ "de", "Wie viele Komponenten eine Reparatur an der Werkbank braucht. 0.5 halbiert die Kosten, 2 verdoppelt sie." },
-			{ "it", "Quanti componenti richiede una riparazione al banco da lavoro. 0.5 dimezza il costo e 2 lo raddoppia." },
-			{ "es", "Cuántos componentes necesita una reparación en el banco de trabajo. 0.5 reduce el coste a la mitad y 2 lo duplica." },
-			{ "esmx", "Cuántos componentes necesita una reparación en el banco de trabajo. 0.5 reduce el costo a la mitad y 2 lo duplica." },
-			{ "ptbr", "Quantos componentes um conserto na bancada exige. 0.5 corta o custo pela metade e 2 o dobra." },
-			{ "pl", "Ilu komponentów wymaga naprawa w pracowni. 0.5 zmniejsza koszt o połowę, a 2 go podwaja." },
-			{ "ru", "Сколько компонентов нужно для ремонта на верстаке. 0.5 вдвое снижает стоимость, а 2 удваивает ее." },
-			{ "ja", "作業台での修理に必要な部品の量です。0.5で半分、2で2倍になります" },
-			{ "zhhant", "在工作台修理所需的元件數量。0.5會使花費減半，2則加倍。" },
-			{ "zhhans", "在工作台修理所需的元件数量。0.5会使花费减半，2则加倍。" },
+			{ "en", "How many components a workbench repair takes. 0.5 halves the cost, 2 doubles it and 0 makes every repair free." },
+			{ "fr", "Le nombre de composants que demande une réparation à l'établi. 0.5 divise le coût par 2, 2 le double et 0 rend toute réparation gratuite." },
+			{ "de", "Wie viele Komponenten eine Reparatur an der Werkbank braucht. 0.5 halbiert die Kosten, 2 verdoppelt sie, 0 macht jede Reparatur kostenlos." },
+			{ "it", "Quanti componenti richiede una riparazione al banco da lavoro. 0.5 dimezza il costo, 2 lo raddoppia e 0 rende gratis ogni riparazione." },
+			{ "es", "Cuántos componentes necesita una reparación en el banco de trabajo. 0.5 reduce el coste a la mitad, 2 lo duplica y 0 hace gratis toda reparación." },
+			{ "esmx", "Cuántos componentes necesita una reparación en el banco de trabajo. 0.5 reduce el costo a la mitad, 2 lo duplica y 0 hace gratis toda reparación." },
+			{ "ptbr", "Quantos componentes um conserto na bancada exige. 0.5 corta o custo pela metade, 2 o dobra e 0 deixa todo conserto grátis." },
+			{ "pl", "Ilu komponentów wymaga naprawa w pracowni. 0.5 zmniejsza koszt o połowę, 2 go podwaja, a 0 sprawia, że każda naprawa jest darmowa." },
+			{ "ru", "Сколько компонентов нужно для ремонта на верстаке. 0.5 вдвое снижает стоимость, 2 удваивает ее, а 0 делает любой ремонт бесплатным." },
+			{ "ja", "作業台での修理に必要な部品の量です。0.5で半分、2で2倍、0ですべての修理が無料になります" },
+			{ "zhhant", "在工作台修理所需的元件數量。0.5會使花費減半，2則加倍，0則讓所有修理免費。" },
+			{ "zhhans", "在工作台修理所需的元件数量。0.5会使花费减半，2则加倍，0则让所有修理免费。" },
+		};
+
+		constexpr Line FREE_MEND_NAME[]{
+			{ "en", "Free mend above" },
+			{ "fr", "Entretien gratuit au-dessus de" },
+			{ "de", "Kostenlos ausbessern über" },
+			{ "it", "Aggiusta gratis sopra" },
+			{ "es", "Retoque gratis por encima de" },
+			{ "esmx", "Retoque gratis por encima de" },
+			{ "ptbr", "Retoque grátis acima de" },
+			{ "pl", "Darmowa poprawka powyżej" },
+			{ "ru", "Бесплатно подправить выше" },
+			{ "ja", "無料で手入れする状態" },
+			{ "zhhant", "免費修補的狀況" },
+			{ "zhhans", "免费修补的状况" },
+		};
+
+		// MEND is the bench's button for a free repair, in the words of
+		// MEND_BUTTON in Repair.cpp.
+		constexpr Line FREE_MEND_HELP[]{
+			{ "en", "Above this condition, MEND at a workbench puts an item right for free. 100 turns that off and 0 mends everything but a broken item." },
+			{ "fr", "Au-dessus de cet état, ENTRETENIR à l'établi remet un objet en état gratuitement. 100 désactive cela et 0 entretient tout sauf un objet cassé." },
+			{ "de", "Über diesem Zustand bessert AUSBESSERN an der Werkbank einen Gegenstand kostenlos aus. 100 schaltet das ab, 0 bessert alles außer Kaputtem aus." },
+			{ "it", "Sopra queste condizioni, AGGIUSTA al banco da lavoro sistema un oggetto gratis. 100 lo disattiva e 0 aggiusta tutto tranne un oggetto rotto." },
+			{ "es", "Por encima de este estado, RETOCAR en el banco de trabajo arregla un objeto gratis. 100 lo desactiva y 0 retoca todo salvo un objeto roto." },
+			{ "esmx", "Por encima de este estado, RETOCAR en el banco de trabajo arregla un objeto gratis. 100 lo desactiva y 0 retoca todo salvo un objeto roto." },
+			{ "ptbr", "Acima desta condição, RETOCAR na bancada conserta um item de graça. 100 desativa isso e 0 retoca tudo menos um item quebrado." },
+			{ "pl", "Powyżej tego stanu POPRAW w pracowni naprawia przedmiot za darmo. 100 to wyłącza, a 0 poprawia wszystko poza zepsutym przedmiotem." },
+			{ "ru", "Выше этого состояния ПОДПРАВИТЬ на верстаке чинит предмет бесплатно. 100 отключает это, а 0 подправляет все, кроме сломанного предмета." },
+			{ "ja", "この状態より上のアイテムは、作業台の手入れで無料で直せます。100で無料の手入れはなくなり、0で壊れたもの以外はすべて手入れできます" },
+			{ "zhhant", "狀況高於此值時，在工作台修補物品不需任何花費。設為100則不再免費修補，設為0則除了損壞的物品外都能修補。" },
+			{ "zhhans", "状况高于此值时，在工作台修补物品不需任何花费。设为100则不再免费修补，设为0则除了损坏的物品外都能修补。" },
 		};
 
 		constexpr Line TRADER_PRICE_NAME[]{
@@ -289,6 +321,7 @@ namespace Text
 			{ &Settings::fFireRateFloor, FIRE_RATE_FLOOR_NAME, FIRE_RATE_FLOOR_HELP },
 			{ &Settings::fCritMeterFloor, CRIT_METER_FLOOR_NAME, CRIT_METER_FLOOR_HELP },
 			{ &Settings::fBenchCostMult, BENCH_COST_NAME, BENCH_COST_HELP },
+			{ &Settings::iFreeMendAbove, FREE_MEND_NAME, FREE_MEND_HELP },
 			{ &Settings::fTraderPriceMult, TRADER_PRICE_NAME, TRADER_PRICE_HELP },
 		};
 	}

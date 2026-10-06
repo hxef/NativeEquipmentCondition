@@ -62,9 +62,10 @@ namespace Workbench
 			return {};
 		}
 
+		// At fBenchCostMult 0 every end owes nothing, and so does the step.
 		const auto left = Owed(a_priced, a_to);
 		auto       owed = Owed(a_priced, a_from);
-		if (owed <= left) {
+		if (owed <= left && a_priced.multiple > 0.0F) {
 			owed = std::min<std::uint32_t>(left + 1,
 				static_cast<std::uint32_t>(a_priced.order.size()));
 		}

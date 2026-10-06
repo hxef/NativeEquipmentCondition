@@ -27,8 +27,10 @@ namespace SpawnCondition
 	// SpawnCondition.cpp.
 	//
 	// A trader's own stock rolls in a band set by how far the trader repairs
-	// it, see VendorRepair/Upkeep.h. An essential character's weapons and
-	// armor, a companion's for example, arrive new.
+	// it, see VendorRepair/Upkeep.h. A legendary weapon or piece of armor put
+	// into any chest arrives new, which covers a trader's showpiece, placed
+	// once by a quest script and never restocked. An essential character's
+	// weapons and armor, a companion's for example, arrive new.
 	//
 	// Band.cpp is the roll itself, either side of an item's middle or in a
 	// trader's band, Guards.cpp holds KeepCarried and what marks a console

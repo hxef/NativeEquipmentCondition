@@ -16,8 +16,8 @@ namespace Materials
 	// The recipes an item is built from: its own scrap recipe, or the borrowed
 	// one for a wearable without, then the recipe behind every enabled mod, the
 	// same 2 in the same order as the engine's scrapping code. Mods no recipe
-	// builds are skipped, which is what legendary effects are. a_extra can be
-	// null.
+	// builds are skipped, and so is the 1 legendary effect the game names for
+	// the item, even where a plugin gives it a recipe. a_extra can be null.
 	void ForEachRecipe(const RE::TESBoundObject& a_object, const RE::ExtraDataList* a_extra,
 		const std::function<void(const RE::BGSConstructibleObject&)>& a_each);
 }

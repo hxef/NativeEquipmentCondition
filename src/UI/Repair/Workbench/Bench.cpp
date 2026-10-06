@@ -1,7 +1,23 @@
 #include "UI/Repair/Workbench/Bench.h"
 
+#include "Core/Settings.h"
+
+#include <algorithm>
+
 namespace Workbench
 {
+	std::uint32_t FreeAbove()
+	{
+		constexpr auto full = static_cast<std::int32_t>(Repair::FULL);
+		return static_cast<std::uint32_t>(std::clamp(Settings::iFreeMendAbove.GetValue(), 0, full));
+	}
+
+	bool FreeRepairs()
+	{
+		// Also true for NaN, which Scaled reads as 0 too.
+		return !(Settings::fBenchCostMult.GetValue() > 0.0F);
+	}
+
 	Selection Selected(RE::ExamineMenu* a_menu)
 	{
 		// The item list has to be asked first, since the row number comes out

@@ -18,6 +18,7 @@
 #include <string_view>
 #include <unordered_set>
 #include <utility>
+#include <variant>
 
 // MCM.swf asks root.mcm for a value as GetModSettingBool("NEC", "bJam:Features"),
 // changes it with the new value as a third argument, and asks for a line of
@@ -91,11 +92,14 @@ namespace Mcm
 			return IsIdOf(Settings::bTraceLogs, a_id) ? &Settings::bTraceLogs : nullptr;
 		}
 
-		Settings::Live<float>* NumberFor(std::string_view a_id)
+		// A number by its id on the page, a float or a whole number as T asks.
+		template <class T>
+		Settings::Live<T>* NumberFor(std::string_view a_id)
 		{
-			for (auto* number : Settings::Numbers()) {
-				if (IsIdOf(*number, a_id)) {
-					return number;
+			for (const auto& number : Settings::Numbers()) {
+				auto* const* live = std::get_if<Settings::Live<T>*>(&number);
+				if (live && IsIdOf(**live, a_id)) {
+					return *live;
 				}
 			}
 			return nullptr;
@@ -135,6 +139,10 @@ namespace Mcm
 
 	void GetInt(const Params& a_params, std::string_view a_id)
 	{
+		if (const auto* whole = NumberFor<std::int32_t>(a_id)) {
+			Answer(a_params, whole->GetValue());
+			return;
+		}
 		if (a_id != LOG_LEVEL_ID) {
 			Unknown(a_id);
 			Answer(a_params, std::int32_t{ 0 });
@@ -145,7 +153,7 @@ namespace Mcm
 
 	void GetFloat(const Params& a_params, std::string_view a_id)
 	{
-		const auto* number = NumberFor(a_id);
+		const auto* number = NumberFor<float>(a_id);
 		if (!number) {
 			Unknown(a_id);
 		}
@@ -192,15 +200,32 @@ namespace Mcm
 
 	void SetInt(const Params& a_params, std::string_view a_id)
 	{
-		if (a_id != LOG_LEVEL_ID) {
+		auto* whole = NumberFor<std::int32_t>(a_id);
+		if (!whole && a_id != LOG_LEVEL_ID) {
 			Unknown(a_id);
 		}
-		if (a_id != LOG_LEVEL_ID || a_params.argCount < 3) {
+		if ((!whole && a_id != LOG_LEVEL_ID) || a_params.argCount < 3) {
 			Answer(a_params, false);
 			return;
 		}
 		// Also false for NaN.
 		const auto place = Flash::AsNumber(a_params.args[2]);
+		if (whole) {
+			if (!(place >= static_cast<double>(std::numeric_limits<std::int32_t>::min()) &&
+					place <= static_cast<double>(std::numeric_limits<std::int32_t>::max()))) {
+				Answer(a_params, false);
+				return;
+			}
+			const auto value = static_cast<std::int32_t>(std::lround(place));
+			const auto before = whole->GetValue();
+			whole->SetValue(value);
+			Owe(whole->section, whole->key, std::format("{:d}", before), std::format("{:d}", value), std::format("{:d}", whole->GetValueDefault()));
+			if (value != before) {
+				QueueFollowUps(*whole);
+			}
+			Answer(a_params, true);
+			return;
+		}
 		if (!(place >= 0.0 && place <= static_cast<double>(std::numeric_limits<std::uint32_t>::max()))) {
 			Answer(a_params, false);
 			return;
@@ -214,7 +239,7 @@ namespace Mcm
 
 	void SetFloat(const Params& a_params, std::string_view a_id)
 	{
-		auto* number = NumberFor(a_id);
+		auto* number = NumberFor<float>(a_id);
 		if (!number) {
 			Unknown(a_id);
 		}

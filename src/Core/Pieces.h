@@ -88,9 +88,12 @@ enum class Piece : std::uint8_t
 	kRateBetter,
 	kRateSort,
 	// The rest of the parts from HUD condition bars to Loading screen tips,
-	// each 1 piece but Trader stock condition, which has 2
+	// each 1 piece but Worn items in workbench lists and Trader stock
+	// condition, which have 2 each
 	kHudBars,
 	kLootMeters,
+	kBenchItemList,
+	kBenchModLists,
 	kConfirmScroll,
 	kTraderRepairs,
 	kStockMerchant,
@@ -115,13 +118,16 @@ enum class Shown : std::uint8_t
 
 // One piece, the part it belongs to and the pieces it needs. A part whose
 // pieces have names has 2 or more of them, any other part has exactly 1
-// piece shown by the part's name.
+// piece shown by the part's name. alone marks a piece whose places each work
+// by themselves, so NEC's change at one still works while another mod has
+// another.
 struct PieceRow
 {
 	Piece                piece;
 	Part                 part;
 	Shown                shown;
 	std::array<Piece, 3> needs{};  // kNone fills the rest. The first one that is off is named as the cause
+	bool                 alone = false;
 };
 
 // Every piece, in the enum's order, so a piece's row is found by its place.

@@ -41,7 +41,9 @@ namespace
 		{ kArmorDr, Part::kArmor, Shown::kName },
 		{ kArmorEnergyRad, Part::kArmor, Shown::kName },
 		{ kArmorBestMark, Part::kArmor, Shown::kName },
-		{ kArmorNpcRanking, Part::kArmor, Shown::kName },
+		// The 3 AI calls each scale only the rating they read, see
+		// ArmorRating.cpp.
+		{ kArmorNpcRanking, Part::kArmor, Shown::kName, {}, true },
 		{ kCardArmorMenus, Part::kCardArmor, Shown::kName },
 		{ kCardArmorCompare, Part::kCardArmor, Shown::kName },
 		{ kCardArmorPipboy, Part::kCardArmor, Shown::kName },
@@ -85,6 +87,12 @@ namespace
 		{ kRateSort, Part::kCardRate, Shown::kName, { kFireRate } },
 		{ kHudBars, Part::kHudBar, Shown::kPart },
 		{ kLootMeters, Part::kQuick, Shown::kPart },
+		// The list hooks ask whether the bench repairs, see
+		// UI/Repair/Workbench/Lists.cpp. The item list's hook marks the
+		// rebuild its refresh call changes, so those 2 places are 1 piece.
+		// The mod slots and the mod choices each work by themselves.
+		{ kBenchItemList, Part::kBenchLists, Shown::kName, { kBench } },
+		{ kBenchModLists, Part::kBenchLists, Shown::kName, { kBench }, true },
 		{ kConfirmScroll, Part::kScroll, Shown::kPart },
 		{ kTraderRepairs, Part::kTraderRepairs, Shown::kPart },
 		// A trader's stock is rolled in their band only while both switches
@@ -216,11 +224,11 @@ namespace
 		{ "bench can repair", { kBench } },
 		{ "bench switch item", { kBench } },
 		{ "bench repair", { kBench } },
-		{ "bench item list", { kBench } },
-		{ "bench mod slots", { kBench } },
-		{ "bench mod choices", { kBench } },
-		{ "item list refresh", { kBench } },
 		{ "bench confirm delete", { kBench } },
+		{ "bench item list", { kBenchItemList } },
+		{ "bench mod slots", { kBenchModLists } },
+		{ "bench mod choices", { kBenchModLists } },
+		{ "item list refresh", { kBenchItemList } },
 		// ConfirmScroll
 		{ "confirm box messages", { kConfirmScroll } },
 		{ "confirm box input", { kConfirmScroll } },

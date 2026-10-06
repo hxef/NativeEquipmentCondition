@@ -13,10 +13,16 @@ namespace Workbench
 	namespace
 	{
 		// What the game does before this, which every hook calls straight away
-		// while the bench's places are not all NEC's, see Repairs.
+		// while the bench does not repair, see Repairs, or its own place is
+		// off.
 		REL::Relocation<void (*)(RE::ExamineMenu*, std::int32_t)> _UpdateItemList;
 		REL::Relocation<void (*)(RE::ExamineMenu*)>               _UpdateModSlotList;
 		REL::Relocation<void (*)(RE::ExamineMenu*)>               _UpdateModChoiceList;
+
+		// Whether each of the 3 slots still runs, see CallPatch::PatchSlot.
+		CallPatch::LinkBase g_itemListLink;
+		CallPatch::LinkBase g_modSlotsLink;
+		CallPatch::LinkBase g_modChoicesLink;
 
 		// Where the bench's rebuild of its item list hands the new rows to
 		// Flash, which draws them and puts the highlight back on the item it
@@ -31,10 +37,13 @@ namespace Workbench
 			const Scaleform::GFx::Value*, std::size_t, bool)>
 			g_refreshLink;
 
-		// The bench's own inventory, rebuilt, see RefreshItemListHk.
+		// The bench's own inventory, rebuilt, see RefreshItemListHk. The
+		// inspect screen, for an item picked up or looked at from the Pip-Boy,
+		// is the same menu and repairs nothing, so its rows go as they are and
+		// a long inventory costs it no more time.
 		void UpdateItemListHk(RE::ExamineMenu* a_menu, std::int32_t a_selected)
 		{
-			if (!Repairs()) {
+			if (!Repairs() || !g_itemListLink.Live() || !a_menu || a_menu->inspectMode) {
 				_UpdateItemList(a_menu, a_selected);
 				return;
 			}
@@ -53,7 +62,7 @@ namespace Workbench
 		bool RefreshItemListHk(Scaleform::GFx::Value::ObjectInterface* a_interface, void* a_data, Scaleform::GFx::Value* a_result,
 			const char* a_name, const Scaleform::GFx::Value* a_args, std::size_t a_count, bool a_isDisplayObject)
 		{
-			if (g_rebuilding && Repairs()) {
+			if (g_rebuilding && Repairs() && g_refreshLink.Live()) {
 				MarkWorn(g_rebuilding);
 			}
 			return g_refreshLink(a_interface, a_data, a_result, a_name, a_args, a_count, a_isDisplayObject);
@@ -63,7 +72,7 @@ namespace Workbench
 		void UpdateModSlotListHk(RE::ExamineMenu* a_menu)
 		{
 			_UpdateModSlotList(a_menu);
-			if (Repairs() && a_menu && Selected(a_menu).TooWorn()) {
+			if (Repairs() && g_modSlotsLink.Live() && a_menu && Selected(a_menu).TooWorn()) {
 				Clear(a_menu, a_menu->modSlotList);
 			}
 		}
@@ -73,7 +82,7 @@ namespace Workbench
 		void UpdateModChoiceListHk(RE::ExamineMenu* a_menu)
 		{
 			_UpdateModChoiceList(a_menu);
-			if (Repairs() && a_menu && Selected(a_menu).TooWorn()) {
+			if (Repairs() && g_modChoicesLink.Live() && a_menu && Selected(a_menu).TooWorn()) {
 				Dim(a_menu, a_menu->modChoiceList, "mod"sv);
 			}
 		}
@@ -83,11 +92,14 @@ namespace Workbench
 	{
 		REL::Relocation<std::uintptr_t> menu{ RE::ExamineMenu::VTABLE[0] };
 
-		_UpdateItemList = CallPatch::PatchSlot(menu, 0x2F, UpdateItemListHk, "bench item list").value_or(0);
-		_UpdateModSlotList = CallPatch::PatchSlot(menu, 0x3E, UpdateModSlotListHk, "bench mod slots").value_or(0);
-		_UpdateModChoiceList = CallPatch::PatchSlot(menu, 0x3F, UpdateModChoiceListHk, "bench mod choices").value_or(0);
+		_UpdateItemList = CallPatch::PatchSlot(menu, 0x2F, UpdateItemListHk, "bench item list", Part::kBenchLists, true,
+			&g_itemListLink).value_or(0);
+		_UpdateModSlotList = CallPatch::PatchSlot(menu, 0x3E, UpdateModSlotListHk, "bench mod slots", Part::kBenchLists, true,
+			&g_modSlotsLink).value_or(0);
+		_UpdateModChoiceList = CallPatch::PatchSlot(menu, 0x3F, UpdateModChoiceListHk, "bench mod choices", Part::kBenchLists, true,
+			&g_modChoicesLink).value_or(0);
 
 		CallPatch::PatchCall(REFRESH_SITE, Scaleform::ID::GFx::Value::Invoke.address(),
-			reinterpret_cast<std::uintptr_t>(&RefreshItemListHk), g_refreshLink);
+			reinterpret_cast<std::uintptr_t>(&RefreshItemListHk), g_refreshLink, Part::kBenchLists);
 	}
 }

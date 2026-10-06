@@ -72,6 +72,8 @@ LOOT WITH A HISTORY
   Gear lying around, and your own gear if you install mid playthrough, lands
   at around 45 to 70%, while most quest rewards arrive new, and so does
   everything companions and other essential NPCs start with.
+* Legendary gear you find in chests or buy from traders arrives new.
+  Legendaries dropped by enemies still turn up worn.
 * About 1 item in 100 ignores all that: a raider can drop a pristine rifle,
   and a Courser a beaten one.
 * NPC weapons don't lose condition from use, but NPCs still fight at the
@@ -83,7 +85,10 @@ REPAIR AT THE WORKBENCH
   appears. Press it, choose how far to repair it in steps of 10%, and pay in
   the components it is built from.
 * Barely worn gear, above 95%, gets a MEND button instead, which fixes it on
-  the spot for free.
+  the spot for free. The 95% is the Free mend above setting: 100 makes every
+  repair cost components, and 0 mends everything but broken gear for free.
+* With Workbench repair cost at 0, every repair is free and done on the spot,
+  broken gear included.
 * Crafting perks like Gun Nut, Science!, Blacksmith and Armorer make repairs
   take fewer components, down to half at the top rank. The perk behind most of
   an item's components sets the discount, and each rank's description says how

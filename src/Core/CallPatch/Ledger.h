@@ -254,7 +254,8 @@ namespace CallPatch
 	// a_install says the row's turn just ended, so nothing of a switched row
 	// is written. PiecesOffTail ends the line of a place the call still
 	// reaches when its pieces are all off for a cause outside its set, such
-	// as a piece they need, and is empty otherwise.
+	// as a piece they need, and is empty otherwise. Another place of a piece
+	// marked alone is no such cause, see PieceRow in Core/Pieces.h.
 	void                      Say(const Pass& a_pass, Lines& a_lines, bool a_install);
 	[[nodiscard]] std::string PiecesOffTail(const Place& a_place);
 

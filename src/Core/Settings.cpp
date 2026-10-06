@@ -8,6 +8,7 @@
 #include <algorithm>
 #include <cctype>
 #include <climits>
+#include <cstdint>
 #include <cstdlib>
 #include <filesystem>
 #include <format>
@@ -21,6 +22,7 @@
 #include <string>
 #include <string_view>
 #include <system_error>
+#include <variant>
 #include <vector>
 
 namespace Settings
@@ -53,7 +55,7 @@ namespace Settings
 			&bInspectPrice,
 		};
 
-		Live<float>* const NUMBERS[]{
+		const Number NUMBERS[]{
 			&fWearRateMult,
 			&fArmorWearRateMult,
 			&fDamageFloor,
@@ -62,6 +64,7 @@ namespace Settings
 			&fFireRateFloor,
 			&fCritMeterFloor,
 			&fBenchCostMult,
+			&iFreeMendAbove,
 			&fTraderPriceMult,
 			&fHudBarX,
 			&fHudBarY,
@@ -186,6 +189,17 @@ namespace Settings
 			return a_switch.GetValue() ? std::format("true{:s}", Mark(a_switch)) : "false";
 		}
 
+		// A number as the Settings line prints it.
+		std::string Shown(float a_value)
+		{
+			return std::format("{:g}", a_value);
+		}
+
+		std::string Shown(std::int32_t a_value)
+		{
+			return std::format("{:d}", a_value);
+		}
+
 		// At info, or at the log's own level when that is higher, so no level
 		// hides the line.
 		void Say(const std::string& a_line, std::source_location a_where = std::source_location::current())
@@ -248,7 +262,7 @@ namespace Settings
 		return SWITCHES;
 	}
 
-	std::span<Live<float>* const> Numbers()
+	std::span<const Number> Numbers()
 	{
 		return NUMBERS;
 	}
@@ -361,12 +375,14 @@ namespace Settings
 			std::format_to(std::back_inserter(line), " {:s}={:s}", on->key, Shown(*on));
 		}
 		std::string_view section;
-		for (const auto* number : NUMBERS) {
-			if (number->section != section) {
-				section = number->section;
-				std::format_to(std::back_inserter(line), " [{:s}]", section);
-			}
-			std::format_to(std::back_inserter(line), " {:s}={:g}{:s}", number->key, number->GetValue(), Mark(*number));
+		for (const auto& entry : NUMBERS) {
+			std::visit([&](const auto* a_number) {
+				if (a_number->section != section) {
+					section = a_number->section;
+					std::format_to(std::back_inserter(line), " [{:s}]", section);
+				}
+				std::format_to(std::back_inserter(line), " {:s}={:s}{:s}", a_number->key, Shown(a_number->GetValue()), Mark(*a_number));
+			}, entry);
 		}
 		std::format_to(std::back_inserter(line), " [Log] sLogLevel={:s} bTraceLogs={}", LogLevelWord(), bTraceLogs.GetValue());
 		REX::INFO("{:s}", line);

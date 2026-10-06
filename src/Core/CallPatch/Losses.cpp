@@ -8,6 +8,7 @@
 #include <array>
 #include <cstddef>
 #include <format>
+#include <iterator>
 #include <mutex>
 #include <optional>
 #include <span>
@@ -111,10 +112,11 @@ namespace CallPatch
 			return owners;
 		}
 
-		// Every piece's state, with the places of set a_skip counted as on. Its
-		// own places first, each marking every piece it is, then what it
-		// needs, from the top, since a piece needs only pieces above it.
-		States StatesLocked(std::uint32_t a_skip = 0)
+		// Every piece's state, with the places of set a_skip counted as on,
+		// and the pieces of a_alone off only through what they need. Its own
+		// places first, each marking every piece it is, then what it needs,
+		// from the top, since a piece needs only pieces above it.
+		States StatesLocked(std::uint32_t a_skip = 0, std::span<const Piece> a_alone = {})
 		{
 			States states{};
 			for (const auto& place : Places()) {
@@ -122,6 +124,9 @@ namespace CallPatch
 					continue;
 				}
 				for (const auto piece : PiecesAt(place.what)) {
+					if (std::ranges::find(a_alone, piece) != a_alone.end()) {
+						continue;
+					}
 					auto& state = At(states, piece);
 					state.off = state.own = true;
 					state.cause = RowOfPiece(piece).part;
@@ -276,14 +281,12 @@ namespace CallPatch
 		}
 
 		// The switch a setting is, or the one it sits under, nullptr for a
-		// number with none.
+		// number with none, such as one under a number.
 		const Settings::Live<bool>* SwitchOf(const SettingLink& a_link)
 		{
-			if (a_link.under) {
-				return a_link.under;
-			}
-			const auto switches = Settings::Switches();
-			const auto it = std::ranges::find(switches, a_link.setting, [](const auto* a_on) { return static_cast<const Settings::Named*>(a_on); });
+			const auto* lead = a_link.under ? a_link.under : a_link.setting;
+			const auto  switches = Settings::Switches();
+			const auto  it = std::ranges::find(switches, lead, [](const auto* a_on) { return static_cast<const Settings::Named*>(a_on); });
 			return it != switches.end() ? *it : nullptr;
 		}
 
@@ -301,8 +304,11 @@ namespace CallPatch
 
 	std::string PiecesOffTail(const Place& a_place)
 	{
-		auto       states = StatesLocked(a_place.set);
-		const auto pieces = PiecesAt(a_place.what);
+		// Another place of a piece marked alone takes nothing from this one.
+		const auto         pieces = PiecesAt(a_place.what);
+		std::vector<Piece> alone;
+		std::ranges::copy_if(pieces, std::back_inserter(alone), [](Piece a_piece) { return RowOfPiece(a_piece).alone; });
+		auto states = StatesLocked(a_place.set, alone);
 		if (pieces.empty() || !std::ranges::all_of(pieces, [&](Piece a_piece) { return At(states, a_piece).off; })) {
 			return {};
 		}

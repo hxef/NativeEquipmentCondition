@@ -32,7 +32,8 @@ namespace Workbench
 
 	// What an item is built from and which perk prices it, read once for every
 	// level on offer. The order is the bill laid out one unit at a time, one
-	// unit longer than the most the item could owe, so a repair is never free.
+	// unit longer than the most the item could owe, so a repair is never free
+	// while fBenchCostMult is above 0.
 	// units is 0 for an item nothing prices, a weapon with no scrap recipe and
 	// no mods with one, or a wearable in a load order with no scrap recipe of
 	// its kind to borrow, see Materials.h: the bench has nothing to rebuild it
@@ -50,8 +51,9 @@ namespace Workbench
 
 	// The components one repair takes, from one condition to another: the part
 	// of the order between what is owed at each end, so a repair in steps adds
-	// up to one in one go. Never empty: where both ends owe the same count the
-	// next unit is charged.
+	// up to one in one go. Never empty while fBenchCostMult is above 0: where
+	// both ends owe the same count the next unit is charged. Empty at 0, where
+	// the bench mends instead, see FreeRepairs in Bench.h.
 	[[nodiscard]] std::vector<Materials::Part> CostOf(const Priced& a_priced, std::uint32_t a_from, std::uint32_t a_to);
 
 	// The condition levels above the one the item already has.

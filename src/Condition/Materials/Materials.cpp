@@ -210,12 +210,22 @@ namespace Materials
 			return;
 		}
 
+		// The legendary effect is left out. Vanilla builds it from no recipe,
+		// but a plugin such as AWKCR gives it one, which would put legendary
+		// parts in a repair and in the wear rate. The game names only 1
+		// legendary mod an item, so on an item a plugin gives 2 or more, the
+		// rest still count. CommonLibF4 declares the lookup without const.
+		const auto* legendary = const_cast<RE::ExtraDataList*>(a_extra)->GetLegendaryMod();
+
 		for (const auto& entry : mods->GetIndexData()) {
 			if (entry.disabled) {
 				continue;
 			}
 
 			const auto* mod = RE::TESForm::GetFormByID<RE::BGSMod::Attachment::Mod>(entry.objectID);
+			if (mod && mod == legendary) {
+				continue;
+			}
 			const auto  found = mod ? g_recipes.find(mod) : g_recipes.end();
 			if (found != g_recipes.end()) {
 				a_each(*found->second);

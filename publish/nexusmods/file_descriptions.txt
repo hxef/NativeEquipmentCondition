@@ -1,3 +1,8 @@
+1.1.1
+Version 1.1.1 enhances workbench repairs by adding a Free mend above setting and free repairs when the repair cost is 0. Legendary gear from chests and traders arrives new, and workbench repairs work alongside mods like Examine Lag Fix.
+
+FO4 1.11.240
+
 1.1.0
 Version 1.1.0 enhances customization by adding MCM support, where every change applies on the spot with no game restart. NEC also works alongside other DLL mods that change the same things.
 For Fallout 4 1.11.240.

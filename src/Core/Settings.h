@@ -5,9 +5,11 @@
 #include <array>
 #include <atomic>
 #include <cstddef>
+#include <cstdint>
 #include <span>
 #include <string>
 #include <string_view>
+#include <variant>
 
 // The plugin's settings, read from NEC.ini beside NEC.dll in Data\F4SE\Plugins.
 // NEC_custom.ini in the same folder holds the player's changes, so an update
@@ -16,9 +18,9 @@
 //
 // CommonLibF4's setting store reads both files once, as the game starts, and
 // nothing reads them again while the game runs. Read a setting where it is
-// used, never copy it out. Every bool and float is a Live one, so the MCM page
-// can change it while game threads read it. The page also keeps the change in
-// NEC_custom.ini, see UI/Mcm/Mcm.h.
+// used, never copy it out. Every bool, float and whole number is a Live one,
+// so the MCM page can change it while game threads read it. The page also keeps
+// the change in NEC_custom.ini, see UI/Mcm/Mcm.h.
 //
 // A setting added here is added to publish/NEC.ini too, with a line saying
 // what it does.
@@ -187,6 +189,10 @@ namespace Settings
 	// Workbench/Cost.h.
 	inline Live<float> fBenchCostMult{ "Balance", "fBenchCostMult", 1.0F };
 
+	// The condition above which a workbench mends an item for nothing, a
+	// whole percent, see Workbench/Bench.h.
+	inline Live<std::int32_t> iFreeMendAbove{ "Balance", "iFreeMendAbove", 95 };
+
 	// What a trader asks for a repair, against the mod as tuned, see
 	// VendorRepair/Quote.h.
 	inline Live<float> fTraderPriceMult{ "Balance", "fTraderPriceMult", 1.0F };
@@ -223,8 +229,12 @@ namespace Settings
 	// they are off unless a bug is being reported.
 	inline Live<bool> bTraceLogs{ "Log", "bTraceLogs", false };
 
-	// The 10 switches under [Features] and the 13 numbers under [Balance] and
+	// A number under [Balance] or [HUD]: a float, or a whole number where the
+	// setting only takes whole steps.
+	using Number = std::variant<Live<float>*, Live<std::int32_t>*>;
+
+	// The 10 switches under [Features] and the 14 numbers under [Balance] and
 	// [HUD], in NEC.ini's order, for Report and the MCM page.
-	[[nodiscard]] std::span<Live<bool>* const>  Switches();
-	[[nodiscard]] std::span<Live<float>* const> Numbers();
+	[[nodiscard]] std::span<Live<bool>* const> Switches();
+	[[nodiscard]] std::span<const Number>      Numbers();
 }

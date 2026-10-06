@@ -90,6 +90,23 @@ namespace Text
 			{ "zhhans", "工作台修理" },
 		};
 
+		// A worn item the bench would leave out listed for its repair, an item
+		// too worn to modify faded, and its mod slots shut.
+		constexpr Line PART_BENCH_LISTS[]{
+			{ "en", "Worn items in workbench lists" },
+			{ "fr", "Objets usés dans les listes de l'établi" },
+			{ "de", "Abgenutzte Gegenstände in Werkbanklisten" },
+			{ "it", "Oggetti usurati negli elenchi del banco da lavoro" },
+			{ "es", "Objetos desgastados en las listas del banco de trabajo" },
+			{ "esmx", "Objetos desgastados en las listas del banco de trabajo" },
+			{ "ptbr", "Itens desgastados nas listas da bancada" },
+			{ "pl", "Zużyte przedmioty na listach pracowni" },
+			{ "ru", "Изношенные предметы в списках верстака" },
+			{ "ja", "作業台の一覧の消耗したアイテム" },
+			{ "zhhant", "工作台清單中的損耗物品" },
+			{ "zhhans", "工作台清单中的损耗物品" },
+		};
+
 		constexpr Line PART_SCROLL[]{
 			{ "en", "Scrolling component lists" },
 			{ "fr", "Défilement des listes de composants" },
@@ -188,6 +205,7 @@ namespace Text
 			{ Part::kHudBar, PART_HUD_BAR },
 			{ Part::kQuick, PART_QUICK },
 			{ Part::kBench, PART_BENCH },
+			{ Part::kBenchLists, PART_BENCH_LISTS },
 			{ Part::kScroll, PART_SCROLL },
 			{ Part::kTraderRepairs, PART_TRADER_REPAIRS },
 			{ Part::kStock, PART_STOCK },

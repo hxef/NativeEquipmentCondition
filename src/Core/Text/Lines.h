@@ -53,7 +53,7 @@ namespace Text
 		std::span<const Line>  help;
 	};
 
-	// The 10 switches and bTraceLogs, in MenuSwitches.cpp, the 9 Balance
+	// The 10 switches and bTraceLogs, in MenuSwitches.cpp, the 10 Balance
 	// numbers, in MenuNumbers.cpp, and the 4 HUD numbers and sLogLevel, in
 	// MenuHudLog.cpp, each in NEC.ini's order.
 	[[nodiscard]] std::span<const MenuRow> MenuSwitches();

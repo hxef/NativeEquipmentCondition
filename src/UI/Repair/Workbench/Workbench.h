@@ -27,8 +27,9 @@
 namespace Workbench
 {
 	// Patches the workbench menu's function table and its confirmation
-	// callback's. Its 15 slots and the list refresh call go in as one, or
-	// not at all when another mod has one of them.
+	// callback's. The 12 slots of the repair go in as one, or not at all when
+	// another mod has one of them. The 3 list slots and the list refresh call
+	// go in each by itself.
 	void Install();
 
 	// Logs the language the bench speaks, once the game has read it.
@@ -38,6 +39,6 @@ namespace Workbench
 	// equipped items to the bench movie. Ignores every other movie.
 	void OnMovieLoaded(Scaleform::GFx::Movie& a_movie, std::string_view a_file);
 
-	// Whether the bench's hooks are in, so the bench repairs.
+	// Whether the repair's hooks are in, so the bench repairs.
 	[[nodiscard]] bool Repairs();
 }

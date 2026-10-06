@@ -150,7 +150,7 @@ namespace Mcm
 		}
 
 		// The setting a block is named after, by its key: a switch, or a
-		// number with no switch above it.
+		// number with nothing above it.
 		const SettingLink* LeadFor(std::string_view a_key)
 		{
 			for (const auto& link : SettingLinks()) {
@@ -166,7 +166,7 @@ namespace Mcm
 		{
 			std::vector<const SettingLink*> members;
 			for (const auto& link : SettingLinks()) {
-				if (&link == &a_lead || static_cast<const Settings::Named*>(link.under) == a_lead.setting) {
+				if (&link == &a_lead || link.under == a_lead.setting) {
 					members.push_back(&link);
 				}
 			}

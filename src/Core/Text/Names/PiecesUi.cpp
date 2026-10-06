@@ -141,6 +141,38 @@ namespace Text
 			{ "zhhans", "按射速排序" },
 		};
 
+		// The bench's lists: its item list, where a worn item is listed and
+		// one too worn to modify faded, and the mod lists, shut for that item.
+		constexpr Line PIECE_BENCH_ITEM_LIST[]{
+			{ "en", "item list" },
+			{ "fr", "liste des objets" },
+			{ "de", "Gegenstandsliste" },
+			{ "it", "elenco degli oggetti" },
+			{ "es", "lista de objetos" },
+			{ "esmx", "lista de objetos" },
+			{ "ptbr", "lista de itens" },
+			{ "pl", "lista przedmiotów" },
+			{ "ru", "список предметов" },
+			{ "ja", "アイテムの一覧" },
+			{ "zhhant", "物品清單" },
+			{ "zhhans", "物品清单" },
+		};
+
+		constexpr Line PIECE_BENCH_MOD_LISTS[]{
+			{ "en", "mod lists" },
+			{ "fr", "listes des modifications" },
+			{ "de", "Mod-Listen" },
+			{ "it", "elenchi delle modifiche" },
+			{ "es", "listas de modificaciones" },
+			{ "esmx", "listas de modificaciones" },
+			{ "ptbr", "listas de modificações" },
+			{ "pl", "listy modyfikacji" },
+			{ "ru", "списки модификаций" },
+			{ "ja", "改造の一覧" },
+			{ "zhhant", "改造清單" },
+			{ "zhhans", "改造清单" },
+		};
+
 		// The 2 kinds of chest a trader restocks: the merchant chest every
 		// trader of a faction shares, and the chests linked to the trader
 		// alone, like a settlement store's.
@@ -343,6 +375,8 @@ namespace Text
 			{ Piece::kRateCardsPipboyUpdates, PIECE_PIPBOY_UPDATES },
 			{ Piece::kRateBetter, PIECE_BETTER },
 			{ Piece::kRateSort, PIECE_SORT },
+			{ Piece::kBenchItemList, PIECE_BENCH_ITEM_LIST },
+			{ Piece::kBenchModLists, PIECE_BENCH_MOD_LISTS },
 			{ Piece::kStockMerchant, PIECE_STOCK_MERCHANT },
 			{ Piece::kStockLinked, PIECE_STOCK_LINKED },
 		};

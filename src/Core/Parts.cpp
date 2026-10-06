@@ -55,9 +55,10 @@ namespace
 	// Read only inside Worn item prices' own hook.
 	constexpr Piece PRICES[]{ kPrices };
 	constexpr Piece BENCH[]{ kBench };
-	// The perk pages tell of a discount on a bench repair, so their part's
-	// line shows in this block.
-	constexpr Piece BENCH_EXCEPTIONS[]{ kPerksChart, kPerksPipboy };
+	// The perk pages tell of a discount on a bench repair, and the bench's
+	// lists show what it repairs, so the line of each part shows in this
+	// block.
+	constexpr Piece BENCH_EXCEPTIONS[]{ kPerksChart, kPerksPipboy, kBenchItemList, kBenchModLists };
 
 	constexpr SettingLink SETTINGS[]{
 		{ &Settings::bJam, nullptr, JAM, JAM_SIDE },
@@ -77,6 +78,7 @@ namespace
 		{ &Settings::fFireRateFloor, &Settings::bFireRate, FIRE_RATE, FIRE_RATE_SIDE },
 		{ &Settings::fCritMeterFloor, &Settings::bCritMeter, CRIT_METER, CRIT_METER_SIDE },
 		{ &Settings::fBenchCostMult, nullptr, BENCH, {}, BENCH_EXCEPTIONS },
+		{ &Settings::iFreeMendAbove, &Settings::fBenchCostMult, BENCH },
 		{ &Settings::fTraderPriceMult, &Settings::bVendorRepair, TRADER_REPAIRS, TRADER_PRICE_SIDE },
 		// The 2 rows that draw the bars share bHudCondition, so they never
 		// run once HUD condition bars is left to another mod.
@@ -120,7 +122,7 @@ namespace
 			}
 			bool found = false;
 			for (const auto& lead : SETTINGS) {
-				found = found || (!lead.under && lead.setting == static_cast<const Settings::Named*>(link.under));
+				found = found || (!lead.under && lead.setting == link.under);
 			}
 			if (!found) {
 				return false;

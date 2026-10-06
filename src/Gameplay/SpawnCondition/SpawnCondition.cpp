@@ -74,6 +74,22 @@ namespace SpawnCondition
 			return base && base->IsEssential() ? base : nullptr;
 		}
 
+		// Whether a stack is a showpiece: a legendary weapon or piece of armor
+		// going into a chest, not into a character's hands. A trader's
+		// showpiece, Big Boy at Arturo's for one, is placed by a quest script
+		// into a chest that never restocks, so it passes here once, as plain
+		// loot. A corpse's legendary goes to the dying character first, so it
+		// stays loot. Read under the inventory lock. The extra data takes its
+		// own lock after it, as the script guards do.
+		[[nodiscard]] bool Showpiece(const RE::BGSInventoryList* a_list, RE::ExtraDataList& a_extra)
+		{
+			if (!a_list) {
+				return false;
+			}
+			const auto owner = a_list->owner.get();
+			return owner && !owner->IsActor() && a_extra.GetLegendaryMod() != nullptr;
+		}
+
 		// Gives one stack a condition, if it is the kind of thing that has one
 		// and has none yet. Returns what it aimed at, so the copies SplitOff
 		// takes out roll the same way, or nothing when the stack was left
@@ -173,6 +189,15 @@ namespace SpawnCondition
 				Report(listed, "copied from an inventory that keeps it",
 					"{:<30s} [{:08X}] x{:<3d} left alone, copied from an inventory that keeps it",
 					name, id, count);
+				return std::nullopt;
+			}
+
+			// A showpiece arrives new. A chest does not say which trader it
+			// belongs to, so any chest counts, a reward chest's legendary too.
+			if (Showpiece(a_list, *a_stack->extra)) {
+				a_stack->extra->SetHealthPerc(Condition::MAX_HEALTH);
+				Report(listed, "a showpiece", "{:<30s} [{:08X}] x{:<3d} starts at {:.4f}, legendary, in a chest",
+					name, id, count, Condition::MAX_HEALTH);
 				return std::nullopt;
 			}
 

@@ -41,23 +41,28 @@ namespace CallPatch
 		// A mov into a register from the slot at the end of the instruction
 		// plus disp32, 7 bytes: a REX byte, 48 for rax to rdi and 4C for r8 to
 		// r15, then 8B and a ModRM byte whose low 3 bits and top 2 are 101 and
-		// 00. A REX.W byte 48 in front of FF 25 changes nothing.
+		// 00. A lea of that slot is the same with 8D, as a debug build hands
+		// the slot to a helper that calls through it. A REX.W byte 48 in front
+		// of FF 25 changes nothing.
 		constexpr std::uint8_t REX_W = 0x48;
 		constexpr std::uint8_t REX_WR = 0x4C;
 		constexpr std::uint8_t MOV_LOAD = 0x8B;
+		constexpr std::uint8_t LEA = 0x8D;
 		constexpr std::uint8_t MODRM_RIP_MASK = 0xC7;
 		constexpr std::uint8_t MODRM_RIP = 0x05;
 		constexpr std::size_t  MOV_RIP_SIZE = 7;
 
 		// What marks the line of hooks on 1 place: its kind and address, what
-		// NEC wrote (its stub, cell or hook), what NEC's hook hands on to, and
-		// the game's own function a DLL over NEC calls to skip NEC. 0 for what
-		// NEC has not got, as at install, when nothing of NEC's is there yet.
+		// NEC wrote (its stub, cell or hook), NEC's hook there, what NEC's
+		// hook hands on to, and the game's own function a DLL over NEC calls
+		// to skip NEC. 0 for what NEC has not got, as at install, when nothing
+		// of NEC's is there yet.
 		struct Ends
 		{
 			Kind           kind;
 			std::uintptr_t where;
 			std::uintptr_t mine;
+			std::uintptr_t hook;
 			std::uintptr_t next;
 			std::uintptr_t game;
 		};
@@ -161,12 +166,33 @@ namespace CallPatch
 			return image && InCode(image, landing);
 		}
 
+		// Whether an address a DLL keeps is exactly what NEC wrote at this
+		// place or its hook there. A lea hands on the address of any object,
+		// so its slot counts as NEC's only this way, never as any other
+		// address in NEC.dll.
+		bool IsNecHere(std::uintptr_t a_kept, const Ends& a_ends)
+		{
+			return a_kept && (a_kept == a_ends.mine || (a_ends.hook && Follow(a_kept) == a_ends.hook));
+		}
+
+		// Whether an address lands at the start of a function of another
+		// DLL's code. That is the only next link a lea's slot may hold.
+		// NEC.dll is no such DLL, or the walk would take any function of NEC
+		// for its hook here.
+		bool LeadsOnToStart(std::uintptr_t a_address, const Image& a_image)
+		{
+			const auto landing = Follow(a_address);
+			return LeadsOn(a_address, a_image) && !InNec(landing) && StartsFunction(ImageAt(landing), landing);
+		}
+
 		// The address the hook at a_at of a_image hands each call on to, read
 		// from where it keeps it, 0 when NEC finds none. A hook that only hands
 		// on keeps it in the slot it jumps through. Any other hook is read for
-		// the slots of its own data it calls through or loads from: NEC's own
-		// address wins, then one that leads on to another DLL's code, then one
-		// that skips NEC.
+		// the slots of its own data it calls through, loads from or takes the
+		// address of: NEC's own address wins, then one that leads on to
+		// another DLL's code, then one that skips NEC. A lea's slot counts only
+		// for the first 2, held exactly, see IsNecHere and LeadsOnToStart,
+		// since a hook takes the address of plenty it never calls.
 		std::uintptr_t KeptBy(const Image& a_image, std::uintptr_t a_at, const Ends& a_ends)
 		{
 			if (const auto slot = PassSlot(a_at)) {
@@ -186,11 +212,13 @@ namespace CallPatch
 				const auto     first = Read<std::uint8_t>(at);
 				const auto     second = Read<std::uint8_t>(at + 1);
 				std::uintptr_t slot = 0;
+				bool           lea = false;
 				if (first == OPCODE_GROUP_FF && (second == MODRM_CALL_RIP || second == MODRM_JMP_RIP)) {
 					slot = at + RIP_SIZE + Read<std::int32_t>(at + 2);
-				} else if ((first == REX_W || first == REX_WR) && second == MOV_LOAD && at + MOV_RIP_SIZE <= end &&
+				} else if ((first == REX_W || first == REX_WR) && (second == MOV_LOAD || second == LEA) && at + MOV_RIP_SIZE <= end &&
 						   (Read<std::uint8_t>(at + 2) & MODRM_RIP_MASK) == MODRM_RIP) {
 					slot = at + MOV_RIP_SIZE + Read<std::int32_t>(at + 3);
+					lea = second == LEA;
 				}
 				if (!slot || (SectionOf(a_image, slot) & REX::W32::IMAGE_SCN_MEM_WRITE) == 0) {
 					continue;
@@ -199,10 +227,16 @@ namespace CallPatch
 				if (!kept || ImageBase(kept) == a_image.base) {
 					continue;
 				}
-				if (IsNec(kept, a_ends)) {
+				if (lea ? IsNecHere(kept, a_ends) : IsNec(kept, a_ends)) {
 					return kept;
 				}
 				if ((a_ends.kind == Kind::kCall || a_ends.kind == Kind::kJump) && !InReach(kept, a_ends.where)) {
+					continue;
+				}
+				if (lea) {
+					if (!onward && LeadsOnToStart(kept, a_image)) {
+						onward = kept;
+					}
 					continue;
 				}
 				if (Skips(kept, a_ends)) {
@@ -306,7 +340,7 @@ namespace CallPatch
 		}
 
 		Found found{ .next = entry };
-		found.under = WalkFrom(entry, { a_ask.kind, a_ask.where, 0, 0, a_ask.game }).dlls;
+		found.under = WalkFrom(entry, { a_ask.kind, a_ask.where, 0, 0, 0, a_ask.game }).dlls;
 		if (found.under.empty()) {
 			found.under.push_back({ ModuleOf(landing), true });
 		}
@@ -322,6 +356,6 @@ namespace CallPatch
 		const auto mine = a_place.kind == Kind::kPointer     ? a_place.hook :
 		                  a_place.kind == Kind::kVirtualCall ? a_place.where + VCALL_SIZE + displacement :
 		                                                       a_place.where + REL32_SIZE + displacement;
-		return WalkFrom(LeadsTo(a_place.where, a_place.kind), { a_place.kind, a_place.where, mine, a_place.next, a_place.game });
+		return WalkFrom(LeadsTo(a_place.where, a_place.kind), { a_place.kind, a_place.where, mine, a_place.hook, a_place.next, a_place.game });
 	}
 }

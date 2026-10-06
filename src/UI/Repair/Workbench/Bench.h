@@ -18,8 +18,14 @@ namespace Workbench
 	// Above this condition a repair is free and immediate, and the button reads
 	// MEND. The floor is at full, so one shot closes the slots, and charging
 	// for that would make every shot cost components. It takes nothing off a
-	// real repair, since a gun at 90 pays the whole last 10.
-	inline constexpr std::uint32_t FREE_ABOVE = 95;
+	// real repair, since an item below it pays the whole way up to full.
+	// iFreeMendAbove kept between 0 and 100, see Settings.h, so at 100 nothing
+	// is free and at 0 everything but a broken item is.
+	[[nodiscard]] std::uint32_t FreeAbove();
+
+	// True while fBenchCostMult is 0 or below. A repair then costs nothing, so
+	// every repair works like MEND.
+	[[nodiscard]] bool FreeRepairs();
 
 	// REPAIR in the game's own words, which it translates: what it builds the
 	// bench's REPAIR button with, and the button of a repair's confirmation.
@@ -31,8 +37,9 @@ namespace Workbench
 		// True for an item too worn for the bench to modify.
 		[[nodiscard]] bool TooWorn() const { return object && percent < MODIFY_FLOOR; }
 
-		// True for an item worn so little that repairing it is free.
-		[[nodiscard]] bool Trifling() const { return Worn() && percent > FREE_ABOVE; }
+		// True for an item worn so little that repairing it is free, and for
+		// any worn item while repairs cost nothing.
+		[[nodiscard]] bool Trifling() const { return Worn() && (FreeRepairs() || percent > FreeAbove()); }
 	};
 
 	// What the highlight is on, or nothing while the bench has no list. The

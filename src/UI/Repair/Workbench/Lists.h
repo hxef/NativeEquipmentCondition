@@ -9,6 +9,7 @@ namespace Workbench
 {
 	// Patches the 3 functions on the bench's table that fill its item list,
 	// its slots and the mods behind a slot, and the call that hands the
-	// rebuilt item list to Flash.
+	// rebuilt item list to Flash. Each is a place of its own, so another mod
+	// at one takes only that one.
 	void InstallLists();
 }

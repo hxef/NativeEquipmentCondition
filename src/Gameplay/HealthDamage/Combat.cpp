@@ -303,10 +303,10 @@ namespace HealthDamage
 		// stops at the first equipped weapon with the low slot bit set, which
 		// on the player is not the weapon in hand, and returns a flat 1.0.
 		// Nothing in the unmodified game writes item health, so the bug never
-		// showed. Equipped::WeaponHealth picks the equipped weapon carrying
-		// health extra data, the same stack the wear is written to. When it
-		// finds nothing the original still runs, so every actor this mod has
-		// not touched keeps vanilla behaviour.
+		// showed. Equipped::WeaponHealth picks the equipped weapon that takes
+		// part, the same stack the wear is written to. When it finds none the
+		// original still runs, so every actor without such a weapon keeps
+		// vanilla behaviour.
 		// One per attack, P being its index in HEALTH_SITES.
 		template <std::size_t P>
 		float EquippedHealthHk(RE::Actor* a_actor, RE::BGSEquipIndex a_equipIndex)
@@ -341,10 +341,10 @@ namespace HealthDamage
 			// ran, see t_health.
 			t_health[P] = true;
 			if (a_actor == RE::PlayerCharacter::GetSingleton()) {
-				TraceLog::Line("health", "equipped {:.6f} from {:s}", result, mine ? "extradata" : "engine");
+				TraceLog::Line("health", "equipped {:.6f} from {:s}", result, mine ? "NEC" : "engine");
 			} else {
 				TraceLog::Npc::Line("health", "{:s} equipped {:.6f} from {:s}", TraceLog::Who{ a_actor }, result,
-					mine ? "extradata" : "engine");
+					mine ? "NEC" : "engine");
 			}
 			return result;
 		}

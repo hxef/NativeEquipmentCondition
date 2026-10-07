@@ -12,6 +12,7 @@ namespace ArmorWear
 	float Rate(const RE::TESObjectARMO& a_armor, const RE::ExtraDataList* a_extra, float a_damage, bool a_theirs);
 
 	// How many blows of the ordinary weapon take a piece of ordinary make from
-	// new to broken, at the rate as set, for the log.
+	// new to broken, at the rate as set, for the log. 0 when armor never
+	// wears, at a rate of 0 or below.
 	float BlowsToBreak();
 }

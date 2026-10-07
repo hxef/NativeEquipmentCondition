@@ -1,6 +1,6 @@
 #include "Gameplay/HealthDamage/HealthDamage.h"
 
-#include "Core/Settings.h"
+#include "Gameplay/HealthDamage/Curve.h"
 #include "Gameplay/HealthDamage/Hooks.h"
 
 namespace HealthDamage
@@ -12,7 +12,7 @@ namespace HealthDamage
 		InstallBlast();
 		InstallCard();
 
-		REX::INFO("Condition floor is {:.2f} of full damage.", Settings::fDamageFloor.GetValue());
+		REX::INFO("Condition floor is {:.2f} of full damage.", DamageFloor());
 		REX::INFO("Everybody fights at the condition their weapon is in, and only the player's weapons wear.");
 	}
 }

@@ -16,9 +16,14 @@ namespace HealthDamage
 	// The floor is fDamageFloor in NEC.ini. A floor of 0.05 makes the penalty
 	// impossible to miss, which is how it is tested. It is kept between 0 and
 	// 1, since above 1 a worn gun would do more damage than a new one.
-	inline float DamageMult(float a_health)
+	inline float DamageFloor()
 	{
 		const auto floor = Settings::fDamageFloor.GetValue();
-		return Condition::Share(a_health, floor > 0.0F ? std::min(floor, 1.0F) : 0.0F);
+		return floor > 0.0F ? std::min(floor, 1.0F) : 0.0F;
+	}
+
+	inline float DamageMult(float a_health)
+	{
+		return Condition::Share(a_health, DamageFloor());
 	}
 }

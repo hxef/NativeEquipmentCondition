@@ -90,6 +90,12 @@ namespace VendorRepair
 
 		const auto purseHeld = purse->GetGoldAmount();
 
+		// The name is copied before the caps go and the stack is written,
+		// since either can free what the selection points at: the last caps
+		// leave an empty entry, and a repaired stack can merge into an
+		// identical one.
+		const auto name = selection.Name();
+
 		// From the player to the trader, the same transfer the game makes when
 		// a trade goes through, with the same flag that hides the message about
 		// losing caps.
@@ -108,7 +114,7 @@ namespace VendorRepair
 
 		const auto said = Text::RepairPaid(a_quote.level, a_quote.price);
 		TraceLog::Line("menu", "{:s} repaired {:s} from {:d}% to {:d}%, one of a stack of {:d}, for {:d} of the {:d} caps the player had, saying \"{:s}\"",
-			Trader(menu), selection.Name(), selection.percent, a_quote.level, selection.count, a_quote.price, pocketHeld, said);
+			Trader(menu), name, selection.percent, a_quote.level, selection.count, a_quote.price, pocketHeld, said);
 		TraceLog::Line("menu", "{:s} was paid into {:08X}, which held {:d} caps and now holds {:d}",
 			Trader(menu), purse->GetFormID(), purseHeld, purse->GetGoldAmount());
 

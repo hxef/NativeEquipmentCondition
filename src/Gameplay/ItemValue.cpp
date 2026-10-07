@@ -44,6 +44,14 @@ namespace ItemValue
 		constexpr float VALUE_BASE = 0.0F;
 		constexpr float VALUE_MULT = 1.0F;
 
+		// fValueExponent, which stops at 0. Below 0 a worn item would sell for
+		// more than a new one and a broken one for minus 2 billion caps.
+		float Exponent()
+		{
+			const auto setting = Settings::fValueExponent.GetValue();
+			return setting > 0.0F ? setting : 0.0F;
+		}
+
 		// The Fallout 3 and New Vegas price curve. No floor, unlike the damage
 		// curve: a weapon has to stay worth firing at 0 condition, it does not
 		// have to stay worth money. The engine rounds a price under 1 cap up to
@@ -52,16 +60,13 @@ namespace ItemValue
 		{
 			// The same health values Condition::Share treats as new, for the
 			// same reason.
-			if (a_health < 0.0F || a_health >= 1.0F) {
+			if (a_health < 0.0F || a_health >= Condition::MAX_HEALTH) {
 				return 1.0F;
 			}
 
 			// A number to the power of 1.5 is the number times its square root,
-			// one instruction. std::pow stays for an exponent tuned away from
-			// 1.5. Below 0 a worn item would sell for more than a new one and a
-			// broken one for minus 2 billion caps, so fValueExponent stops at 0.
-			const auto setting = Settings::fValueExponent.GetValue();
-			const auto exponent = setting > 0.0F ? setting : 0.0F;
+			// one instruction. std::pow serves an exponent tuned away from 1.5.
+			const auto exponent = Exponent();
 			const auto curve = exponent == 1.5F ?
 				a_health * std::sqrt(a_health) :
 				std::pow(a_health, exponent);
@@ -145,7 +150,7 @@ namespace ItemValue
 			REX::ERROR("A worn item will keep selling for the price of a new one.");
 		} else {
 			REX::INFO("Item value falls with condition, everywhere the game prints a price.");
-			const auto exponent = Settings::fValueExponent.GetValue();
+			const auto exponent = Exponent();
 			REX::INFO("Worn items lose value with condition to the power of {:.2f}{:s}", exponent,
 				exponent == 1.5F ? ", the Fallout 3 and New Vegas curve." : ".");
 		}

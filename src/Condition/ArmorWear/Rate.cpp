@@ -21,7 +21,9 @@ namespace ArmorWear
 
 	float BlowsToBreak()
 	{
-		return 1.0F / (RATE_AT_REFERENCE * Settings::fArmorWearRateMult.GetValue());
+		// The setting stops at 0, as in Rate.
+		const auto mult = Settings::fArmorWearRateMult.GetValue();
+		return mult > 0.0F ? 1.0F / (RATE_AT_REFERENCE * mult) : 0.0F;
 	}
 
 	float Rate(const RE::TESObjectARMO& a_armor, const RE::ExtraDataList* a_extra, float a_damage, bool a_theirs)

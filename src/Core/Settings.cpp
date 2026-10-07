@@ -355,9 +355,16 @@ namespace Settings
 	{
 		const auto base = Exists(BASE_FILE);
 		const auto user = Exists(USER_FILE);
+
+		// Where the reader stops early, see IniText.h.
+		std::string text;
+		const auto  stopped = user && ReadWhole(USER_FILE, text) && text.find('\0') != std::string::npos;
 		REX::INFO("{:s}{:s}",
 			base ? "NEC.ini read" : "No NEC.ini beside the DLL, so the defaults stand",
-			user ? ", and NEC_custom.ini on top of it." : ", and there is no NEC_custom.ini.");
+			!user ? ", and there is no NEC_custom.ini." : stopped ? ", and NEC_custom.ini on top of it up to its first NUL byte." : ", and NEC_custom.ini on top of it.");
+		if (stopped) {
+			REX::WARN("NEC_custom.ini holds a NUL byte, as a file saved as UTF-16 does, and nothing after that byte counts. Save it as UTF-8.");
+		}
 
 		const auto level = sLogLevel.GetValue();
 		if (!ParseLevel(level)) {

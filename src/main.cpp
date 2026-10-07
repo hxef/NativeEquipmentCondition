@@ -4,6 +4,8 @@
 #include "Core/Settings.h"
 #include "Core/Text/Text.h"
 #include "Core/TraceLog.h"
+#include "Gameplay/FireRate/FireRate.h"
+#include "Gameplay/Jam.h"
 #include "UI/MenuMovies.h"
 #include "UI/Repair/ConsoleRepair.h"
 
@@ -87,6 +89,14 @@ namespace
 			REX::INFO("Every plugin has loaded, so NEC patches the game now.");
 			Install();
 			return;
+		}
+
+		// What play remembers belongs to 1 game, so another save or a new
+		// game starts without it.
+		if (a_msg->type == F4SE::MessagingInterface::kPreLoadGame ||
+			a_msg->type == F4SE::MessagingInterface::kNewGame) {
+			Jam::Unload();
+			FireRate::Unload();
 		}
 
 		if (a_msg->type == F4SE::MessagingInterface::kPreLoadGame) {

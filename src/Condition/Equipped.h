@@ -38,8 +38,9 @@ namespace Equipped
 	// carried beside it.
 	RE::TESObjectWEAP* Weapon(RE::Actor* a_actor);
 
-	// The health of the equipped weapon, or INVALID_HEALTH when the actor holds
-	// none that takes part. a_weapon limits the search to that form, so a
+	// The health of the equipped weapon, MAX_HEALTH for one with no health yet,
+	// as Worn loot switched off leaves it, or INVALID_HEALTH when the actor
+	// holds none that takes part. a_weapon limits the search to that form, so a
 	// grenade, a mine or a shot fired before a weapon swap does not take the
 	// condition of whatever is in hand when it lands. a_effect limits it to the
 	// copy that casts that object effect, since the cast that applies a shot's

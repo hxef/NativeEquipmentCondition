@@ -52,6 +52,19 @@ namespace QuickContainer
 		constexpr std::uint32_t WHITE = 0xFFFFFF;
 		constexpr std::uint32_t BLACK = 0x000000;
 
+		// The widget's list of rows, or an undefined value where a HUD replacer
+		// moved it.
+		Value RowList(Scaleform::GFx::Movie& a_movie)
+		{
+			Value widget;
+			Value list;
+			if (!a_movie.GetVariable(&widget, WIDGET_PATH) || !widget.IsDisplayObject() ||
+				!widget.GetMember("ListItems_mc"sv, &list) || !list.IsDisplayObject()) {
+				return {};
+			}
+			return list;
+		}
+
 		void Rect(Value& a_graphics, double a_x, double a_y, double a_width, double a_height)
 		{
 			a_graphics.Invoke("drawRect", std::array{ Value(a_x), Value(a_y), Value(a_width), Value(a_height) });
@@ -310,30 +323,34 @@ namespace QuickContainer
 		Listener g_frameListener{ false };
 	}
 
+	void ReadNameWidth(Scaleform::GFx::Movie& a_movie)
+	{
+		// The row keeps its starting name width to itself, so it is read from
+		// the name before any row is drawn. Every row is the same symbol, so
+		// reading the first is enough for all 5. A new HUD movie starts with
+		// nothing drawn.
+		auto       list = RowList(a_movie);
+		auto       row = Flash::Child(list, ROW_NAMES[0]);
+		Value      field;
+		const auto named = row.IsDisplayObject() && row.GetMember("ItemName_tf"sv, &field) && field.IsDisplayObject();
+		g_meters.Reset(named ? std::floor(Flash::Number(field, "width"sv)) : 0.0);
+	}
+
 	bool AddMeters(Scaleform::GFx::Movie& a_movie)
 	{
-		Value widget;
-		Value list;
-		if (!a_movie.GetVariable(&widget, WIDGET_PATH) || !widget.IsDisplayObject() ||
-			!widget.GetMember("ListItems_mc"sv, &list) || !list.IsDisplayObject()) {
+		auto list = RowList(a_movie);
+		if (!list.IsDisplayObject()) {
 			REX::WARN("The HUD has no quick container at {:s}, so its rows show no CND. A HUD replacer may have moved it.", WIDGET_PATH);
 			return false;
 		}
 
-		// The row keeps its starting name width to itself, so it is read from
-		// the name before any row is drawn. Every row is the same symbol, so
-		// reading the first is enough for all 5.
 		std::array<Value, MAX_ROWS> rows;
-		double                      nameWidth = 0.0;
 		for (std::size_t i = 0; i < MAX_ROWS; i++) {
 			rows[i] = Flash::Child(list, ROW_NAMES[i]);
 			Value field;
 			if (!rows[i].IsDisplayObject() || !rows[i].GetMember("ItemName_tf"sv, &field) || !field.IsDisplayObject()) {
 				REX::WARN("The quick container has no row {:s} with a name in it, so its rows show no CND.", ROW_NAMES[i]);
 				return false;
-			}
-			if (i == 0) {
-				nameWidth = std::floor(Flash::Number(field, "width"sv));
 			}
 		}
 
@@ -348,9 +365,6 @@ namespace QuickContainer
 			meter.SetMember("visible"sv, Value(false));
 			row.Invoke("addChild", std::array{ meter });
 		}
-
-		// A new HUD movie starts with nothing drawn.
-		g_meters.Reset(nameWidth);
 
 		Value stage;
 		if (!a_movie.GetVariable(&stage, "_root.stage") || !stage.IsObject()) {

@@ -5,11 +5,12 @@
 // Which weapons take part, how fast one wears, and wearing down the copy in
 // hand. Every shot and hit costs the equipped copy some condition, based on how
 // hard it hits compared with the ordinary weapon of the load order and on what
-// it is built of, see Materials.h. Rate.h has the rate and the ordinary weapon.
+// it is built of, see Materials.h. Rate.h has the rate, the ordinary weapon
+// and the ordinary automatic.
 namespace WeaponWear
 {
-	// Measures what an ordinary weapon in this load order hits for. Keeps a
-	// number and no forms, so there is nothing to unload.
+	// Measures the ordinary weapon and the ordinary automatic of this load
+	// order. Keeps numbers and no forms, so there is nothing to unload.
 	void Load();
 
 	// What that ordinary weapon hits for, the number every wear rate is

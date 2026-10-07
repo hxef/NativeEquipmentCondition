@@ -6,10 +6,11 @@
 
 namespace Materials
 {
-	std::vector<Line> BillOfLines(const RE::TESBoundObject& a_object, const RE::ExtraDataList* a_extra)
+	namespace
 	{
-		std::vector<Line> bill;
-		ForEachRecipe(a_object, a_extra, [&bill](const RE::BGSConstructibleObject& a_recipe) {
+		// Adds a line to a_bill for every component a_recipe asks for.
+		void AddLines(std::vector<Line>& a_bill, const RE::BGSConstructibleObject& a_recipe)
+		{
 			if (!a_recipe.requiredItems) {
 				return;
 			}
@@ -25,16 +26,24 @@ namespace Materials
 
 				// One recipe naming the same component twice is merged into one
 				// line, since nothing later could tell the 2 apart.
-				const auto already = std::find_if(bill.begin(), bill.end(),
+				const auto already = std::find_if(a_bill.begin(), a_bill.end(),
 					[&a_recipe, component](const Line& a_line) {
 						return a_line.recipe == &a_recipe && a_line.component == component;
 					});
-				if (already != bill.end()) {
+				if (already != a_bill.end()) {
 					already->count += count;
 				} else {
-					bill.push_back({ &a_recipe, component, static_cast<std::uint32_t>(count) });
+					a_bill.push_back({ &a_recipe, component, static_cast<std::uint32_t>(count) });
 				}
 			}
+		}
+	}
+
+	std::vector<Line> BillOfLines(const RE::TESBoundObject& a_object, const RE::ExtraDataList* a_extra)
+	{
+		std::vector<Line> bill;
+		ForEachRecipe(a_object, a_extra, [&bill](const RE::BGSConstructibleObject& a_recipe) {
+			AddLines(bill, a_recipe);
 		});
 		return bill;
 	}

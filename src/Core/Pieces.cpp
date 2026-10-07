@@ -71,18 +71,17 @@ namespace
 		{ kCndContainers, Part::kCardCnd, Shown::kName },
 		{ kCndWorkbench, Part::kCardCnd, Shown::kName },
 		{ kCndCooking, Part::kCardCnd, Shown::kName },
-		{ kCndPipboyLists, Part::kCardCnd, Shown::kName },
-		{ kCndPipboyUpdates, Part::kCardCnd, Shown::kName },
+		// The Pip-Boy builds a card at 2 places, and NEC adds its rows at both
+		// or neither, see UI/Inventory/ItemCard/Hooks.cpp.
+		{ kCndPipboy, Part::kCardCnd, Shown::kName },
 		// The 3 card rate places go in together. A card's rate reads the
-		// condition that the CND place of the same menu notes, in the Pip-Boy
-		// the one that built the card, see UI/Inventory/ItemCard/Hooks.cpp, so
-		// each of these card rates is a piece of its own that needs both.
+		// condition noted where the same menu builds its CND row, so each of
+		// these card rates is a piece of its own that needs both.
 		{ kRateCards, Part::kCardRate, Shown::kHidden, { kFireRate } },
 		{ kRateCardsContainers, Part::kCardRate, Shown::kName, { kRateCards, kCndContainers } },
 		{ kRateCardsWorkbench, Part::kCardRate, Shown::kName, { kRateCards, kCndWorkbench } },
 		{ kRateCardsCooking, Part::kCardRate, Shown::kName, { kRateCards, kCndCooking } },
-		{ kRateCardsPipboyLists, Part::kCardRate, Shown::kName, { kRateCards, kCndPipboyLists } },
-		{ kRateCardsPipboyUpdates, Part::kCardRate, Shown::kName, { kRateCards, kCndPipboyUpdates } },
+		{ kRateCardsPipboy, Part::kCardRate, Shown::kName, { kRateCards, kCndPipboy } },
 		{ kRateBetter, Part::kCardRate, Shown::kName, { kFireRate } },
 		{ kRateSort, Part::kCardRate, Shown::kName, { kFireRate } },
 		{ kHudBars, Part::kHudBar, Shown::kPart },
@@ -196,8 +195,8 @@ namespace
 		{ "container card", { kCndContainers } },
 		{ "examine card", { kCndWorkbench } },
 		{ "cooking card", { kCndCooking } },
-		{ "pipboy card", { kCndPipboyLists } },
-		{ "pipboy card rebuild", { kCndPipboyUpdates } },
+		{ "pipboy card", { kCndPipboy } },
+		{ "pipboy card rebuild", { kCndPipboy } },
 		{ "card fire rate", { kRateCards } },
 		{ "card fire rate compared", { kRateCards } },
 		{ "pipboy card fire rate", { kRateCards } },

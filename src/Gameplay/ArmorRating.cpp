@@ -197,14 +197,19 @@ namespace ArmorRating
 			TraceLog::First("menu", "{:s} [{:08X}] at {:.3f} prints {:.2f} of its resistances",
 				RE::TESFullName::GetFullName(*a_item.object), a_item.object->formID, Condition::HealthOf(a_stack), share);
 		}
+
+		// fArmorFloor, kept between 0 and 1. Below 0 a worn piece would take
+		// resistance away from the other pieces.
+		float Floor()
+		{
+			const auto floor = Settings::fArmorFloor.GetValue();
+			return floor > 0.0F ? std::min(floor, 1.0F) : 0.0F;
+		}
 	}
 
 	float Share(float a_health)
 	{
-		// fArmorFloor, kept between 0 and 1. Below 0 a worn piece would take
-		// resistance away from the other pieces.
-		const auto floor = Settings::fArmorFloor.GetValue();
-		return Condition::Share(a_health, floor > 0.0F ? std::min(floor, 1.0F) : 0.0F);
+		return Condition::Share(a_health, Floor());
 	}
 
 	void Refresh(RE::Actor& a_actor)
@@ -229,7 +234,6 @@ namespace ArmorRating
 		CallPatch::PatchAll(FILL_SITES, RE::ID::PipboyInventoryUtils::FillResistTypeInfo, fillHooks, g_fillLinks,
 			"Item cards and the paper doll print a worn piece's resistances", Part::kCardArmor);
 
-		REX::INFO("A piece of armor at nothing protects for {:.0f}% of its resistances.",
-			Settings::fArmorFloor.GetValue() * 100.0F);
+		REX::INFO("A piece of armor at nothing protects for {:.0f}% of its resistances.", Floor() * 100.0F);
 	}
 }

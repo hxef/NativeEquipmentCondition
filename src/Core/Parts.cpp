@@ -24,7 +24,7 @@ namespace
 	constexpr Piece JAM_SIDE[]{ kJamReload };
 	constexpr Piece FIRE_RATE[]{ kFireRate };
 	constexpr Piece FIRE_RATE_SIDE[]{ kFireRateNpcGuns, kFireSound, kRateCardsContainers, kRateCardsWorkbench, kRateCardsCooking,
-		kRateCardsPipboyLists, kRateCardsPipboyUpdates, kRateBetter, kRateSort };
+		kRateCardsPipboy, kRateBetter, kRateSort };
 	constexpr Piece CRIT_METER[]{ kCritMeter };
 	constexpr Piece CRIT_METER_SIDE[]{ kNpcCrits };
 	// The 3 exceptions are cases Worn loot handles on their own, so losing one

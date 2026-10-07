@@ -17,7 +17,7 @@ Your weapons and armor [b]wear down as you use them[/b], the way they did in Fal
 [size=3][b][font=Georgia][color=#1AFF80]Wear and tear[/color][/font][/b][/size]
 
 [list]
-[*]Your weapon wears with every shot you fire and every melee hit you land. Bashes and power attacks wear it harder.
+[*]Your weapon wears with every shot you fire and every melee hit you land. Bashes and power attacks wear it harder. Fast automatics like the Minigun wear less per shot, as if they fired at an ordinary automatic's pace.
 [*]Every hit that lands wears the armor and clothing on the limb it struck, yours and NPCs' alike. Explosions wear every piece. Pieces that cover no limb, like a mask or a super mutant's armor, share each hit between them.
 [*]The armor companions and other essential NPCs come with never wears on them, since some of it can never be handed to you to repair. Once a piece has passed through your hands, it becomes yours, so it wears like any other piece you own, on you or on them.
 [*]Worn weapons do less damage and worn armor protects less, both down to 66% at 0 condition.
@@ -43,7 +43,7 @@ Your weapons and armor [b]wear down as you use them[/b], the way they did in Fal
 [size=3][b][font=Georgia][color=#1AFF80]Repair at the workbench[/color][/font][/b][/size]
 
 [list]
-[*]At the weapon or armor workbench, select a worn item and a REPAIR button appears. Press it, choose how far to repair it in steps of 10%, and pay in the components it is built from.
+[*]At the weapon or armor workbench, select a worn item and a REPAIR button appears. Press it, choose how far to repair it in steps of 10%, and pay in the components it is built from. Gear that scraps into nothing, like Grognak's Axe, costs what gear of its kind most often scraps into, and wears like it too.
 [*]Barely worn gear, above 95%, gets a MEND button instead, which fixes it on the spot [b]for free[/b]. The 95% is the [b]Free mend above[/b] setting: 100 makes every repair cost components, and 0 mends everything but broken gear for free.
 [*]With Workbench repair cost at 0, every repair is free and done on the spot, broken gear included.
 [*][b]Crafting perks[/b] like Gun Nut, Science!, Blacksmith and Armorer make repairs take fewer components, down to half at the top rank. The perk behind most of an item's components sets the discount, and each rank's description says how much.
@@ -140,7 +140,7 @@ After that, [b]removing the mod is safe.[/b] It has no ESP and keeps no save dat
 [b]Read from the load order[/b]
 
 [list]
-[*]How much a weapon wears per use depends on its damage compared with the median damage of every weapon in the load order that wears, and on the average component value of its recipes. So new weapons and weapon mods need no patch.
+[*]How much a weapon wears per use depends on its damage compared with the median damage of every weapon in the load order that wears, on the average component value of its recipes, and for a fast automatic, on the median fire rate of the load order's automatics. So new weapons and weapon mods need no patch.
 [*]Which armor wears depends on the body part in the hit event, which the wearer's race maps to biped slots. A hit with no body part, like a blast, wears every piece on a mapped slot, and pieces on slots no body part maps to share each hit between them. On an essential actor, a piece from its own outfit (marked with ExtraOutfitItem) or from its record's inventory never wears, unless it has an owner (ExtraOwnership). Anything you give a companion through its trade menu has one, naming you or whoever you stole it from, so it wears as usual.
 [*]Loot condition is rolled once, when the item first enters any inventory. The roll uses the leveled list the item came from (ExtraLeveledItem), ranked against every other list of its kind, and the armor its owner was given. Items of an NPC whose base record is essential start at 100%.
 [*]An item with no health that reaches the player through a Papyrus AddItem or RemoveItem, or the console, starts at 100%. The same 2 calls also reset an item to 100% when it is a quest item (in a Quest Object alias) from anyone but the player, or when it comes from a living character who is not a player teammate, like the gun Paladin Brandis gives you. Corpse loot otherwise keeps its roll.

@@ -63,11 +63,8 @@ namespace CallPatch
 			}
 		}
 
-		if (patched == 0 && a_sites.size() == 1) {
-			REX::ERROR("{:s}: its place did not match, so it does nothing.", a_what);
-		} else if (patched == 0) {
-			REX::ERROR("{:s}: none of its {:d} places matched, so it does nothing.", a_what, a_sites.size());
-		} else {
+		// Every place NEC leaves alone has its own line already, see Note.
+		if (patched > 0) {
 			SayPatched(a_part, std::format("{:s}: {:d} of {:d} call sites.", a_what, patched, a_sites.size()));
 		}
 		return patched;

@@ -6,8 +6,11 @@
 #include "Core/TraceLog.h"
 
 #include <algorithm>
+#include <cmath>
 #include <cstdint>
+#include <format>
 #include <mutex>
+#include <string>
 
 namespace WeaponWear
 {
@@ -16,14 +19,54 @@ namespace WeaponWear
 		// Health the reference weapon loses per shot or swing, before
 		// fWearRateMult. About 1100 uses from new to broken, long enough that
 		// condition is something to keep an eye on. An fWearRateMult of 60 cuts
-		// that to under 20, which is how the wear is tested.
+		// that to under 20, which is how the wear is tested. A fast automatic
+		// gets more uses, see Rate.
 		constexpr float RATE_AT_REFERENCE = 0.0009F;
 
 		// What the reference weapon hits for. Measured by Load, since an
 		// overhaul that multiplies every damage in the game would otherwise
 		// wear everything out many times faster. Vanilla's own value is used
-		// until then.
-		float g_referenceDamage = 30.0F;
+		// until then, and in a load order with no weapon that hits.
+		constexpr float DEFAULT_REFERENCE_DAMAGE = 30.0F;
+		float           g_referenceDamage = DEFAULT_REFERENCE_DAMAGE;
+
+		// The weapons whose damage sources the trace log has listed, by form
+		// ID. Several threads wear weapons, hence the lock.
+		std::mutex                        g_seenLock;
+		std::unordered_set<std::uint32_t> g_seen;
+
+		// How many times a second the ordinary automatic weapon fires, 9.09 in
+		// vanilla. Measured by Load, and 0 while the load order has none, which
+		// leaves every weapon's wear as it is.
+		float g_referenceAutoRate = 0.0F;
+
+		// The middle value, the higher of the 2 in the middle for an even count.
+		// 0 for none.
+		float Median(std::vector<float>& a_values)
+		{
+			if (a_values.empty()) {
+				return 0.0F;
+			}
+			const auto middle = a_values.begin() + a_values.size() / 2;
+			std::nth_element(a_values.begin(), middle, a_values.end());
+			return *middle;
+		}
+
+		// How many times a second an automatic weapon fires with these stats,
+		// mods included. The Ripper and the buzz blade carry the game's
+		// Automatic flag too, and the game counts 5 swings to each of their
+		// attacks. 0 for any other weapon, and for a rate that is not a number
+		// above 0. FireRate slows a worn gun only at the calls it patches, so
+		// this call reads the full rate at any condition, and wear does not
+		// climb as a gun wears.
+		float AutoRate(const RE::TESObjectWEAP& a_weapon, const RE::TESObjectWEAP::InstanceData& a_instance)
+		{
+			if (!a_instance.flags.any(RE::WEAPON_FLAGS::kAutomatic)) {
+				return 0.0F;
+			}
+			const auto rate = RE::TESObjectWEAP::GetRateOfFire(a_weapon, &a_instance);
+			return std::isfinite(rate) && rate > 0.0F ? rate : 0.0F;
+		}
 
 		// What the round does where it lands. A Fat Man's record reads 18
 		// damage and a Broadsider's 33, since the damage belongs to the shell,
@@ -102,8 +145,10 @@ namespace WeaponWear
 	void MeasureReference()
 	{
 		// The median weapon, not the average. A few hit for hundreds while most
-		// hit for tens.
+		// hit for tens. The same for the automatics, where the Minigun fires 3
+		// times as fast as most.
 		std::vector<float> damages;
+		std::vector<float> rates;
 		for (auto* weapon : g_dataHandler->GetFormArray<RE::TESObjectWEAP>()) {
 			if (!weapon || !Condition::WearsOut(*weapon)) {
 				continue;
@@ -112,15 +157,28 @@ namespace WeaponWear
 			if (damage > 0.0F) {
 				damages.push_back(damage);
 			}
+			const auto rate = AutoRate(*weapon, weapon->weaponData);
+			if (rate > 0.0F) {
+				rates.push_back(rate);
+			}
 		}
 
-		if (!damages.empty()) {
-			const auto middle = damages.begin() + damages.size() / 2;
-			std::nth_element(damages.begin(), middle, damages.end());
-			g_referenceDamage = *middle;
+		g_referenceDamage = damages.empty() ? DEFAULT_REFERENCE_DAMAGE : Median(damages);
+		g_referenceAutoRate = Median(rates);
+
+		// A full reset can give a form ID to another weapon, so each is listed
+		// again.
+		{
+			const std::scoped_lock l(g_seenLock);
+			g_seen.clear();
 		}
 
 		REX::INFO("An ordinary weapon in this load order hits for {:.0f}.", g_referenceDamage);
+		if (g_referenceAutoRate > 0.0F) {
+			REX::INFO("An ordinary automatic weapon in this load order fires {:.2f} times a second.", g_referenceAutoRate);
+		} else {
+			REX::INFO("No automatic weapon in this load order wears, so no weapon's wear is cut for firing fast.");
+		}
 	}
 
 	float ReferenceDamage()
@@ -134,13 +192,9 @@ namespace WeaponWear
 			return;
 		}
 
-		// Several threads wear weapons, so the set of forms already reported
-		// needs a lock. Touched once per weapon.
-		static std::mutex                       seenLock;
-		static std::unordered_set<std::uint32_t> seen;
 		{
-			const std::scoped_lock l(seenLock);
-			if (!seen.insert(a_object.formID).second) {
+			const std::scoped_lock l(g_seenLock);
+			if (!g_seen.insert(a_object.formID).second) {
 				return;
 			}
 		}
@@ -179,9 +233,17 @@ namespace WeaponWear
 		const auto damage = TotalDamage(a_weapon, a_instance);
 		const auto blast = ExplosionDamage(a_weapon, a_instance);
 
-		// What the weapon is built from, see Materials.h. This and both
+		// What the weapon is built from, see Materials.h. This and the
 		// references are read from the game as it is loaded.
 		const auto quality = Materials::Quality(a_weapon, a_extra);
+
+		// An automatic that fires faster than the ordinary automatic wears
+		// less per use, as if it fired at the ordinary pace. A Minigun at 27.27
+		// a second against 9.09 wears 1/3 as much per shot. Its bashes are
+		// cut the same, since the Shredder's held bash lands about 19 blows a
+		// second in first person. Every slower weapon keeps its full wear.
+		const auto rate = AutoRate(a_weapon, a_instance);
+		const auto pace = g_referenceAutoRate > 0.0F && rate > g_referenceAutoRate ? g_referenceAutoRate / rate : 1.0F;
 
 		// Harder hitting wears faster, better built wears slower. A pipe gun is
 		// steel and hits for little, a plasma rifle is nuclear material and
@@ -194,13 +256,14 @@ namespace WeaponWear
 		// as it fires.
 		const auto mult = Settings::fWearRateMult.GetValue();
 		const auto wear = RATE_AT_REFERENCE * (mult > 0.0F ? mult : 0.0F) *
-		                  (damage / g_referenceDamage) * (Materials::ReferenceQuality(Condition::Kind::kWeapon) / quality);
+		                  (damage / g_referenceDamage) * (Materials::ReferenceQuality(Condition::Kind::kWeapon) / quality) * pace;
 
+		const auto cut = TraceLog::IsOpen() && pace < 1.0F ? std::format(", cut x{:.4f} for firing {:.2f} a second", pace, rate) : std::string{};
 		if (blast > 0.0F) {
-			TraceLog::Line("rate", "{:.0f} damage, {:.0f} of it the blast, at quality {:.1f} costs {:.6f} a shot",
-				damage, blast, quality, wear);
+			TraceLog::Line("rate", "{:.0f} damage, {:.0f} of it the blast, at quality {:.1f} costs {:.6f} a shot{:s}",
+				damage, blast, quality, wear, cut);
 		} else {
-			TraceLog::Line("rate", "{:.0f} damage at quality {:.1f} costs {:.6f} a shot", damage, quality, wear);
+			TraceLog::Line("rate", "{:.0f} damage at quality {:.1f} costs {:.6f} a shot{:s}", damage, quality, wear, cut);
 		}
 		return wear;
 	}

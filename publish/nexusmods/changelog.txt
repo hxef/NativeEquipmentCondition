@@ -1,8 +1,19 @@
+1.1.2
+* Fast automatic weapons wear less per shot, as if fired at an ordinary automatic's pace, so a Minigun lasts 3 times as long.
+* Weapons that scrap into nothing, like Grognak's Axe, can be repaired at a workbench, and cost and wear as if made of what most weapons scrap into.
+* Weapons and armor wear as in vanilla under a mod that doubles or halves the value of every component.
+* Gear at 100% always has its full damage, protection and fire rate, where some settings left it slightly lower.
+* After a jam the next reload always works, and that no longer carries into another save or a new game.
+* Fixes a rare crash when repairing 1 of 2 identical items at a workbench or a trader.
+* On the HUD, the CND bars show for a weapon that has not worn yet, and the loot preview's names keep their width when its meters are switched on mid game.
+* When another DLL mod takes over part of the Pip-Boy's item cards, NEC leaves the Pip-Boy's CND row off, instead of showing it only some of the time.
+* NEC.log warns about a NEC_custom.ini saved as UTF-16, which NEC cannot read, logs a setting out of range as it is used, says when armor never wears, and no longer shows a false error or Pip-Boy count when another DLL mod changes the same code as NEC.
+
 1.1.1
 * A new setting, Free mend above, sets the condition above which the workbench mends gear for free.
 * With Workbench repair cost at 0, every repair is free and done on the spot.
 * Legendary gear you find in chests or buy from traders arrives new. One NEC already rolled keeps its condition.
-* Workbench repairs keep working alongside mods that change the workbench item list, like Examine Lag Fix.
+* Workbench repairs keep working alongside DLL mods that change the workbench item list, like Examine Lag Fix.
 * A repair never asks for the components of an item's legendary effect, even where a mod like AWKCR gives legendary effects a recipe.
 
 1.1.0

@@ -27,7 +27,10 @@
 // battlecoat, borrows the recipe the load order gives most often to pieces of
 // its kind, clothing or armor, see ArmorWear::IsClothing: 2 cloth for clothing
 // and 2 steel for armor in vanilla. So it is priced and wears like similar
-// pieces, where the game itself would scrap it into nothing.
+// pieces, where the game itself would scrap it into nothing. A weapon whose own
+// recipe and mods ask for nothing, Grognak's Axe for one, borrows the recipe
+// weapons have most often, 2 steel in vanilla, and so is priced and wears like
+// them too.
 //
 // None of these numbers are written in the code. Components, their worth and
 // the recipes are read from the load order, so another plugin repricing steel
@@ -38,8 +41,8 @@
 namespace Materials
 {
 	// Reads every recipe in the load order and remembers which builds each
-	// mod, weapon and wearable, and which a wearable with none borrows. Runs
-	// every time game data has loaded.
+	// mod, weapon and wearable, and what an item with nothing of its own
+	// borrows. Runs every time game data has loaded.
 	void Load();
 
 	// Forgets everything Load found.
@@ -52,15 +55,17 @@ namespace Materials
 	// For armor they are the scrap recipes of the pieces alone, 4 in vanilla,
 	// since a piece's own recipe is the piece and its mods are upgrades on top:
 	// a plain piece wears at the ordinary rate and an upgraded one lasts
-	// longer. An item with nothing priced on it counts as this.
+	// longer. An item still with nothing priced, the borrowed recipe included,
+	// counts as this.
 	float ReferenceQuality(Condition::Kind a_kind);
 
 	// The average worth of 1 unit of everything an item is built from: its own
 	// scrap recipe where it has one, the borrowed one for a wearable without,
-	// plus the recipes of its enabled mods. a_extra can be null. Mods no recipe
-	// builds are skipped, and so is the 1 legendary effect the game names for
-	// the item, even where a plugin gives it a recipe. An item with nothing
-	// priced returns ReferenceQuality.
+	// plus the recipes of its enabled mods, and the borrowed one for a weapon
+	// where those ask for nothing. a_extra can be null. Mods no recipe builds
+	// are skipped, and so is the 1 legendary effect the game names for the
+	// item, even where a plugin gives it a recipe. An item still with nothing
+	// priced, the borrowed recipe included, returns ReferenceQuality.
 	float Quality(const RE::TESBoundObject& a_object, const RE::ExtraDataList* a_extra);
 
 	// One component, and how many of it something takes.
@@ -74,9 +79,9 @@ namespace Materials
 	};
 
 	// Everything an item is built from, component by component, which the code
-	// calls its bill: the same walk as Quality, without the average. A
-	// component 2 recipes ask for comes back once with the counts added. Read
-	// fresh each time, so a changed recipe is picked up.
+	// calls its bill: the same walk as Quality without the average. A component
+	// 2 recipes ask for comes back once with the counts added. Read fresh each
+	// time, so a changed recipe is picked up.
 	std::vector<Part> BillOfParts(const RE::TESBoundObject& a_object, const RE::ExtraDataList* a_extra);
 
 	// One component, how many of it, and the recipe that asked for it.

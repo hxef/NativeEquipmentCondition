@@ -20,6 +20,7 @@ namespace QuickContainer
 	void OnMovieLoaded(Scaleform::GFx::Movie& a_movie, std::string_view a_file)
 	{
 		if (g_patched && MenuMovies::IsMovie(a_file, "HUDMenu.swf"sv)) {
+			ReadNameWidth(a_movie);
 			g_waiter.Watch(a_movie, "the quick container's CND");
 		}
 	}

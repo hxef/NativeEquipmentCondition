@@ -34,10 +34,9 @@ namespace Workbench
 	// level on offer. The order is the bill laid out one unit at a time, one
 	// unit longer than the most the item could owe, so a repair is never free
 	// while fBenchCostMult is above 0.
-	// units is 0 for an item nothing prices, a weapon with no scrap recipe and
-	// no mods with one, or a wearable in a load order with no scrap recipe of
-	// its kind to borrow, see Materials.h: the bench has nothing to rebuild it
-	// from and refuses, and a trader repairs it by worth.
+	// units is 0 for an item nothing prices, such as one in a load order with
+	// no scrap recipe of its kind to borrow, see Materials.h: the bench has
+	// nothing to rebuild it from and refuses, and a trader repairs it by worth.
 	struct Priced
 	{
 		std::vector<Materials::Part>         built;

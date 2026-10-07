@@ -270,8 +270,8 @@ namespace Mcm
 		// see the listener in UI/Inventory/ItemCard/Raise.cpp.
 		Bridge g_bridge;
 
-		// Said once a session, since a member that could not be wrapped is
-		// tried again every frame.
+		// Said once a session, since Wrap tries again every frame until MCM's
+		// GetModSettingBool is wrapped.
 		std::atomic<bool> g_warned{ false };
 
 		// Moves MCM's 7 functions on a_mcm to NEC_<name> and puts NEC's in

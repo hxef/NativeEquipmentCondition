@@ -76,8 +76,8 @@ namespace Condition
 
 	// The share of a full stat an item keeps at a_health: a straight line from
 	// a_floor at 0 up to 1 at full. A health below 0, meaning none was ever
-	// written, and one at 1 or above both count as new. At a floor of 0.66 a
-	// gun at 0.5 keeps 0.83.
+	// written, and one at MAX_HEALTH or above both count as new. At a floor of
+	// 0.66 a gun at 0.5 keeps 0.83.
 	float Share(float a_health, float a_floor);
 
 	// The health to write for a whole percent. 100 becomes MAX_HEALTH, just

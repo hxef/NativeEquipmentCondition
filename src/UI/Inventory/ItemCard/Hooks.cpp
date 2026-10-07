@@ -33,10 +33,11 @@ namespace ItemCard
 		};
 
 		// The calls to PipboyInventoryData::PopulateItemCardInfo, the same job
-		// for the Pip-Boy. The first, in InitializeItem, is when an item first
-		// appears, a tail call whose return nothing reads, see PatchCall. The
-		// second is a category rebuilt, which ItemCards::Refresh asks after
-		// wear.
+		// for the Pip-Boy. The first, in InitializeItem, is a tail call whose
+		// return nothing reads, see PatchCall. It runs as the game lists an
+		// item, which it does again for a gun after every shot. The second is
+		// a category rebuilt, on an equip and when ItemCards::Refresh asks
+		// after wear.
 		constexpr CallSite PIPBOY_SITES[] = {
 			{ RE::ID::PipboyInventoryData::InitializeItem.id(), 0x651, "pipboy card", true },
 			{ RE::ID::PipboyInventoryData::RepopulateItemCardOnSection.id(), 0x40F, "pipboy card rebuild" },
@@ -84,8 +85,10 @@ namespace ItemCard
 
 		thread_local const Building* t_building = nullptr;
 
-		// The rate hooks of the cards. A list that weighs fire rates keeps its
-		// name for the trace and its own Held for its note and rate hooks.
+		// The 2 Pip-Boy sites, and the rate hooks of the cards. A list that
+		// weighs fire rates keeps its name for the trace and its own Held for
+		// its note and rate hooks.
+		CallPatch::Held g_pipboy;
 		CallPatch::Held g_cards;
 		struct List
 		{
@@ -175,12 +178,17 @@ namespace ItemCard
 		// keeps its cards as a tree of values of its own, copied into Scaleform
 		// objects when a page shows a card, so the row is built from those.
 		// a_link is the calling site's.
+		//
+		// Both sites build the same card, so while either is left to another
+		// mod NEC leaves the card as the game builds it: no CND row, the fire
+		// rate of an unworn gun and no faded name. With 1 site the row would
+		// come and go.
 		void PopulatePipboy(RE::PipboyInventoryData* a_this, const RE::BGSInventoryItem* a_item,
 			const RE::BGSInventoryItem::Stack* a_stack, RE::PipboyObject* a_data, const CallPatch::Link<Pipboy_t>& a_link)
 		{
 			const Building building{ Condition::HealthOf(a_stack), nullptr };
 
-			t_building = a_link.Live() ? &building : nullptr;
+			t_building = g_pipboy.Runs(a_link) ? &building : nullptr;
 			a_link(a_this, a_item, a_stack, a_data);
 			const auto live = std::exchange(t_building, nullptr) != nullptr;
 
@@ -218,9 +226,9 @@ namespace ItemCard
 			std::rotate(elements.begin(), elements.end() - 1, elements.end());
 		}
 
-		// PopulatePipboy for the first site, where the Pip-Boy lists an item
-		// for the first time. The trace names each new entry of an item that
-		// wears, which shows a split stack reached the Pip-Boy as its own rows.
+		// PopulatePipboy for the first site, where the Pip-Boy lists an item.
+		// The trace names each entry of an item that wears, which shows a
+		// split stack reached the Pip-Boy as its own rows.
 		void PipboyNewEntryHk(RE::PipboyInventoryData* a_this, const RE::BGSInventoryItem* a_item,
 			const RE::BGSInventoryItem::Stack* a_stack, RE::PipboyObject* a_data)
 		{
@@ -343,11 +351,18 @@ namespace ItemCard
 		const auto helper = CallPatch::PatchAll(HELPER_SITES, RE::ID::InventoryUserUIUtils::PopulateItemCardInfo_Helper, helperHooks,
 			g_helperLinks, "Menu item cards show a CND row");
 
-		const auto pipboy = CallPatch::PatchAll(PIPBOY_SITES, RE::ID::PipboyInventoryData::PopulateItemCardInfo,
-			std::array{ reinterpret_cast<std::uintptr_t>(&PipboyNewEntryHk), reinterpret_cast<std::uintptr_t>(&PipboyPopulateHk) },
-			g_pipboyLinks, "Pip-Boy item cards show a CND row");
+		// The 2 Pip-Boy sites build the same card, so they go in together, see
+		// PopulatePipboy.
+		const auto populate = RE::ID::PipboyInventoryData::PopulateItemCardInfo.address();
+		g_pipboy = CallPatch::PatchTogether({
+			{ PIPBOY_SITES[0], populate, reinterpret_cast<std::uintptr_t>(&PipboyNewEntryHk), &g_pipboyLinks[0] },
+			{ PIPBOY_SITES[1], populate, reinterpret_cast<std::uintptr_t>(&PipboyPopulateHk), &g_pipboyLinks[1] },
+		});
+		if (g_pipboy) {
+			REX::INFO("Pip-Boy item cards show a CND row.");
+		}
 
-		const bool patched = helper > 0 || pipboy > 0;
+		const bool patched = helper > 0 || static_cast<bool>(g_pipboy);
 
 		// While a worn gun fires as fast as a new one, the game's own fire rate
 		// is the true one, so the menus keep it.

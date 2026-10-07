@@ -60,7 +60,7 @@ namespace Condition
 		// -1 is an item with no health extra data, which counts as new. 0 and
 		// up is a real health, 0 being broken. EquippedHealthHk in
 		// HealthDamage/Combat.cpp keeps that true on the combat path.
-		if (a_health < 0.0F || a_health >= 1.0F) {
+		if (a_health < 0.0F || a_health >= MAX_HEALTH) {
 			return 1.0F;
 		}
 		return a_floor + ((1.0F - a_floor) * a_health);

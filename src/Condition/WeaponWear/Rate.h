@@ -6,13 +6,14 @@
 // Private to this folder.
 namespace WeaponWear
 {
-	// Measures what an ordinary weapon in this load order hits for and says so
-	// in the log.
+	// Measures what an ordinary weapon in this load order hits for and how
+	// fast an ordinary automatic fires, and says so in the log.
 	void MeasureReference();
 
-	// How much health one shot or swing costs, from the damage this copy deals
-	// and what it is built of. The weapon and its extra data say what it is
-	// built from, the instance data what the copy in hand does.
+	// How much health one shot or swing costs, from the damage this copy deals,
+	// what it is built of and, for an automatic, how fast it fires. The weapon
+	// and its extra data say what it is built from, the instance data what the
+	// copy in hand does.
 	float Rate(const RE::TESObjectWEAP& a_weapon, const RE::TESObjectWEAP::InstanceData& a_instance,
 		const RE::ExtraDataList* a_extra);
 

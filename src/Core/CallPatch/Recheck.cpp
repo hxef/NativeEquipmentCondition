@@ -96,16 +96,24 @@ namespace CallPatch
 			                                          " NEC's change there is off from now on."sv);
 		}
 
+		// Whether NEC.log has said a written place changed: one cut by its own
+		// change has an owner, and every walk that reached NEC left its line.
+		// A place off only since a cut elsewhere stopped its set has neither.
+		bool Said(const Place& a_place)
+		{
+			return !a_place.owners.empty() || !a_place.line.empty();
+		}
+
 		// A place that leads straight to NEC's hook again. One that is off
-		// stays off, since NEC never takes one back. A shared or on top place
-		// is NEC's again, and a held set that waited on it runs once more.
-		// True when it gets a line.
+		// stays off, since NEC never takes one back. A shared place is NEC's
+		// again, and a held set that waited on it runs once more. True when it
+		// gets a line, which only a place whose change got one does.
 		bool Back(Place& a_place)
 		{
 			if (IsOff(a_place)) {
-				return true;
+				return Said(a_place);
 			}
-			if (a_place.share != Share::kShared && a_place.share != Share::kProven && a_place.share != Share::kOnTop) {
+			if (a_place.share != Share::kShared && a_place.share != Share::kProven) {
 				return false;
 			}
 			a_place.share = a_place.under.empty() ? Share::kOwn : Share::kOnTop;
@@ -177,9 +185,8 @@ namespace CallPatch
 					continue;
 				}
 
-				// A place off only since a cut elsewhere stopped its set has no
-				// owner and no line yet. Read before the walk's line goes in.
-				const auto first = place.owners.empty() && place.line.empty();
+				// Read before the walk's line goes in, see Said.
+				const auto first = !Said(place);
 				place.line = walked.dlls;
 
 				// A set that has to run on every call, see
@@ -196,11 +203,14 @@ namespace CallPatch
 					AddOwner(place, Cutter(place, walked));
 				}
 
-				// Off for good already. Its first change reads as a cut, any
-				// later one as changed again.
+				// Off for good already. Its first change reads as left to
+				// another mod where the call still reaches NEC and the set need
+				// not run on every call, else as a cut. Any later one reads as
+				// changed again.
 				if (place.share == Share::kCut) {
 					if (first) {
-						lines.push_back({ REX::ELogLevel::Warning, CutLine(place, everyCall) });
+						lines.push_back({ REX::ELogLevel::Warning,
+							reaches && !everyCall ? ChangedLine(place, Tail(place)) : CutLine(place, everyCall) });
 					} else {
 						again.push_back(&place);
 					}
@@ -242,11 +252,12 @@ namespace CallPatch
 			// turns off.
 			for (const auto* place : held) {
 				const auto off = PiecesOffTail(*place);
+				// A held place is off only since a sibling's cut, as its own
+				// walk reached NEC, and that cut's line comes first.
 				lines.push_back({ REX::ELogLevel::Warning,
-					IsOff(*place)      ? CutLine(*place, false) :
-					SwitchLeft(*place) ? ChangedLine(*place, Tail(*place)) :
-					!off.empty()       ? ChangedLine(*place, off) :
-					                     ChangedLine(*place, " If the call still reaches NEC, NEC's change there comes back the next time it is used."sv, TraceTail(*place)) });
+					IsOff(*place) || SwitchLeft(*place) ? ChangedLine(*place, Tail(*place)) :
+					!off.empty()                        ? ChangedLine(*place, off) :
+					                                      ChangedLine(*place, " If the call still reaches NEC, NEC's change there comes back the next time it is used."sv, TraceTail(*place)) });
 			}
 			for (const auto* place : lone) {
 				const auto off = PiecesOffTail(*place);

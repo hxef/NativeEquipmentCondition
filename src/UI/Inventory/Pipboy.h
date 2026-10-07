@@ -8,7 +8,8 @@
 // number is shared, as nodeID. So MarkBroken writes down the numbers of worn
 // out items as the game builds them, and the frame listener writes the name of
 // any row carrying one in half white, which the Pip-Boy's tint turns into half
-// strength Pip-Boy colour.
+// strength Pip-Boy colour. Nothing fades while the Pip-Boy's cards are left to
+// another mod.
 namespace Pipboy
 {
 	// Adds the frame listener to the Pip-Boy movie and ignores every other.

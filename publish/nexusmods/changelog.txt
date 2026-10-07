@@ -1,13 +1,13 @@
-1.1.2
+1.1.3
 * Fast automatic weapons wear less per shot, as if fired at an ordinary automatic's pace, so a Minigun lasts 3 times as long.
-* Weapons that scrap into nothing, like Grognak's Axe, can be repaired at a workbench, and cost and wear as if made of what most weapons scrap into.
-* Weapons and armor wear as in vanilla under a mod that doubles or halves the value of every component.
-* Gear at 100% always has its full damage, protection and fire rate, where some settings left it slightly lower.
-* After a jam the next reload always works, and that no longer carries into another save or a new game.
+* Weapons that scrap into nothing, like Grognak's Axe, can be repaired at a workbench, costing and wearing as if made of what most weapons scrap into.
+* A mod that doubles or halves every component's value no longer changes how fast weapons and armor wear.
+* Gear at 100% always has its full damage, protection and fire rate. Some settings left it slightly lower.
+* After a jam, the first reload in another save or a new game no longer skips its jam roll.
 * Fixes a rare crash when repairing 1 of 2 identical items at a workbench or a trader.
-* On the HUD, the CND bars show for a weapon that has not worn yet, and the loot preview's names keep their width when its meters are switched on mid game.
-* When another DLL mod takes over part of the Pip-Boy's item cards, NEC leaves the Pip-Boy's CND row off, instead of showing it only some of the time.
-* NEC.log warns about a NEC_custom.ini saved as UTF-16, which NEC cannot read, logs a setting out of range as it is used, says when armor never wears, and no longer shows a false error or Pip-Boy count when another DLL mod changes the same code as NEC.
+* On the HUD, the CND bars show for a weapon that has not worn yet, and the quick container's item names keep their width when its condition meters are switched on mid game.
+* NEC.log warns when NEC_custom.ini is saved as UTF-16, which NEC cannot read, logs an out of range setting with the value NEC really uses, and says when armor never wears.
+* Beside DLL mods that change the same code, NEC keeps working past their small hooks instead of switching off and leaving worn armor at full protection. If one takes over the Pip-Boy's item cards, the CND row stays off instead of coming and going, and no name stays faded. NEC.log and the MCM page say exactly what was taken over, with no false or misleading lines.
 
 1.1.1
 * A new setting, Free mend above, sets the condition above which the workbench mends gear for free.

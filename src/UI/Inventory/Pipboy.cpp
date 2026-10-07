@@ -1,5 +1,6 @@
 #include "UI/Inventory/Pipboy.h"
 
+#include "UI/Inventory/ItemCard/ItemCard.h"
 #include "UI/MenuMovies.h"
 #include "Core/TraceLog.h"
 
@@ -132,6 +133,7 @@ namespace Pipboy
 					return;
 				}
 
+				const auto    cards = ItemCard::PipboyCards();
 				std::uint32_t clips = 0;
 				for (; clips < MAX_ROWS; clips++) {
 					Value      row;
@@ -145,7 +147,7 @@ namespace Pipboy
 						continue;
 					}
 
-					const auto faded = RowIsBroken(entries, RowOf(row)) && !RowIsSelected(row);
+					const auto faded = cards && RowIsBroken(entries, RowOf(row)) && !RowIsSelected(row);
 					const auto written = Number(name, "textColor"sv, PLAIN_WHITE);
 
 					// Only a name that should be faded and is not, or the

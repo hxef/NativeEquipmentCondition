@@ -345,6 +345,11 @@ namespace ItemCard
 		}
 	}
 
+	bool PipboyCards()
+	{
+		return g_pipboy.Intact();
+	}
+
 	bool PatchCards()
 	{
 		const auto helperHooks = CallPatch::PerSite<std::size(HELPER_SITES)>([]<std::size_t I>() { return &PopulateHelperHk<I>; });

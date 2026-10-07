@@ -112,7 +112,7 @@ namespace WeaponWear
 					return;
 				}
 
-				LogDamageSources(a_object, instanceData, xInstanceData != nullptr);
+				LogDamageSources(a_object, instanceData, xInstanceData && xInstanceData->data);
 
 				// The stats of the copy in hand, mods included. WearsOut has
 				// already made sure this is a weapon.

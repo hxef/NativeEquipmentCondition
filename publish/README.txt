@@ -38,9 +38,9 @@ WEAR AND TEAR
 * Every hit that lands wears the armor and clothing on the limb it struck,
   yours and NPCs' alike. Explosions wear every piece. Pieces that cover no
   limb, like a mask or a super mutant's armor, share each hit between them.
-* The armor companions and other essential NPCs come with never wears on them,
-  since some of it can never be handed to you to repair. Once a piece has
-  passed through your hands, it becomes yours, so it wears like any other
+* The armor that companions and other essential NPCs come with never wears on
+  them, since some of it can never be handed to you to repair. Once a piece
+  has passed through your hands, it becomes yours, so it wears like any other
   piece you own, on you or on them.
 * Worn weapons do less damage and worn armor protects less, both down to 66%
   at 0 condition.
@@ -48,7 +48,7 @@ WEAR AND TEAR
   +1 to a stat or a legendary effect, until you take it off.
 * A weapon that breaks is unequipped automatically, and broken gear can't be
   equipped again until it is repaired.
-* Your worn guns can jam, from below 50% condition.
+* Your guns can jam once they drop below 50% condition.
 * Worn automatic weapons fire slower, down to 75% of their rate at 0
   condition.
 * A worn weapon fills the VATS critical meter slower, down to 50% of its rate
@@ -106,14 +106,15 @@ REPAIR AT A TRADER
   press C on the keyboard or the left bumper on a pad.
 * What a trader repairs, and how far, depends on what they restock. Plenty of
   guns on the shelves, or a few beside plenty of ammunition, grenades and
-  mines, means they fix guns, and the more different guns, the further. Armor
-  and clothing work the same way, and so do traders from other mods. A new
-  settlement weapon stand stops at 30%, Lucas Miller's armor caravan at 70%
-  and Ronnie Shaw's fully upgraded store at 90%, give or take with your level.
-  Only the best stocked shops repair to 100%, and finding them is up to you.
+  mines, means they fix guns, and the more kinds of gun they stock, the
+  further they repair them. Armor and clothing work the same way, and so do
+  traders from other mods. A new settlement weapon stand stops at 30%, Lucas
+  Miller's armor caravan at 70% and Ronnie Shaw's fully upgraded store at 90%,
+  give or take with your level. Only the best stocked shops repair to 100%,
+  and finding them is up to you.
 * Traders also sell each kind of gear in better shape the further they repair
-  that kind. Their own stock of it comes at 30% to 50% where they repair it to
-  30% or not at all, and 85% to 100% at the best shops. So a gun shop that
+  that kind. Where they repair a kind to 30% or not at all, they sell it at
+  30% to 50% condition, and the best shops at 85% to 100%. So a gun shop that
   repairs guns to 90% sells its guns in good shape, but the odd piece of armor
   on its shelves comes in much worse shape, since it doesn't repair armor.
 
@@ -199,17 +200,16 @@ Fallout 3 and New Vegas that an item at 0 condition can't be equipped, and
 once NEC is gone nothing in the game can repair it, so it stays unusable.
 
 After that, removing the mod is safe. It has no ESP and keeps no save data of
-its own. NEC keeps each item's condition in its health, a kind of extra data
-Fallout 4 already has and power armor pieces use too. Extra data are small
-tags the game saves on an item, like its custom name. That health is all that
-stays in your save. On anything but power armor the game ignores it for
-damage, protection and price, so what is left behind does nothing there,
-except that identical items at different conditions stay in separate stacks
-in your inventory.
+its own. NEC keeps each item's condition in its health, one of the small tags,
+called extra data, that Fallout 4 already saves on an item, like its custom
+name. Power armor pieces use health too. That health is all that stays in your
+save. On anything but power armor the game ignores it for damage, protection
+and price, so what is left behind does nothing there, except that identical
+items at different conditions stay in separate stacks in your inventory.
 
 FOUND A BUG?
-If a feature seems to do nothing, another DLL mod may have taken it over. Look
-at the top of NEC's MCM page, or for "left to" in NEC.log.
+If a feature seems to do nothing, another DLL mod may have taken it over.
+Check the top of NEC's MCM page, or search NEC.log for "left to".
 
 Otherwise, turn on NEC's full logs and play until the bug happens again. With
 MCM, set Log detail to debug and switch on Bug report logs. Without it, add

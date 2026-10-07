@@ -33,4 +33,9 @@ namespace ItemCard
 	// Adds the render listener to a menu movie that draws item cards and
 	// ignores the rest.
 	void OnMovieLoaded(Scaleform::GFx::Movie& a_movie, std::string_view a_file);
+
+	// Whether the Pip-Boy's cards get NEC's row, and with it a worn out item's
+	// faded name. False while either Pip-Boy site is left to another mod or
+	// waits.
+	[[nodiscard]] bool PipboyCards();
 }

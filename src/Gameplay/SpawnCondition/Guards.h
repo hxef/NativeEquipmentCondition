@@ -14,10 +14,11 @@ namespace SpawnCondition
 
 	// Whether this inventory is one the player is filling from the console,
 	// their own or whatever they clicked on. Narrower than a command running:
-	// placeatme and resurrect build a whole character and its loadout in the
-	// same call, and that loadout is ordinary loot. Only reached while a
-	// command runs, on the game's own thread, so reading the console's
-	// selection is safe.
+	// placeatme builds a whole character and its loadout in the same call,
+	// and that loadout is ordinary loot. A character the console has clicked
+	// counts as the player's pick, so gear resurrect or recycleactor gives it
+	// again arrives new. Only reached while a command runs, on the game's own
+	// thread, so reading the console's selection is safe.
 	bool ConsoleTarget(const RE::BGSInventoryList* a_list);
 
 	// Whether this thread is running a script's AddItem or RemoveItem, see

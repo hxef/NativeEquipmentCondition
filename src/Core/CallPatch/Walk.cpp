@@ -19,11 +19,13 @@ namespace CallPatch
 	namespace
 	{
 		// Stubs followed in front of 1 hook, DLLs followed on 1 place, far
-		// past any real load order, and the most of a DLL's hook read for the
-		// address it keeps.
+		// past any real load order, the most of a DLL's hook read for the
+		// address it keeps, and the most of a hook with no table entry read
+		// for its jump, many times the few instructions such a hook has.
 		constexpr int           MAX_HOPS = 4;
 		constexpr int           MAX_LINKS = 8;
 		constexpr std::uint32_t MAX_SCAN = 0x1000;
+		constexpr std::uint32_t MAX_BARE = 0x40;
 
 		// The stubs NEC follows, each only outside a module, where it is a
 		// stub and never a hook: mov rax to an address then jmp rax, or push
@@ -114,35 +116,55 @@ namespace CallPatch
 			return 0;
 		}
 
-		// Whether a function of a_image starts at a_at: an entry of its table
-		// starts there, or a hook that only hands on, which has no entry.
-		bool StartsFunction(const Image& a_image, std::uintptr_t a_at)
-		{
-			if (const auto* function = FunctionOf(a_image, a_at)) {
-				return a_image.base + function->begin == a_at;
-			}
-			return PassSlot(a_at) != 0;
-		}
-
 		// Whether an address lies in a code section of a_image.
 		bool InCode(const Image& a_image, std::uintptr_t a_at)
 		{
 			return (SectionOf(a_image, a_at) & REX::W32::IMAGE_SCN_MEM_EXECUTE) != 0;
 		}
 
-		// Whether an address a DLL keeps is NEC's: its hook, or the stub or
-		// cell NEC wrote at the place.
-		bool IsNec(std::uintptr_t a_kept, const Ends& a_ends)
+		// The slot a hook with no table entry hands on through: the first jump
+		// of PassSlot's shape in its first MAX_BARE bytes, through a slot of
+		// its own data, 0 for none. Such a hook calls nothing and moves no
+		// stack, so it does a little work and then hands on with that jump.
+		// The read stays in its code and stops where a function with an entry
+		// starts.
+		std::uintptr_t BareSlot(const Image& a_image, std::uintptr_t a_at)
 		{
-			return a_kept && (a_kept == a_ends.mine || InNec(a_kept) || InNec(Follow(a_kept)));
+			for (auto at = a_at; at < a_at + MAX_BARE && InCode(a_image, at) && !FunctionOf(a_image, at); at++) {
+				const auto slot = PassSlot(at);
+				if (slot && (SectionOf(a_image, slot) & REX::W32::IMAGE_SCN_MEM_WRITE) != 0) {
+					return slot;
+				}
+			}
+			return 0;
+		}
+
+		// Whether a function of a_image starts at a_at: an entry of its table
+		// starts there, or a hook with no entry hands on from there, see
+		// BareSlot.
+		bool StartsFunction(const Image& a_image, std::uintptr_t a_at)
+		{
+			if (const auto* function = FunctionOf(a_image, a_at)) {
+				return a_image.base + function->begin == a_at;
+			}
+			return PassSlot(a_at) != 0 || BareSlot(a_image, a_at) != 0;
+		}
+
+		// Whether an address a DLL keeps is NEC's at this place: exactly what
+		// NEC wrote there or its hook there. Any other address in NEC.dll is
+		// NEC's at another place, which skips this one, see Skips.
+		bool IsNecHere(std::uintptr_t a_kept, const Ends& a_ends)
+		{
+			return a_kept && (a_kept == a_ends.mine || (a_ends.hook && Follow(a_kept) == a_ends.hook));
 		}
 
 		// Whether an address a DLL keeps skips NEC: what NEC hands on to, the
-		// game's own function, or anything else in the game.
+		// game's own function, anything else in the game, or NEC's code for
+		// another place. Asked once IsNecHere said no.
 		bool Skips(std::uintptr_t a_kept, const Ends& a_ends)
 		{
 			const auto lands = Follow(a_kept);
-			return a_kept && (a_kept == a_ends.game || InGame(lands) ||
+			return a_kept && (a_kept == a_ends.game || InGame(lands) || InNec(lands) ||
 								 (a_ends.next && (a_kept == a_ends.next || (lands && lands == Follow(a_ends.next)))));
 		}
 
@@ -166,15 +188,6 @@ namespace CallPatch
 			return image && InCode(image, landing);
 		}
 
-		// Whether an address a DLL keeps is exactly what NEC wrote at this
-		// place or its hook there. A lea hands on the address of any object,
-		// so its slot counts as NEC's only this way, never as any other
-		// address in NEC.dll.
-		bool IsNecHere(std::uintptr_t a_kept, const Ends& a_ends)
-		{
-			return a_kept && (a_kept == a_ends.mine || (a_ends.hook && Follow(a_kept) == a_ends.hook));
-		}
-
 		// Whether an address lands at the start of a function of another
 		// DLL's code. That is the only next link a lea's slot may hold.
 		// NEC.dll is no such DLL, or the walk would take any function of NEC
@@ -187,19 +200,23 @@ namespace CallPatch
 
 		// The address the hook at a_at of a_image hands each call on to, read
 		// from where it keeps it, 0 when NEC finds none. A hook that only hands
-		// on keeps it in the slot it jumps through. Any other hook is read for
-		// the slots of its own data it calls through, loads from or takes the
-		// address of: NEC's own address wins, then one that leads on to
-		// another DLL's code, then one that skips NEC. A lea's slot counts only
-		// for the first 2, held exactly, see IsNecHere and LeadsOnToStart,
-		// since a hook takes the address of plenty it never calls.
+		// on, or one with no table entry, keeps it in the slot it jumps
+		// through, see BareSlot. Any other hook is read for the slots of its
+		// own data it calls through, loads from or takes the address of: NEC's
+		// own address there wins, then one that leads on to another DLL's
+		// code, then one that skips NEC. A lea's slot counts only for the
+		// first 2, see LeadsOnToStart, since a hook takes the address of
+		// plenty it never calls.
 		std::uintptr_t KeptBy(const Image& a_image, std::uintptr_t a_at, const Ends& a_ends)
 		{
 			if (const auto slot = PassSlot(a_at)) {
 				return Through(slot);
 			}
 			const auto* function = FunctionOf(a_image, a_at);
-			if (!function || a_image.base + function->begin != a_at) {
+			if (!function) {
+				return Through(BareSlot(a_image, a_at));
+			}
+			if (a_image.base + function->begin != a_at) {
 				return 0;
 			}
 			const auto end = a_image.base + std::min(function->end, function->begin + MAX_SCAN);
@@ -227,7 +244,7 @@ namespace CallPatch
 				if (!kept || ImageBase(kept) == a_image.base) {
 					continue;
 				}
-				if (lea ? IsNecHere(kept, a_ends) : IsNec(kept, a_ends)) {
+				if (IsNecHere(kept, a_ends)) {
 					return kept;
 				}
 				if ((a_ends.kind == Kind::kCall || a_ends.kind == Kind::kJump) && !InReach(kept, a_ends.where)) {
@@ -254,7 +271,7 @@ namespace CallPatch
 		{
 			Walked walked;
 			for (int i = 0; i < MAX_LINKS && a_kept; i++) {
-				if (IsNec(a_kept, a_ends)) {
+				if (IsNecHere(a_kept, a_ends)) {
 					walked.reaches = Reaches::kNec;
 					return walked;
 				}

@@ -37,7 +37,8 @@ namespace Jam
 	// Finds the settings and reads the message text.
 	void Load();
 
-	// Forgets the gun whose last reload jammed.
+	// Forgets the gun whose last reload jammed, also as a save loads or a new
+	// game begins.
 	void Unload();
 
 	// Rolls for a jam on one shot of the player's gun, before the engine fires

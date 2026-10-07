@@ -3,6 +3,7 @@
 #include "Condition/ArmorWear/Rate.h"
 #include "Condition/Condition.h"
 #include "Condition/Equipped.h"
+#include "Core/Settings.h"
 #include "Core/Text/Text.h"
 #include "Core/TraceLog.h"
 
@@ -12,8 +13,13 @@ namespace ArmorWear
 {
 	void Load()
 	{
-		REX::INFO("Armor wears from the blows that land on it, about {:.0f} blows of an ordinary weapon from new to broken. A piece at 0 stays on until it is taken off, and goes back on only once repaired.",
-			BlowsToBreak());
+		const auto blows = BlowsToBreak();
+		if (blows > 0.0F) {
+			REX::INFO("Armor wears from the blows that land on it, about {:.0f} blows of an ordinary weapon from new to broken. A piece at 0 stays on until it is taken off, and goes back on only once repaired.",
+				blows);
+		} else {
+			REX::INFO("Armor never wears, since fArmorWearRateMult is {:g}.", Settings::fArmorWearRateMult.GetValue());
+		}
 	}
 
 	namespace

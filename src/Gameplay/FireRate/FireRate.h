@@ -36,7 +36,8 @@ namespace FireRate
 	void Install();
 
 	// Forgets every NPC's share and every blade's pace. Form IDs name something
-	// else after a full reset.
+	// else after a full reset, and the NPCs of another game after a save load
+	// or a new game, so it runs then too.
 	void Unload();
 
 	// Whether the patches are in: not when another mod has fire rate. The

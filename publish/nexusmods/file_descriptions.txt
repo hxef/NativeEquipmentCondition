@@ -1,3 +1,8 @@
+1.1.2
+Version 1.1.2 makes fast automatic weapons like the Minigun wear less per shot, so a Minigun lasts 3 times as long. Weapons that scrap into nothing, like Grognak's Axe, can be repaired at a workbench, and a rare repair crash is fixed.
+
+FO4 1.11.240
+
 1.1.1
 Version 1.1.1 enhances workbench repairs by adding a Free mend above setting and free repairs when the repair cost is 0. Legendary gear from chests and traders arrives new, and workbench repairs work alongside mods like Examine Lag Fix.
 

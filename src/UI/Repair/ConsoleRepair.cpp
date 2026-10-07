@@ -172,7 +172,7 @@ namespace ConsoleRepair
 
 			// The pieces were read under the inventory lock and are written
 			// once it is released, one at a time, since each write takes the
-			// lock itself. A stack with no health is skipped, see
+			// lock itself. A stack with no extra data list is skipped, see
 			// Equipped::EquippedStack.
 			const auto health = Condition::FromPercent(asked->level);
 			for (const auto& target : targets) {

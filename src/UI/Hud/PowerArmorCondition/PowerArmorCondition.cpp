@@ -10,6 +10,7 @@
 #include <algorithm>
 #include <array>
 #include <chrono>
+#include <cmath>
 #include <cstdint>
 
 namespace PowerArmorCondition
@@ -76,9 +77,11 @@ namespace PowerArmorCondition
 
 				// The MCM page can move the bar off the digits. It still sways
 				// with the dash, and only its place changes, never its size.
-				// The movie's y runs down, so above 0 is taken off to go up.
-				box.x += Settings::fPowerArmorBarX.GetValue();
-				box.y -= Settings::fPowerArmorBarY.GetValue();
+				// The movie's y runs down, so above 0 is taken off to go up. A
+				// nan typed into the ini counts as 0, as for the HUD's bar.
+				const auto offset = [](float a_value) { return std::isfinite(a_value) ? a_value : 0.0F; };
+				box.x += offset(Settings::fPowerArmorBarX.GetValue());
+				box.y -= offset(Settings::fPowerArmorBarY.GetValue());
 
 				// Laying out again means measuring text, so it waits for the
 				// dash to be drawn at a different size. Moving and turning is 3

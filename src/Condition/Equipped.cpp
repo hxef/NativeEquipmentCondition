@@ -53,13 +53,11 @@ namespace Equipped
 			return Condition::INVALID_HEALTH;
 		}
 
-		// The equipped weapon that takes part and carries health extra data.
-		// IsWeapon keeps armor out, since a chest piece takes part too and is
-		// equipped the same way. WearsOut does the rest: every weapon has a
-		// health from the moment it spawns, and WearsOut drops thrown weapons,
-		// which sit in a second equip slot. A read lock, because this only
-		// reads, and the engine's own walk releases the same lock before the
-		// damage formula runs.
+		// The equipped weapon that takes part. IsWeapon keeps armor out, since
+		// a chest piece takes part too and is equipped the same way. WearsOut
+		// does the rest, and drops thrown weapons, which sit in a second equip
+		// slot. A read lock, because this only reads, and the engine's own
+		// walk releases the same lock before the damage formula runs.
 		float                    found = Condition::INVALID_HEALTH;
 		const RE::BSAutoReadLock l(inv->rwLock);
 		inv->ForEachStack(
@@ -69,9 +67,10 @@ namespace Equipped
 			},
 			[&found, a_effect](RE::BGSInventoryItem& a_item, RE::BGSInventoryItem::Stack& a_stack) {
 				// WearsOut has already made sure this is a weapon.
-				if (a_stack.IsEquipped() && a_stack.extra && a_stack.extra->HasType<RE::ExtraHealth>() &&
+				if (a_stack.IsEquipped() &&
 					(!a_effect || Casts(static_cast<const RE::TESObjectWEAP&>(*a_item.object), a_stack, *a_effect))) {
-					found = a_stack.extra->GetHealthPerc();
+					const auto health = Condition::HealthOf(&a_stack);
+					found = health < 0.0F ? Condition::MAX_HEALTH : health;
 					return false;  // Stop iteration.
 				}
 				return true;  // Continue searching...

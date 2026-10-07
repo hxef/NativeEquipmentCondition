@@ -120,8 +120,7 @@ namespace WeaponWear
 				const auto& instance = *static_cast<const RE::TESObjectWEAP::InstanceData*>(instanceData);
 
 				// What this weapon costs per use, times how many ordinary uses
-				// this event counts as, above 1 only for a bash or a power
-				// attack.
+				// this event counts as, see a_scale in WeaponWear.h.
 				const auto amount = Rate(weapon, instance, a_stack.extra.get()) * scale;
 				moved = Condition::Decrease(*a_stack.extra, a_object, amount, source, scale);
 

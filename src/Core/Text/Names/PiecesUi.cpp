@@ -11,7 +11,7 @@ namespace Text
 {
 	namespace
 	{
-		// The Pip-Boy's perk list.
+		// The Pip-Boy's perk list, its item cards and a broken item's faded name.
 		constexpr Line PIECE_PIPBOY[]{
 			{ "en", "the Pip-Boy" },
 			{ "fr", "le Pip-Boy" },
@@ -73,40 +73,6 @@ namespace Text
 			{ "ja", "クッキングステーションとケミストリーステーション" },
 			{ "zhhant", "烹飪工作台和化學工作台" },
 			{ "zhhans", "烹饪工作台和化学工作台" },
-		};
-
-		// The 2 moments the Pip-Boy builds an item card, with its CND row and a
-		// broken item's faded name: as it lists an item, which it does again
-		// when the item is added, put on or changed, and as it updates every
-		// card of a kind, which NEC asks for after wear and after a repair.
-		constexpr Line PIECE_PIPBOY_LISTS[]{
-			{ "en", "the Pip-Boy as it lists items" },
-			{ "fr", "le Pip-Boy quand il liste les objets" },
-			{ "de", "Pip-Boy beim Auflisten von Gegenständen" },
-			{ "it", "il Pip-Boy quando elenca gli oggetti" },
-			{ "es", "el Pip-Boy al listar objetos" },
-			{ "esmx", "el Pip-Boy al listar objetos" },
-			{ "ptbr", "o Pip-Boy ao listar itens" },
-			{ "pl", "Pip-Boy przy tworzeniu listy przedmiotów" },
-			{ "ru", "Пип-бой при составлении списка предметов" },
-			{ "ja", "Pip-Boyがアイテムを一覧表示するとき" },
-			{ "zhhant", "嗶嗶小子列出物品時" },
-			{ "zhhans", "哔哔小子列出物品时" },
-		};
-
-		constexpr Line PIECE_PIPBOY_UPDATES[]{
-			{ "en", "the Pip-Boy as it updates cards" },
-			{ "fr", "le Pip-Boy quand il met à jour les fiches" },
-			{ "de", "Pip-Boy beim Aktualisieren der Gegenstandsinfos" },
-			{ "it", "il Pip-Boy quando aggiorna le schede" },
-			{ "es", "el Pip-Boy al actualizar fichas" },
-			{ "esmx", "el Pip-Boy al actualizar fichas" },
-			{ "ptbr", "o Pip-Boy ao atualizar fichas" },
-			{ "pl", "Pip-Boy przy odświeżaniu kart" },
-			{ "ru", "Пип-бой при обновлении карточек" },
-			{ "ja", "Pip-Boyがアイテム情報を更新するとき" },
-			{ "zhhant", "嗶嗶小子更新物品資訊時" },
-			{ "zhhans", "哔哔小子更新物品信息时" },
 		};
 
 		// The mark the list over a container or a body puts on a better item.
@@ -366,13 +332,11 @@ namespace Text
 			{ Piece::kCndContainers, PIECE_CONTAINERS },
 			{ Piece::kCndWorkbench, PIECE_WORKBENCHES },
 			{ Piece::kCndCooking, PIECE_COOKING },
-			{ Piece::kCndPipboyLists, PIECE_PIPBOY_LISTS },
-			{ Piece::kCndPipboyUpdates, PIECE_PIPBOY_UPDATES },
+			{ Piece::kCndPipboy, PIECE_PIPBOY },
 			{ Piece::kRateCardsContainers, PIECE_CONTAINERS },
 			{ Piece::kRateCardsWorkbench, PIECE_WORKBENCHES },
 			{ Piece::kRateCardsCooking, PIECE_COOKING },
-			{ Piece::kRateCardsPipboyLists, PIECE_PIPBOY_LISTS },
-			{ Piece::kRateCardsPipboyUpdates, PIECE_PIPBOY_UPDATES },
+			{ Piece::kRateCardsPipboy, PIECE_PIPBOY },
 			{ Piece::kRateBetter, PIECE_BETTER },
 			{ Piece::kRateSort, PIECE_SORT },
 			{ Piece::kBenchItemList, PIECE_BENCH_ITEM_LIST },

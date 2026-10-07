@@ -41,8 +41,9 @@ namespace Workbench
 			return out;
 		}
 
-		// Its own scrap recipe plus the recipe behind every mod, so the bill
-		// reads as a smaller copy of the item.
+		// Its own scrap recipe, or the recipe it borrows, plus the recipe
+		// behind every mod, see Materials.h, so the bill reads as a smaller
+		// copy of the item.
 		const auto bill = Materials::BillOfLines(*a_selection.object, a_selection.extra);
 		out.built = Materials::BillOfParts(bill);
 		out.standing = CraftingPerks::Of(*a_selection.object, a_selection.extra, bill);

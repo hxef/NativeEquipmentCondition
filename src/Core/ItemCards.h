@@ -2,9 +2,9 @@
 
 #include "Core/Plugin.h"
 
-// The Pip-Boy builds an item's card once and keeps it, so a weapon that wore
-// down would keep printing the damage it had. The vanilla equip handler
-// rebuilds a whole category, and this calls that rebuild.
+// The Pip-Boy keeps an item's card until it lists the item again, so an item
+// that wore down or was repaired could keep printing what it had. Vanilla's
+// own equip handler rebuilds a whole category, and this calls that rebuild.
 namespace ItemCards
 {
 	// Rebuilds the cards of one category, such as every weapon. Safe with the

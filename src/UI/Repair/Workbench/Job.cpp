@@ -82,15 +82,16 @@ namespace Workbench
 
 		// An item no mod fits stays greyed once a repair brings it to full, so
 		// the corner says why, after whatever the repair itself said. Told the
-		// item repaired and the level it reached.
-		void SayCannotModify(const Selection& a_item, std::uint32_t a_level)
+		// item repaired, its name from before the repair, and the level it
+		// reached.
+		void SayCannotModify(const Selection& a_item, std::string_view a_name, std::uint32_t a_level)
 		{
 			if (a_level < FULL || !NoModFits(a_item)) {
 				return;
 			}
 			const auto said = Text::CannotModify();
 			RE::SendHUDMessage::ShowHUDMessage(said.c_str(), nullptr, true, true);
-			TraceLog::Line("menu", "Workbench said {:s} can't be modified, sound and still greyed", a_item.Name());
+			TraceLog::Line("menu", "Workbench said {:s} can't be modified, sound and still greyed", a_name);
 		}
 
 		// Called by the bar's list of buttons once for each. The bench's REPAIR
@@ -242,6 +243,11 @@ namespace Workbench
 			return;
 		}
 
+		// The name is copied first. The write can merge the stack into an
+		// identical one and free it, and paying can empty an entry of the
+		// inventory, so the item and its extra data are not read after.
+		const auto name = selection.Name();
+
 		// The stack the bench shows, by its number, see Restore.h.
 		RE::BGSInventoryItem::CheckStackIDFunctor find{ selection.stack };
 		Restore::Write(*player, *selection.object, find, level);
@@ -265,7 +271,7 @@ namespace Workbench
 
 		TraceLog::Line("menu",
 			"Workbench repaired {:s} from {:d}% to {:d}%, one of a stack of {:d}, worth {:d} for {:g} experience before Intelligence and perks",
-			selection.Name(), selection.percent, level, selection.count, worth, gained);
+			name, selection.percent, level, selection.count, worth, gained);
 
 		Drop(a_menu);
 
@@ -299,7 +305,7 @@ namespace Workbench
 			const auto said = Text::Mended(selection.Armor());
 			RE::SendHUDMessage::ShowHUDMessage(said.c_str(), nullptr, true, true);
 		}
-		SayCannotModify(selection, level);
+		SayCannotModify(selection, name, level);
 	}
 
 	void Mend(RE::ExamineMenu* a_menu)

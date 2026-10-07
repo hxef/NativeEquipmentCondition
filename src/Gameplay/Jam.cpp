@@ -175,10 +175,10 @@ namespace Jam
 				return;
 			}
 
-			// A gun this mod has not given a condition to yet counts as new.
+			// A gun that does not wear has no condition to jam from.
 			const auto health = Equipped::WeaponHealth(&a_player, &weapon);
 			if (health < 0.0F) {
-				TraceLog::Line("jam", "clear, no condition yet");
+				TraceLog::Line("jam", "clear, it does not wear");
 				return;
 			}
 
@@ -308,10 +308,9 @@ namespace Jam
 			return false;
 		}
 
-		// A gun this mod has not given a condition to yet counts as new.
 		const auto health = Equipped::WeaponHealth(&a_player, &weapon);
 		if (health < 0.0F) {
-			TraceLog::Line("jam", "clear, no condition yet");
+			TraceLog::Line("jam", "clear, it does not wear");
 			return false;
 		}
 

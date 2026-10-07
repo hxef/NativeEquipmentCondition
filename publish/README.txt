@@ -33,7 +33,8 @@ compatibility with other mods, including ones that add new gear.
 
 WEAR AND TEAR
 * Your weapon wears with every shot you fire and every melee hit you land.
-  Bashes and power attacks wear it harder.
+  Bashes and power attacks wear it harder. Fast automatics like the Minigun
+  wear less per shot, as if they fired at an ordinary automatic's pace.
 * Every hit that lands wears the armor and clothing on the limb it struck,
   yours and NPCs' alike. Explosions wear every piece. Pieces that cover no
   limb, like a mask or a super mutant's armor, share each hit between them.
@@ -83,7 +84,9 @@ LOOT WITH A HISTORY
 REPAIR AT THE WORKBENCH
 * At the weapon or armor workbench, select a worn item and a REPAIR button
   appears. Press it, choose how far to repair it in steps of 10%, and pay in
-  the components it is built from.
+  the components it is built from. Gear that scraps into nothing, like
+  Grognak's Axe, costs what gear of its kind most often scraps into, and
+  wears like it too.
 * Barely worn gear, above 95%, gets a MEND button instead, which fixes it on
   the spot for free. The 95% is the Free mend above setting: 100 makes every
   repair cost components, and 0 mends everything but broken gear for free.

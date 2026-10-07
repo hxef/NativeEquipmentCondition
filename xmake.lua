@@ -89,18 +89,31 @@ target("NEC")
         cprint("${bright green}deployed${clear} to %s", dir)
     end)
 
--- Builds the plugin and packs build/NativeEquipmentCondition-<version>.zip for
--- Nexus Mods. The archive holds F4SE/Plugins with NEC.dll, NEC.pdb and NEC.ini,
+-- Builds the plugin and packs build/NativeEquipmentCondition-<version>.zip, for
+-- any site. The archive holds F4SE/Plugins with NEC.dll, NEC.pdb and NEC.ini,
 -- MCM/Config/NEC with the MCM page's config.json, and README.txt at the root,
 -- so Mod Organizer 2 installs it as it is. The PDB lets a player's crash log
 -- name the file and line in NEC.dll.
 --
+-- With --nexus it packs build/nexusmods/NativeEquipmentCondition-<version>.zip
+-- instead, without README.txt, since Nexus Mods shows the readme in a section
+-- of its own. It also checks this version's file description and changelog in
+-- publish/nexusmods and prints both, ready to paste into the upload form.
+--
 --     xmake release
+--     xmake release --nexus
 --
 task("release")
     set_category("plugin")
-    set_menu({ usage = "xmake release", description = "Build NEC and pack the Nexus Mods archive" })
+    set_menu({
+        usage = "xmake release [--nexus]",
+        description = "Build NEC and pack the release archive",
+        options = {
+            { nil, "nexus", "k", nil, "Pack it for Nexus Mods, without README.txt, and check the texts in publish/nexusmods" },
+        },
+    })
     on_run(function ()
+        import("core.base.option")
         import("core.base.task")
         import("core.project.config")
         import("core.project.project")
@@ -110,6 +123,46 @@ task("release")
         if config.mode() ~= "releasedbg" then
             raise("release packs the optimized build, run xmake f -m releasedbg first")
         end
+
+        -- The lines under the line that holds only a_version, up to the next
+        -- version line, without the blank lines around them.
+        local function block(a_file, a_version)
+            local lines = {}
+            local inside = false
+            for line in (io.readfile(a_file) .. "\n"):gmatch("(.-)\r?\n") do
+                if line:match("^%d+%.%d+%.%d+$") then
+                    if inside then
+                        break
+                    end
+                    inside = line == a_version
+                elseif inside then
+                    table.insert(lines, line)
+                end
+            end
+            return (table.concat(lines, "\n"):gsub("^%s+", ""):gsub("%s+$", ""))
+        end
+
+        local version = project.version()
+        local nexus = option.get("nexus")
+        local description, changelog
+        if nexus then
+            -- Checked before the build, so a text to fix stops the release
+            -- early. Nexus Mods takes at most 255 characters for a file's
+            -- description, and every text here is plain ASCII, 1 byte each.
+            local texts = path.join(os.projectdir(), "publish", "nexusmods")
+            description = block(path.join(texts, "file_descriptions.txt"), version)
+            changelog = block(path.join(texts, "changelog.txt"), version)
+            if description:sub(1, #("Version " .. version)) ~= "Version " .. version then
+                raise("publish/nexusmods/file_descriptions.txt needs a %s block that starts \"Version %s\"", version, version)
+            end
+            if #description > 255 then
+                raise("the %s file description is %d characters, and Nexus Mods takes 255", version, #description)
+            end
+            if changelog == "" then
+                raise("publish/nexusmods/changelog.txt needs a %s block", version)
+            end
+        end
+
         task.run("build", { target = "NEC" })
 
         local stage = path.join(config.builddir(), "release")
@@ -123,15 +176,28 @@ task("release")
         os.cp(target:symbolfile(), plugins)
         os.cp(path.join(os.projectdir(), "publish", "NEC.ini"), plugins)
         os.cp(path.join(os.projectdir(), "publish", "MCM", "Config", "NEC", "config.json"), mcm)
-        os.cp(path.join(os.projectdir(), "publish", "README.txt"), stage)
+        local packed = { "F4SE", "MCM" }
+        local into = config.builddir()
+        if nexus then
+            into = path.join(into, "nexusmods")
+        else
+            os.cp(path.join(os.projectdir(), "publish", "README.txt"), stage)
+            table.insert(packed, "README.txt")
+        end
 
-        local file = path.absolute(path.join(config.builddir(), "NativeEquipmentCondition-" .. project.version() .. ".zip"))
+        local file = path.absolute(path.join(into, "NativeEquipmentCondition-" .. version .. ".zip"))
+        os.mkdir(into)
         os.tryrm(file)
         -- A zip stores each file's time twice, once in local time and once in
         -- UTC, so the gap between the 2 gives away the packer's time zone. On
         -- Linux, TZ set to UTC makes both the same.
         os.setenv("TZ", "UTC")
-        archive.archive(file, { "F4SE", "MCM", "README.txt" }, { curdir = stage })
+        archive.archive(file, packed, { curdir = stage })
         cprint("${bright green}packed${clear} %s", file)
+
+        if nexus then
+            cprint("${bright}File description${clear}, %d of 255 characters:\n%s\n", #description, description)
+            cprint("${bright}Changelog${clear}:\n%s", changelog)
+        end
     end)
 task_end()

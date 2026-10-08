@@ -3,8 +3,14 @@
 #include "Core/Plugin.h"
 
 // The Pip-Boy keeps an item's card until it lists the item again, so an item
-// that wore down or was repaired could keep printing what it had. The game's
-// own equip handler rebuilds a whole category, and this calls that rebuild.
+// whose condition changed could keep printing what it had. The game's own
+// equip handler rebuilds a whole category, and this calls that rebuild.
+//
+// Wear needs none. Equipped::WriteStack tells the game the player's
+// inventory changed, and the Pip-Boy lists that item again by itself. A
+// rebuild on every shot or hit would redo the card of every item of that
+// kind the player carries. A repair, the console and the MCM still ask for
+// one, once per change, where it costs little.
 namespace ItemCards
 {
 	// Rebuilds the cards of one category, such as every weapon. Safe with the

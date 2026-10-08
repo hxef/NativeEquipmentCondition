@@ -212,7 +212,7 @@ namespace Text
 		constexpr std::string_view HELP = ".help";
 
 		// A part's name in every language, from PartsPlay.cpp or PartsUi.cpp.
-		// Empty for kNone and kTrace.
+		// Empty for kNone and from kTrace on.
 		std::span<const Line> NameOf(Part a_part)
 		{
 			const auto index = static_cast<std::size_t>(a_part);

@@ -1,5 +1,6 @@
 #include "Core/TraceLog.h"
 
+#include "Core/LogFiles.h"
 #include "Core/Settings.h"
 
 #include <spdlog/details/os.h>
@@ -106,9 +107,9 @@ namespace TraceLog
 			}
 		}
 
-		// Where NEC.log is being written, asked of the logger F4SE::Init made
-		// rather than worked out again. The file sink is basic or rotating
-		// depending on whether rotation was asked for, so both are tried.
+		// Where NEC.log is being written, asked of the logger LogFiles made
+		// rather than worked out again. The file sink is rotating, or basic
+		// when the earlier starts could not move along, so both are tried.
 		std::filesystem::path MainLogPath()
 		{
 			const auto logger = spdlog::default_logger();
@@ -229,16 +230,14 @@ namespace TraceLog
 
 		// Opens one file beside NEC.log by replacing its extension:
 		// NEC.trace.log, NEC.ui.trace.log, NEC.npc.trace.log.
-		std::shared_ptr<spdlog::logger> OpenFile(std::filesystem::path a_path, const char* a_extension, const char* a_name)
+		std::shared_ptr<spdlog::logger> OpenFile(std::filesystem::path a_path, const char* a_extension, const char* a_name, std::size_t a_maxSize)
 		{
 			a_path.replace_extension(a_extension);
 
 			std::shared_ptr<spdlog::logger> logger;
 			try {
-				// mt: the sink locks, since several game threads write through
-				// it. true: the file starts empty, so a log is one session.
-				auto sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>(a_path.string(), true);
-				logger = std::make_shared<spdlog::logger>(a_name, std::move(sink));
+				// Keeps earlier game starts the way NEC.log does, see LogFiles.h.
+				logger = std::make_shared<spdlog::logger>(a_name, LogFiles::OpenFile(a_path, a_maxSize));
 			} catch (const std::exception& e) {
 				REX::WARN("Could not open the bug report log {:s}: {:s}", a_path.string(), e.what());
 				return nullptr;
@@ -275,9 +274,9 @@ namespace TraceLog
 				REX::WARN("No main log file to sit beside, so there are no bug report logs this session.");
 				return;
 			}
-			g_game.logger = OpenFile(path, "trace.log", "trace");
-			g_ui.logger = OpenFile(path, "ui.trace.log", "ui trace");
-			g_npc.logger = OpenFile(path, "npc.trace.log", "npc trace");
+			g_game.logger = OpenFile(path, "trace.log", "trace", LogFiles::GAME_TRACE_SIZE);
+			g_ui.logger = OpenFile(path, "ui.trace.log", "ui trace", LogFiles::UI_TRACE_SIZE);
+			g_npc.logger = OpenFile(path, "npc.trace.log", "npc trace", LogFiles::NPC_TRACE_SIZE);
 		}
 		// Released after the loggers are in place, so a thread that reads the
 		// gate open finds them.

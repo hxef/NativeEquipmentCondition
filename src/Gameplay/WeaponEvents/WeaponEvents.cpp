@@ -3,7 +3,6 @@
 #include "Condition/Condition.h"
 #include "Condition/WeaponWear/WeaponWear.h"
 #include "Core/CallPatch/CallPatch.h"
-#include "Core/ItemCards.h"
 #include "Core/TraceLog.h"
 #include "Gameplay/FireRate/FireRate.h"
 #include "Gameplay/Jam.h"
@@ -65,9 +64,8 @@ namespace WeaponEvents
 
 		// Wears the player's gun by the shot Fire just sent, at the power its
 		// rounds carried. A shot whose event never came, which another sink can
-		// stop, counts as an ordinary one. The engine has released the
-		// inventory lock by the time Wear returns, which makes the refresh
-		// safe, see ItemCards.h.
+		// stop, counts as an ordinary one. The game lists the gun again in the
+		// Pip-Boy by itself, see ItemCards.h.
 		void WearByShot(RE::PlayerCharacter& a_player, RE::TESObjectWEAP& a_weapon, const Shot& a_shot)
 		{
 			const auto power = a_shot.sent ? a_shot.power : 1.0F;
@@ -75,9 +73,7 @@ namespace WeaponEvents
 				TraceLog::Line("wear", "the shot left with no power, so no wear");
 				return;
 			}
-			if (WeaponWear::Wear(a_player, a_weapon, "fire", power)) {
-				ItemCards::Refresh(RE::ENUM_FORM_ID::kWEAP);
-			}
+			WeaponWear::Wear(a_player, a_weapon, "fire", power);
 		}
 
 		// Stands in for TESObjectWEAP::Fire when the weaponFire animation event

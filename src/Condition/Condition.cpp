@@ -108,8 +108,8 @@ namespace Condition
 		TraceLog::For(a_theirs).Line("wear", "{:s} [{:08X}] {:.6f} -> {:.6f} (-{:.6f}) from {:s}{:s}",
 			RE::TESFullName::GetFullName(a_object), a_object.formID, curHealth, newHealth, a_amount, a_source, scale);
 
-		// Only a change of health is worth rebuilding the Pip-Boy cards for, so
-		// an item already at 0 does not ask for it on every shot or hit.
+		// Only a change of health counts, so an item already at 0 sets nothing
+		// off again on every shot or hit.
 		return newHealth != curHealth;
 	}
 }

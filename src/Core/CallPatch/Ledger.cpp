@@ -77,7 +77,7 @@ namespace CallPatch
 		// What losing a place of a_part costs in a_row.
 		Use UseOf(Part a_part, const Feature& a_row)
 		{
-			if (a_part == Part::kTrace) {
+			if (a_part >= Part::kTrace) {
 				return Use::kTraceOnly;
 			}
 			return a_part == a_row.part ? Use::kMain : Use::kDetail;
@@ -109,7 +109,7 @@ namespace CallPatch
 				g_whole[g_together] = false;
 				return false;
 			}
-			if (part == Part::kNone || (part != Part::kTrace && OfAnotherRow(part))) {
+			if (part == Part::kNone || (part < Part::kTrace && OfAnotherRow(part))) {
 				a_lines.push_back({ REX::ELogLevel::Error,
 					std::format("{:s} at {:X} has no part, or one of another row, so NEC leaves it alone.", a_ask.what, a_ask.where) });
 				if (g_together) {

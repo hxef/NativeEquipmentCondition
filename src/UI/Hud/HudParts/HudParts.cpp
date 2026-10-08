@@ -43,9 +43,11 @@ namespace HudParts
 
 		REL::Relocation<void* (*)(RE::HUDMenu*, std::uint32_t)> _DeleteMenu;
 
-		// The delete hook's slot. Once a recheck finds it with another mod,
-		// the hook may never run again, see DropTargets.
-		CallPatch::Held g_deleteHook;
+		// The delete hook's slot. It is shared with a DLL that hands the call
+		// on, which may still skip it now and then, see ForgetOldTargets. Once
+		// a recheck finds a DLL there that skips NEC, the hook never runs
+		// again, see DropTargets.
+		CallPatch::LinkBase g_deleteLink;
 
 		// Runs before the menu's own destructor, so the movie still exists when
 		// a target releases its clip. The last reference to a menu can be
@@ -81,17 +83,15 @@ namespace HudParts
 			return _DeleteMenu(a_menu, a_flags);
 		}
 
-		// Once the delete hook's slot is lost, the live HUD menu's targets go
-		// at once, on the HUD's own thread while its movie still exists. A
-		// target of a menu already gone stops listening for HUD colour
-		// changes, which would reach its dead clip, and is let go of, never
-		// deleted: its destructor would touch the dead movie, and the menu may
-		// still list it while it goes.
+		// Once the delete hook's slot is lost, the live HUD menu's targets are
+		// deleted at once, on the HUD's own thread while its movie still
+		// exists. The targets of a menu already gone are let go of first.
 		void DropTargets()
 		{
-			if (g_deleteHook.Intact()) {
+			if (g_deleteLink.Live()) {
 				return;
 			}
+			ForgetOldTargets();
 
 			std::vector<ColorTarget> all;
 			{
@@ -102,6 +102,8 @@ namespace HudParts
 				return;
 			}
 
+			// The menu can go between the 2 looks, so its targets are let go
+			// of here too.
 			const auto* ui = RE::UI::GetSingleton();
 			const auto  live = ui ? ui->GetMenu<RE::HUDMenu>() : nullptr;
 			for (auto& target : all) {
@@ -120,6 +122,70 @@ namespace HudParts
 			}
 			TraceLog::Line("menu", "HUD menu delete is with another mod, so the {:d} colour targets of the CND parts go now", all.size());
 		}
+
+		// The sweep runs again a frame after a HUD menu closes, at a save load
+		// or on the way to the main menu. So a menu UI let go of as it closed
+		// loses its targets before the player can reach a HUD colour setting,
+		// in whatever order the main menu loads. Only queued here, since the
+		// game sends this while it works on its menus.
+		class CloseSink : public RE::BSTEventSink<RE::MenuOpenCloseEvent>
+		{
+		public:
+			F4_HEAP_REDEFINE_NEW(CloseSink);
+
+		private:
+			RE::BSEventNotifyControl ProcessEvent(const RE::MenuOpenCloseEvent& a_event, RE::BSTEventSource<RE::MenuOpenCloseEvent>*) override
+			{
+				if (!a_event.opening && a_event.menuName == RE::HUDMenu::MENU_NAME) {
+					if (const auto* tasks = F4SE::GetTaskInterface()) {
+						tasks->AddTask([] { ForgetOldTargets(); });
+					}
+				}
+				return RE::BSEventNotifyControl::kContinue;
+			}
+		};
+	}
+
+	void ForgetOldTargets()
+	{
+		// UI is asked only when there is something to let go of, since
+		// DropTargets runs every frame once the place is cut.
+		{
+			const std::scoped_lock l(g_colorTargetsLock);
+			if (g_colorTargets.empty()) {
+				return;
+			}
+		}
+
+		// Held past the lock, since its last reference runs DeleteMenuHk,
+		// which takes it.
+		const auto* ui = RE::UI::GetSingleton();
+		const auto  live = ui ? ui->GetMenu<RE::HUDMenu>() : nullptr;
+
+		std::vector<ColorTarget> old;
+		{
+			const std::scoped_lock l(g_colorTargetsLock);
+			for (auto it = g_colorTargets.begin(); it != g_colorTargets.end();) {
+				if (!live || it->menu != live.get()) {
+					old.push_back(std::move(*it));
+					it = g_colorTargets.erase(it);
+				} else {
+					++it;
+				}
+			}
+		}
+		if (old.empty()) {
+			return;
+		}
+
+		const auto source = RE::ApplyColorUpdateEvent::GetEventSource();
+		for (auto& target : old) {
+			if (source) {
+				source->UnregisterSink(target.target.get());
+			}
+			static_cast<void>(target.target.release());
+		}
+		TraceLog::Line("menu", "HUD menu went without NEC's delete, so the {:d} colour targets of its CND parts are let go of", old.size());
 	}
 
 	namespace Weapon
@@ -246,20 +312,30 @@ namespace HudParts
 
 	void Install()
 	{
-		// This frees NEC's colour targets before the HUD menu goes. A change
-		// here that skipped NEC even once would leave the targets on a menu
-		// that is gone. So any change here after NEC turns the HUD bars off
-		// for good, see CallPatch::EVERY_CALL.
-		const CallPatch::Together        deleteHook{ Part::kNone, CallPatch::EVERY_CALL };
+		// This deletes NEC's colour targets before the HUD menu goes. A DLL
+		// over it that skips NEC now and then leaves a menu's targets behind,
+		// and the sweep lets go of them, see ForgetOldTargets. So the place
+		// stands alone, shared while the call still reaches NEC.
 		REL::Relocation<std::uintptr_t> menu{ RE::HUDMenu::VTABLE[0] };
-		_DeleteMenu = CallPatch::PatchSlot(menu, 0x00, DeleteMenuHk, "HUD menu delete").value_or(0);
-		g_deleteHook = deleteHook.Set();
+		_DeleteMenu = CallPatch::PatchSlot(menu, 0x00, DeleteMenuHk, "HUD menu delete", Part::kNone, true, &g_deleteLink).value_or(0);
+	}
+
+	void Load()
+	{
+		// Once, since UI lasts as long as the game.
+		static bool registered = false;
+		auto*       ui = RE::UI::GetSingleton();
+		if (registered || !ui) {
+			return;
+		}
+		ui->RegisterSink<RE::MenuOpenCloseEvent>(new CloseSink());
+		registered = true;
 	}
 
 	void AddColorTarget(RE::HUDMenu& a_menu, const Value& a_clip)
 	{
 		// Nothing would delete it as its menu goes.
-		if (!g_deleteHook.Intact()) {
+		if (!g_deleteLink.Live()) {
 			return;
 		}
 		auto target = std::make_unique<RE::BSGFxShaderFXTarget>(a_clip);

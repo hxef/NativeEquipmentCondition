@@ -193,9 +193,9 @@ namespace ConsoleRepair
 				}
 			}
 
-			// The HUD reads the weapon again by itself. The Pip-Boy keeps the
-			// cards it built, see ItemCards.h, so the kind's cards are rebuilt,
-			// the apparel cards for armor.
+			// The HUD reads the weapon again by itself, and the Pip-Boy lists
+			// each written item again, see ItemCards.h. The kind's cards are
+			// rebuilt as well, once per command, the apparel cards for armor.
 			ItemCards::Refresh(asked->armor ? RE::ENUM_FORM_ID::kARMO : RE::ENUM_FORM_ID::kWEAP);
 			return true;
 		}

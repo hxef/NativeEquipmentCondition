@@ -1,5 +1,8 @@
+#include "Condition/Materials/Materials.h"
+#include "Condition/WeaponWear/WeaponWear.h"
 #include "Core/CallPatch/CallPatch.h"
 #include "Core/Feature.h"
+#include "Core/LogFiles.h"
 #include "Core/Plugin.h"
 #include "Core/Settings.h"
 #include "Core/Text/Text.h"
@@ -118,6 +121,11 @@ namespace
 				REX::INFO("The save {:s}.", loaded ? "has loaded" : "did not load");
 				TraceLog::Mark("LOADED", "the save {:s}", loaded ? "has loaded" : "did not load");
 			}
+			// The ordinary weapon and armor, measured again for a mod that
+			// changed them after game data loaded. 1 walk of every weapon and
+			// recipe, behind the loading screen.
+			Materials::MeasureAgain();
+			WeaponWear::MeasureAgain();
 			// Every patch is read back before the save plays, see
 			// CallPatch::Recheck.
 			CallPatch::Recheck(a_msg->type == F4SE::MessagingInterface::kNewGame ? "a new game has begun" :
@@ -186,20 +194,22 @@ F4SE_PLUGIN_LOAD(const F4SE::LoadInterface* a_f4se)
 	// Every place NEC patches is checked against the game version F4SE runs.
 	CallPatch::SetGameVersion(a_f4se->RuntimeVersion());
 
-	// The log is named after the DLL, NEC.log, and TraceLog puts the trace
-	// files beside it. The trampoline is a block of executable memory near the
-	// game that patched calls jump through, since a call can only reach 2
-	// gigabytes and Windows can load the plugin anywhere. Each hooked call
-	// takes its own 14 byte stub so NEC can hand each site on to what it found
-	// there, about 1100 bytes, so 2048 leaves room.
+	// F4SE::Init opens no log, since LogFiles opens NEC.log right after, see
+	// LogFiles.h. The trampoline is a block of executable memory near the game
+	// that patched calls jump through, since a call can only reach 2 gigabytes
+	// and Windows can load the plugin anywhere. Each hooked call takes its own
+	// 14 byte stub so NEC can hand each site on to what it found there, about
+	// 1100 bytes, so 2048 leaves room.
 	F4SE::Init(a_f4se, {
-						  .logLevel = Settings::LogLevel(),
-						  .logName = "NEC",
+						  .log = false,
 						  .trampoline = true,
 						  .trampolineSize = 2048,
 					  });
 
-	// After F4SE::Init, which creates the main log the trace logs sit beside.
+	// After F4SE::Init, which names the save folder NEC.log sits in.
+	LogFiles::OpenMain();
+
+	// After NEC.log, which the trace logs sit beside.
 	TraceLog::Open();
 
 	const auto built = LinkTime();

@@ -74,7 +74,7 @@ namespace CallPatch
 
 		// Whether NEC's change at a place does nothing while the game runs,
 		// whatever stands on the place, since its row's switch is left to
-		// another mod. A trace only place feeds the trace logs either way.
+		// another mod. A place from Part::kTrace on works the same either way.
 		bool SwitchLeft(const Place& a_place)
 		{
 			return a_place.use != Use::kTraceOnly && a_place.row->on && YieldedLocked(a_place.row->on);
@@ -88,17 +88,26 @@ namespace CallPatch
 				a_place.where, By(a_place), a_tail, a_trace);
 		}
 
-		// The line of a place NEC is off at from now on.
+		// The line of a place NEC is off at from now on. The bench place's
+		// hook asks nothing of its place, so its 2 messages still show
+		// whenever the call reaches it, unless Workbench repairs is off. Every
+		// place that turns repairs off comes before it, see Workbench.cpp, so
+		// its line reads a cut in the same pass too.
 		std::string CutLine(const Place& a_place, bool a_everyCall)
 		{
+			if (a_place.part == Part::kBenchMessages) {
+				const auto off = PiecesOffTail(a_place);
+				return ChangedLine(a_place, off.empty() ? " NEC's 2 messages when MODIFY opens nothing show only while the call reaches NEC, so repairs are not affected."sv : std::string_view{ off });
+			}
 			return ChangedLine(a_place, a_place.use == Use::kTraceOnly ? " It only fed the bug report logs, so play is not affected."sv :
-			                            a_everyCall ? " NEC's change there has to run on every call, so it is off from now on."sv :
-			                                          " NEC's change there is off from now on."sv);
+			                            a_everyCall                    ? " NEC's change there has to run on every call, so it is off from now on."sv :
+			                                                             " NEC's change there is off from now on."sv);
 		}
 
 		// Whether NEC.log has said a written place changed: one cut by its own
 		// change has an owner, and every walk that reached NEC left its line.
-		// A place off only since a cut elsewhere stopped its set has neither.
+		// A place off only since a cut elsewhere stopped its set, with no
+		// change of its own, has neither.
 		bool Said(const Place& a_place)
 		{
 			return !a_place.owners.empty() || !a_place.line.empty();
@@ -145,28 +154,46 @@ namespace CallPatch
 					continue;
 				}
 				std::memcpy(place.seen.data(), now, place.watch);
+				// Counted for the warning below, and taken back out for a
+				// change that gets no line, so the warning counts only what
+				// NEC.log names. A change with no line leaves everything the
+				// summary reads as it was, so the answer at the end stays
+				// right.
 				changed++;
+
+				// Back on NEC's hook. A place whose change NEC.log never named,
+				// NEC's own or off only since another place's cut stopped its
+				// set, gets no line now either, see Back.
+				const auto returned = [&]() {
+					if (Back(place)) {
+						back.push_back(&place);
+					} else {
+						changed--;
+					}
+				};
 
 				// Back as NEC wrote it.
 				if (place.size != 0 && std::memcmp(now, place.wrote.data(), place.size) == 0) {
-					if (Back(place)) {
-						back.push_back(&place);
-					}
+					returned();
 					continue;
 				}
 
 				// A place that is off, or that NEC never wrote, and that leads
-				// into the game again names nobody new.
+				// into the game again names nobody new and gets no line.
 				if ((IsOff(place) || place.size == 0) && LeadsIntoGame(place.where, place.kind)) {
+					changed--;
 					continue;
 				}
 
 				// A place NEC never wrote names every DLL that changes it,
 				// since NEC had no change there to lose. One NEC left alone
-				// gets the again line, any other a line of its own.
+				// gets the again line, any other a line of its own. An owner
+				// already named gets no line.
 				if (place.size == 0) {
 					if (AddOwner(place, OwnerAt(place.where, place.kind, true))) {
 						(IsOff(place) ? again : late).push_back(&place);
+					} else {
+						changed--;
 					}
 					continue;
 				}
@@ -179,9 +206,7 @@ namespace CallPatch
 				// unhooks with a fresh stub of its own leaves the place. NEC's
 				// hook runs on every call there, as if NEC had written it.
 				if (reaches && walked.dlls.empty()) {
-					if (Back(place)) {
-						back.push_back(&place);
-					}
+					returned();
 					continue;
 				}
 

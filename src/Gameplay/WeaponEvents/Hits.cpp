@@ -3,7 +3,6 @@
 #include "Condition/Condition.h"
 #include "Condition/Equipped.h"
 #include "Condition/WeaponWear/WeaponWear.h"
-#include "Core/ItemCards.h"
 #include "Core/TraceLog.h"
 #include "Gameplay/FireRate/FireRate.h"
 
@@ -224,13 +223,11 @@ namespace WeaponEvents
 			}
 
 			// A bash costs more than a swing, see BASH_WEAR, and a harder blow
-			// costs more again, see AttackMult. The engine has released the
-			// inventory lock by the time Wear returns, which makes the refresh
-			// safe, see ItemCards.h.
+			// costs more again, see AttackMult. Its Pip-Boy card follows by
+			// itself, see ItemCards.h.
 			const auto scale = (bash ? BASH_WEAR : 1.0F) * AttackMult(hit);
-			if (Condition::WearsOut(*weapon) &&
-				WeaponWear::Wear(*player, *weapon, bash ? "bash" : "melee", scale)) {
-				ItemCards::Refresh(RE::ENUM_FORM_ID::kWEAP);
+			if (Condition::WearsOut(*weapon)) {
+				WeaponWear::Wear(*player, *weapon, bash ? "bash" : "melee", scale);
 			}
 			return RE::BSEventNotifyControl::kContinue;
 		}

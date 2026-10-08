@@ -35,9 +35,8 @@ namespace ItemCard
 		// The calls to PipboyInventoryData::PopulateItemCardInfo, the same job
 		// for the Pip-Boy. The first, in InitializeItem, is a tail call whose
 		// return nothing reads, see PatchCall. It runs as the game lists an
-		// item, which it does again for a gun after every shot. The second is
-		// a category rebuilt, on an equip and when ItemCards::Refresh asks
-		// after wear.
+		// item, which it does again after every wear of the item. The second
+		// is a category rebuilt, on an equip and when ItemCards::Refresh asks.
 		constexpr CallSite PIPBOY_SITES[] = {
 			{ RE::ID::PipboyInventoryData::InitializeItem.id(), 0x651, "pipboy card", true },
 			{ RE::ID::PipboyInventoryData::RepopulateItemCardOnSection.id(), 0x40F, "pipboy card rebuild" },

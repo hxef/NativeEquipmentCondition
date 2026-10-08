@@ -95,7 +95,8 @@ REPAIR AT THE WORKBENCH
 * Crafting perks like Gun Nut, Science!, Blacksmith and Armorer make repairs
   take fewer components, down to half at the top rank. The perk behind most of
   an item's components sets the discount, and each rank's description says how
-  much.
+  much. The perks count too when a skill mod like Classic NV Skill System
+  grants them from your skills.
 * A repair earns the same XP as crafting a mod from those components.
 
 REPAIR AT A TRADER
@@ -162,8 +163,11 @@ COMPATIBILITY
   prices work as ever. Repairs use the workbench's own REPAIR button and a
   button on the barter bar, which replacers usually keep.
 * NEC works alongside other DLL mods that change the same things. When one
-  takes over something NEC changes, NEC lets it, and NEC's MCM page and
+  takes over one of NEC's features, NEC lets it, and NEC's MCM page and
   NEC.log name that mod and what is off.
+* A DLL mod that changes item stats as the game starts, like RobCo Patcher,
+  does not make gear wear too fast or too slow, since NEC reads the stats
+  again at every save load and new game.
 
 REQUIREMENTS
 * Fallout 4 1.11.240
@@ -209,22 +213,28 @@ items at different conditions stay in separate stacks in your inventory.
 
 FOUND A BUG?
 If a feature seems to do nothing, another DLL mod may have taken it over.
-Check the top of NEC's MCM page, or search NEC.log for "left to".
+Load a save, then look at the top of NEC's MCM page. It names that mod.
 
-Otherwise, turn on NEC's full logs and play until the bug happens again. With
-MCM, set Log detail to debug and switch on Bug report logs. Without it, add
-this to NEC_custom.ini in Data\F4SE\Plugins and restart the game:
-  [Log]
-  sLogLevel=debug
-  bTraceLogs=true
-Then share these files from Documents\My Games\Fallout4\F4SE:
-* NEC.log
-* NEC.trace.log, NEC.ui.trace.log and NEC.npc.trace.log
-* The crash log if the game crashed, like crash-2026-10-01-21-15-31.log from
-  Addictol
-Say what you did right before it went wrong, and post it all on the Bugs tab
-of the mod's Nexus Mods page or as an issue on GitHub (link below). The bug
-report logs get big fast, so switch them off again once you're done.
+For anything else, share NEC's logs:
+1. Turn on the full logs:
+   * With MCM: on NEC's page, under Log, set Log detail to debug and switch
+     Bug report logs on.
+   * Without MCM: add these lines to NEC_custom.ini in Data\F4SE\Plugins,
+     then restart the game:
+       [Log]
+       sLogLevel=debug
+       bTraceLogs=true
+2. Play until the bug happens again.
+3. Open the folder Documents\My Games\Fallout4\F4SE and share these files:
+   * NEC.log, NEC.trace.log, NEC.ui.trace.log and NEC.npc.trace.log
+   * If the game crashed and you started it again, also the 4 files with a
+     1 in the name, like NEC.1.log. They are from the game that crashed.
+     NEC keeps your last 10 games this way, and a higher number is older.
+   * The crash log, if the game crashed, like
+     crash-2026-10-01-21-15-31.log from Addictol
+4. Say what you did right before it went wrong, and post it all on the Bugs
+   tab of the mod's Nexus Mods page or as an issue on GitHub (link below).
+5. Switch the full logs off again. They get big fast.
 
 SOURCE CODE
 NEC is open source under the GPL 3.0 license. Browse the code, report a bug or

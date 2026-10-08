@@ -9,6 +9,7 @@
 #include "UI/Repair/Restore.h"
 #include "UI/Repair/Workbench/Cost.h"
 #include "UI/Repair/Workbench/Display.h"
+#include "UI/Repair/Workbench/Workbench.h"
 
 #include <algorithm>
 #include <cmath>
@@ -63,6 +64,46 @@ namespace Workbench
 			const auto xp = std::floor(static_cast<float>(a_worth) * mult->GetFloat() + base->GetFloat());
 			return std::min(cap->GetFloat(), std::max(1.0F, xp));
 		}
+
+		// A repair the player cannot pay for gets the game's own words for
+		// it. TryCreate then puts up the corner message of sCannotBuildMessage,
+		// "You lack the requirements to create this item.". The game reads
+		// that setting there and nowhere else. While this lives, it holds the
+		// words of sCannotRepairMessage, "You lack the requirements to repair
+		// this item.", in the player's language, and it gets its own words
+		// back after. The message copies the words as it goes up.
+		class ScopedRepairWords
+		{
+		public:
+			ScopedRepairWords()
+			{
+				auto*       settings = RE::GameSettingCollection::GetSingleton();
+				auto*       build = settings ? settings->GetSetting("sCannotBuildMessage"sv) : nullptr;
+				const auto* repair = settings ? settings->GetSetting("sCannotRepairMessage"sv) : nullptr;
+				const auto  words = repair ? repair->GetString() : ""sv;
+				if (build && !build->GetString().empty() && !words.empty()) {
+					_build = build;
+					_kept = build->GetString().data();
+					_build->SetString(const_cast<char*>(words.data()));
+				}
+			}
+
+			~ScopedRepairWords()
+			{
+				if (_build) {
+					_build->SetString(const_cast<char*>(_kept));
+				}
+			}
+
+			ScopedRepairWords(const ScopedRepairWords&) = delete;
+			ScopedRepairWords(ScopedRepairWords&&) = delete;
+			ScopedRepairWords& operator=(const ScopedRepairWords&) = delete;
+			ScopedRepairWords& operator=(ScopedRepairWords&&) = delete;
+
+		private:
+			RE::Setting* _build{ nullptr };
+			const char*  _kept{ nullptr };
+		};
 
 		// Hides the CURRENT MODS heading, or shows it again. An item too worn
 		// to modify has its slots closed and an item no mod fits has none, so
@@ -170,6 +211,11 @@ namespace Workbench
 
 	void Begin(RE::ExamineMenu* a_menu, std::uint32_t a_level)
 	{
+		if (!Repairs()) {
+			TraceLog::Line("menu", "Workbench dropped the repair, repairs are off");
+			return;
+		}
+
 		const auto selection = Selected(a_menu);
 		if (!a_menu || !selection.Worn() || a_level <= selection.percent) {
 			TraceLog::Line("menu", "Workbench dropped the repair, the bench or the item is gone");
@@ -220,8 +266,24 @@ namespace Workbench
 			selection.Name(), selection.percent, a_level, Spell(bill),
 			Debt(selection.percent, priced.multiple) - Debt(a_level, priced.multiple));
 
+		// The game's own TryCreate by its ID, so a DLL over its slot never
+		// sees the repair. The box's callback is the proof the box went up:
+		// the game stores each new one in the global it reads here, and its
+		// own panel says why it did not when it can. Only the global is read.
+		// A job dropped while its box is up turns the yes into the game's own
+		// build.
 		a_menu->repairing = true;
-		a_menu->TryCreate();
+		static REL::Relocation<bool (*)(RE::ExamineMenu*)> tryCreate{ RE::ID::ExamineMenu::TryCreate };
+		const auto* before = RE::ExamineMenu::GetConfirmCallback();
+		{
+			const ScopedRepairWords words;
+			tryCreate(a_menu);
+		}
+		const auto* after = RE::ExamineMenu::GetConfirmCallback();
+		if (!after || after == before || after->thisMenu != a_menu) {
+			TraceLog::Line("menu", "Workbench put up no confirmation for the repair to {:d}%, so it dropped it", a_level);
+			Drop(a_menu);
+		}
 	}
 
 	void Drop(RE::ExamineMenu* a_menu)
@@ -280,7 +342,13 @@ namespace Workbench
 		a_menu->UpdateItemList(static_cast<std::int32_t>(a_menu->GetSelectedIndex()));
 		RebuildModdedItem(a_menu);
 		a_menu->UpdateItemCard(false);
-		a_menu->UpdateModSlotList();
+		// The game's rebuild of the slot list ends in the highlight, which
+		// reads the model in the viewer without looking.
+		if (a_menu->GetCurrent3D()) {
+			a_menu->UpdateModSlotList();
+		} else {
+			TraceLog::Line("menu", "Workbench left the slot list to the next highlight, the viewer has no model yet");
+		}
 		const auto after = Selected(a_menu);
 		Announce(a_menu, after);
 		a_menu->menuObj.Invoke("UpdateButtons");
@@ -292,10 +360,9 @@ namespace Workbench
 				after.Name(), after.percent, after.count);
 		}
 
-		// The Pip-Boy keeps the card it built, so an item repaired here would
-		// go on printing the condition it arrived with. Its own kind of card,
-		// so a chest piece rebuilds the apparel cards and a gun the weapon
-		// cards. See ItemCards.h.
+		// The Pip-Boy lists the repaired item again by itself, see
+		// ItemCards.h. Its kind of card is rebuilt as well, once per repair:
+		// the apparel cards for a chest piece, the weapon cards for a gun.
 		ItemCards::Refresh(selection.object->GetFormType());
 
 		// Nothing else on the screen says a free repair was made, with no

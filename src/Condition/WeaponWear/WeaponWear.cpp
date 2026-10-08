@@ -25,7 +25,7 @@ namespace WeaponWear
 			return;
 		}
 
-		MeasureReference();
+		MeasureReference(false);
 
 		// Whatever this load order says, see g_breakMessage.
 		auto*       settings = RE::GameSettingCollection::GetSingleton();
@@ -38,6 +38,13 @@ namespace WeaponWear
 			REX::WARN("sWeaponBreak is missing, so a weapon worn out will be put away without a word.");
 		} else {
 			REX::INFO("A weapon worn out is put away, and the game says \"{:s}\".", g_breakMessage);
+		}
+	}
+
+	void MeasureAgain()
+	{
+		if (g_dataHandler) {
+			MeasureReference(true);
 		}
 	}
 

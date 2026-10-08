@@ -1,3 +1,14 @@
+1.1.4
+* Workbench repairs and the rule that worn gear can't be modded work again beside Perk Conditions Framework, which skill mods like Classic NV Skill System use. The same goes for most other DLL mods that change the workbench menu.
+* If another DLL mod takes over the spot where NEC says why an item at the workbench can't be modified, only NEC's "Condition must be full to modify." and "This item can't be modified." stop showing. Repairs keep working.
+* A workbench repair you can't afford says the game's own "You lack the requirements to repair this item.", not "to create this item".
+* The CND bars on the HUD and the worn energy damage on item cards keep working beside another DLL mod that changes them too and still lets NEC do its part.
+* Gun Nut, Armorer, Blacksmith and Science! lower workbench repair costs even when a skill mod grants them, like Classic NV Skill System does from your Repair and Science skills.
+* Another DLL mod that changes item stats as the game starts, like RobCo Patcher, no longer makes gear wear too fast or too slow, since NEC reads the stats again at every save load and new game.
+* Fast automatic fire no longer stutters with a big inventory. Each shot, blow or hit taken used to update the Pip-Boy item card of every weapon and apparel item you carry.
+* NEC.log and the bug report logs keep copies from your last 10 games, numbered like NEC.1.log to NEC.10.log, so a crash's logs are still there after you start the game again.
+* NEC.log's "Checked 105 places again" warning now counts only the changes it explains, each with the DLL mod behind it.
+
 1.1.3
 * Fast automatic weapons wear less per shot, as if fired at an ordinary automatic's pace, so a Minigun lasts 3 times as long.
 * Weapons that scrap into nothing, like Grognak's Axe, can be repaired at a workbench, costing and wearing as if made of what most weapons scrap into.

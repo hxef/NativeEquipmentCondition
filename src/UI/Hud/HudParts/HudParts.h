@@ -20,6 +20,20 @@ namespace HudParts
 	// The game builds a new HUD menu, and a new HUD movie, at every save load.
 	void Install();
 
+	// Lets go of the colour targets of every HUD menu but the one UI lists
+	// now. Such a menu went without NEC's delete, which a DLL over it may skip.
+	// Each target stops listening for HUD colour changes and is never
+	// deleted, since its destructor would touch a movie that may be gone.
+	// MenuMovies.cpp runs it as the HUD movie and the main menu movie load,
+	// and Load's listener a frame after a HUD menu closes. The HUD movie
+	// loads while the new HUD menu is built, so that menu may already sit at
+	// the old one's address, but UI does not list it yet and every old
+	// target goes.
+	void ForgetOldTargets();
+
+	// Listens for the HUD menu closing, once UI exists.
+	void Load();
+
 	// The same translation key the item cards use, so the HUD says CND, ZST or
 	// СОСТ like the rest of the game.
 	inline constexpr const char* CND_TEXT = "$ItemInfo_CND";
@@ -141,7 +155,8 @@ namespace HudParts
 	// The list is changed under the menu's cachedQuadsLock, the lock the game
 	// reads it under. The list does not own its targets, the game's parts own
 	// theirs, so the plugin keeps this one and deletes it when the menu is
-	// deleted, see Install. One left behind would still be sent the next HUD's
+	// deleted, see Install, or lets go of it once the menu is gone, see
+	// ForgetOldTargets. One left listening would still be sent the next HUD's
 	// colour, into a movie that no longer exists.
 	void AddColorTarget(RE::HUDMenu& a_menu, const Value& a_clip);
 

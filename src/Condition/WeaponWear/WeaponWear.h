@@ -13,6 +13,11 @@ namespace WeaponWear
 	// order. Keeps numbers and no forms, so there is nothing to unload.
 	void Load();
 
+	// Measures the ordinary weapon and the ordinary automatic again, at every
+	// save load and new game. A DLL mod such as RobCo Patcher can change
+	// weapons after Load measured, as game data loads. Says only what moved.
+	void MeasureAgain();
+
 	// What that ordinary weapon hits for, the number every wear rate is
 	// measured against, a weapon's per shot and a piece of armor's per hit.
 	float ReferenceDamage();
@@ -31,8 +36,7 @@ namespace WeaponWear
 	//
 	// a_scale multiplies what this one event costs: above 1 for a bash and a
 	// power attack, and for a shot the power its rounds carried, below 1 for a
-	// charge not held to full. Returns true when the health changed, which is
-	// when the caller refreshes the Pip-Boy. Call it without holding the
-	// inventory lock, see ItemCards.h.
+	// charge not held to full. Returns true when the health changed. Call it
+	// without holding the inventory lock, see ItemCards.h.
 	bool Wear(RE::TESObjectREFR& a_owner, RE::TESObjectWEAP& a_weapon, const char* a_source, float a_scale = 1.0F);
 }

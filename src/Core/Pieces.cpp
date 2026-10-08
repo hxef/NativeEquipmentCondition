@@ -17,6 +17,9 @@ namespace
 	constexpr PieceRow PIECES[]{
 		{ kNone, Part::kNone, Shown::kHidden },
 		{ kBench, Part::kBench, Shown::kPart },
+		// The bench's small places do nothing while it does not repair, and
+		// each works by itself, see UI/Repair/Workbench/Workbench.cpp.
+		{ kBenchDetails, Part::kBench, Shown::kHidden, { kBench }, true },
 		// The perk text tells of a discount only the bench gives, see
 		// CraftingPerks::SetBench.
 		{ kPerksChart, Part::kPerks, Shown::kName, { kBench } },
@@ -212,14 +215,21 @@ namespace
 		{ "quick container row", { kLootMeters } },
 		{ "quick container rows", { kLootMeters } },
 		// Workbench
+		// No mod takes anything here, see Part::kBenchMessages, so the piece
+		// never goes off with this place. It only lets the place's line say
+		// NEC's 2 messages do nothing while Workbench repairs is off.
 		{ "bench calls", { kBench } },
 		{ "bench build confirmed", { kBench } },
 		{ "bench mod choice", { kBench } },
-		{ "bench build failure", { kBench } },
-		{ "bench try create", { kBench } },
-		{ "bench highlight part", { kBench } },
-		{ "bench confirm label", { kBench } },
-		{ "bench confirm question", { kBench } },
+		// A repair calls the game's own TryCreate, so only the mod lock's last
+		// check is here, and a worn item's slots stay shut without it.
+		{ "bench try create", { kBenchDetails } },
+		// The game and a repair reach it only with a model in the viewer.
+		{ "bench highlight part", { kBenchDetails } },
+		// Only the word on the box's button, MAKE where it would say REPAIR.
+		{ "bench confirm label", { kBenchDetails } },
+		// Only the box's question, "Make ?" where it would ask Repair.
+		{ "bench confirm question", { kBenchDetails } },
 		{ "bench can repair", { kBench } },
 		{ "bench switch item", { kBench } },
 		{ "bench repair", { kBench } },
@@ -301,7 +311,7 @@ namespace
 			}
 		}
 		return std::ranges::all_of(PIECES, [](const PieceRow& a_row) {
-			return (a_row.part == Part::kNone) == (a_row.piece == kNone || a_row.piece == kMeleeWear) && a_row.part != Part::kTrace;
+			return (a_row.part == Part::kNone) == (a_row.piece == kNone || a_row.piece == kMeleeWear) && a_row.part < Part::kTrace;
 		});
 	}
 	static_assert(PartsShown());

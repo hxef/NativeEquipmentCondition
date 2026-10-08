@@ -45,7 +45,10 @@ enum class Part : std::uint8_t
 	kInspect,        // Inspect price fix
 	kSrm,            // Console repair (srm)
 	kTips,           // Loading screen tips
-	kTrace,          // a place that only feeds the trace logs, never lost, named after its row's part
+	// From here on, places no mod takes anything from, each named after its
+	// row's part.
+	kTrace,          // a place that only feeds the trace logs
+	kBenchMessages,  // the bench place that also shows NEC's 2 messages when MODIFY opens nothing
 	kTotal,
 };
 

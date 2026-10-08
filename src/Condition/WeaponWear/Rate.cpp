@@ -6,6 +6,7 @@
 #include "Core/TraceLog.h"
 
 #include <algorithm>
+#include <atomic>
 #include <cmath>
 #include <cstdint>
 #include <format>
@@ -23,12 +24,13 @@ namespace WeaponWear
 		// gets more uses, see Rate.
 		constexpr float RATE_AT_REFERENCE = 0.0009F;
 
-		// What the reference weapon hits for. Measured by Load, since an
-		// overhaul that multiplies every damage in the game would otherwise
-		// wear everything out many times faster. Vanilla's own value is used
-		// until then, and in a load order with no weapon that hits.
-		constexpr float DEFAULT_REFERENCE_DAMAGE = 30.0F;
-		float           g_referenceDamage = DEFAULT_REFERENCE_DAMAGE;
+		// What the reference weapon hits for. Measured by Load and
+		// MeasureAgain, since an overhaul that multiplies every damage in the
+		// game would otherwise wear everything out many times faster. Vanilla's
+		// own value is used until then, and in a load order with no weapon
+		// that hits. Atomic, since wear reads it on other threads.
+		constexpr float    DEFAULT_REFERENCE_DAMAGE = 30.0F;
+		std::atomic<float> g_referenceDamage{ DEFAULT_REFERENCE_DAMAGE };
 
 		// The weapons whose damage sources the trace log has listed, by form
 		// ID. Several threads wear weapons, hence the lock.
@@ -36,9 +38,9 @@ namespace WeaponWear
 		std::unordered_set<std::uint32_t> g_seen;
 
 		// How many times a second the ordinary automatic weapon fires, 9.09 in
-		// vanilla. Measured by Load, and 0 while the load order has none, which
-		// leaves every weapon's wear as it is.
-		float g_referenceAutoRate = 0.0F;
+		// vanilla. Measured with the damage, and 0 while the load order has
+		// none, which leaves every weapon's wear as it is.
+		std::atomic<float> g_referenceAutoRate{ 0.0F };
 
 		// The middle value, the higher of the 2 in the middle for an even count.
 		// 0 for none.
@@ -142,7 +144,7 @@ namespace WeaponWear
 		}
 	}
 
-	void MeasureReference()
+	void MeasureReference(bool a_again)
 	{
 		// The median weapon, not the average. A few hit for hundreds while most
 		// hit for tens. The same for the automatics, where the Minigun fires 3
@@ -163,8 +165,35 @@ namespace WeaponWear
 			}
 		}
 
-		g_referenceDamage = damages.empty() ? DEFAULT_REFERENCE_DAMAGE : Median(damages);
-		g_referenceAutoRate = Median(rates);
+		const auto ordinary = damages.empty() ? DEFAULT_REFERENCE_DAMAGE : Median(damages);
+		const auto ordinaryRate = Median(rates);
+		const auto damageBefore = g_referenceDamage.exchange(ordinary);
+		const auto rateBefore = g_referenceAutoRate.exchange(ordinaryRate);
+
+		// Again, a line only for a number that moved as the log prints it.
+		if (a_again) {
+			const auto said = std::format("{:.0f}", ordinary);
+			const auto saidBefore = std::format("{:.0f}", damageBefore);
+			if (said != saidBefore) {
+				REX::INFO("An ordinary weapon in this load order now hits for {:s} instead of {:s}, as a mod changed weapons after game data loaded.",
+					said, saidBefore);
+			}
+			const auto fires = std::format("{:.2f}", ordinaryRate);
+			const auto firesBefore = std::format("{:.2f}", rateBefore);
+			if (fires == firesBefore) {
+				return;
+			}
+			if (ordinaryRate <= 0.0F) {
+				REX::INFO("No automatic weapon in this load order wears now, as a mod changed weapons after game data loaded, so no weapon's wear is cut for firing fast.");
+			} else if (rateBefore <= 0.0F) {
+				REX::INFO("An ordinary automatic weapon in this load order now fires {:s} times a second, as a mod changed weapons after game data loaded.",
+					fires);
+			} else {
+				REX::INFO("An ordinary automatic weapon in this load order now fires {:s} times a second instead of {:s}, as a mod changed weapons after game data loaded.",
+					fires, firesBefore);
+			}
+			return;
+		}
 
 		// A full reset can give a form ID to another weapon, so each is listed
 		// again.
@@ -173,9 +202,9 @@ namespace WeaponWear
 			g_seen.clear();
 		}
 
-		REX::INFO("An ordinary weapon in this load order hits for {:.0f}.", g_referenceDamage);
-		if (g_referenceAutoRate > 0.0F) {
-			REX::INFO("An ordinary automatic weapon in this load order fires {:.2f} times a second.", g_referenceAutoRate);
+		REX::INFO("An ordinary weapon in this load order hits for {:.0f}.", ordinary);
+		if (ordinaryRate > 0.0F) {
+			REX::INFO("An ordinary automatic weapon in this load order fires {:.2f} times a second.", ordinaryRate);
 		} else {
 			REX::INFO("No automatic weapon in this load order wears, so no weapon's wear is cut for firing fast.");
 		}
@@ -183,7 +212,7 @@ namespace WeaponWear
 
 	float ReferenceDamage()
 	{
-		return g_referenceDamage;
+		return g_referenceDamage.load();
 	}
 
 	void LogDamageSources(const RE::TESBoundObject& a_object, RE::TBO_InstanceData* a_data, bool a_perStack)
@@ -243,7 +272,8 @@ namespace WeaponWear
 		// cut the same, since the Shredder's held bash lands about 19 blows a
 		// second in first person. Every slower weapon keeps its full wear.
 		const auto rate = AutoRate(a_weapon, a_instance);
-		const auto pace = g_referenceAutoRate > 0.0F && rate > g_referenceAutoRate ? g_referenceAutoRate / rate : 1.0F;
+		const auto ordinaryRate = g_referenceAutoRate.load();
+		const auto pace = ordinaryRate > 0.0F && rate > ordinaryRate ? ordinaryRate / rate : 1.0F;
 
 		// Harder hitting wears faster, better built wears slower. A pipe gun is
 		// steel and hits for little, a plasma rifle is nuclear material and
@@ -256,7 +286,7 @@ namespace WeaponWear
 		// as it fires.
 		const auto mult = Settings::fWearRateMult.GetValue();
 		const auto wear = RATE_AT_REFERENCE * (mult > 0.0F ? mult : 0.0F) *
-		                  (damage / g_referenceDamage) * (Materials::ReferenceQuality(Condition::Kind::kWeapon) / quality) * pace;
+		                  (damage / g_referenceDamage.load()) * (Materials::ReferenceQuality(Condition::Kind::kWeapon) / quality) * pace;
 
 		const auto cut = TraceLog::IsOpen() && pace < 1.0F ? std::format(", cut x{:.4f} for firing {:.2f} a second", pace, rate) : std::string{};
 		if (blast > 0.0F) {

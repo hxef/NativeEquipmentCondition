@@ -97,7 +97,7 @@ namespace
 		{ .name = "PaperDoll", .OnMovieLoaded = PaperDoll::OnMovieLoaded },
 		// What both HUD readouts share, on their switch. Their colour targets
 		// go with the HUD menu they were made for.
-		{ .name = "HudParts", .on = &Settings::bHudCondition, .part = Part::kHudBar, .Install = HudParts::Install },
+		{ .name = "HudParts", .on = &Settings::bHudCondition, .part = Part::kHudBar, .Install = HudParts::Install, .Load = HudParts::Load },
 		// A CND bar in the HUD's ammo counter.
 		{ .name = "HudCondition", .on = &Settings::bHudCondition, .OnMovieLoaded = HudCondition::OnMovieLoaded },
 		// The same bar on the power armor dash, on the same switch.
@@ -132,7 +132,7 @@ namespace
 	{
 		for (std::size_t i = 0; i < std::size(FEATURES); i++) {
 			const auto part = FEATURES[i].part;
-			if ((FEATURES[i].Install && part == Part::kNone) || part == Part::kTrace) {
+			if ((FEATURES[i].Install && part == Part::kNone) || part >= Part::kTrace) {
 				return false;
 			}
 			for (std::size_t j = 0; j < i; j++) {

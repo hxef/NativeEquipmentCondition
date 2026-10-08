@@ -11,6 +11,7 @@
 #include <cstdint>
 #include <iterator>
 #include <span>
+#include <utility>
 
 namespace HealthDamage
 {
@@ -50,10 +51,17 @@ namespace HealthDamage
 		// first Pip-Boy hook to the second. The second stands at 3 places
 		// inside the one call that adds up the card, on the thread building it,
 		// and the first always runs before them, so a thread local carries it.
+		// The types hook takes it once, so a card whose health call another
+		// DLL skipped never takes the condition of the card before it.
 		thread_local float t_cardHealth = Condition::INVALID_HEALTH;
 
-		// The 2 Pip-Boy hooks. The object effect sites read the same note, so
-		// they ask it too.
+		// What the types hook took, for the same card's object effects. The
+		// health hook clears it, so a card whose types call was skipped leaves
+		// its effects at full too.
+		thread_local float t_cardEffects = Condition::INVALID_HEALTH;
+
+		// The 2 Pip-Boy hooks. The object effect sites read what they hand
+		// on, so they ask it too.
 		CallPatch::Held g_card;
 
 		// The 3 type sites are the pair's types call and the 2 object effect
@@ -67,14 +75,13 @@ namespace HealthDamage
 		CallPatch::Link<CardBlast_t>                 g_cardBlastLink;
 
 		// Records the condition of the item, or -1 while the pair does not
-		// run. A DLL that hooks either place after NEC ends the pair, see
-		// InstallCard, so a card never takes the condition of one built
-		// before it. Changes nothing else. The physical damage is already
-		// scaled, since this call reaches CalcWeaponDamage through the display
-		// site in Combat.cpp.
+		// run. Changes nothing else. The physical damage is already scaled,
+		// since this call reaches CalcWeaponDamage through the display site in
+		// Combat.cpp.
 		float CardHealthHk(const RE::BGSObjectInstanceT<RE::TESObjectWEAP>& a_weapon, const RE::TESAmmo* a_ammo, float a_health)
 		{
-			t_cardHealth = g_card.Intact() ? a_health : Condition::INVALID_HEALTH;
+			t_cardEffects = Condition::INVALID_HEALTH;
+			t_cardHealth = g_card.Runs(g_cardHealthLink) ? a_health : Condition::INVALID_HEALTH;
 			return g_cardHealthLink(a_weapon, a_ammo, a_health);
 		}
 
@@ -93,8 +100,18 @@ namespace HealthDamage
 			void* a_unused, float* a_out)
 		{
 			g_cardTypeLinks[I](a_entryPoint, a_perkOwner, a_instance, a_unused, a_out);
-			if (a_out && g_card.Intact() && (I == 0 || g_cardTypeLinks[I].Live())) {
-				*a_out *= DamageMult(t_cardHealth);
+			auto health = Condition::INVALID_HEALTH;
+			auto live = false;
+			if constexpr (I == 0) {
+				health = std::exchange(t_cardHealth, Condition::INVALID_HEALTH);
+				live = g_card.Runs(g_cardTypeLinks[0]);
+				t_cardEffects = live ? health : Condition::INVALID_HEALTH;
+			} else {
+				health = t_cardEffects;
+				live = g_card.Intact() && g_cardTypeLinks[I].Live();
+			}
+			if (a_out && live) {
+				*a_out *= DamageMult(health);
 			}
 		}
 
@@ -129,16 +146,10 @@ namespace HealthDamage
 	{
 		const auto entryPoint = RE::ID::BGSEntryPoint::HandleEntryPoint.address();
 
-		{
-			// A card whose health call another DLL skipped would take the
-			// condition of the card before it. So any change at either place
-			// after NEC turns the pair off for good, see CallPatch::EVERY_CALL.
-			const CallPatch::Together pair{ Part::kCardDamage, CallPatch::EVERY_CALL };
-			g_card = CallPatch::PatchTogether({
-				{ CARD_HEALTH_SITE, RE::ID::CombatFormulas::GetWeaponDisplayDamage.address(), reinterpret_cast<std::uintptr_t>(&CardHealthHk), &g_cardHealthLink },
-				{ CARD_TYPES_SITE, entryPoint, reinterpret_cast<std::uintptr_t>(&CardTypesHk<0>), &g_cardTypeLinks[0] },
-			}, Part::kCardDamage);
-		}
+		g_card = CallPatch::PatchTogether({
+			{ CARD_HEALTH_SITE, RE::ID::CombatFormulas::GetWeaponDisplayDamage.address(), reinterpret_cast<std::uintptr_t>(&CardHealthHk), &g_cardHealthLink },
+			{ CARD_TYPES_SITE, entryPoint, reinterpret_cast<std::uintptr_t>(&CardTypesHk<0>), &g_cardTypeLinks[0] },
+		}, Part::kCardDamage);
 
 		if (!g_card) {
 			REX::ERROR("The item card will keep printing damage types at full strength.");

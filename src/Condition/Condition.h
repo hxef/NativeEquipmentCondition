@@ -91,7 +91,7 @@ namespace Condition
 	// uses the event counted as, already included in a_amount. a_theirs sends
 	// the line to the NPC log, for an item someone else is wearing down.
 	// Returns true when the health changed. Runs under the inventory lock, so
-	// the caller refreshes the Pip-Boy after releasing it, see ItemCards.h.
+	// the caller acts on a change after releasing it.
 	bool Decrease(RE::ExtraDataList& a_extra, const RE::TESBoundObject& a_object, float a_amount, const char* a_source, float a_scale,
 		bool a_theirs = false);
 }

@@ -51,9 +51,9 @@ namespace CallPatch
 	// else the one its patch call names, else its row's. Losing a place of
 	// the row's own part in a row with a switch leaves the whole row to the
 	// other mod and turns the switch off. A place of any other part goes
-	// alone and the rest of the row works. A place of Part::kTrace only
-	// feeds the trace logs, stays in whatever its row's switch says, and
-	// never takes anything. In a row with no switch every set stands alone.
+	// alone and the rest of the row works. A place from Part::kTrace on
+	// stays in whatever its row's switch says and never takes anything. In a
+	// row with no switch every set stands alone.
 
 	class Together;
 

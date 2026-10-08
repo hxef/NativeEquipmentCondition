@@ -38,7 +38,7 @@
 namespace TraceLog
 {
 	// Opens the 3 files beside NEC.log when bTraceLogs is on. Call it after
-	// F4SE::Init, which creates NEC.log.
+	// LogFiles::OpenMain, which opens NEC.log.
 	void Open();
 
 	// Lets lines through to the 3 files, or stops them. The files open the
@@ -50,7 +50,7 @@ namespace TraceLog
 	// first, so a trace call costs almost nothing while they are.
 	bool IsOpen();
 
-	// Tags switched off. Each floods the log once its code works: 1 shot
+	// Tags switched off. Each floods the log once its code works: 1 equip
 	// rebuilds the card and the price of every weapon carried, the combat
 	// health line is repeated by the damage line under it, and a save loading
 	// hands thousands of stacks to the characters and containers around the

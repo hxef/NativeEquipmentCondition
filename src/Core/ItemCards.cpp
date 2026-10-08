@@ -9,8 +9,8 @@ namespace ItemCards
 			return;
 		}
 
-		// The game holds this lock around its own rebuilds. Wear from a gun is
-		// counted on an animation thread, so it matters here.
+		// The game holds this lock around its own rebuilds. The callers run on
+		// more than one thread, so it matters here.
 		auto& inventory = manager->inventoryData;
 		inventory.LockDataGroup();
 		inventory.RepopulateItemCardOnSection(a_formType);

@@ -55,8 +55,8 @@ namespace CallPatch
 		kPointer,
 	};
 
-	// What losing a place costs, from its part: the row's own part is main,
-	// any other goes alone, kTrace never takes anything.
+	// What losing a place costs, from its part: main for the row's own,
+	// alone for any other, nothing from kTrace on.
 	enum class Use
 	{
 		kMain,

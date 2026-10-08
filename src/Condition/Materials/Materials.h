@@ -48,6 +48,11 @@ namespace Materials
 	// Forgets everything Load found.
 	void Unload();
 
+	// Measures the 2 medians of ReferenceQuality again from what each
+	// component is worth now, at every save load and new game, and says only
+	// what moved. The recipes stay the ones Load found.
+	void MeasureAgain();
+
 	// The worth of 1 unit of an average component for an item of a_kind, the
 	// median of the recipes of that kind, so an overhaul repricing everything
 	// moves the median with it. For weapons those are the recipes that build a

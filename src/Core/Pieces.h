@@ -18,8 +18,10 @@
 enum class Piece : std::uint8_t
 {
 	kNone,
-	// Workbench repairs, first since the perk text needs it
+	// Workbench repairs, first since the perk text needs it, and its small
+	// places, which no player could tell apart
 	kBench,
+	kBenchDetails,
 	// Perk repair discount text
 	kPerksChart,
 	kPerksPipboy,

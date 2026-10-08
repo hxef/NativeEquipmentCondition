@@ -2,7 +2,6 @@
 
 #include "Condition/ArmorWear/ArmorWear.h"
 #include "Condition/Equipped.h"
-#include "Core/ItemCards.h"
 #include "Core/TraceLog.h"
 #include "Gameplay/ArmorRating.h"
 
@@ -159,13 +158,10 @@ namespace ArmorEvents
 				return RE::BSEventNotifyControl::kContinue;
 			}
 
-			// The worn pieces protect less from the next blow on, and the
-			// player's apparel cards show the new condition. The engine has
-			// released the inventory lock by here, see ItemCards.h.
+			// The worn pieces protect less from the next blow on. The engine
+			// has released the inventory lock by here. The player's Pip-Boy
+			// lists each piece that wore again by itself, see ItemCards.h.
 			ArmorRating::Refresh(*target);
-			if (!theirs) {
-				ItemCards::Refresh(RE::ENUM_FORM_ID::kARMO);
-			}
 			return RE::BSEventNotifyControl::kContinue;
 		}
 	}

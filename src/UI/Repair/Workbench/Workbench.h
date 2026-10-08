@@ -27,9 +27,9 @@
 namespace Workbench
 {
 	// Patches the workbench menu's function table and its confirmation
-	// callback's. The 12 slots of the repair go in as one, or not at all when
-	// another mod has one of them. The 3 list slots and the list refresh call
-	// go in each by itself.
+	// callback's. The 3 places a repair runs through once its box is up go in
+	// as one, or not at all when another mod has one of them. Every other
+	// place goes in by itself.
 	void Install();
 
 	// Logs the language the bench speaks, once the game has read it.
@@ -39,6 +39,8 @@ namespace Workbench
 	// equipped items to the bench movie. Ignores every other movie.
 	void OnMovieLoaded(Scaleform::GFx::Movie& a_movie, std::string_view a_file);
 
-	// Whether the repair's hooks are in, so the bench repairs.
+	// Whether the bench repairs: the 3 ways into a repair and the 3 places it
+	// runs through all still run NEC's hooks. The mod lock and the perk text
+	// ask it too, so they never outlive the repair.
 	[[nodiscard]] bool Repairs();
 }

@@ -109,12 +109,21 @@ namespace CallPatch
 
 	std::string_view NameOf(const Place& a_place)
 	{
-		return Text::PartLogName(a_place.part == Part::kTrace ? a_place.row->part : a_place.part);
+		return Text::PartLogName(a_place.use == Use::kTraceOnly ? a_place.row->part : a_place.part);
 	}
 
 	std::string_view TraceTail(const Place& a_place)
 	{
-		return a_place.use == Use::kTraceOnly ? " It only feeds the bug report logs, so play is not affected."sv : ""sv;
+		if (a_place.use != Use::kTraceOnly) {
+			return ""sv;
+		}
+		if (a_place.part != Part::kBenchMessages) {
+			return " It only feeds the bug report logs, so play is not affected."sv;
+		}
+		// The messages come from NEC's hook, so a place NEC never wrote has
+		// none.
+		return a_place.size == 0 ? " NEC's 2 messages when MODIFY opens nothing stay off, so repairs are not affected."sv :
+		                           " It only shows NEC's 2 messages when MODIFY opens nothing, so repairs are not affected."sv;
 	}
 
 	std::string ClashLine(const Place& a_place)
@@ -141,7 +150,7 @@ namespace CallPatch
 		const auto off = PiecesOffTail(a_place);
 		return std::format("{:s}: {:s} at {:X} is already changed by {:s}, so NEC runs on top of {:s} and hands each call on.{:s}{:s}",
 			NameOf(a_place), a_place.what, a_place.where, Over(a_place.under), many ? "them" : "it",
-			!off.empty() ? std::string_view{ off } : many ? " All work."sv : " Both work."sv, TraceTail(a_place));
+			!off.empty() ? std::string_view{ off } : many ? " All work."sv : " Both work."sv, off.empty() ? TraceTail(a_place) : ""sv);
 	}
 
 	// Until a recheck the places on top are exactly the ones install wrote

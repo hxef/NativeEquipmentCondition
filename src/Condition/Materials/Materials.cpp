@@ -4,9 +4,11 @@
 #include "Condition/Materials/Index.h"
 
 #include <algorithm>
+#include <atomic>
 #include <format>
 #include <optional>
 #include <string>
+#include <utility>
 
 namespace Materials
 {
@@ -48,8 +50,10 @@ namespace Materials
 		constexpr float LOWEST_QUALITY = 2.0F;
 		constexpr float HIGHEST_QUALITY = 50.0F;
 
-		float g_weaponQuality = DEFAULT_WEAPON_QUALITY;
-		float g_armorQuality = DEFAULT_ARMOR_QUALITY;
+		// Measured by Load and MeasureAgain. Atomic, since wear reads them on
+		// other threads.
+		std::atomic<float> g_weaponQuality{ DEFAULT_WEAPON_QUALITY };
+		std::atomic<float> g_armorQuality{ DEFAULT_ARMOR_QUALITY };
 
 		// The worth of everything one recipe asks for and how many units that
 		// is, kept apart so an item's recipes are added up before dividing. An
@@ -133,6 +137,24 @@ namespace Materials
 			const auto middle = a_qualities.begin() + a_qualities.size() / 2;
 			std::nth_element(a_qualities.begin(), middle, a_qualities.end());
 			return *middle;
+		}
+
+		// The 2 medians, see ReferenceQuality in Materials.h, weapons first,
+		// from what each component is worth now.
+		std::pair<float, float> Medians()
+		{
+			std::vector<float> weapons;
+			std::vector<float> armor;
+			for (const auto& [built, recipe] : g_recipes) {
+				const auto kind = CountsToward(*built);
+				const auto parts = PartsOf(*recipe);
+				if (!kind || parts.units == 0) {
+					continue;
+				}
+				(*kind == Condition::Kind::kArmor ? armor : weapons)
+					.push_back(static_cast<float>(parts.worth) / static_cast<float>(parts.units));
+			}
+			return { Middle(weapons, DEFAULT_WEAPON_QUALITY), Middle(armor, DEFAULT_ARMOR_QUALITY) };
 		}
 
 		// a_quality kept inside the limits of the scale for an item of a_kind.
@@ -285,7 +307,27 @@ namespace Materials
 
 	float ReferenceQuality(Condition::Kind a_kind)
 	{
-		return a_kind == Condition::Kind::kArmor ? g_armorQuality : g_weaponQuality;
+		return a_kind == Condition::Kind::kArmor ? g_armorQuality.load() : g_weaponQuality.load();
+	}
+
+	void MeasureAgain()
+	{
+		const auto [weapons, armor] = Medians();
+		const auto weaponsBefore = g_weaponQuality.exchange(weapons);
+		const auto armorBefore = g_armorQuality.exchange(armor);
+
+		const auto said = std::format("{:.1f}", weapons);
+		const auto saidBefore = std::format("{:.1f}", weaponsBefore);
+		if (said != saidBefore) {
+			REX::INFO("An ordinary weapon is now worth {:s} a unit instead of {:s}, as a mod changed components or recipes after game data loaded.",
+				said, saidBefore);
+		}
+		const auto armorSaid = std::format("{:.1f}", armor);
+		const auto armorSaidBefore = std::format("{:.1f}", armorBefore);
+		if (armorSaid != armorSaidBefore) {
+			REX::INFO("An ordinary piece of armor is now worth {:s} a unit instead of {:s}, as a mod changed components or recipes after game data loaded.",
+				armorSaid, armorSaidBefore);
+		}
 	}
 
 	void Unload()
@@ -343,20 +385,9 @@ namespace Materials
 			}
 		}
 
-		// The 2 medians, see ReferenceQuality in Materials.h.
-		std::vector<float> weapons;
-		std::vector<float> armor;
-		for (const auto& [built, recipe] : g_recipes) {
-			const auto kind = CountsToward(*built);
-			const auto parts = PartsOf(*recipe);
-			if (!kind || parts.units == 0) {
-				continue;
-			}
-			(*kind == Condition::Kind::kArmor ? armor : weapons)
-				.push_back(static_cast<float>(parts.worth) / static_cast<float>(parts.units));
-		}
-		g_weaponQuality = Middle(weapons, DEFAULT_WEAPON_QUALITY);
-		g_armorQuality = Middle(armor, DEFAULT_ARMOR_QUALITY);
+		const auto [weapons, armor] = Medians();
+		g_weaponQuality = weapons;
+		g_armorQuality = armor;
 
 		g_borrowedClothing = MostBorrowed<RE::TESObjectARMO>([](const RE::TESObjectARMO& a_armor) { return ArmorWear::IsClothing(a_armor); });
 		g_borrowedArmor = MostBorrowed<RE::TESObjectARMO>([](const RE::TESObjectARMO& a_armor) { return !ArmorWear::IsClothing(a_armor); });
@@ -380,7 +411,7 @@ namespace Materials
 		}
 
 		REX::INFO("Found {:d} component spellings and what {:d} items and mods are built from. An ordinary weapon is worth {:.1f} a unit and an ordinary piece of armor {:.1f}. Clothing with no scrap recipe of its own borrows {:s}, armor {:s}, and a weapon with nothing priced {:s}, which {:d} of this load order's weapons do.",
-			g_pricedBy.size(), g_recipes.size(), g_weaponQuality, g_armorQuality, Spell(g_borrowedClothing), Spell(g_borrowedArmor), Spell(g_borrowedWeapon), borrowing);
+			g_pricedBy.size(), g_recipes.size(), weapons, armor, Spell(g_borrowedClothing), Spell(g_borrowedArmor), Spell(g_borrowedWeapon), borrowing);
 	}
 
 	float Quality(const RE::TESBoundObject& a_object, const RE::ExtraDataList* a_extra)

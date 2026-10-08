@@ -3,6 +3,7 @@
 #include "Core/CallPatch/CallPatch.h"
 #include "Core/Feature.h"
 #include "Core/Settings.h"
+#include "UI/Hud/HudParts/HudParts.h"
 #include "UI/Repair/ConsoleRepair.h"
 
 #include <Scaleform/G/GFx_MovieDef.h>
@@ -30,6 +31,13 @@ namespace MenuMovies
 			const auto path = std::string_view{ url };
 			const auto slash = path.find_last_of("/\\");
 			const auto file = slash == std::string_view::npos ? path : path.substr(slash + 1);
+
+			// A HUD menu can go without NEC's delete beside another DLL, so its
+			// colour targets are let go of before a new HUD or a colour change
+			// reaches them, whatever the switch says.
+			if (IsMovie(file, "HUDMenu.swf"sv) || IsMovie(file, "MainMenu.swf"sv)) {
+				HudParts::ForgetOldTargets();
+			}
 
 			// The main and pause menus share this movie. Checked before any row
 			// adds to it, so what shows there is up to date. The Settings line

@@ -49,6 +49,39 @@ namespace
 		return text.substr(0, text.find('\0'));
 	}
 
+	// What play remembers belongs to 1 game, so another save or a new game
+	// starts without it.
+	void ForgetPlay()
+	{
+		Jam::Unload();
+		FireRate::Unload();
+		HudParts::Weapon::Forget();
+	}
+
+	// The main menu opening drops the last game's readings too, since a coc
+	// from there starts a game with no load or new game message. Queued,
+	// since the game sends this while it works on its menus.
+	class MainMenuSink : public RE::BSTEventSink<RE::MenuOpenCloseEvent>
+	{
+	public:
+		F4_HEAP_REDEFINE_NEW(MainMenuSink);
+
+	private:
+		RE::BSEventNotifyControl ProcessEvent(const RE::MenuOpenCloseEvent& a_event, RE::BSTEventSource<RE::MenuOpenCloseEvent>*) override
+		{
+			if (a_event.opening && a_event.menuName == RE::MainMenu::MENU_NAME) {
+				if (const auto* tasks = F4SE::GetTaskInterface()) {
+					tasks->AddTask([] {
+						REX::INFO("The main menu has opened.");
+						TraceLog::Mark("MAINMENU", "the main menu has opened");
+						ForgetPlay();
+					});
+				}
+			}
+			return RE::BSEventNotifyControl::kContinue;
+		}
+	};
+
 	// Patches the game for every row, in the order of the list.
 	void Install()
 	{
@@ -95,13 +128,9 @@ namespace
 			return;
 		}
 
-		// What play remembers belongs to 1 game, so another save or a new
-		// game starts without it.
 		if (a_msg->type == F4SE::MessagingInterface::kPreLoadGame ||
 			a_msg->type == F4SE::MessagingInterface::kNewGame) {
-			Jam::Unload();
-			FireRate::Unload();
-			HudParts::Weapon::Forget();
+			ForgetPlay();
 		}
 
 		if (a_msg->type == F4SE::MessagingInterface::kPreLoadGame) {
@@ -170,6 +199,15 @@ namespace
 		}
 
 		TraceLog::Mark("DATA", "every file has loaded");
+
+		// UI lasts as long as the game, so the sink is added at the first load
+		// only.
+		static bool registered = false;
+		if (auto* ui = RE::UI::GetSingleton(); ui && !registered) {
+			ui->RegisterSink<RE::MenuOpenCloseEvent>(new MainMenuSink());
+			registered = true;
+		}
+
 		for (const auto& feature : features) {
 			if (feature.Load) {
 				feature.Load();

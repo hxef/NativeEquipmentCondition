@@ -11,7 +11,6 @@
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
-#include <string_view>
 #include <unordered_map>
 #include <vector>
 
@@ -106,19 +105,6 @@ namespace ArmorRating
 			return result;
 		}
 
-		// A damage type has no name, and the game keeps no editor ID for most
-		// forms unless another DLL mod keeps them. The resistance it is
-		// checked against keeps its own, such as EnergyResist.
-		std::string_view TypeName(const RE::BGSDamageType& a_type)
-		{
-			const char* own = a_type.GetFormEditorID();
-			if (own && *own) {
-				return own;
-			}
-			const char* resistance = a_type.data.resistance ? a_type.data.resistance->formEditorID.c_str() : nullptr;
-			return resistance && *resistance ? resistance : "a damage type";
-		}
-
 		// Stands in for SumEquippedArmorDamageTypes. The engine's sum reads the
 		// first stack of each piece, and this takes off what each equipped copy
 		// has lost, so a worn piece's energy and radiation resistance fall with
@@ -175,7 +161,7 @@ namespace ArmorRating
 				entry.second = std::max(0, entry.second - taken);
 				if (mine) {
 					TraceLog::Once("armor", "{:s} [{:08X}] resistance {:d} after {:d} lost to wear",
-						TypeName(*entry.first), entry.first->formID, entry.second, taken);
+						TraceLog::TypeName(*entry.first), entry.first->formID, entry.second, taken);
 				}
 			}
 			return result;

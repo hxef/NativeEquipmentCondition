@@ -26,7 +26,7 @@
 #include "UI/Inventory/Pipboy.h"
 #include "UI/LoadingTips.h"
 #include "UI/Mcm/Mcm.h"
-#include "UI/Repair/ConfirmScroll.h"
+#include "UI/Repair/ConfirmScroll/ConfirmScroll.h"
 #include "UI/Repair/ConsoleRepair.h"
 #include "UI/Repair/VendorRepair/VendorRepair.h"
 #include "UI/Repair/Workbench/Workbench.h"

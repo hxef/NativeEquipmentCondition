@@ -366,7 +366,6 @@ namespace PaperDoll
 			std::array<Bar, kRegions>    bars;
 		};
 
-		// Lives as long as the plugin, the same way as the HUD's listeners.
 		FrameListener g_frameListener;
 	}
 

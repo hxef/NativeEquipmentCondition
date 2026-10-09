@@ -219,21 +219,14 @@ namespace
 		// never goes off with this place. It only lets the place's line say
 		// NEC's 2 messages do nothing while Workbench repairs is off.
 		{ "bench calls", { kBench } },
-		{ "bench build confirmed", { kBench } },
-		{ "bench mod choice", { kBench } },
-		// A repair calls the game's own TryCreate, so only the mod lock's last
-		// check is here, and a worn item's slots stay shut without it.
+		// Only the mod lock's last check, since a repair never passes here. A
+		// worn item's slots stay shut without it.
 		{ "bench try create", { kBenchDetails } },
 		// The game and a repair reach it only with a model in the viewer.
 		{ "bench highlight part", { kBenchDetails } },
-		// Only the word on the box's button, MAKE where it would say REPAIR.
-		{ "bench confirm label", { kBenchDetails } },
-		// Only the box's question, "Make ?" where it would ask Repair.
-		{ "bench confirm question", { kBenchDetails } },
 		{ "bench can repair", { kBench } },
 		{ "bench switch item", { kBench } },
 		{ "bench repair", { kBench } },
-		{ "bench confirm delete", { kBench } },
 		{ "bench item list", { kBenchItemList } },
 		{ "bench mod slots", { kBenchModLists } },
 		{ "bench mod choices", { kBenchModLists } },

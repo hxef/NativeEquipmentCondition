@@ -36,8 +36,9 @@ namespace FireRate
 	void Install();
 
 	// Forgets the player's share, every NPC's share and every blade's pace.
-	// Form IDs name something else after a full reset, and the guns and NPCs
-	// of another game after a save load or a new game, so it runs then too.
+	// Form IDs name something else after a full reset, and other guns and NPCs
+	// once another game starts, so it runs then too, see ForgetPlay in
+	// main.cpp.
 	void Unload();
 
 	// Whether the patches are in: not when another mod has fire rate. The
@@ -45,7 +46,7 @@ namespace FireRate
 	[[nodiscard]] bool Slows();
 
 	// The share of its own rate a copy of a weapon fires at in this condition,
-	// for the menus, see ItemCard/Hooks.cpp. 1 for a weapon that is not automatic,
+	// for the menus, see ItemCard/Rate.cpp. 1 for a weapon that is not automatic,
 	// carries no condition, or while bFireRate is off.
 	[[nodiscard]] float RateShare(const RE::TESObjectWEAP& a_weapon, const RE::TESObjectWEAP::InstanceData* a_data, float a_health);
 

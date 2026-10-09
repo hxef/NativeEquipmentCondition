@@ -7,6 +7,7 @@
 #include "Core/TraceLog.h"
 #include "UI/Repair/RepairPrompt.h"
 #include "UI/Repair/Restore.h"
+#include "UI/Repair/Workbench/Box.h"
 #include "UI/Repair/Workbench/Cost.h"
 #include "UI/Repair/Workbench/Display.h"
 #include "UI/Repair/Workbench/Missing.h"
@@ -121,7 +122,7 @@ namespace Workbench
 			bool        changed{ false };
 		};
 
-		// Lives as long as the plugin, the same way as the item card listener.
+		// Lives as long as the plugin, see Flash.h.
 		Relabel g_relabel;
 	}
 
@@ -229,37 +230,18 @@ namespace Workbench
 
 		// A repair the bench cannot pay for shows what it lacks, see Missing.h.
 		if (ShowMissing(a_menu, job)) {
-			Drop(a_menu);
+			Drop();
 			return;
 		}
-
-		// The game's own TryCreate by its ID, so a DLL over its slot never
-		// sees the repair. The box's callback is the proof the box went up:
-		// the game stores each new one in the global it reads here, and its
-		// own panel says why it did not when it can. Only the global is read.
-		// A job dropped while its box is up turns the yes into the game's own
-		// build.
-		a_menu->repairing = true;
-		static REL::Relocation<bool (*)(RE::ExamineMenu*)> tryCreate{ RE::ID::ExamineMenu::TryCreate };
-		const auto* before = RE::ExamineMenu::GetConfirmCallback();
-		{
-			const ScopedRepairWords words;
-			tryCreate(a_menu);
-		}
-		const auto* after = RE::ExamineMenu::GetConfirmCallback();
-		if (!after || after == before || after->thisMenu != a_menu) {
-			TraceLog::Line("menu", "Workbench put up no confirmation for the repair to {:d}%, so it dropped it", a_level);
-			Drop(a_menu);
-		}
+		ShowRepairBox(a_menu);
 	}
 
-	void Drop(RE::ExamineMenu* a_menu)
+	void Drop()
 	{
-		if (a_menu) {
-			a_menu->repairing = false;
-		}
 		// The parts stay for the box of missing parts, see Missing.h.
-		InHand().choice.recipe = nullptr;
+		auto& job = InHand();
+		job.choice.recipe = nullptr;
+		job.box = nullptr;
 	}
 
 	void Finish(RE::ExamineMenu* a_menu)
@@ -269,7 +251,7 @@ namespace Workbench
 		auto*      player = RE::PlayerCharacter::GetSingleton();
 		if (!a_menu || !selection.Worn() || !player || level <= selection.percent) {
 			TraceLog::Line("menu", "Workbench had nothing left to repair");
-			Drop(a_menu);
+			Drop();
 			return;
 		}
 
@@ -292,18 +274,21 @@ namespace Workbench
 			player->RewardExperience(gained, false, nullptr, nullptr);
 		}
 
-		// The bench's own spending, from every container it is linked to. Not
-		// called for a job asking nothing, a repair in the free band.
+		// Spends the job's parts, but not for a job asking nothing, a repair
+		// in the free band. That one queues the item itself, since the
+		// crafting loop plays only with something queued.
 		if (!InHand().parts.empty()) {
-			a_menu->ConsumeSelectedItems(true, nullptr);
-			a_menu->UpdateOptimizedAutoBuildInv();
+			Spend(a_menu);
+		} else {
+			a_menu->QueueCraftingComponent(selection.object);
+			PlayRepairSound(a_menu);
 		}
 
 		TraceLog::Line("menu",
 			"Workbench repaired {:s} from {:d}% to {:d}%, one of a stack of {:d}, worth {:d} for {:g} experience before Intelligence and perks",
 			name, selection.percent, level, selection.count, worth, gained);
 
-		Drop(a_menu);
+		Drop();
 
 		// Brings the bench up to date: the name in the list, the CND row on the
 		// card, and the slot list ungreyed once the item reaches the floor.

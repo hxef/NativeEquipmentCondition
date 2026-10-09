@@ -21,5 +21,6 @@ namespace ItemCard
 	void Install()
 	{
 		g_patched = PatchCards();
+		PatchRates();
 	}
 }

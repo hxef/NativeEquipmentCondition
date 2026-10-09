@@ -6,6 +6,7 @@
 #include "Core/Text/Text.h"
 #include "Core/TraceLog.h"
 #include "UI/MenuMovies.h"
+#include "UI/Repair/RepairPrompt.h"
 #include "UI/Repair/Workbench/Bench.h"
 #include "UI/Repair/Workbench/Cost.h"
 #include "UI/Repair/Workbench/Display.h"
@@ -13,7 +14,6 @@
 #include "UI/Repair/Workbench/Lists.h"
 
 #include <cstdint>
-#include <cstdio>
 #include <format>
 #include <string>
 #include <string_view>
@@ -24,10 +24,6 @@ namespace Workbench
 	{
 		using Params = Scaleform::GFx::FunctionHandler::Params;
 
-		// What a repair's confirmation asks, in words the game already
-		// translates.
-		constexpr const char* QUESTION = "$Repair";
-
 		// The sound the bench asks for when it turns the player away from the
 		// mod slots, and the number Flash calls PlaySound by. Nothing else in
 		// the menu asks for this sound. No sound in the game has this name, so
@@ -35,46 +31,32 @@ namespace Workbench
 		constexpr const char* SLOTS_REFUSED = "UICancel";
 		constexpr auto        PLAY_SOUND = static_cast<std::uintptr_t>(RE::WorkbenchMenuBase::CodeObjectFunction::kPlaySound);
 
-		// The cancel sound NEC plays when the bench cannot repair an item.
-		constexpr const char* REFUSED_SOUND = "UIMenuCancel";
-
 		// What the game does before this, which every hook calls straight away
-		// while its place or the repair is off. Of the 10 functions this file
-		// patches on the bench's table, 3 are ones the weapon and armor
-		// benches leave empty or answer no to: OnSwitchBaseItem,
+		// while its place or the repair is off. Of the 6 functions this file
+		// patches on the bench's table, 3 are ones the weapon and armor benches
+		// leave doing nothing or answer no to: OnSwitchBaseItem,
 		// GetCanRepairSelectedItem and RepairSelectedItem. Each is what its
-		// slot held before NEC: the game's own, 0 for an empty slot, or the
-		// hook of a DLL that patched the slot first and hands the call on.
-		REL::Relocation<void (*)(RE::ExamineMenu*, bool)>                 _BuildConfirmed;
-		REL::Relocation<const ModChoice* (*)(RE::ExamineMenu*)>           _QCurrentModChoiceData;
-		REL::Relocation<bool (*)(RE::ExamineMenu*)>                       _TryCreate;
-		REL::Relocation<void (*)(RE::ExamineMenu*)>                       _HighlightWeaponPart;
-		REL::Relocation<void (*)(RE::ExamineMenu*, const Params&)>        _Call;
-		REL::Relocation<const char* (*)(RE::ExamineMenu*)>                _GetBuildConfirmButtonLabel;
-		REL::Relocation<void (*)(RE::ExamineMenu*, char*, std::uint32_t)> _GetBuildConfirmQuestion;
-		REL::Relocation<void (*)(RE::ExamineMenu*)>                       _OnSwitchBaseItem;
-		REL::Relocation<bool (*)(RE::ExamineMenu*)>                       _GetCanRepairSelectedItem;
-		REL::Relocation<void (*)(RE::ExamineMenu*)>                       _RepairSelectedItem;
+		// slot held before NEC: the game's own, or the hook of a DLL that
+		// patched the slot first and hands the call on.
+		REL::Relocation<bool (*)(RE::ExamineMenu*)>                _TryCreate;
+		REL::Relocation<void (*)(RE::ExamineMenu*)>                _HighlightWeaponPart;
+		REL::Relocation<void (*)(RE::ExamineMenu*, const Params&)> _Call;
+		REL::Relocation<void (*)(RE::ExamineMenu*)>                _OnSwitchBaseItem;
+		REL::Relocation<bool (*)(RE::ExamineMenu*)>                _GetCanRepairSelectedItem;
+		REL::Relocation<void (*)(RE::ExamineMenu*)>                _RepairSelectedItem;
 
-		// The same for the callback the bench hands its confirmation box.
-		REL::Relocation<RE::ExamineConfirmMenu::ICallback* (*)(RE::ExamineConfirmMenu::ICallback*, std::uint32_t)> _DeleteConfirmCallback;
-
-		// The 3 places a repair runs through once its box is up, see Install.
-		CallPatch::Held g_bench;
-
-		// Whether each place that stands alone still runs, see
-		// CallPatch::PatchSlot. The 3 ways into a repair first.
+		// Whether each place still runs, see CallPatch::PatchSlot. The 3 places
+		// behind the REPAIR button first.
 		CallPatch::LinkBase g_switchLink;
 		CallPatch::LinkBase g_canRepairLink;
 		CallPatch::LinkBase g_repairLink;
 		CallPatch::LinkBase g_tryCreateLink;
 		CallPatch::LinkBase g_highlightLink;
-		CallPatch::LinkBase g_labelLink;
-		CallPatch::LinkBase g_questionLink;
 
-		// Every change of the highlighted item, one line before the Flash side
-		// redraws its buttons, which is what keeps RENAME on an item at full
-		// condition.
+		// Whenever the movie switches the item the bench shows, which vanilla
+		// does just before redrawing its buttons, and at every scrap. A list
+		// mod may switch through every row as it reads them. Running before
+		// that redraw is what keeps RENAME on an item at full condition.
 		void OnSwitchBaseItemHk(RE::ExamineMenu* a_menu)
 		{
 			_OnSwitchBaseItem(a_menu);
@@ -92,14 +74,15 @@ namespace Workbench
 			}
 		}
 
-		// Whether the button is live, asked on every redraw of the buttons, so
-		// it asks the cheap question. Which levels are worth offering waits for
-		// the press. The redraw has just handed the bar its buttons, so this is
-		// also where REPAIR learns to read MEND.
+		// Whether the button is live, asked whenever the inventory buttons
+		// redraw over an item the flag offers REPAIR for, so it asks the cheap
+		// question. Which levels are worth offering waits for the press. The
+		// redraw has just handed the bar its buttons, so this is also where
+		// REPAIR learns to read MEND.
 		bool GetCanRepairSelectedItemHk(RE::ExamineMenu* a_menu)
 		{
 			if (!Repairs()) {
-				return _GetCanRepairSelectedItem.address() && _GetCanRepairSelectedItem(a_menu);
+				return _GetCanRepairSelectedItem(a_menu);
 			}
 			const auto selection = Selected(a_menu);
 			Label(a_menu, selection);
@@ -114,9 +97,7 @@ namespace Workbench
 		void RepairSelectedItemHk(RE::ExamineMenu* a_menu)
 		{
 			if (!Repairs()) {
-				if (_RepairSelectedItem.address()) {
-					_RepairSelectedItem(a_menu);
-				}
+				_RepairSelectedItem(a_menu);
 				return;
 			}
 			const auto selection = Selected(a_menu);
@@ -135,7 +116,7 @@ namespace Workbench
 			if (priced.units == 0) {
 				const auto said = Text::BenchCannotRepair();
 				RE::SendHUDMessage::ShowHUDMessage(said.c_str(), nullptr, true, true);
-				RE::UIUtils::PlayMenuSound(REFUSED_SOUND);
+				RE::UIUtils::PlayMenuSound(RepairPrompt::REFUSED_SOUND);
 				TraceLog::Line("menu", "Workbench has nothing to rebuild {:s} from, so it sent the player to a trader",
 					selection.Name());
 				return;
@@ -162,25 +143,11 @@ namespace Workbench
 			}
 		}
 
-		// The job the bench is pricing. Everything the build path reads about
-		// what is being made comes through here.
-		const ModChoice* QCurrentModChoiceDataHk(RE::ExamineMenu* a_menu)
-		{
-			return g_bench.Intact() && Repairing(a_menu) ? &InHand().choice : _QCurrentModChoiceData(a_menu);
-		}
-
-		// The word on the button of the confirmation box.
-		const char* GetBuildConfirmButtonLabelHk(RE::ExamineMenu* a_menu)
-		{
-			return g_bench.Intact() && g_labelLink.Live() && Repairing(a_menu) ? REPAIR_WORD : _GetBuildConfirmButtonLabel(a_menu);
-		}
-
-		// What a build that is not a repair asks for, as the game prices it. A
-		// mod built after a repair was turned down shows it is back on its own
-		// parts.
+		// What a build asks for, as the game prices it. A repair never passes
+		// here, see Box.h.
 		void TraceBuild(RE::ExamineMenu* a_menu)
 		{
-			const auto* choice = _QCurrentModChoiceData(a_menu);
+			const auto* choice = a_menu->QCurrentModChoiceData();
 			if (!choice) {
 				return;
 			}
@@ -201,60 +168,18 @@ namespace Workbench
 				parts.empty() ? "nothing"sv : std::string_view{ parts });
 		}
 
-		// What the confirmation box asks. The game's own names the mod being
-		// made out of the recipe, and a repair's recipe has no name to give.
-		void GetBuildConfirmQuestionHk(RE::ExamineMenu* a_menu, char* a_buffer, std::uint32_t a_length)
-		{
-			if (!g_bench.Intact() || !g_questionLink.Live() || !Repairing(a_menu)) {
-				_GetBuildConfirmQuestion(a_menu, a_buffer, a_length);
-				if (TraceLog::IsOpen()) {
-					TraceBuild(a_menu);
-				}
-				return;
-			}
-			if (a_buffer && a_length > 0) {
-				std::snprintf(a_buffer, a_length, "%s", QUESTION);
-			}
-		}
-
-		// Yes on the confirmation box.
-		void BuildConfirmedHk(RE::ExamineMenu* a_menu, bool a_ownerIsWorkbench)
-		{
-			if (g_bench.Intact() && Repairing(a_menu)) {
-				Finish(a_menu);
-				return;
-			}
-			_BuildConfirmed(a_menu, a_ownerIsWorkbench);
-		}
-
-		// The confirmation box's callback, being freed. The box calls back on
-		// yes only and closes without a word when turned down, and the bench
-		// frees the callback on its first frame after the box closes, so a
-		// repair still standing here was turned down. The power armor station
-		// hands its box the same callback, which is why the bench's job has to
-		// be in hand as well.
-		RE::ExamineConfirmMenu::ICallback* DeleteConfirmCallbackHk(RE::ExamineConfirmMenu::ICallback* a_callback, std::uint32_t a_flags)
-		{
-			if (!g_bench.Intact()) {
-				return _DeleteConfirmCallback(a_callback, a_flags);
-			}
-			auto* menu = a_callback ? a_callback->thisMenu : nullptr;
-			if (Repairing(menu) && InHand().choice.recipe) {
-				TraceLog::Line("menu", "Workbench repair to {:d}% turned down at the confirmation", InHand().level);
-				Drop(menu);
-			}
-			return _DeleteConfirmCallback(a_callback, a_flags);
-		}
-
-		// The last check on an item too worn to modify, in case its slot list
-		// is reached anyway.
+		// Every BUILD, and the last check on an item too worn to modify, in
+		// case its slot list is reached anyway.
 		bool TryCreateHk(RE::ExamineMenu* a_menu)
 		{
+			if (TraceLog::IsOpen() && a_menu) {
+				TraceBuild(a_menu);
+			}
 			if (!Repairs() || !g_tryCreateLink.Live()) {
 				return _TryCreate(a_menu);
 			}
 			const auto selection = Selected(a_menu);
-			if (!Repairing(a_menu) && selection.TooWorn()) {
+			if (selection.TooWorn()) {
 				TraceLog::Line("menu", "Workbench refused to build on {:s} at {:d}%, below the {:d}% floor",
 					selection.Name(), selection.percent, MODIFY_FLOOR);
 				return false;
@@ -276,10 +201,10 @@ namespace Workbench
 		// one of interest is the cancel sound the bench asks for when it has
 		// just turned the player away from the mod slots, the moment to say why,
 		// and the only one, since the refusal happens inside the movie. That
-		// holds for the mouse, the key, the pad and MODIFY alike. The bench asks
-		// for the same sound for an item with no slots, such as one listed only
-		// to be repaired, and that one is told so whatever its condition, since
-		// a repair would open nothing.
+		// holds however the player got there, MODIFY included, see Display.h.
+		// The bench asks for the same sound for an item with no slots, such as
+		// one listed only to be repaired, and that one is told so whatever its
+		// condition, since a repair would open nothing.
 		void CallHk(RE::ExamineMenu* a_menu, const Params& a_params)
 		{
 			_Call(a_menu, a_params);
@@ -316,34 +241,13 @@ namespace Workbench
 	void Install()
 	{
 		REL::Relocation<std::uintptr_t> menu{ RE::ExamineMenu::VTABLE[0] };
-		REL::Relocation<std::uintptr_t> confirm{ RE::VTABLE::__ModConfirmCallback[0] };
 
-		// The 3 places a repair runs through once its box is up, the yes, the
-		// job the game prices and spends, and the box's callback, only work as
-		// one, so a place another mod has leaves all of them. A skipped call
-		// at any of them in the middle of a repair runs the game's own build
-		// on NEC's job, which can crash or spend the wrong components, and
-		// NEC cannot tell a mod that always hands the call on from one that
-		// only sometimes does. So any change here after NEC turns repairs off
-		// for good, see CallPatch::EVERY_CALL.
-		{
-			const CallPatch::Together bench{ Part::kNone, CallPatch::EVERY_CALL };
-
-			_BuildConfirmed = CallPatch::PatchSlot(menu, 0x17, BuildConfirmedHk, "bench build confirmed").value_or(0);
-			_QCurrentModChoiceData = CallPatch::PatchSlot(menu, 0x19, QCurrentModChoiceDataHk, "bench mod choice").value_or(0);
-
-			// Index 0 is the callback's destructor. Every bench hands its build
-			// confirmation this callback, the power armor station included.
-			// The boxes for leaving a bench and for scrapping have their own.
-			_DeleteConfirmCallback = CallPatch::PatchSlot(confirm, 0x00, DeleteConfirmCallbackHk, "bench confirm delete").value_or(0);
-
-			g_bench = bench.Set();
-		}
-
-		// The 3 ways into a repair stand alone. A cut at any of them turns the
+		// The 3 places behind the REPAIR button: the flag, the grey and the
+		// press. A repair runs through no other place of the bench's, since NEC
+		// puts its box up itself, see Box.h. A cut at any of them turns the
 		// repair and its mod lock off together, see Repairs. NEC owns the
-		// REPAIR button and never hands the call on at 2 of them, so NEC
-		// never runs on top of a mod there, which it would skip.
+		// REPAIR button and never hands the call on at 2 of them while repairs
+		// run, so NEC never runs on top of a mod there, which it would skip.
 		const auto canRepair = CallPatch::PatchSlot(menu, 0x32, GetCanRepairSelectedItemHk, "bench can repair", Part::kNone,
 			CallPatch::NEVER_HANDS_ON, &g_canRepairLink);
 		const auto switchItem = CallPatch::PatchSlot(menu, 0x37, OnSwitchBaseItemHk, "bench switch item", Part::kNone, true, &g_switchLink);
@@ -353,15 +257,10 @@ namespace Workbench
 		_OnSwitchBaseItem = switchItem.value_or(0);
 		_RepairSelectedItem = repair.value_or(0);
 
-		// These 4 stand alone too. A skipped call costs a word of the box or
-		// the mod lock's last check, never a repair.
+		// These 2 stand alone too. A skipped call there never costs a repair.
 		_TryCreate = CallPatch::PatchSlot(menu, 0x1B, TryCreateHk, "bench try create", Part::kNone, true, &g_tryCreateLink).value_or(0);
 		_HighlightWeaponPart = CallPatch::PatchSlot(menu, 0x28, HighlightWeaponPartHk, "bench highlight part", Part::kNone, true,
 			&g_highlightLink).value_or(0);
-		_GetBuildConfirmButtonLabel = CallPatch::PatchSlot(menu, 0x30, GetBuildConfirmButtonLabelHk, "bench confirm label", Part::kNone, true,
-			&g_labelLink).value_or(0);
-		_GetBuildConfirmQuestion = CallPatch::PatchSlot(menu, 0x31, GetBuildConfirmQuestionHk, "bench confirm question", Part::kNone, true,
-			&g_questionLink).value_or(0);
 
 		// Every repair reaches NEC through the slots above. This hook only
 		// adds NEC's message once the game's call is through, so it shows
@@ -374,7 +273,7 @@ namespace Workbench
 		InstallLists();
 
 		CraftingPerks::SetBench(&Repairs);
-		if (!g_bench || !canRepair || !switchItem || !repair) {
+		if (!canRepair || !switchItem || !repair) {
 			REX::WARN("Workbenches stay as they were, with no repairs from NEC.");
 			return;
 		}
@@ -383,7 +282,7 @@ namespace Workbench
 		// change from the MCM page. Any wear reads 99% at most, so 99 mends
 		// nothing for free either.
 		const auto mend = FreeRepairs()                  ? std::string{ "Every repair is put right on the spot for nothing, since fBenchCostMult is 0." } :
-		                  FreeAbove() + 1 < Repair::FULL ? std::format("Wear above {:d}% is put right on the spot for nothing.", FreeAbove()) :
+		                  FreeAbove() + 1 < Repair::FULL ? std::format("Condition above {:d}% is put right on the spot for nothing.", FreeAbove()) :
 		                                                   std::string{ "Every repair costs components." };
 		REX::INFO("The workbench modifies nothing below {:d}% condition. {:s}", MODIFY_FLOOR, mend);
 		std::string levels;
@@ -399,7 +298,7 @@ namespace Workbench
 
 	bool Repairs()
 	{
-		return g_bench.Intact() && g_switchLink.Live() && g_canRepairLink.Live() && g_repairLink.Live();
+		return g_switchLink.Live() && g_canRepairLink.Live() && g_repairLink.Live();
 	}
 
 	void Load()

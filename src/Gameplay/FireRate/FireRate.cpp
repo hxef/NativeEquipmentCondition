@@ -31,7 +31,8 @@ namespace FireRate
 		constexpr CallPatch::CallSite RATE_SITE{ 2234929, 0x140, "fire rate" };
 
 		// The rate the automatic weapon sound picks its loop by, inside the
-		// engine's Fire, as a burst starts.
+		// engine's Fire, as a burst starts. A burst starts up to 2 sounds, the
+		// shots and one for the surroundings, and each reads the rate here.
 		constexpr CallPatch::CallSite SOUND_SITE{ 2196901, 0x2F, "fire sound" };
 
 		CallPatch::Link<float(const RE::Actor*, const RE::BGSObjectInstanceT<RE::TESObjectWEAP>&, std::uint32_t)> g_speedLink;
@@ -90,16 +91,23 @@ namespace FireRate
 			                         Equipped::TryWeaponHealth(player, weapon) :
 			                         std::optional{ Condition::INVALID_HEALTH };
 			if (!health) {
-				TraceLog::Once("fire speed", "{:s} [{:08X}]  kept its last share, another thread had the player's inventory",
-					TraceLog::Who{ weapon }, a_weapon);
+				TraceLog::Once("fire speed", "{:s}  kept its last share, another thread had the player's inventory",
+					TraceLog::Who{ weapon });
 				return;
 			}
 
+			// INVALID_HEALTH here means the player holds no copy of this gun
+			// that wears, so it plays at full speed.
 			const Reading now{ a_weapon, Share(*health) };
 			const auto    before = g_reading.exchange(now);
-			if (before.weapon != now.weapon || before.share != now.share) {
-				TraceLog::Line("fire speed", "{:s} [{:08X}]  health {:.6f}  played at x {:.4f}",
-					TraceLog::Who{ weapon }, a_weapon, *health, now.share);
+			if (before.weapon == now.weapon && before.share == now.share) {
+				return;
+			}
+			if (*health < 0.0F) {
+				TraceLog::Line("fire speed", "{:s}  no copy that wears in hand  played at x {:.4f}", TraceLog::Who{ weapon }, now.share);
+			} else {
+				TraceLog::Line("fire speed", "{:s}  health {:.6f}  played at x {:.4f}",
+					TraceLog::Who{ weapon }, *health, now.share);
 			}
 		}
 
@@ -178,15 +186,16 @@ namespace FireRate
 
 			const auto share = ShareOf(a_weapon);
 			if (share != 1.0F) {
-				TraceLog::Line("fire rate", "{:s} [{:08X}]  {:.2f} x {:.4f} = {:.2f} attacks a second",
-					TraceLog::Who{ &a_weapon }, a_weapon.formID, rate, share, rate * share);
+				TraceLog::Line("fire rate", "{:s}  {:.2f} x {:.4f} = {:.2f} attacks a second",
+					TraceLog::Who{ &a_weapon }, rate, share, rate * share);
 			}
 			return rate * share;
 		}
 
 		// Stands in for TESObjectWEAP::GetRateOfFire where the automatic weapon
 		// sound starts. The sound picks the loop nearest to the rate, so a
-		// slower burst gets a slower loop where the gun has one.
+		// slower burst gets a slower loop where the gun has one. It runs up to
+		// twice a burst, see SOUND_SITE.
 		float SoundHk(const RE::TESObjectWEAP& a_weapon, const RE::TESObjectWEAP::InstanceData* a_data)
 		{
 			const auto rate = g_soundLink(a_weapon, a_data);
@@ -201,8 +210,8 @@ namespace FireRate
 			if (shooter == RE::PlayerCharacter::GetSingleton()) {
 				const auto share = ShareOf(a_weapon);
 				if (share != 1.0F) {
-					TraceLog::Line("fire sound", "{:s} [{:08X}]  {:.0f} x {:.4f} = {:.0f} shots a minute",
-						TraceLog::Who{ &a_weapon }, a_weapon.formID, rate * 60.0F, share, rate * share * 60.0F);
+					TraceLog::Line("fire sound", "{:s}  {:.0f} x {:.4f} = {:.0f} shots a minute",
+						TraceLog::Who{ &a_weapon }, rate * 60.0F, share, rate * share * 60.0F);
 				}
 				return rate * share;
 			}

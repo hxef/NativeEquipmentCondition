@@ -35,9 +35,6 @@ namespace VendorRepair
 		// back says whether the screen has a button yet.
 		constexpr std::string_view HINT_MEMBER = "NECRepairButton"sv;
 
-		// The sound the game's menus make for a refusal.
-		constexpr const char* REFUSED_SOUND = "UIMenuCancel";
-
 		// Set while the question is on the screen, so a second press cannot
 		// put a second copy of it behind the first.
 		bool g_asking = false;
@@ -46,8 +43,8 @@ namespace VendorRepair
 		// built the same way, so if one refuses, they all will.
 		bool g_refused = false;
 
-		// The native function the button calls when clicked. It lives as long
-		// as the plugin, the same way as the item card listener.
+		// The native function the button calls when clicked, which lives as
+		// long as the plugin, see Flash.h.
 		class Pressed final : public Scaleform::GFx::FunctionHandler
 		{
 		public:
@@ -107,7 +104,7 @@ namespace VendorRepair
 		void Refuse(const std::string& a_said)
 		{
 			RE::SendHUDMessage::ShowHUDMessage(a_said.c_str(), nullptr, true, true);
-			RE::UIUtils::PlayMenuSound(REFUSED_SOUND);
+			RE::UIUtils::PlayMenuSound(RepairPrompt::REFUSED_SOUND);
 		}
 
 		// Tells the trace log what the button does for a worn item under the
@@ -210,9 +207,10 @@ namespace VendorRepair
 			return true;
 		}
 
-		// Whether the barter screen should stop taking input, as the game does
-		// for its own boxes: the lists stop responding and the bar hides while
-		// the question is up. g_asking is only set here.
+		// Holds the barter screen while the question is up, the way the game
+		// does for its own boxes: message box mode hides the screen's own
+		// hints, g_asking hides REPAIR, and the box takes the keys. g_asking is
+		// only set here.
 		void Hold(RE::BarterMenu* a_menu, bool a_held)
 		{
 			g_asking = a_held;
@@ -325,7 +323,7 @@ namespace VendorRepair
 		return true;
 	}
 
-	void ForgetButton()
+	void ForgetQuestion()
 	{
 		g_asking = false;
 	}

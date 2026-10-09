@@ -49,9 +49,10 @@ namespace HudCondition
 		// A value Percent never returns, so the first frame always draws.
 		constexpr std::int32_t NOT_DRAWN = -2;
 
-		// Where the counter draws its divider, and so where the bar goes.
-		// Measured from the HUD, so a HUD mod that moves the counter's parts
-		// moves the bar with them.
+		// Where the counter draws its divider, and so where the bar goes,
+		// measured inside the counter on the HUD's first frame. A move of the
+		// whole counter is followed, see Place, a later move of the divider
+		// inside it is not.
 		struct Divider
 		{
 			double x = 0.0;
@@ -177,8 +178,8 @@ namespace HudCondition
 					HudParts::Weapon::Queue();
 				}
 
-				// The counter's parts are in place once the movie has run a
-				// frame.
+				// Measured once, on the first frame, which is in place for the
+				// HUD as the game ships it.
 				if (!laidOut) {
 					divider = MeasureDivider(counter);
 					Layout(readout, divider);
@@ -289,7 +290,6 @@ namespace HudCondition
 			const bool* counterCanBeVisible = nullptr;
 		};
 
-		// Lives as long as the plugin, the same way as the item card listener.
 		FrameListener g_frameListener;
 
 		// Adds the readout and its frame listener to the HUD movie.

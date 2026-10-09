@@ -14,6 +14,7 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <format>
 #include <optional>
 
 namespace SpawnCondition
@@ -185,6 +186,14 @@ namespace SpawnCondition
 				Report(listed, "rolled", "{:<30s} [{:08X}] x{:<3d} starts at {:.4f}, {:s}{:s}",
 					name, id, count, rolled.health, stock ? Stocked(*restock, *stock) : Describe(origin),
 					rolled.upset ? ", ignored its band" : "");
+				// The list the health went on, to match against the one the
+				// Pip-Boy reads, see ItemCard/Hooks.cpp.
+				if (listed) {
+					const auto* legendary = a_stack->extra->GetLegendaryMod();
+					TraceLog::Line("spawn", "  {:s} [{:08X}] rolled on extra data {:p}, {:s}", name, id,
+						static_cast<const void*>(a_stack->extra.get()),
+						legendary ? std::format("legendary {}", TraceLog::Who{ legendary }) : "no legendary");
+				}
 			}
 			return aim;
 		}

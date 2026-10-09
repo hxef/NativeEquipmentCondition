@@ -5,7 +5,7 @@
 // The plugin's one entry point for the game's menu movies. Every menu is a
 // Flash movie, and F4SE calls a registered function with each movie as it
 // loads. F4SE takes one registration per plugin, so this registers once and
-// hands every movie to every feature's OnMovieLoaded, see Feature.h.
+// hands every movie to every feature that runs, see Feature.h.
 namespace MenuMovies
 {
 	// Registers with F4SE, which only accepts Scaleform registrations while the

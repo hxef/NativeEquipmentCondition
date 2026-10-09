@@ -30,7 +30,9 @@ namespace VendorRepair
 		CallPatch::LinkBase g_listLink;
 
 		// The movie telling code where the highlight landed. It asks for the
-		// pickpocket odds once per change of highlight and from nowhere else.
+		// pickpocket odds whenever the highlight lands or the lists are rebuilt,
+		// and on every move of the quantity slider, for the item the slider is
+		// open on.
 		void UpdateItemPickpocketInfoHk(RE::BarterMenu* a_menu, std::int32_t a_index, bool a_inContainer,
 			std::int32_t a_count)
 		{
@@ -59,10 +61,11 @@ namespace VendorRepair
 			Refresh(a_menu);
 		}
 
-		// The key. The barter screen answers 6 of the 17 buttons menu mode
-		// names and passes the rest on. A greyed REPAIR is answered too, which
-		// is how the player hears why it is greyed, and a screen with no REPAIR
-		// leaves the key to the game.
+		// The key. The barter screen's own code answers 6 of the 17 buttons
+		// menu mode names, after the movie has seen each, and passes the rest
+		// on. A greyed REPAIR is answered too, which is how the player hears
+		// why it is greyed, and a screen with no REPAIR leaves the key to the
+		// game.
 		bool OnButtonEventReleaseHk(RE::BarterMenu* a_menu, const RE::BSFixedString& a_event)
 		{
 			if (g_keyLink.Live() && a_event == HINT_EVENT && Offered(a_menu) && Press()) {
@@ -82,7 +85,7 @@ namespace VendorRepair
 			}
 			if (*a_message.type == RE::UI_MESSAGE_TYPE::kShow) {
 				Forget();
-				ForgetButton();
+				ForgetQuestion();
 			}
 			const auto result = _ProcessMessage(a_menu, a_message);
 			if (*a_message.type == RE::UI_MESSAGE_TYPE::kHide) {

@@ -1,3 +1,15 @@
+1.1.6
+* A workbench repair you can't afford shows the power armor station's list of what it takes, how many of each you have, and the ones you lack faded, instead of a line in the corner. That list and the repair's confirmation box both put the biggest count first.
+* Every workbench repair, MEND included, plays the crafting sounds a mod build does. Workbench repairs change 5 fewer spots in the game's code, so fewer other DLL mods can switch them off.
+* A workbench confirmation box with a long list of components stops above the bench's buttons instead of covering them.
+* A trader's repair price counts NEC.ini's price multiplier as 10 at most, the MCM slider's top, so a bigger number typed in by hand no longer sells repairs for 1 cap.
+* An alternate start mod that dresses you from the player's default outfit starts you in it at 100%.
+* A weapon or piece of armor worn below 0.5% reads 1% wherever NEC shows condition, not 0%, since it still works. Only broken gear reads 0%.
+* Another save or a new game, even one started with coc from the main menu, begins without the last game's jam, fire speed or HUD CND reading.
+* A read only NEC.log no longer leaves a game start with no logs. NEC moves it aside as NEC.old.log, or a bug report log as NEC.trace.old.log and so on, and starts a new one. Every folder path NEC.log prints uses backslashes only.
+* When another DLL mod takes over something NEC needs, NEC.log names the feature that stays off as a warning, not an error, and says when the only reason is that it can't read where that mod's hook leads. It warns when another DLL mod hooks the same spot both before and after NEC, which most likely crashes the game.
+* The bug report log names damage types, like EnergyResist, on its lines for worn armor and weapons, where it left a blank.
+
 1.1.4
 * Workbench repairs and the rule that worn gear can't be modded work again beside Perk Conditions Framework, which skill mods like Classic NV Skill System use. The same goes for most other DLL mods that change the workbench menu.
 * If another DLL mod takes over the spot where NEC says why an item at the workbench can't be modified, only NEC's "Condition must be full to modify." and "This item can't be modified." stop showing. Repairs keep working.

@@ -62,8 +62,4 @@ namespace Workbench
 	// drawn from a copy the bench takes on a change of highlight, extra data
 	// and all, so a repair has to ask for it.
 	void RebuildModdedItem(RE::ExamineMenu* a_menu);
-
-	// Whether the bench is on a repair. The flag is the game's own, and only
-	// the power armor station sets it otherwise.
-	[[nodiscard]] bool Repairing(RE::ExamineMenu* a_menu);
 }

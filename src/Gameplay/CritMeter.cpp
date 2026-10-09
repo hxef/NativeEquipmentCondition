@@ -53,8 +53,8 @@ namespace CritMeter
 				return base;
 			}
 
-			TraceLog::Line("crit meter", "{:s} [{:08X}]  health {:.6f}  {:.4f} x {:.4f} = {:.4f} of a meter",
-				TraceLog::Who{ a_weapon.object }, a_weapon.object->formID, health, base, mult, base * mult);
+			TraceLog::Line("crit meter", "{:s}  health {:.6f}  {:.4f} x {:.4f} = {:.4f} of a meter",
+				TraceLog::Who{ a_weapon.object }, health, base, mult, base * mult);
 
 			return base * mult;
 		}

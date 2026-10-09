@@ -23,8 +23,8 @@
 // compare weapons by rate without a card, the quick container's better mark and
 // a container's sort.
 //
-// Hooks.cpp is the CND row and the fire rate, Raise.cpp moves the row past
-// Damage, and Cards.h is what they share.
+// Hooks.cpp is the CND row, Rate.cpp the fire rate, Raise.cpp moves the row
+// past Damage, and Cards.h is what they share.
 namespace ItemCard
 {
 	// Patches the calls that fill item cards.

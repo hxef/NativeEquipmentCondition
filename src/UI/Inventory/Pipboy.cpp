@@ -19,7 +19,7 @@ namespace Pipboy
 		using Scaleform::GFx::Value;
 
 		// Where the Pip-Boy keeps its inventory list. On the map or the stats
-		// page this finds nothing.
+		// page this finds nothing, and on RADIO it finds the station list.
 		constexpr const char* LIST_PATH = "_root.Menu_mc.CurrentPage.List_mc";
 
 		// What a worn out name is written in, and what an ordinary one is. The
@@ -223,7 +223,7 @@ namespace Pipboy
 			bool          surveyed = false;
 		};
 
-		// Lives as long as the plugin, the same way as the HUD's listeners.
+		// Lives as long as the plugin, see Flash.h.
 		FrameListener g_frameListener;
 	}
 

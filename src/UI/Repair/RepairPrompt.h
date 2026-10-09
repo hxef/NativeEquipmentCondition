@@ -14,11 +14,14 @@
 // The caller decides the line above the question: the bench names the perk, the
 // trader says how far they can go. The answer comes back through F4SE's task
 // queue, since the moment a box answers is not safe for spending anything or
-// opening a menu, and the bench has crashed on work done at a moment Flash
-// chose. The box pauses the game, and F4SE then runs its tasks on the main
-// thread.
+// opening a menu, and work done at a moment Flash chose can crash the bench.
+// The box pauses the game, and F4SE then runs its tasks on the main thread.
 namespace RepairPrompt
 {
+	// The game's refusal sound in menus, the one the box's cancel button
+	// plays. The game's own SoundMenuCancel has no sound file.
+	inline constexpr const char* REFUSED_SOUND = "UIMenuCancel";
+
 	// Puts the question up. a_over is the line above it, or nothing. a_buttons
 	// are the offers in order, and the cancel button is added after them.
 	// a_chosen is handed the number of the offer picked, and a_cancelled runs

@@ -60,9 +60,8 @@ namespace PowerArmorCondition
 		Anchor            g_anchor;
 		std::atomic<bool> g_anchorQueued{ false };
 
-		// Whether the dash is on screen: the player in power armor and the HUD
-		// mode allowing the dash. The first is an engine call made when the
-		// dash is measured, the second a byte the game writes and this reads.
+		// Whether the player is in power armor, an engine call made when the
+		// dash is measured. DashAllowed adds the HUD mode's byte.
 		std::atomic<bool> g_inPowerArmor{ false };
 
 		// Where a place on the dash lands on the screen. The dash lives in a
@@ -188,8 +187,8 @@ namespace PowerArmorCondition
 			const auto measured = MeasureDash();
 			g_inPowerArmor = inPowerArmor;
 
-			// Logged once each way, so the log shows the moment the dash was
-			// found or lost. Nothing is logged while power armor is off.
+			// Logged on each change of what was found while in power armor, so
+			// the log shows the moment the dash was found or lost.
 			static std::optional<Miss> said;
 			if (inPowerArmor && said != measured.miss) {
 				said = measured.miss;

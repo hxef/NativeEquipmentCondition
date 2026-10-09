@@ -1,14 +1,16 @@
-#include "UI/Repair/ConfirmScroll.h"
+#include "UI/Repair/ConfirmScroll/ConfirmScroll.h"
 
 #include "Core/CallPatch/CallPatch.h"
 #include "Core/Settings.h"
 #include "Core/TraceLog.h"
 #include "UI/Flash.h"
+#include "UI/Repair/ConfirmScroll/BenchBar.h"
 
 #include <algorithm>
 #include <array>
 #include <cstdint>
 #include <format>
+#include <optional>
 #include <string>
 #include <string_view>
 
@@ -20,16 +22,18 @@ namespace ConfirmScroll
 		using Params = Scaleform::GFx::FunctionHandler::Params;
 		using Value = Scaleform::GFx::Value;
 
-		// What the game does before this. The box is a menu and an input user
-		// at once, with a function table for each half. Call and ProcessMessage
-		// are the menu's, the other 2 the input half's.
+		// -------------------------------------------------------------------
+		// Buttons and the pace they scroll at
+		// -------------------------------------------------------------------
+
+		// What the game does before this. The box has a function table as a
+		// menu, for Call and ProcessMessage, and one as an input user.
 		REL::Relocation<void (*)(RE::ExamineConfirmMenu*, const Params&)>                    _Call;
 		REL::Relocation<RE::UI_MESSAGE_RESULTS (*)(RE::ExamineConfirmMenu*, RE::UIMessage&)> _ProcessMessage;
 		REL::Relocation<bool (*)(RE::BSInputEventUser*, const RE::InputEvent*)>              _ShouldHandleEvent;
 		REL::Relocation<void (*)(RE::BSInputEventUser*, const RE::ButtonEvent*)>             _OnButtonEvent;
 
-		// Whether each of the 3 places that scroll still runs, see
-		// CallPatch::PatchSlot.
+		// Whether each place that scrolls runs, see CallPatch::PatchSlot.
 		CallPatch::LinkBase g_messagesLink;
 		CallPatch::LinkBase g_handlesLink;
 		CallPatch::LinkBase g_keysLink;
@@ -46,27 +50,30 @@ namespace ConfirmScroll
 		constexpr auto FORWARD = "Forward"sv;
 		constexpr auto BACK = "Back"sv;
 
-		// The pace a held key repeats at in the game's own lists: 0.3 seconds,
-		// then every 0.05.
-		constexpr float REPEAT_DELAY = 0.3F;
-		constexpr float REPEAT_EVERY = 0.05F;
+		// The pace a held key repeats at in the game's own lists, the game's
+		// fKeyboardRepeatDelay and fKeyboardRepeatRate, read each time a key is
+		// held, or 0.3 and 0.05 seconds where a setting is missing.
+		[[nodiscard]] float Pace(std::string_view a_name, float a_missing)
+		{
+			auto* const       settings = RE::INISettingCollection::GetSingleton();
+			const auto* const setting = settings ? settings->GetSetting(a_name) : nullptr;
+			return setting ? setting->GetFloat() : a_missing;
+		}
 
 		// The panel's own spacing, from ConfirmPanel.as: 5 under every entry
 		// and 20 between the list and the buttons.
 		constexpr double ENTRY_GAP = 5.0;
 		constexpr double BUTTON_GAP = 20.0;
 
-		// How far a grown box stays from the top and bottom of the screen, in
-		// the movie's units, 720 down a 16:9 screen. It keeps clear of the
-		// bench's own buttons.
+		// How far a grown box stays from the screen's top and bottom, and above
+		// the bench's button bar, in the movie's units, 720 down a 16:9 screen.
 		constexpr double SCREEN_MARGIN = 50.0;
+		constexpr double BAR_GAP = 10.0;
 
-		// How long the key being held had been held at its last repeat, or
-		// 0 before its first.
+		// How long the key was held at its last repeat, 0 before its first.
 		float g_lastRepeat = 0.0F;
 
-		// Which way a button scrolls the list, or kNone for one the box has
-		// no use for.
+		// Which way a button scrolls the list, or kNone for any other button.
 		[[nodiscard]] DIRECTION_VAL Way(const RE::ButtonEvent& a_event)
 		{
 			// The wheel has no name in menu mode, so it is known by its code.
@@ -121,13 +128,18 @@ namespace ConfirmScroll
 				return true;
 			}
 
-			const auto next = g_lastRepeat == 0.0F ? REPEAT_DELAY : g_lastRepeat + REPEAT_EVERY;
+			const auto next = g_lastRepeat == 0.0F ? Pace("fKeyboardRepeatDelay:Controls"sv, 0.3F) :
+			                                         g_lastRepeat + Pace("fKeyboardRepeatRate:Controls"sv, 0.05F);
 			if (a_event.QHeldDownSecs() < next) {
 				return false;
 			}
 			g_lastRepeat = a_event.QHeldDownSecs();
 			return true;
 		}
+
+		// -------------------------------------------------------------------
+		// Naming things for the trace
+		// -------------------------------------------------------------------
 
 		// What a button was pressed on, for the trace.
 		[[nodiscard]] std::string_view DeviceName(const RE::ButtonEvent& a_event)
@@ -147,8 +159,7 @@ namespace ConfirmScroll
 		}
 
 		// Which box a trace line is about, by where it sits in memory, so a
-		// line from a box nobody sees shows whether it is the last one that
-		// opened.
+		// line from a box nobody sees shows whether it is the last one opened.
 		[[nodiscard]] std::uintptr_t Id(const RE::ExamineConfirmMenu* a_menu)
 		{
 			return reinterpret_cast<std::uintptr_t>(a_menu);
@@ -171,6 +182,10 @@ namespace ConfirmScroll
 			const auto* name = a_event.QRawUserEvent().c_str();
 			return std::format("{:s} {:#x} {:s}", DeviceName(a_event), a_event.QIDCode(), *name ? name : "unnamed");
 		}
+
+		// -------------------------------------------------------------------
+		// Growing the box
+		// -------------------------------------------------------------------
 
 		// Moves the panel's list one row, as a push of the stick does. A step
 		// with nothing further to show does nothing.
@@ -216,7 +231,7 @@ namespace ConfirmScroll
 			const auto cut = Flash::Number(buttons, "y"sv) - BUTTON_GAP;
 
 			// Where the box is on the stage and how much of the stage the
-			// screen shows. The movie is scaled to fill and cropped to fit.
+			// screen shows, read from the movie however it is scaled.
 			Value stage;
 			Value bounds;
 			if (!panel.GetMember("stage"sv, &stage) || !background.Invoke("getBounds", &bounds, std::array{ stage })) {
@@ -226,10 +241,20 @@ namespace ConfirmScroll
 			const auto top = Flash::Number(bounds, "y"sv);
 			const auto height = Flash::Number(bounds, "height"sv);
 			const auto shown = a_menu.uiMovie->GetVisibleFrameRect();
-			const auto room = 2.0 * std::min(top - (shown.y1 + SCREEN_MARGIN), shown.y2 - SCREEN_MARGIN - (top + height));
+
+			// The bottom stops above the bench's button bar, or short of the
+			// screen's bottom edge where that is higher or no bar is shown.
+			const auto bar = BenchBarTop();
+			const auto edge = shown.y2 - SCREEN_MARGIN;
+			const auto bottom = bar ? std::min(edge, shown.y1 + (*bar * (shown.y2 - shown.y1)) - BAR_GAP) : edge;
+			const auto limit = bottom < edge ? std::format("its bottom kept above the bench's button bar at {:.1f}", bottom) :
+			                                   std::format("its bottom kept {:g} from the bottom of the screen, {:s}", SCREEN_MARGIN,
+												   bar ? "the bench's button bar starts lower"sv : "no bench button bar is shown"sv);
+
+			const auto room = 2.0 * std::min(top - (shown.y1 + SCREEN_MARGIN), bottom - (top + height));
 			const auto grow = std::min(end - cut, room);
 			if (grow <= 0.0) {
-				TraceLog::Line("menu", "Confirmation box left at its size, the screen has no room for more of its list");
+				TraceLog::Line("menu", "Confirmation box left at its size, no room for more of its list with {:s}", limit);
 				return;
 			}
 
@@ -238,17 +263,20 @@ namespace ConfirmScroll
 			arrow.SetMember("y"sv, Value(Flash::Number(arrow, "y"sv) + grow));
 			panel.SetMember("y"sv, Value(Flash::Number(panel, "y"sv) - (grow / 2.0)));
 
-			// The panel hides the rows past its bottom only as it scrolls. A
-			// step down and back up hides them against the new bottom.
+			// Build hid the rows past the old bottom, and only a scroll clips
+			// them again. A step down and back up shows the rows that now fit.
 			Step(panel, DIRECTION_VAL::kDown);
 			Step(panel, DIRECTION_VAL::kUp);
 
-			TraceLog::Line("menu", "Confirmation box grown by {:.1f} to {:.1f} high, {:s}", grow, height + grow,
-				grow < end - cut ? "as far as the screen allows" : "enough for its whole list");
+			TraceLog::Line("menu", "Confirmation box grown by {:.1f} to {:.1f} high, {:s}, {:s}", grow, height + grow,
+				grow < end - cut ? "as far as there is room" : "enough for its whole list", limit);
 		}
 
-		// The box's own 2 buttons, clicked, so an answer can be told apart from
-		// a key release.
+		// -------------------------------------------------------------------
+		// The hooks
+		// -------------------------------------------------------------------
+
+		// The box's 2 buttons clicked, so the trace tells a click from a key.
 		void CallHk(RE::ExamineConfirmMenu* a_menu, const Params& a_params)
 		{
 			const auto pressed = reinterpret_cast<std::uintptr_t>(a_params.userData);
@@ -303,8 +331,7 @@ namespace ConfirmScroll
 			auto*      menu = static_cast<RE::ExamineConfirmMenu*>(a_this);
 			const auto way = Settings::bConfirmScroll.GetValue() && g_keysLink.Live() ? Way(*a_event) : DIRECTION_VAL::kNone;
 			if (way == DIRECTION_VAL::kNone) {
-				// Said before the answer closes the box, and only on a release,
-				// since that is when the game answers.
+				// Said on a release, before the game's answer closes the box.
 				if (a_event->QReleased() && TraceLog::IsOpen()) {
 					TraceLog::Line("menu", "Confirmation box {:X} heard {:s} let go on the {:s}",
 						Id(menu), a_event->QUserEvent().c_str(), Named(*a_event));
@@ -345,7 +372,6 @@ namespace ConfirmScroll
 		_OnButtonEvent = *keys;
 
 		REX::INFO("A workbench's confirmation box grows to show as much of a long list as the screen allows, "
-				  "and scrolls the rest with the mouse wheel, the arrow keys, the D-pad and W and S, "
-				  "as well as the left stick.");
+				  "and scrolls the rest with the mouse wheel, the arrow keys, the D-pad and W and S, as well as the left stick.");
 	}
 }

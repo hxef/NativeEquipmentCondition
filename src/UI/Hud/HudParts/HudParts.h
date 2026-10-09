@@ -58,7 +58,8 @@ namespace HudParts
 		inline constexpr std::int32_t NONE = -1;
 
 		// Asks for a fresh check, which arrives a frame or so later. Asking
-		// again while one is on its way does nothing.
+		// again while one is on its way does nothing. Also lets go of colour
+		// targets once the delete hook's place is lost.
 		void Queue();
 
 		// The condition of the weapon in hand as a whole percent, or NONE.
@@ -68,8 +69,9 @@ namespace HudParts
 		// counter, so a readout beside it has to know.
 		[[nodiscard]] bool Drawn();
 
-		// Forgets the last reading as a save loads or a new game begins, so the
-		// readouts show nothing of the last game's weapon until the next check.
+		// Forgets the last reading when another game starts, so the readouts
+		// show nothing of the last game's weapon until the next check. See
+		// ForgetPlay in main.cpp.
 		void Forget();
 	}
 

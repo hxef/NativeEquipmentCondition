@@ -88,8 +88,8 @@ namespace ItemCard
 			}
 
 			// The rows above CND are the rest of the plain rows and then any
-			// combined row, the only ones holding an EntryHolder_mc. Every row
-			// moved below has been checked to be a clip.
+			// combined row. Past the plain rows, only a combined row holds an
+			// EntryHolder_mc. Each row moved below is checked to be a clip.
 			auto last = *row;
 			for (auto i = *row + 1; i < children; i++) {
 				if (const auto clip = Flash::ChildAt(a_card, i); !clip.IsDisplayObject() || (i >= plainRows && !clip.HasMember("EntryHolder_mc"sv))) {
@@ -139,7 +139,8 @@ namespace ItemCard
 
 		// One line for the card on the screen: each entry's text and value, the
 		// difference to the equipped item, and a damage entry's type. Written
-		// through First, since the listener runs every frame.
+		// through First, since the listener runs at every redraw in the menu,
+		// often many times a second while the list scrolls.
 		void TraceCard(const Card& a_card, const Value& a_clip)
 		{
 			Value entries;
@@ -218,9 +219,7 @@ namespace ItemCard
 			}
 		};
 
-		// One listener serves every menu. Scaleform counts references, and this
-		// one starts at one that is never given back, so it lives as long as
-		// the plugin.
+		// One listener serves every menu, see Flash.h.
 		RenderListener g_renderListener;
 	}
 

@@ -70,9 +70,4 @@ namespace Workbench
 		// function still runs.
 		a_menu->CreateModdedInventoryItem();
 	}
-
-	bool Repairing(RE::ExamineMenu* a_menu)
-	{
-		return a_menu && a_menu->repairing;
-	}
 }

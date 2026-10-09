@@ -2,6 +2,7 @@
 
 #include "Core/Settings.h"
 
+#include <algorithm>
 #include <utility>
 
 namespace VendorRepair
@@ -11,6 +12,11 @@ namespace VendorRepair
 		// Caps, where the game's list of default objects fails to name them. A
 		// load order that replaces the currency says so in that list.
 		constexpr RE::TESFormID CAPS_FORM = 0x0000000F;
+
+		// The most fTraderPriceMult counts for, as the MCM slider allows. A
+		// multiple in the millions overflows the price rounding and would sell
+		// steps for 1 cap.
+		constexpr float MAX_PRICE_MULT = 10.0F;
 	}
 
 	RE::TESBoundObject* Caps()
@@ -28,7 +34,7 @@ namespace VendorRepair
 
 	float Scaled(float a_multiple)
 	{
-		return a_multiple * Settings::fTraderPriceMult.GetValue();
+		return a_multiple * std::min(Settings::fTraderPriceMult.GetValue(), MAX_PRICE_MULT);
 	}
 
 	std::vector<Quote> Quotes(const Selection& a_selection, std::uint32_t a_ceiling)

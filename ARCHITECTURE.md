@@ -156,14 +156,17 @@ src/
       ItemCard/
         ItemCard.h/.cpp      the feature: its install and the movies
         Cards.h              what the folder's files share
-        Hooks.cpp            the CND row, and the fire rate a card prints
+        Hooks.cpp            the CND row
+        Rate.cpp             the fire rate a card prints
         Raise.cpp            moving the row up past Damage
     Repair/
       SelectedItem.h/.cpp    the item highlighted in a menu's list
       Restore.h/.cpp         writing a repair onto one copy of an item
       RepairPrompt.h/.cpp    asking how far to bring a worn item back
-      ConfirmScroll.h/.cpp   the box the bench puts up, scrolled
       ConsoleRepair.h/.cpp   setting the weapon in hand or the armor worn from the console
+      ConfirmScroll/         the box the bench puts up, grown and scrolled
+        ConfirmScroll.h/.cpp the feature: the box grows and scrolls
+        BenchBar.h/.cpp      where the bench's button bar is
       Workbench/             repairing at the weapon and armor benches
       VendorRepair/          paying a trader to repair weapons, armor or clothing, and their stock
 ```
@@ -187,6 +190,10 @@ and one row in `src/Features.cpp`. `src/main.cpp` walks the rows:
    so a feature lets go before anything it read from does.
 4. **OnMovieLoaded**, for every menu movie the game loads, through
    `src/UI/MenuMovies.cpp`.
+
+Outside the 4 steps, `src/main.cpp` drops what play remembers of the last
+game, the gun that jammed, the fire speeds and the HUD's last reading, when a
+save loads, a new game begins or the main menu opens.
 
 Every row runs at every step whatever its switch says. Its hooks ask the
 switch on every call and leave the game as it is while it is off. A row whose

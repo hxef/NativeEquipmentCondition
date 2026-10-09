@@ -266,8 +266,6 @@ namespace Mcm
 			}
 		};
 
-		// This handler and g_frameListener below live as long as the plugin,
-		// see the listener in UI/Inventory/ItemCard/Raise.cpp.
 		Bridge g_bridge;
 
 		// Said once a session, since Wrap tries again every frame until MCM's

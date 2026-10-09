@@ -79,7 +79,7 @@ namespace BrokenEquip
 			if (answer != result) {
 				const auto* why = on ? "but may come off" : (back ? "but goes back on" : "so it stays off");
 				TraceLog::For(a_actor != RE::PlayerCharacter::GetSingleton())
-					.Line("equip", "{:s} [{:08X}] is broken, {:s}", TraceLog::Who{ item->object }, item->object->formID, why);
+					.Line("equip", "{:s} is broken, {:s}", TraceLog::Who{ item->object }, why);
 			}
 			return answer;
 		}

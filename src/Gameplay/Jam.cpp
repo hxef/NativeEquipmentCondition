@@ -241,7 +241,7 @@ namespace Jam
 		if (CallPatch::PatchVirtualCall(RELOAD_SITE, RELOAD_WEAPON_SLOT, reinterpret_cast<std::uintptr_t>(&ReloadHk), g_reloadLink, Part::kReloadJam)) {
 			REX::INFO("Guns that fire once per reload can jam as the reload finishes.");
 		} else {
-			REX::ERROR("Guns that fire once per reload will not jam.");
+			REX::WARN("Guns that fire once per reload will not jam.");
 		}
 	}
 

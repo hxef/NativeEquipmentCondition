@@ -11,8 +11,8 @@
 // folder.
 //
 // Shutting the slots is the bench's own refusal: it opens them only for an
-// item whose slot list has something in it, and otherwise plays its cancel
-// sound:
+// item whose slot list has something in it, and otherwise asks for a cancel
+// sound by name:
 //
 //     public function InventoryModeToSlotsMode():* {
 //        if (this._isCookingMenu || this.ModSlotList_mc.entryList.length > 0) {

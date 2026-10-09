@@ -1,5 +1,6 @@
 #include "UI/Hud/HudParts/HudParts.h"
 
+#include "Condition/Condition.h"
 #include "Condition/Equipped.h"
 #include "Core/CallPatch/CallPatch.h"
 #include "Core/Settings.h"
@@ -9,7 +10,6 @@
 #include <algorithm>
 #include <array>
 #include <atomic>
-#include <cmath>
 #include <format>
 #include <memory>
 #include <mutex>
@@ -223,7 +223,7 @@ namespace HudParts
 				auto*      player = RE::PlayerCharacter::GetSingleton();
 				const auto health = Equipped::TryWeaponHealth(player);
 				if (health) {
-					g_percent = *health < 0.0F ? NONE : static_cast<std::int32_t>(std::lround(std::clamp(*health, 0.0F, 1.0F) * 100.0F));
+					g_percent = *health < 0.0F ? NONE : static_cast<std::int32_t>(Condition::WholePercent(*health));
 				} else {
 					TraceLog::Once("menu", "HUD CND kept its last reading, another thread had the player's inventory");
 				}
@@ -240,6 +240,12 @@ namespace HudParts
 		bool Drawn()
 		{
 			return g_drawn.load();
+		}
+
+		void Forget()
+		{
+			g_percent = NONE;
+			g_drawn = false;
 		}
 	}
 

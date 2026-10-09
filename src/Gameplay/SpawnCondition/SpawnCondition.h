@@ -30,13 +30,14 @@ namespace SpawnCondition
 	// it, see VendorRepair/Upkeep.h. A legendary weapon or piece of armor put
 	// into any chest arrives new, which covers a trader's showpiece, placed
 	// once by a quest script and never restocked. An essential character's
-	// weapons and armor, a companion's for example, arrive new.
+	// weapons and armor, a companion's for example, arrive new, and so does
+	// the outfit the player's own record puts on them in a new game.
 	//
 	// Band.cpp is the roll itself, either side of an item's middle or in a
 	// trader's band, Guards.cpp holds KeepCarried and what marks a console
-	// command, a save loading, a script giving an item and a restock, and
-	// Trace.cpp what the trace log is told about a stack. Band.h, Guards.h and Trace.h are what they share
-	// with SpawnCondition.cpp.
+	// command, a save loading, a script giving an item and a restock,
+	// Owners.cpp the owner checks, and Trace.cpp what the trace log is told
+	// about a stack. Their headers are what they share with SpawnCondition.cpp.
 	void Install();
 
 	// Sets every weapon and piece of armor the player carries with no

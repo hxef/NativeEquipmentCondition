@@ -281,7 +281,9 @@ namespace CallPatch
 	// In Walk.cpp. BuildableAt gives what NEC found at a place another DLL
 	// changed first: what its hook hands on to and the DLLs it runs on top
 	// of, or why NEC leaves it alone. Walk follows the hooks on a written
-	// place from the outermost in, naming every DLL it passed.
+	// place from the outermost in, naming every DLL it passed. loops says the
+	// place leads to the hook NEC hands on to, which hands each call back to
+	// NEC, maybe through other DLLs, so they call each other without end.
 	struct Found
 	{
 		std::uintptr_t     next = 0;
@@ -293,6 +295,7 @@ namespace CallPatch
 	{
 		Reaches            reaches = Reaches::kUnread;
 		std::vector<Owner> dlls{};
+		bool               loops = false;
 	};
 	[[nodiscard]] Found  BuildableAt(const Ask& a_ask);
 	[[nodiscard]] Walked Walk(const Place& a_place);

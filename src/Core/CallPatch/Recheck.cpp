@@ -92,16 +92,37 @@ namespace CallPatch
 		// hook asks nothing of its place, so its 2 messages still show
 		// whenever the call reaches it, unless Workbench repairs is off. Every
 		// place that turns repairs off comes before it, see Workbench.cpp, so
-		// its line reads a cut in the same pass too.
-		std::string CutLine(const Place& a_place, bool a_everyCall)
+		// its line reads a cut in the same pass too. A walk NEC could not
+		// follow to its end says so first, so the line never blames the DLL
+		// for a cut that comes from NEC's doubt. A set that has to run on
+		// every call is cut either way.
+		std::string CutLine(const Place& a_place, bool a_everyCall, const Walked& a_walked)
 		{
+			std::string tail;
+			if (!a_everyCall && a_walked.reaches == Reaches::kUnread) {
+				const auto cutter = Cutter(a_place, a_walked);
+				tail = std::format(" NEC cannot read where {:s}'s hook leads, so it cannot tell whether the call still reaches NEC.",
+					Words(std::span{ &cutter, 1 }));
+			}
 			if (a_place.part == Part::kBenchMessages) {
 				const auto off = PiecesOffTail(a_place);
-				return ChangedLine(a_place, off.empty() ? " NEC's 2 messages when MODIFY opens nothing show only while the call reaches NEC, so repairs are not affected."sv : std::string_view{ off });
+				tail += off.empty() ? " NEC's 2 messages when MODIFY opens nothing show only while the call reaches NEC, so repairs are not affected."sv : std::string_view{ off };
+			} else {
+				tail += a_place.use == Use::kTraceOnly ? " It only fed the bug report logs, so play is not affected."sv :
+				        a_everyCall                    ? " NEC's change there has to run on every call, so it is off from now on."sv :
+				                                         " NEC's change there is off from now on."sv;
 			}
-			return ChangedLine(a_place, a_place.use == Use::kTraceOnly ? " It only fed the bug report logs, so play is not affected."sv :
-			                            a_everyCall                    ? " NEC's change there has to run on every call, so it is off from now on."sv :
-			                                                             " NEC's change there is off from now on."sv);
+			return ChangedLine(a_place, tail);
+		}
+
+		// The line of a place whose hooks call each other without end, see
+		// Walked. The game runs out of stack at the next call whatever NEC
+		// does there, so the line names the DLL to remove.
+		std::string LoopLine(const Place& a_place, const Owner& a_dll)
+		{
+			const auto dll = Words(std::span{ &a_dll, 1 });
+			return std::format("{:s}: {:s} hooked {:s} at {:X} both before and after NEC, so its hook and NEC's hand each call back and forth without end. The game will most likely crash the next time it is used, and removing {:s} stops that.",
+				NameOf(a_place), dll, a_place.what, a_place.where, dll);
 		}
 
 		// Whether NEC.log has said a written place changed: one cut by its own
@@ -145,6 +166,7 @@ namespace CallPatch
 			std::vector<const Place*> late;   // changed after NEC left it alone
 			std::vector<const Place*> again;  // already off, changed again
 			std::vector<const Place*> back;   // back to NEC's hook
+			std::vector<std::string>  loops;  // hooks that call each other without end
 			Pass                      pass;
 			for (auto& place : Places()) {
 				checked++;
@@ -202,6 +224,12 @@ namespace CallPatch
 				const auto walked = Walk(place);
 				const auto reaches = walked.reaches == Reaches::kNec;
 
+				// Cut below like any line that skips NEC, and worded once the
+				// pass is over.
+				if (walked.loops) {
+					loops.push_back(LoopLine(place, Cutter(place, walked)));
+				}
+
 				// Stubs alone that lead straight to NEC's hook, as a DLL that
 				// unhooks with a fresh stub of its own leaves the place. NEC's
 				// hook runs on every call there, as if NEC had written it.
@@ -235,7 +263,7 @@ namespace CallPatch
 				if (place.share == Share::kCut) {
 					if (first) {
 						lines.push_back({ REX::ELogLevel::Warning,
-							reaches && !everyCall ? ChangedLine(place, Tail(place)) : CutLine(place, everyCall) });
+							reaches && !everyCall ? ChangedLine(place, Tail(place)) : CutLine(place, everyCall, walked) });
 					} else {
 						again.push_back(&place);
 					}
@@ -244,7 +272,7 @@ namespace CallPatch
 
 				if (everyCall || !reaches) {
 					Lose(place, pass, Share::kCut);
-					lines.push_back({ REX::ELogLevel::Warning, CutLine(place, everyCall) });
+					lines.push_back({ REX::ELogLevel::Warning, CutLine(place, everyCall, walked) });
 				} else if (HeldSet(place.set)) {
 					// A held set waits until this place's hook runs again.
 					// Hold fails only when a sibling already cut the set, which
@@ -319,6 +347,9 @@ namespace CallPatch
 				lines.push_back({ REX::ELogLevel::Warning,
 					std::format("{:s}: {:s} at {:X} is back as NEC wrote it.{:s}", NameOf(*place), place->what, place->where,
 						IsOff(*place) || SwitchLeft(*place) ? Tail(*place) : TraceTail(*place)) });
+			}
+			for (auto& loop : loops) {
+				lines.push_back({ REX::ELogLevel::Warning, std::move(loop) });
 			}
 			Say(pass, lines, false);
 		}

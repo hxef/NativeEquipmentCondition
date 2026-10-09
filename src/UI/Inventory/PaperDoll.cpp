@@ -1,5 +1,6 @@
 #include "UI/Inventory/PaperDoll.h"
 
+#include "Condition/Condition.h"
 #include "Condition/Equipped.h"
 #include "Core/TraceLog.h"
 #include "UI/Flash.h"
@@ -9,7 +10,6 @@
 #include <algorithm>
 #include <array>
 #include <atomic>
-#include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <format>
@@ -119,7 +119,7 @@ namespace PaperDoll
 		// new.
 		[[nodiscard]] std::int32_t PercentOf(float a_health)
 		{
-			return a_health < 0.0F ? 100 : static_cast<std::int32_t>(std::lround(std::clamp(a_health, 0.0F, 1.0F) * 100.0F));
+			return a_health < 0.0F ? 100 : static_cast<std::int32_t>(Condition::WholePercent(a_health));
 		}
 
 		// The latest condition per region, written by the task and read by the

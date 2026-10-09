@@ -7,6 +7,7 @@
 #include "Core/TraceLog.h"
 #include "Gameplay/SpawnCondition/Band.h"
 #include "Gameplay/SpawnCondition/Guards.h"
+#include "Gameplay/SpawnCondition/Owners.h"
 #include "Gameplay/SpawnCondition/Trace.h"
 
 #include <algorithm>
@@ -34,61 +35,6 @@ namespace SpawnCondition
 			{ 2194196, 0x12F, "container locked" },
 			{ 2194196, 0x155, "container" },
 		};
-
-		// Whether a stack is going to the player. The player's own are
-		// listed one by one and everybody else's counted, since a save
-		// loading hands thousands to the characters and containers around the
-		// player at once.
-		[[nodiscard]] bool Players(const RE::BGSInventoryList* a_list)
-		{
-			return a_list && a_list->owner == RE::ObjectRefHandle{ RE::PlayerCharacter::GetPlayerHandle() };
-		}
-
-		// The record that makes the owner of a_list essential, a companion's
-		// for example, or nothing. Read from the record, since the game marks
-		// the character only once they are up and about, long after their gear
-		// arrives. A leveled character is judged by the record placed in the
-		// world, as the game reads it.
-		[[nodiscard]] const RE::TESActorBase* Essential(const RE::BGSInventoryList* a_list)
-		{
-			if (!a_list) {
-				return nullptr;
-			}
-			const auto owner = a_list->owner.get();
-			if (!owner) {
-				return nullptr;
-			}
-
-			const RE::TESActorBase* base = nullptr;
-			if (owner->extraList) {
-				if (const auto* leveled = owner->extraList->GetByType<RE::ExtraLeveledCreature>()) {
-					base = leveled->originalBase;
-				}
-			}
-			if (!base) {
-				const auto* object = owner->GetObjectReference();
-				if (object && object->Is(RE::ENUM_FORM_ID::kNPC_)) {
-					base = static_cast<const RE::TESNPC*>(object);
-				}
-			}
-			return base && base->IsEssential() ? base : nullptr;
-		}
-
-		// Whether a stack is a showpiece: a legendary weapon or piece of armor
-		// going into a chest, not into a character's hands. A trader's
-		// showpiece, Big Boy at Arturo's for one, is placed by a quest script
-		// into a chest that never restocks, so it passes here once, as plain
-		// loot. A corpse's legendary goes to the dying character first, so it
-		// stays loot. Read under the inventory lock. The extra data takes its
-		// own lock after it, as the script guards do.
-		[[nodiscard]] bool Showpiece(const RE::BGSInventoryList* a_list, RE::ExtraDataList& a_extra)
-		{
-			if (!a_list) {
-				return false;
-			}
-			const auto owner = a_list->owner.get();
-			return owner && !owner->IsActor() && a_extra.GetLegendaryMod() != nullptr;
-		}
 
 		// Gives one stack a condition, if it is the kind of thing that has one
 		// and has none yet. Returns what it aimed at, so the copies SplitOff
@@ -198,6 +144,16 @@ namespace SpawnCondition
 				a_stack->extra->SetHealthPerc(Condition::MAX_HEALTH);
 				Report(listed, "a showpiece", "{:<30s} [{:08X}] x{:<3d} starts at {:.4f}, legendary, in a chest",
 					name, id, count, Condition::MAX_HEALTH);
+				return std::nullopt;
+			}
+
+			// What the player's own record dresses them in arrives at full
+			// condition, as an essential character's gear does. Loot they pick
+			// up later still rolls.
+			if (const auto* outfit = players ? PlayersOutfit(*a_stack->extra) : nullptr) {
+				a_stack->extra->SetHealthPerc(Condition::MAX_HEALTH);
+				Report(listed, "the player's own outfit", "{:<30s} [{:08X}] x{:<3d} starts at {:.4f}, outfit [{:08X}] of the player's own record",
+					name, id, count, Condition::MAX_HEALTH, outfit->formID);
 				return std::nullopt;
 			}
 

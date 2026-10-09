@@ -233,11 +233,11 @@ namespace FireRate
 		const auto sound = CallPatch::PatchCall(SOUND_SITE, rateOfFire, reinterpret_cast<std::uintptr_t>(&SoundHk), g_soundLink, Part::kFireSound);
 		const auto cuts = InstallCuts();
 		if (!speed || !rate || !cuts) {
-			REX::ERROR("A worn automatic weapon will keep firing at its full rate.");
+			REX::WARN("A worn automatic weapon will keep firing at its full rate.");
 			return;
 		}
 		if (!sound) {
-			REX::ERROR("A worn automatic weapon will sound as fast as a new one.");
+			REX::WARN("A worn automatic weapon will sound as fast as a new one.");
 		}
 
 		REX::INFO("A worn automatic weapon fires slower, for anyone, down to {:.2f} of its rate at 0 condition.", Floor());
@@ -245,6 +245,7 @@ namespace FireRate
 
 	void Unload()
 	{
+		g_reading = Reading{};
 		{
 			const std::unique_lock l{ g_npcLock };
 			g_npcReadings.clear();

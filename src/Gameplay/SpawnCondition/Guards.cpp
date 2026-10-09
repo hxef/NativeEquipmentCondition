@@ -209,7 +209,7 @@ namespace SpawnCondition
 		t_restock = _was;
 	}
 
-	// Compared as handles, like Players in SpawnCondition.cpp, since this is
+	// Compared as handles, like Players in Owners.cpp, since this is
 	// asked under the inventory write lock for every weapon and piece of
 	// armor that comes in.
 	const Restock* Restocking(const RE::BGSInventoryList* a_list)

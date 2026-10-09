@@ -147,7 +147,7 @@ namespace ItemValue
 		});
 
 		if (!g_held) {
-			REX::ERROR("A worn item will keep selling for the price of a new one.");
+			REX::WARN("A worn item will keep selling for the price of a new one.");
 		} else {
 			REX::INFO("Item value falls with condition, everywhere the game prints a price.");
 			const auto exponent = Exponent();

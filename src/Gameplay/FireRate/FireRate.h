@@ -35,9 +35,9 @@ namespace FireRate
 	// so the player's cuts in first person are paced the same way.
 	void Install();
 
-	// Forgets every NPC's share and every blade's pace. Form IDs name something
-	// else after a full reset, and the NPCs of another game after a save load
-	// or a new game, so it runs then too.
+	// Forgets the player's share, every NPC's share and every blade's pace.
+	// Form IDs name something else after a full reset, and the guns and NPCs
+	// of another game after a save load or a new game, so it runs then too.
 	void Unload();
 
 	// Whether the patches are in: not when another mod has fire rate. The

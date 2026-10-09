@@ -294,6 +294,21 @@ namespace CallPatch
 			}
 			return walked;
 		}
+
+		// Whether a place leads to the very hook NEC hands each call on to, and
+		// that hook hands each call back to NEC, maybe through other DLLs: a
+		// DLL that hooked the place before NEC and again after it with 1 hook,
+		// which kept the hook above NEC in place of what it had. A DLL that only puts back what NEC
+		// found still hands on to the game, so it is no loop.
+		bool Loops(std::uintptr_t a_first, const Ends& a_ends)
+		{
+			const auto lands = Follow(a_first);
+			if (!lands || !a_ends.next || (a_first != a_ends.next && lands != Follow(a_ends.next)) || InGame(lands) || InNec(lands)) {
+				return false;
+			}
+			const auto image = ImageAt(lands);
+			return image && InCode(image, lands) && WalkFrom(KeptBy(image, lands, a_ends), a_ends).reaches == Reaches::kNec;
+		}
 	}
 
 	// Where a_address lands once every stub in front of it is followed: the
@@ -373,6 +388,10 @@ namespace CallPatch
 		const auto mine = a_place.kind == Kind::kPointer     ? a_place.hook :
 		                  a_place.kind == Kind::kVirtualCall ? a_place.where + VCALL_SIZE + displacement :
 		                                                       a_place.where + REL32_SIZE + displacement;
-		return WalkFrom(LeadsTo(a_place.where, a_place.kind), { a_place.kind, a_place.where, mine, a_place.hook, a_place.next, a_place.game });
+		const Ends ends{ a_place.kind, a_place.where, mine, a_place.hook, a_place.next, a_place.game };
+		const auto first = LeadsTo(a_place.where, a_place.kind);
+		auto       walked = WalkFrom(first, ends);
+		walked.loops = Loops(first, ends);
+		return walked;
 	}
 }

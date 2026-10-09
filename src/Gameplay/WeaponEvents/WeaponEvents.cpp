@@ -177,7 +177,7 @@ namespace WeaponEvents
 		if (CallPatch::PatchCall(FIRE_SITE, fire.address(), reinterpret_cast<std::uintptr_t>(&FireHk), g_fire)) {
 			REX::INFO("Guns wear down with every shot the game fires.");
 		} else {
-			REX::ERROR("Guns will not wear down when fired.");
+			REX::WARN("Guns will not wear down when fired.");
 		}
 	}
 

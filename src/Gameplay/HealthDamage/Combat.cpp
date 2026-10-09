@@ -386,7 +386,7 @@ namespace HealthDamage
 			}
 		}
 		if (attacks == 0) {
-			REX::ERROR("Worn weapons will hit at full damage in combat.");
+			REX::WARN("Worn weapons will hit at full damage in combat.");
 		} else {
 			REX::INFO("Weapon damage in combat scales with condition: {:d} of {:d} pairs of call sites.", attacks,
 				std::size(HEALTH_SITES));

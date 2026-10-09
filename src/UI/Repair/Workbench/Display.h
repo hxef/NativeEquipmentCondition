@@ -15,7 +15,7 @@
 // sound by name:
 //
 //     public function InventoryModeToSlotsMode():* {
-//        if (this._isCookingMenu || this.ModSlotList_mc.entryList.length > 0) {
+//        if (this._isCookingMenu || this.ModSlotBase_mc.ModSlotList_mc.entryList.length > 0) {
 //           ... open the slots ...
 //        } else {
 //           this.BGSCodeObj.PlaySound("UICancel");

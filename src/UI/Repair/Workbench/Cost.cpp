@@ -82,6 +82,15 @@ namespace Workbench
 				out.push_back({ component, 1 });
 			}
 		}
+
+		// Biggest count first, as a repair from 0 lists them, whatever part of
+		// the order the slice starts in. Equal counts keep the bill's order.
+		const auto place = [&a_priced](const Materials::Part& a_part) {
+			return std::ranges::find(a_priced.built, a_part.component, &Materials::Part::component) - a_priced.built.begin();
+		};
+		std::ranges::sort(out, [&place](const Materials::Part& a_lhs, const Materials::Part& a_rhs) {
+			return a_lhs.count != a_rhs.count ? a_lhs.count > a_rhs.count : place(a_lhs) < place(a_rhs);
+		});
 		return out;
 	}
 

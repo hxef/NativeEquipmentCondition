@@ -25,8 +25,8 @@ namespace RepairPrompt
 			void operator()(std::uint8_t a_button) override
 			{
 				// Any button after the offers means cancel. Without the task
-				// queue the box counts as cancelled, rather than acting at a
-				// moment Flash chose.
+				// queue the box counts as cancelled at once, which spends
+				// nothing and opens no menu.
 				const auto  index = static_cast<std::size_t>(a_button);
 				const auto* tasks = F4SE::GetTaskInterface();
 				if (!tasks) {

@@ -318,7 +318,6 @@ namespace QuickContainer
 			bool afterRedraw;
 		};
 
-		// Live as long as the plugin, the same way as the item card listener.
 		Listener g_renderListener{ true };
 		Listener g_frameListener{ false };
 	}

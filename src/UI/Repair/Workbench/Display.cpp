@@ -113,7 +113,6 @@ namespace Workbench
 			bool said = false;
 		};
 
-		// Lives as long as the plugin, the same way as the HUD's listeners.
 		FrameListener g_frameListener;
 
 		// The items MarkWorn has listed since the bench opened, by their

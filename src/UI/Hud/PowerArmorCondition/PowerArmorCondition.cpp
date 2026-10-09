@@ -169,7 +169,7 @@ namespace PowerArmorCondition
 			bool              saidOffScreen = false;
 		};
 
-		// Lives as long as the plugin, the same way as the other HUD listener.
+		// Lives as long as the plugin, see Flash.h.
 		FrameListener g_frameListener;
 
 		// The game lets go of the dash's renderer on this same event, so the

@@ -123,7 +123,8 @@ namespace VendorRepair
 	};
 
 	// Where the highlight has landed. The movie tells code only in passing,
-	// once on every change, and the hook that hears it says so here.
+	// whenever the highlight lands or a list is rebuilt and on every move of
+	// the quantity slider, and the hook that hears it says so here.
 	void Highlight(std::int32_t a_row, bool a_inContainer);
 
 	[[nodiscard]] Selection Selected(RE::BarterMenu* a_menu);
@@ -138,8 +139,8 @@ namespace VendorRepair
 	void Forget();
 
 	// Forgets what the trader restocks with, for a trader's side built again:
-	// the screen opening, a trade, a sale or an investment, when a script may
-	// have changed a list, a chance or a chest since.
+	// the screen opening, a trade, a sale, an investment or a repair paid for,
+	// when a script may have changed a list, a chance or a chest since.
 	void ForgetStock();
 
 	// Whether the button belongs on the bar: a worn item on the player's side

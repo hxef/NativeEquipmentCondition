@@ -237,8 +237,9 @@ namespace WeaponWear
 		if (weapon->damageTypes && !weapon->damageTypes->empty()) {
 			for (const auto& entry : *weapon->damageTypes) {
 				const auto* type = entry.first;
+				const auto* damage = type ? type->As<RE::BGSDamageType>() : nullptr;
 				TraceLog::Line("sources", "  damage type {:s} [{:08X}] value {:d}",
-					type ? RE::TESFullName::GetFullName(*type) : "?"sv,
+					damage ? TraceLog::TypeName(*damage) : "?"sv,
 					type ? type->formID : 0, entry.second.i);
 			}
 		} else {

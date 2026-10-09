@@ -1,3 +1,8 @@
+1.1.6
+Version 1.1.6 shows which components a workbench repair you can't afford is missing, in the power armor station's own list. Gear worn nearly to nothing reads 1%, not 0%, and a read only NEC.log no longer means a game start with no log.
+
+FO4 1.11.240
+
 1.1.4
 Version 1.1.4 fixes workbench repairs beside Perk Conditions Framework, and skill mods like Classic NV Skill System now lower repair costs. Automatic fire no longer stutters with a big inventory, and wear speed is right with RobCo Patcher.
 

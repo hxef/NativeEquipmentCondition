@@ -155,7 +155,7 @@ After that, [b]removing the mod is safe.[/b] It has no ESP and keeps no save dat
 [list]
 [*]The MCM page is a config.json alone. NEC answers MCM's GetModSetting, SetModSetting and GetFullName calls from its own settings and translations. While NEC's page shows, NEC also sets MCM's settings list from its Multi-Line text mode to None, so each note is as tall as its words, and sets it back once another page shows.
 [*]NEC patches call sites and function table slots, with no detours, at F4SE's PostPostLoad, and reads them back once every file has loaded, at each save load and new game, and whenever the main or pause menu opens.
-[*]If a DLL hooked a place first, NEC's hook calls it, or NEC's change at that place stays off if NEC cannot call it safely. If a DLL hooks it after NEC and calls NEC's hook, both run. If not, NEC's change at that place stays off while that DLL is installed. A feature that cannot work without that place switches off with it. Workbench repairs need every call at 3 of their places, so any later hook there does the same.
+[*]If a DLL hooked a place first, NEC's hook calls it, or NEC's change at that place stays off if NEC cannot call it safely. If a DLL hooks it after NEC and calls NEC's hook, both run. If not, NEC's change at that place stays off while that DLL is installed. A feature that cannot work without that place switches off with it.
 [/list]
 [/spoiler]
 

@@ -6,11 +6,14 @@
 #include <string>
 #include <string_view>
 
-// Reading values from a menu movie's objects, and writing text for it. Every
-// readout and menu hook reads clips through these. A number comes back
-// whichever of the 3 number types the movie keeps it in. Each accepts whatever
-// it is handed, including a clip a UI replacer removed, and returns as if the
-// member were not there.
+// Safe readers for a menu movie's objects, and text written for it. Each one
+// that takes a clip checks that it is an object first, so a clip a UI
+// replacer removed reads as absent. A number comes back whichever of the 3
+// number types the movie keeps it in.
+//
+// Every native function NEC gives a movie, each listener and handler, is a
+// global. Scaleform counts references to it and its count starts at 1,
+// which is never given back, so it lives as long as the plugin.
 namespace Flash
 {
 	using Value = Scaleform::GFx::Value;

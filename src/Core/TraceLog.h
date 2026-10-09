@@ -16,11 +16,11 @@
 //   NEC.ui.trace.log   the menus: what was drawn, where, from what
 //   NEC.npc.trace.log  everybody else's fighting
 //
-// All 4 sit in Documents\My Games\Fallout4\F4SE. bTraceLogs switches the 3 on
-// together, see Settings.h. Anything that can happen more than once in a
-// session goes here, not in NEC.log. UI_TAGS decides between the first 2 files.
-// The NPC file is asked for by name through Npc below, since a damage line
-// reads the same whoever struck the blow.
+// All 4 sit in Documents\My Games\<save folder>\F4SE, see LogFiles.h.
+// bTraceLogs switches the 3 on together, see Settings.h. Anything that can
+// happen more than once in a session goes here, not in NEC.log. UI_TAGS decides
+// between the first 2 files. The NPC file is asked for by name through Npc
+// below, since a damage line reads the same whoever struck the blow.
 //
 // A file reads as blocks. A header line with a tag in capitals opens one, SHOT
 // or MELEE, with the clock time and the thread. The lines below carry a
@@ -32,9 +32,9 @@
 //           +268ms  hit     Naomi with Combat Rifle [000DF42E]  physical 67.29
 //
 // A line with no block open becomes a header of its own. A line names its
-// thread only when it differs from the header's. A few moments open a block in
-// all 3 files at once: the plugin starting, a save loading, a new game and a
-// full reset.
+// thread only when it differs from the header's. Each Mark opens a block in
+// all 3 files at once: the plugin starting, the main menu, a save loading
+// and loaded, a new game, a full reset and every file loaded.
 namespace TraceLog
 {
 	// Opens the 3 files beside NEC.log when bTraceLogs is on. Call it after
@@ -55,7 +55,7 @@ namespace TraceLog
 	// health line is repeated by the damage line under it, and a save loading
 	// hands thousands of stacks to the characters and containers around the
 	// player, which the spawn block counts instead. Take a tag out while
-	// working on its code. The check is made at compile time.
+	// working on its code.
 	inline constexpr std::string_view QUIET[]{ "card", "price", "health", "loot" };
 
 	// Tags whose lines go to the UI file. Split by tag and not by source file,
@@ -139,7 +139,7 @@ namespace TraceLog
 	}
 
 	// Line for code the game runs over and over on the same thing, a list
-	// sorted or a card drawn every frame. Written once, then again after a
+	// sorted or a card drawn again and again. Written once, then again after a
 	// pause.
 	template <class... T>
 	void Once(std::string_view a_tag, std::format_string<T...> a_fmt, T&&... a_args)
@@ -150,7 +150,7 @@ namespace TraceLog
 	}
 
 	// Line for what the game works out the same way all session, such as a
-	// card. Written the first time its words come up after a save loads, so
+	// card. Written the first time its words come up since the last Mark, so
 	// it comes again only once something in it changes.
 	template <class... T>
 	void First(std::string_view a_tag, std::format_string<T...> a_fmt, T&&... a_args)
@@ -256,6 +256,19 @@ namespace TraceLog
 	namespace detail
 	{
 		[[nodiscard]] std::string Name(const RE::TESForm* a_form);
+	}
+
+	// A damage type in a line. It has no name, and the game keeps no editor
+	// ID for most forms unless another DLL mod keeps them. The resistance it
+	// is checked against keeps its own, such as EnergyResist.
+	[[nodiscard]] inline std::string_view TypeName(const RE::BGSDamageType& a_type)
+	{
+		const char* own = a_type.GetFormEditorID();
+		if (own && *own) {
+			return own;
+		}
+		const char* resistance = a_type.data.resistance ? a_type.data.resistance->formEditorID.c_str() : nullptr;
+		return resistance && *resistance ? resistance : "a damage type";
 	}
 }
 

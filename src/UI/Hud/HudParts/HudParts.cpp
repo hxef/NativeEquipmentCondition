@@ -149,7 +149,7 @@ namespace HudParts
 	void ForgetOldTargets()
 	{
 		// UI is asked only when there is something to let go of, since
-		// DropTargets runs every frame once the place is cut.
+		// DropTargets runs every 10 frames once the place is cut.
 		{
 			const std::scoped_lock l(g_colorTargetsLock);
 			if (g_colorTargets.empty()) {

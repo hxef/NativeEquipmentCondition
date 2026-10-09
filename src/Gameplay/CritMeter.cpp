@@ -145,12 +145,12 @@ namespace CritMeter
 		}, Part::kNpcCrits);
 
 		if (!meter) {
-			REX::ERROR("A worn weapon will keep filling the VATS critical meter as fast as a new one.");
+			REX::WARN("A worn weapon will keep filling the VATS critical meter as fast as a new one.");
 			return;
 		}
 		REX::INFO("A worn weapon fills the VATS critical meter slower, down to {:.2f} of the rate at nothing.", floor);
 		if (!g_rolled) {
-			REX::ERROR("An NPC's worn weapon will keep landing critical hits as often as a new one.");
+			REX::WARN("An NPC's worn weapon will keep landing critical hits as often as a new one.");
 		} else {
 			REX::INFO("An NPC's worn weapon lands fewer critical hits, down to {:.2f} of the chance at nothing.", floor);
 		}

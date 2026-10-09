@@ -386,7 +386,7 @@ namespace ItemCard
 		if (g_cards) {
 			REX::INFO("Item cards print the fire rate a worn gun fires at.");
 		} else {
-			REX::ERROR("Item cards will keep printing a worn gun at the fire rate of a new one.");
+			REX::WARN("Item cards will keep printing a worn gun at the fire rate of a new one.");
 		}
 
 		const auto types = RE::ID::PipboyInventoryUtils::FillDamageTypeInfo.address();
@@ -399,7 +399,7 @@ namespace ItemCard
 		if (g_better.held) {
 			REX::INFO("The quick container weighs a worn gun at the fire rate it fires at before it marks an item better.");
 		} else {
-			REX::ERROR("The quick container will keep weighing a worn gun at the fire rate of a new one.");
+			REX::WARN("The quick container will keep weighing a worn gun at the fire rate of a new one.");
 		}
 
 		g_sort.held = CallPatch::PatchTogether({
@@ -409,7 +409,7 @@ namespace ItemCard
 		if (g_sort.held) {
 			REX::INFO("Containers and traders sort a worn gun by the fire rate it fires at.");
 		} else {
-			REX::ERROR("Containers and traders will keep sorting a worn gun by the fire rate of a new one.");
+			REX::WARN("Containers and traders will keep sorting a worn gun by the fire rate of a new one.");
 		}
 
 		return patched;

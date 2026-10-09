@@ -86,7 +86,8 @@ REPAIR AT THE WORKBENCH
   appears. Press it, choose how far to repair it in steps of 10%, and pay in
   the components it is built from. Gear that scraps into nothing, like
   Grognak's Axe, costs what gear of its kind most often scraps into, and
-  wears like it too.
+  wears at the same rate. Short of components, you get the power armor
+  station's list of what the repair takes, with the ones you lack faded.
 * Barely worn gear, above 95%, gets a MEND button instead, which fixes it on
   the spot for free. The 95% is the Free mend above setting: 100 makes every
   repair cost components, and 0 mends everything but broken gear for free.

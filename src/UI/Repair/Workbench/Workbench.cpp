@@ -28,11 +28,15 @@ namespace Workbench
 		// translates.
 		constexpr const char* QUESTION = "$Repair";
 
-		// The sound the bench plays when it turns the player away from the mod
-		// slots, and the number Flash calls PlaySound by. Nothing else in the
-		// menu asks for this sound.
-		constexpr const char* REFUSED_SOUND = "UICancel";
+		// The sound the bench asks for when it turns the player away from the
+		// mod slots, and the number Flash calls PlaySound by. Nothing else in
+		// the menu asks for this sound. No sound in the game has this name, so
+		// it plays nothing, and NEC only watches for it.
+		constexpr const char* SLOTS_REFUSED = "UICancel";
 		constexpr auto        PLAY_SOUND = static_cast<std::uintptr_t>(RE::WorkbenchMenuBase::CodeObjectFunction::kPlaySound);
+
+		// The cancel sound NEC plays when the bench cannot repair an item.
+		constexpr const char* REFUSED_SOUND = "UIMenuCancel";
 
 		// What the game does before this, which every hook calls straight away
 		// while its place or the repair is off. Of the 10 functions this file
@@ -269,13 +273,13 @@ namespace Workbench
 		}
 
 		// Everything Flash asks code to do passes through here by number. The
-		// one of interest is the cancel sound the bench plays when it has just
-		// turned the player away from the mod slots, the moment to say why, and
-		// the only one, since the refusal happens inside the movie. That holds
-		// for the mouse, the key, the pad and MODIFY alike. The bench plays the
-		// same sound for an item with no slots, such as one listed only to be
-		// repaired, and that one is told so whatever its condition, since a
-		// repair would open nothing.
+		// one of interest is the cancel sound the bench asks for when it has
+		// just turned the player away from the mod slots, the moment to say why,
+		// and the only one, since the refusal happens inside the movie. That
+		// holds for the mouse, the key, the pad and MODIFY alike. The bench asks
+		// for the same sound for an item with no slots, such as one listed only
+		// to be repaired, and that one is told so whatever its condition, since
+		// a repair would open nothing.
 		void CallHk(RE::ExamineMenu* a_menu, const Params& a_params)
 		{
 			_Call(a_menu, a_params);
@@ -286,7 +290,7 @@ namespace Workbench
 			}
 
 			const std::string_view sound = a_params.args[0].GetString();
-			if (sound != REFUSED_SOUND) {
+			if (sound != SLOTS_REFUSED) {
 				return;
 			}
 
@@ -371,7 +375,7 @@ namespace Workbench
 
 		CraftingPerks::SetBench(&Repairs);
 		if (!g_bench || !canRepair || !switchItem || !repair) {
-			REX::ERROR("Workbenches stay as they were, with no repairs from NEC.");
+			REX::WARN("Workbenches stay as they were, with no repairs from NEC.");
 			return;
 		}
 

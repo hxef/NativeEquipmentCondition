@@ -14,6 +14,7 @@
 #include <memory>
 #include <string>
 #include <string_view>
+#include <system_error>
 #include <utility>
 #include <vector>
 
@@ -32,12 +33,12 @@ namespace LogFiles
 		constexpr const char* MAIN_LOGGER = "global";
 		constexpr const char* MAIN_PATTERN = "[%T.%e] [%=5t] [%L] %v";
 
-		// A file sink, and why the start before was lost, empty when it moved
-		// along.
+		// A file sink, and the WARN to write once the log is open, empty when
+		// the start before moved along.
 		struct Opened
 		{
 			spdlog::sink_ptr sink;
-			std::string lost;
+			std::string warning;
 		};
 
 		// The file sink for a_path. The start before moves along as it opens,
@@ -50,14 +51,24 @@ namespace LogFiles
 			try {
 				return { std::make_shared<spdlog::sinks::rotating_file_sink_mt>(name, a_maxSize, KEPT_STARTS, true), {} };
 			} catch (const std::exception& e) {
-				return { std::make_shared<spdlog::sinks::basic_file_sink_mt>(name, true), e.what() };
+				try {
+					return { std::make_shared<spdlog::sinks::basic_file_sink_mt>(name, true),
+						std::format("Could not move {:s} along to keep it, so the last start's lines are lost and it starts empty: {:s}", name, e.what()) };
+				} catch (const std::exception&) {
+					// A read only file cannot be opened but can be renamed,
+					// which keeps it and frees the name. A file another
+					// program holds open cannot.
+					auto aside = a_path;
+					aside.replace_extension("old.log");
+					std::error_code error;
+					std::filesystem::rename(a_path, aside, error);
+					if (error) {
+						throw;
+					}
+					return { std::make_shared<spdlog::sinks::rotating_file_sink_mt>(name, a_maxSize, KEPT_STARTS, true),
+						std::format("Could not write to {:s}, so it moved to {:s} and an empty one starts: {:s}", name, aside.string(), e.what()) };
+				}
 			}
-		}
-
-		// The 1 line that says a log lost the start before.
-		void SayLost(const std::filesystem::path& a_path, std::string_view a_why)
-		{
-			REX::WARN("Could not move {:s} along to keep it, so the start before is lost and it starts empty: {:s}", a_path.string(), a_why);
 		}
 
 		// Documents\My Games\<save folder>\F4SE\NEC.log, worked out as
@@ -82,6 +93,11 @@ namespace LogFiles
 			std::filesystem::path path = documents.get();
 			path /= std::format("My Games/{}/F4SE", saveFolder);
 			path /= MAIN_FILE;
+			// Windows gives Documents with backslashes and the folders after it
+			// join with forward slashes. make_preferred turns all of them into
+			// backslashes, so every path NEC.log prints reads the same,
+			// including the ones in bug report logs and spdlog's reasons.
+			path.make_preferred();
 			return path;
 		}
 	}
@@ -116,8 +132,8 @@ namespace LogFiles
 			if (!noFile.empty()) {
 				const auto where = path.empty() ? std::string{ MAIN_FILE } : path.string();
 				REX::WARN("Could not open {:s}, so this game start writes no log file: {:s}", where, noFile);
-			} else if (!file.lost.empty()) {
-				SayLost(path, file.lost);
+			} else if (!file.warning.empty()) {
+				REX::WARN("{:s}", file.warning);
 			}
 		} catch (...) {
 			// Nothing is left to say it to, and a log is not worth ending the
@@ -128,8 +144,8 @@ namespace LogFiles
 	spdlog::sink_ptr OpenFile(const std::filesystem::path& a_path, std::size_t a_maxSize)
 	{
 		auto file = Open(a_path, a_maxSize);
-		if (!file.lost.empty()) {
-			SayLost(a_path, file.lost);
+		if (!file.warning.empty()) {
+			REX::WARN("{:s}", file.warning);
 		}
 		return std::move(file.sink);
 	}

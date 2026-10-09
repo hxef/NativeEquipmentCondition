@@ -16,7 +16,9 @@
 // cannot move, for example while another program holds it open. Inside
 // F4SE::Init, which is noexcept, that would end the game at startup. Here a
 // file that cannot move loses only the start before: the log starts empty,
-// with a WARN in NEC.log, and the older numbered files stay.
+// with a WARN in NEC.log, and the older numbered files stay. A file that
+// cannot be written, such as a read only one, moves to <name>.old.log
+// (NEC.old.log, NEC.trace.old.log) and an empty one starts.
 namespace LogFiles
 {
 	// 1 megabyte, for the sizes below.
@@ -36,8 +38,9 @@ namespace LogFiles
 	// F4SE::Init, which names the save folder.
 	void OpenMain() noexcept;
 
-	// The file sink for 1 log, keeping the 10 starts before. When they cannot
-	// move along it writes a WARN and the file starts empty. Throws when not
-	// even an empty file opens.
+	// The file sink for 1 log, keeping the 10 starts before. It falls back as
+	// the top of this file says, with a WARN, and throws when the last
+	// fallback fails too, for example while another program holds the file
+	// open.
 	[[nodiscard]] spdlog::sink_ptr OpenFile(const std::filesystem::path& a_path, std::size_t a_maxSize);
 }

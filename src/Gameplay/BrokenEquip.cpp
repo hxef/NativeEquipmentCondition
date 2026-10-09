@@ -109,7 +109,7 @@ namespace BrokenEquip
 		g_held = CallPatch::PatchTogether({ { TOGGLE_SITE, canEquip, reinterpret_cast<std::uintptr_t>(&CanEquipHk<0>), &g_canEquipLinks[0] },
 			{ BUTTON_SITE, canEquip, reinterpret_cast<std::uintptr_t>(&CanEquipHk<1>), &g_canEquipLinks[1] } });
 		if (!g_held) {
-			REX::ERROR("A broken item that is on will be stuck on.");
+			REX::WARN("A broken item that is on will be stuck on.");
 			return;
 		}
 		REX::INFO("A broken item comes off when asked and stays off until it is repaired.");
@@ -118,7 +118,7 @@ namespace BrokenEquip
 		// after it or not at all.
 		const auto toggle = RE::ID::ActorEquipManager::ToggleEquipInventoryItem.address();
 		if (!CallPatch::PatchCall(PUT_BACK_SITE, toggle, reinterpret_cast<std::uintptr_t>(&PutBackHk), g_putBackLink)) {
-			REX::ERROR("A broken piece taken off for the barber chair or the surgeon stays off.");
+			REX::WARN("A broken piece taken off for the barber chair or the surgeon stays off.");
 		}
 	}
 

@@ -51,8 +51,16 @@ namespace Condition
 		// worn. Rounding alone would show a gun fired a few times as 100, with
 		// no repair on offer and its mod slots open, so any wear reads 99 at
 		// most.
-		const auto percent = std::round(std::clamp(health, 0.0F, 1.0F) * 100.0);
+		const auto percent = WholePercent(health);
 		return health < MAX_HEALTH ? std::min(percent, 99.0) : percent;
+	}
+
+	double WholePercent(float a_health)
+	{
+		// An item under half a percent still works, so any health above 0
+		// reads 1 at least and only a broken item reads 0.
+		const auto percent = std::round(std::clamp(a_health, 0.0F, 1.0F) * 100.0);
+		return a_health > MIN_HEALTH ? std::max(percent, 1.0) : percent;
 	}
 
 	float Share(float a_health, float a_floor)

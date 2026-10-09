@@ -8,7 +8,8 @@
 // full cannot be modified: its row is faded, it gets no mod slots, the heading
 // over them goes, and asking for them says why. Instead a REPAIR button on the
 // bar asks how far to repair the item, a level at a time, then puts the game's
-// own crafting confirmation up with the components on it. Saying yes spends
+// own crafting confirmation up with the components on it, or the power armor
+// station's list of them where the bench is short. Saying yes spends
 // them and pays the experience crafting a mod from them would. Wear below 5%
 // is repaired on the spot for free, since a floor at full would otherwise make
 // one shot a trip to the bench. An item the bench has nothing to rebuild from,
@@ -22,8 +23,9 @@
 // written on every change of highlight.
 //
 // Bench.h holds the basics, Cost.h what a repair costs, Job.h the repair from
-// the question to the finished item, Display.h how a worn item is shown and
-// kept out of the slots, and Lists.h the hooks on the lists that do it.
+// the question to the finished item, Missing.h what a repair the bench cannot
+// pay for shows, Display.h how a worn item is shown and kept out of the slots,
+// and Lists.h the hooks on the lists that do it.
 namespace Workbench
 {
 	// Patches the workbench menu's function table and its confirmation

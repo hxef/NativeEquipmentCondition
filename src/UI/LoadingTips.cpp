@@ -182,7 +182,7 @@ namespace LoadingTips
 		if (CallPatch::PatchCall(COLLECT_SITE, RE::ID::LoadingMenu::CollectLoadScreens.address(), reinterpret_cast<std::uintptr_t>(&CollectHk), g_collectLink)) {
 			REX::INFO("Loading screen tips join the screens the game picks from.");
 		} else {
-			REX::ERROR("Loading screen tips will not show.");
+			REX::WARN("Loading screen tips will not show.");
 		}
 
 		REL::Relocation<std::uintptr_t> menu{ RE::LoadingMenu::VTABLE[0] };

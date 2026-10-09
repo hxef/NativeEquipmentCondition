@@ -208,7 +208,7 @@ namespace HealthDamage
 		});
 
 		if (!g_blastEffect) {
-			REX::ERROR("A worn weapon's blast will keep casting its object effect at full strength.");
+			REX::WARN("A worn weapon's blast will keep casting its object effect at full strength.");
 		} else {
 			REX::INFO("A blast casts its object effect at the condition of the weapon that set it off.");
 		}

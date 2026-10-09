@@ -120,6 +120,7 @@ src/
       SpawnCondition.h/.cpp  the roll at the door of every inventory
       Band.h/.cpp            the roll, either side of an item's middle or in a trader's band
       Guards.h/.cpp          what marks a console command, a save, a script's gift, a restock and what the player carries
+      Owners.h/.cpp          who a stack goes to, and which of them get it at full condition
       Trace.h/.cpp           what the trace log is told about a stack
     WeaponEvents/
       WeaponEvents.h/.cpp    the fire call and the shot sink
@@ -205,7 +206,8 @@ Weapons and armor are the 2 kinds of item that wear. Each kind is a folder
 under `src/Condition/`, one case in `Condition::WhyNoCondition`, a reader in
 `src/Condition/Equipped.h`, and its own Gameplay features, each a row in
 `src/Features.cpp`. The item cards, the Pip-Boy, the quick container and the
-price read `Condition::Percent` and `Condition::WearsOut` and never ask what
-kind of item it is. The repairs and the roll at the door ask it only where
-weapons and armor part ways, and a sentence that has to name the kind asks
-`Condition::KindOf`. Another kind would be the same again.
+price read `Condition::Percent` and `Condition::WearsOut`, the CND bars round
+with `Condition::WholePercent`, and none of them ask what kind of item it is.
+The repairs and the roll at the door ask it only where weapons and armor part
+ways, and a sentence that has to name the kind asks `Condition::KindOf`.
+Another kind would be the same again.

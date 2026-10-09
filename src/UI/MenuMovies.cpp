@@ -72,7 +72,7 @@ namespace MenuMovies
 	{
 		const auto* scaleform = F4SE::GetScaleformInterface();
 		if (!scaleform || !scaleform->Register(F4SE::GetPluginName(), MovieLoaded)) {
-			REX::ERROR("No Scaleform registration, so item cards keep CND under Damage and the HUD shows no CND.");
+			REX::ERROR("Could not add NEC to the game's menus, so item cards keep CND under Damage and the HUD shows no CND.");
 		}
 	}
 }

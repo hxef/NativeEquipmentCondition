@@ -152,7 +152,7 @@ namespace HealthDamage
 		}, Part::kCardDamage);
 
 		if (!g_card) {
-			REX::ERROR("The item card will keep printing damage types at full strength.");
+			REX::WARN("The item card will keep printing damage types at full strength.");
 		} else {
 			REX::INFO("The item card prints damage types at the condition the item is in.");
 
@@ -167,7 +167,7 @@ namespace HealthDamage
 		// Installed on its own, since it is in a different function and reads a
 		// different value. A card that lost one is still right about the other.
 		if (!CallPatch::PatchCall(CARD_BLAST_SITE, entryPoint, reinterpret_cast<std::uintptr_t>(&CardBlastHk), g_cardBlastLink, Part::kCardDamage)) {
-			REX::ERROR("The item card will keep printing a worn explosive weapon at full damage.");
+			REX::WARN("The item card will keep printing a worn explosive weapon at full damage.");
 		} else {
 			REX::INFO("The item card prints the blast at the condition the weapon is in.");
 		}

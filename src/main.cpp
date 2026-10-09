@@ -9,6 +9,7 @@
 #include "Core/TraceLog.h"
 #include "Gameplay/FireRate/FireRate.h"
 #include "Gameplay/Jam.h"
+#include "UI/Hud/HudParts/HudParts.h"
 #include "UI/MenuMovies.h"
 #include "UI/Repair/ConsoleRepair.h"
 
@@ -100,6 +101,7 @@ namespace
 			a_msg->type == F4SE::MessagingInterface::kNewGame) {
 			Jam::Unload();
 			FireRate::Unload();
+			HudParts::Weapon::Forget();
 		}
 
 		if (a_msg->type == F4SE::MessagingInterface::kPreLoadGame) {

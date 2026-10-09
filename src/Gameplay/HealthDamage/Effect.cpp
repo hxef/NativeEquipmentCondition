@@ -75,7 +75,7 @@ namespace HealthDamage
 		const auto cast = RE::ID::MagicCaster::Cast.address();
 
 		if (!CallPatch::PatchCall(HIT_EFFECT_SITE, cast, reinterpret_cast<std::uintptr_t>(&HitEffectHk), g_hitEffect)) {
-			REX::ERROR("A worn weapon's object effects will keep landing at full strength.");
+			REX::WARN("A worn weapon's object effects will keep landing at full strength.");
 		} else {
 			REX::INFO("A weapon's object effects land at the condition the weapon is in.");
 		}

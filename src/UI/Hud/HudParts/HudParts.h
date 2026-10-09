@@ -67,6 +67,10 @@ namespace HudParts
 		// Whether the player has a weapon drawn. A melee weapon hides the ammo
 		// counter, so a readout beside it has to know.
 		[[nodiscard]] bool Drawn();
+
+		// Forgets the last reading as a save loads or a new game begins, so the
+		// readouts show nothing of the last game's weapon until the next check.
+		void Forget();
 	}
 
 	// The readout itself: a bar over a dimmed track, and the word CND past the

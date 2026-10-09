@@ -15,7 +15,8 @@
 // down the game's own path: fill in the job, raise the repairing flag, and hand
 // it to the game's own TryCreate by its ID, which prices it, checks the
 // components and draws the confirmation. The job stays only if the
-// confirmation went up, and yes spends the components. The bench refuses to
+// confirmation went up, and yes spends the components. A job the bench cannot
+// pay for never gets that far, see Missing.h. The bench refuses to
 // price a job with no recipe, so the job carries one of its own, shaped like a
 // real recipe, listing the job's components and never registered as a form.
 namespace Workbench

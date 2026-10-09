@@ -71,8 +71,13 @@ namespace Condition
 	// The condition a menu shows, as a whole percent, or nothing for an item
 	// that does not wear. a_stack can be null. An item with no health extra
 	// data counts as new, which the engine's reader reports as -1. Only an item
-	// at full reads 100.
+	// at full reads 100 and only a broken one reads 0.
 	std::optional<double> Percent(const RE::BGSInventoryItem& a_item, const RE::BGSInventoryItem::Stack* a_stack);
+
+	// a_health rounded to a whole percent, 0 to 100, where any health above 0
+	// reads 1 at least. Percent and the HUD and Pip-Boy bars share it, so a
+	// nearly broken item reads 1 on all of them.
+	double WholePercent(float a_health);
 
 	// The share of a full stat an item keeps at a_health: a straight line from
 	// a_floor at 0 up to 1 at full. A health below 0, meaning none was ever

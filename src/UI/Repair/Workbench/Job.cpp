@@ -9,6 +9,7 @@
 #include "UI/Repair/Restore.h"
 #include "UI/Repair/Workbench/Cost.h"
 #include "UI/Repair/Workbench/Display.h"
+#include "UI/Repair/Workbench/Missing.h"
 #include "UI/Repair/Workbench/Workbench.h"
 
 #include <algorithm>
@@ -64,46 +65,6 @@ namespace Workbench
 			const auto xp = std::floor(static_cast<float>(a_worth) * mult->GetFloat() + base->GetFloat());
 			return std::min(cap->GetFloat(), std::max(1.0F, xp));
 		}
-
-		// A repair the player cannot pay for gets the game's own words for
-		// it. TryCreate then puts up the corner message of sCannotBuildMessage,
-		// "You lack the requirements to create this item.". The game reads
-		// that setting there and nowhere else. While this lives, it holds the
-		// words of sCannotRepairMessage, "You lack the requirements to repair
-		// this item.", in the player's language, and it gets its own words
-		// back after. The message copies the words as it goes up.
-		class ScopedRepairWords
-		{
-		public:
-			ScopedRepairWords()
-			{
-				auto*       settings = RE::GameSettingCollection::GetSingleton();
-				auto*       build = settings ? settings->GetSetting("sCannotBuildMessage"sv) : nullptr;
-				const auto* repair = settings ? settings->GetSetting("sCannotRepairMessage"sv) : nullptr;
-				const auto  words = repair ? repair->GetString() : ""sv;
-				if (build && !build->GetString().empty() && !words.empty()) {
-					_build = build;
-					_kept = build->GetString().data();
-					_build->SetString(const_cast<char*>(words.data()));
-				}
-			}
-
-			~ScopedRepairWords()
-			{
-				if (_build) {
-					_build->SetString(const_cast<char*>(_kept));
-				}
-			}
-
-			ScopedRepairWords(const ScopedRepairWords&) = delete;
-			ScopedRepairWords(ScopedRepairWords&&) = delete;
-			ScopedRepairWords& operator=(const ScopedRepairWords&) = delete;
-			ScopedRepairWords& operator=(ScopedRepairWords&&) = delete;
-
-		private:
-			RE::Setting* _build{ nullptr };
-			const char*  _kept{ nullptr };
-		};
 
 		// Hides the CURRENT MODS heading, or shows it again. An item too worn
 		// to modify has its slots closed and an item no mod fits has none, so
@@ -266,6 +227,12 @@ namespace Workbench
 			selection.Name(), selection.percent, a_level, Spell(bill),
 			Debt(selection.percent, priced.multiple) - Debt(a_level, priced.multiple));
 
+		// A repair the bench cannot pay for shows what it lacks, see Missing.h.
+		if (ShowMissing(a_menu, job)) {
+			Drop(a_menu);
+			return;
+		}
+
 		// The game's own TryCreate by its ID, so a DLL over its slot never
 		// sees the repair. The box's callback is the proof the box went up:
 		// the game stores each new one in the global it reads here, and its
@@ -291,6 +258,7 @@ namespace Workbench
 		if (a_menu) {
 			a_menu->repairing = false;
 		}
+		// The parts stay for the box of missing parts, see Missing.h.
 		InHand().choice.recipe = nullptr;
 	}
 

@@ -21,6 +21,9 @@ namespace SpawnCondition
 	// games wrote by hand is measured instead, see Provenance.h, and the roll
 	// stays inside the band the measurement asks for.
 	//
+	// Armor NEC does not wear goes back to full before any roll, whatever Worn
+	// loot says, see Settle in SpawnCondition.cpp.
+	//
 	// Every item rolls on its own. 3 pistols arriving as one stack with no
 	// condition are split into 3, each with its own roll, which happens most on
 	// a save made before this mod was installed, see SplitOff in

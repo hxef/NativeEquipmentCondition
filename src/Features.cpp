@@ -36,12 +36,20 @@
 
 namespace
 {
+	// -------------------------------------------------------------------
+	// The features
+	// -------------------------------------------------------------------
+
 	// Every feature, in the order they run. Install and Load run top to bottom
 	// and Unload bottom to top, so a row that reads what a row above kept sits
 	// below it.
 	constexpr Feature FEATURES[]{
 		// Condition: what condition is, and what repairing costs.
 
+		// Which pieces of armor take a mod that adds protection, an effect or
+		// a bonus. Which armor wears rests on it, and Materials and
+		// CraftingPerks ask that as they load, so it comes first.
+		{ .name = "ArmorMods", .Load = ArmorWear::LoadMods, .Unload = ArmorWear::UnloadMods },
 		// What a weapon or a piece of armor is built from, read off the game's
 		// own recipes.
 		{ .name = "Materials", .Load = Materials::Load, .Unload = Materials::Unload },
@@ -125,6 +133,10 @@ namespace
 		// installed.
 		{ .name = "Mcm", .OnMovieLoaded = Mcm::OnMovieLoaded },
 	};
+
+	// -------------------------------------------------------------------
+	// Checks on the table, while it compiles
+	// -------------------------------------------------------------------
 
 	// Every row that patches has a part of its own, so a place that names no
 	// part has one, and a part's loss reads the same wherever it is asked.

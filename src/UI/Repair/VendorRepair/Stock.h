@@ -28,15 +28,16 @@
 //
 // Armor and clothing are counted the same way, each on rows of its own, told
 // apart by ArmorWear::IsClothing since no keyword on a piece does. Power armor
-// pieces, the one wearable a shop can sell that does not wear, count as armor's
-// filler the way ammunition does for weapons, and clothing has no filler: the
-// game's own armorer's list is about a third clothes and its clothier's list
-// has some armor, so counting either as filler for the other would make every
-// armorer a clothier and every clothier an armorer. Tested the same way,
-// Fallon's Basement, the general stores of Brooks and Acadia and the settlement
-// clothing stores repair clothing alone, the settlement armor stores, Arturo,
-// Patches, Gage and the Atom Cats armor alone, and Kane, Lucas, the 2 gunsmiths
-// of Far Harbor and the Institute both.
+// pieces, which never wear, count as armor's filler the way ammunition does for
+// weapons. Any other piece that does not wear, like a ring or the Minuteman
+// Hat, counts only toward the rows. Clothing has no filler: the game's own
+// armorer's list is about a third clothes and its clothier's list has some
+// armor, so counting either as filler for the other would make every armorer a
+// clothier and every clothier an armorer. Tested the same way, Fallon's
+// Basement, the general stores of Brooks and Acadia and the settlement clothing
+// stores repair clothing alone, the settlement armor stores, Arturo, Patches,
+// Gage and the Atom Cats armor alone, and Kane, Lucas, the 2 gunsmiths of Far
+// Harbor and the Institute both.
 //
 // How far a trader repairs a kind follows how many rows of it they stock: the
 // first 3 rows reach 30% and every 2 more add another 10%, so 10 rows reach 70%

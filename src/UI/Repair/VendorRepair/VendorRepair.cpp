@@ -132,7 +132,7 @@ namespace VendorRepair
 		REX::INFO("An item at nothing owes a trader {:.2f} times what it is worth, and at each level {:s}",
 			Repair::Debt(0, Scaled(WRECK_MULTIPLE)), Repair::Ladder(Scaled(WRECK_MULTIPLE)));
 
-		// RestockHk asks both switches on every restock.
+		// RestockHk reads bVendorRepair and bSpawnCondition on every restock.
 		InstallUpkeep();
 	}
 }

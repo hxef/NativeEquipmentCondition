@@ -1,3 +1,4 @@
+#include "Condition/ArmorWear/ArmorWear.h"
 #include "Condition/Materials/Materials.h"
 #include "Condition/WeaponWear/WeaponWear.h"
 #include "Core/CallPatch/CallPatch.h"
@@ -25,6 +26,10 @@ RE::TESDataHandler* g_dataHandler;
 
 namespace
 {
+	// -------------------------------------------------------------------
+	// What the log names
+	// -------------------------------------------------------------------
+
 	// When the linker wrote this DLL, in local time, read off the DLL's own
 	// header. Every build carries its own, so the log can say which one ran.
 	std::string LinkTime()
@@ -48,6 +53,10 @@ namespace
 		const std::string_view text{ name, a_msg.dataLen };
 		return text.substr(0, text.find('\0'));
 	}
+
+	// -------------------------------------------------------------------
+	// Forgetting the last game
+	// -------------------------------------------------------------------
 
 	// What play remembers belongs to 1 game, so another save or a new game
 	// starts without it.
@@ -82,6 +91,10 @@ namespace
 		}
 	};
 
+	// -------------------------------------------------------------------
+	// Walking the feature table
+	// -------------------------------------------------------------------
+
 	// Patches the game for every row, in the order of the list.
 	void Install()
 	{
@@ -112,6 +125,10 @@ namespace
 		}
 	}
 
+	// -------------------------------------------------------------------
+	// The game's messages
+	// -------------------------------------------------------------------
+
 	void MessageHandler(F4SE::MessagingInterface::Message* a_msg)
 	{
 		if (!a_msg) {
@@ -131,6 +148,11 @@ namespace
 		if (a_msg->type == F4SE::MessagingInterface::kPreLoadGame ||
 			a_msg->type == F4SE::MessagingInterface::kNewGame) {
 			ForgetPlay();
+			// The armor mods, measured again for a DLL mod that changed them
+			// after game data loaded. It runs before the saved items arrive,
+			// since SpawnCondition puts the pieces that give nothing back to
+			// full as they do.
+			ArmorWear::MeasureModsAgain();
 		}
 
 		if (a_msg->type == F4SE::MessagingInterface::kPreLoadGame) {
@@ -224,6 +246,10 @@ namespace
 		ConsoleRepair::Settle();
 	}
 }
+
+// -------------------------------------------------------------------
+// The plugin loads
+// -------------------------------------------------------------------
 
 F4SE_PLUGIN_LOAD(const F4SE::LoadInterface* a_f4se)
 {

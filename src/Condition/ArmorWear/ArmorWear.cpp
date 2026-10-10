@@ -1,5 +1,6 @@
 #include "Condition/ArmorWear/ArmorWear.h"
 
+#include "Condition/ArmorWear/Mods.h"
 #include "Condition/ArmorWear/Rate.h"
 #include "Condition/Condition.h"
 #include "Condition/Equipped.h"
@@ -11,6 +12,10 @@
 
 namespace ArmorWear
 {
+	// -------------------------------------------------------------------
+	// The log line
+	// -------------------------------------------------------------------
+
 	void Load()
 	{
 		const auto blows = BlowsToBreak();
@@ -21,6 +26,10 @@ namespace ArmorWear
 			REX::INFO("Armor never wears, since fArmorWearRateMult is {:g}.", Settings::fArmorWearRateMult.GetValue());
 		}
 	}
+
+	// -------------------------------------------------------------------
+	// Which armor takes part
+	// -------------------------------------------------------------------
 
 	namespace
 	{
@@ -46,20 +55,28 @@ namespace ArmorWear
 		}
 
 		// Whether a piece gives anything to wear it for: protection, its own
-		// effect, or what a mod could add through one of its slots. A wedding
-		// ring or Dogmeat's bandana gives none of the 3, so wear would only cut
-		// its price.
+		// effect, or a mod that fits it and adds something, see LoadMods in
+		// ArmorWear.h. A wedding ring or Dogmeat's bandana gives none of the
+		// 3, so wear would only cut its price. While no table is built, any
+		// slot for a mod counts.
 		bool GivesAnything(const RE::TESObjectARMO& a_armor)
 		{
-			return Protects(a_armor) || a_armor.GetBaseEnchanting() || a_armor.attachParents.size > 0;
+			if (Protects(a_armor) || a_armor.GetBaseEnchanting()) {
+				return true;
+			}
+			return GivingModFits(a_armor).value_or(a_armor.attachParents.size > 0);
 		}
+	}
+
+	bool IsPowerArmor(const RE::TESObjectARMO& a_armor)
+	{
+		return a_armor.HasKeyword(RE::PowerArmor::GetArmorKeyword(), nullptr);
 	}
 
 	const char* WhyNoCondition(const RE::TESObjectARMO& a_armor)
 	{
-		// Every power armor piece carries the keyword the game finds them by,
-		// and the game already wears those, see ArmorWear.h.
-		if (a_armor.HasKeyword(RE::PowerArmor::GetArmorKeyword(), nullptr)) {
+		// The game already wears these, see ArmorWear.h.
+		if (IsPowerArmor(a_armor)) {
 			return "power armor";
 		}
 
@@ -77,6 +94,14 @@ namespace ArmorWear
 		return "not playable and not a creature's armor";
 	}
 
+	bool Settles(const RE::TESObjectARMO& a_armor)
+	{
+		// A full reset or a failed measure between the 2 questions makes
+		// every slot count, so it settles less. A fresh measure answers from
+		// the fresh table.
+		return ModsMeasured() && !IsPowerArmor(a_armor) && WhyNoCondition(a_armor);
+	}
+
 	bool IsClothing(const RE::TESObjectARMO& a_armor)
 	{
 		// Read from the base record, like Protects: a lining can add a
@@ -84,6 +109,10 @@ namespace ArmorWear
 		const auto body = 1U << static_cast<std::uint32_t>(RE::BIPED_OBJECT::kBody);
 		return (a_armor.bipedModelData.bipedObjectSlots & body) != 0 || !Protects(a_armor);
 	}
+
+	// -------------------------------------------------------------------
+	// Wearing a piece down
+	// -------------------------------------------------------------------
 
 	namespace
 	{

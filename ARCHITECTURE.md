@@ -85,6 +85,7 @@ src/
       Rate.h/.cpp            how fast a weapon wears
     ArmorWear/
       ArmorWear.h/.cpp       which armor takes part, wearing a piece somebody has on
+      Mods.h/.cpp            which armor mods add protection, an effect or a bonus, the first row to load
       Rate.h/.cpp            how fast a piece of armor wears
     CraftingPerks/
       CraftingPerks.h/.cpp   the perk behind an item, the player's rank in it
@@ -117,7 +118,7 @@ src/
       Blast.cpp              an explosion: its damage and its object effect
       Card.cpp               the item card's damage
     SpawnCondition/
-      SpawnCondition.h/.cpp  the roll at the door of every inventory
+      SpawnCondition.h/.cpp  the roll at the door of every inventory, and armor NEC does not wear put back to full
       Band.h/.cpp            the roll, either side of an item's middle or in a trader's band
       Guards.h/.cpp          what marks a console command, a save, a script's gift, a restock and what the player carries
       Owners.h/.cpp          who a stack goes to, and which of them get it at full condition
@@ -185,7 +186,7 @@ and one row in `src/Features.cpp`. `src/main.cpp` walks the rows:
 2. **Load**, every time game data has loaded: as the game starts, and again
    after every full reset, which is the game deleting every form and loading
    every file again after a prompt about changed DLC, Creations or a save's
-   load order. Everything measured from the load order is measured here.
+   load order. Everything measured from the load order is measured here first.
 3. **Unload**, just before a full reset deletes every form, in reverse order,
    so a feature lets go before anything it read from does.
 4. **OnMovieLoaded**, for every menu movie the game loads, through
@@ -193,7 +194,9 @@ and one row in `src/Features.cpp`. `src/main.cpp` walks the rows:
 
 Outside the 4 steps, `src/main.cpp` drops what play remembers of the last
 game, the gun that jammed, the fire speeds and the HUD's last reading, when a
-save loads, a new game begins or the main menu opens.
+save loads, a new game begins or the main menu opens. As a save loads or a new
+game begins, it also measures again what a DLL mod can change after game data
+loads, in an order its comments explain.
 
 Every row runs at every step whatever its switch says. Its hooks ask the
 switch on every call and leave the game as it is while it is off. A row whose

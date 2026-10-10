@@ -72,8 +72,6 @@ namespace WeaponWear
 			// weaponData holds the unmodified stats, and TESObjectWEAP::Data
 			// derives from TBO_InstanceData, so it can be used in place of the
 			// per stack copy. Writing here would change every copy in the game.
-			// IsWeapon reads the form type byte, so it costs nothing and never
-			// comes back empty like a runtime cast can.
 			if (!a_object.IsWeapon()) {
 				return nullptr;
 			}

@@ -13,9 +13,8 @@ namespace RepairPrompt
 		constexpr const char* TITLE = "$REPAIR";
 		constexpr const char* CANCEL = "$CANCEL";
 
-		// What the box calls back into. The game owns it once handed over and
-		// frees it with its own allocator, which the heap macro arranges.
-		class Answered : public RE::IMessageBoxCallback
+		// What the box calls back into, see MessageBox::Callback.
+		class Answered : public MessageBox::Callback
 		{
 		public:
 			Answered(std::size_t a_offers, std::function<void(std::size_t)> a_chosen, std::function<void()> a_cancelled) :

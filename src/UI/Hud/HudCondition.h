@@ -15,7 +15,9 @@
 // hides when the HUD mode hides the counter, in the Pip-Boy for example, or in
 // power armor, where PowerArmorCondition.h takes over. With no condition to
 // show, the divider comes back and the HUD is exactly as it was. fHudBarX and
-// fHudBarY move the bar off the divider, and the divider shows again.
+// fHudBarY move the bar off the divider, and the divider shows again. The bar
+// follows the divider when a HUD mod moves it, and keeps its last place while
+// the divider is hidden or turned.
 //
 // The bar is a HUD part of its own, with the native object the game gives each
 // part, so the HUD tints it with its colour. It is updated from the HUD's own

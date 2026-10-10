@@ -5,11 +5,13 @@
 #include "Core/ItemCards.h"
 #include "Core/Text/Text.h"
 #include "Core/TraceLog.h"
+#include "UI/Flash.h"
 #include "UI/Repair/RepairPrompt.h"
 #include "UI/Repair/Restore.h"
 #include "UI/Repair/Workbench/Box.h"
 #include "UI/Repair/Workbench/Cost.h"
 #include "UI/Repair/Workbench/Display.h"
+#include "UI/Repair/Workbench/Label.h"
 #include "UI/Repair/Workbench/Missing.h"
 #include "UI/Repair/Workbench/Workbench.h"
 
@@ -25,9 +27,12 @@ namespace Workbench
 {
 	namespace
 	{
-		using Scaleform::GFx::Value;
 		using Repair::Debt;
 		using Repair::FULL;
+
+		// -------------------------------------------------------------------
+		// The job's recipe, its experience and its corner message
+		// -------------------------------------------------------------------
 
 		// The job's recipe, with nothing in it but the job's components, see
 		// Job.h. Upcasts place each function table where that part of a recipe
@@ -67,22 +72,6 @@ namespace Workbench
 			return std::min(cap->GetFloat(), std::max(1.0F, xp));
 		}
 
-		// Hides the CURRENT MODS heading, or shows it again. An item too worn
-		// to modify has its slots closed and an item no mod fits has none, so
-		// for either one the heading would be wrong. Hiding the field keeps the
-		// translated words for when the item is back at full condition.
-		void ShowModsLabel(RE::ExamineMenu* a_menu, bool a_shown)
-		{
-			Value panel;
-			Value label;
-			if (!a_menu || !a_menu->menuObj.IsObject() ||
-				!a_menu->menuObj.GetMember("ModSlotBase_mc"sv, &panel) || !panel.IsObject() ||
-				!panel.GetMember("SlotsLabel_tf"sv, &label) || !label.IsObject()) {
-				return;
-			}
-			label.SetMember("visible"sv, Value(a_shown));
-		}
-
 		// An item no mod fits stays greyed once a repair brings it to full, so
 		// the corner says why, after whatever the repair itself said. Told the
 		// item repaired, its name from before the repair, and the level it
@@ -96,35 +85,11 @@ namespace Workbench
 			RE::SendHUDMessage::ShowHUDMessage(said.c_str(), nullptr, true, true);
 			TraceLog::Line("menu", "Workbench said {:s} can't be modified, sound and still greyed", a_name);
 		}
-
-		// Called by the bar's list of buttons once for each. The bench's REPAIR
-		// button is private to its movie, so it is known by the word it shows,
-		// either one, and given the word it should show.
-		class Relabel final : public Scaleform::GFx::FunctionHandler
-		{
-		public:
-			void Call(const Params& a_params) override
-			{
-				Value text;
-				if (a_params.argCount < 1 || !a_params.args[0].IsObject() ||
-					!a_params.args[0].GetMember("ButtonText"sv, &text) || !text.IsString()) {
-					return;
-				}
-				const std::string_view shown = text.GetString();
-				if (shown != word && (shown == REPAIR_WORD || shown == mend)) {
-					a_params.args[0].SetMember("ButtonText"sv, Value(word.c_str()));
-					changed = true;
-				}
-			}
-
-			std::string mend;
-			std::string word;
-			bool        changed{ false };
-		};
-
-		// Lives as long as the plugin, see Flash.h.
-		Relabel g_relabel;
 	}
+
+	// -------------------------------------------------------------------
+	// Pricing a repair and asking how far
+	// -------------------------------------------------------------------
 
 	Job& InHand()
 	{
@@ -139,8 +104,9 @@ namespace Workbench
 		}
 
 		// Every rank of the perk pricing the item says on its page that such
-		// items need fewer components, and this is where that discount is
-		// applied. Left off where no rank is held.
+		// items need fewer components, so the line above the question names the
+		// perk and the share it takes off. PriceOf applies it to the price.
+		// Left off where no rank is held.
 		const auto standing = PriceOf(a_selection).standing;
 		const auto off = CraftingPerks::Discount(standing.rank, standing.ranks);
 		const auto over = standing.perk && off > 0 ?
@@ -244,6 +210,10 @@ namespace Workbench
 		job.box = nullptr;
 	}
 
+	// -------------------------------------------------------------------
+	// Finishing a repair and bringing the bench up to date
+	// -------------------------------------------------------------------
+
 	void Finish(RE::ExamineMenu* a_menu)
 	{
 		const auto selection = Selected(a_menu);
@@ -304,7 +274,7 @@ namespace Workbench
 		}
 		const auto after = Selected(a_menu);
 		Announce(a_menu, after);
-		a_menu->menuObj.Invoke("UpdateButtons");
+		Flash::Call(a_menu->menuObj, "UpdateButtons");
 
 		// A repair of one out of a stack of several splits the stack, and the
 		// row the list is left on holds one of the two.
@@ -344,36 +314,5 @@ namespace Workbench
 				Selected(a_menu).Name(), FreeAbove());
 		}
 		Finish(a_menu);
-	}
-
-	void Announce(RE::ExamineMenu* a_menu, const Selection& a_selection)
-	{
-		if (!a_menu || !a_menu->menuObj.IsObject()) {
-			return;
-		}
-		a_menu->menuObj.SetMember("allowRepair"sv, Value(a_selection.Worn()));
-		ShowModsLabel(a_menu, !a_selection.TooWorn() && !NoModFits(a_selection));
-	}
-
-	void Label(RE::ExamineMenu* a_menu, const Selection& a_selection)
-	{
-		auto* bar = a_menu ? a_menu->buttonHintBar.get() : nullptr;
-		if (!a_selection.object || !bar || !a_menu->uiMovie || !bar->sourceButtons.IsObject()) {
-			return;
-		}
-
-		const bool trifling = a_selection.Trifling();
-		g_relabel.mend = Text::MendButton();
-		g_relabel.word = trifling ? g_relabel.mend : std::string{ REPAIR_WORD };
-		g_relabel.changed = false;
-
-		Value visit;
-		a_menu->uiMovie->CreateFunction(&visit, &g_relabel);
-		bar->sourceButtons.Invoke("forEach", nullptr, &visit, 1);
-
-		if (g_relabel.changed) {
-			TraceLog::Line("menu", "Workbench button reads {:s} for {:s} at {:d}%",
-				trifling ? "MEND" : "REPAIR", a_selection.Name(), a_selection.percent);
-		}
 	}
 }

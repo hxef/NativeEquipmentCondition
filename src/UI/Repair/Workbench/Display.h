@@ -72,6 +72,7 @@ namespace Workbench
 	// Starts a bench with nothing listed that way.
 	void ForgetListed();
 
-	// Adds the frame listener that fades the equipped items to a bench movie.
+	// Adds the frame listener that fades the equipped items and keeps the
+	// button's word, see Relabel in Label.h, to a bench movie.
 	void WatchEquipped(Scaleform::GFx::Movie& a_movie);
 }

@@ -4,7 +4,7 @@
 
 #include <functional>
 
-// The recipe index Load builds, for the files of this folder. Private to it.
+// The recipe index Load builds. Private to this folder.
 namespace Materials
 {
 	// The component behind a recipe line, or nothing for a line asking for a

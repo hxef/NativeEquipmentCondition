@@ -222,7 +222,7 @@ namespace Mcm
 			if (a_value.IsString()) {
 				return std::format("\"{:s}\"", a_value.GetString() ? a_value.GetString() : "");
 			}
-			if (a_value.IsInt() || a_value.IsUInt() || a_value.IsNumber()) {
+			if (Flash::IsAnyNumber(a_value)) {
 				return std::format("{}", Flash::AsNumber(a_value));
 			}
 			return "nothing";

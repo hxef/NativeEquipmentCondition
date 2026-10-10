@@ -148,7 +148,7 @@ namespace Provenance
 			// entry at random, so it is worth the average. A list with the use
 			// all flag gives out every entry, which is how a faction gives a
 			// whole suit from one line, so it is worth the total. Averaging
-			// those counted only 20% of the combat armor a gunner wears.
+			// those would count only 20% of the combat armor a gunner wears.
 			// maxUseAllCount caps how many are kept and the engine drops the
 			// rest, so a capped list is worth its share.
 			if (armorEntries > 0) {

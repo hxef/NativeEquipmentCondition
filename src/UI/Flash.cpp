@@ -4,6 +4,10 @@
 
 namespace Flash
 {
+	// -------------------------------------------------------------------
+	// Reading a member
+	// -------------------------------------------------------------------
+
 	double AsNumber(const Value& a_value)
 	{
 		switch (a_value.GetType()) {
@@ -18,9 +22,23 @@ namespace Flash
 		}
 	}
 
-	// The engine reads a value's object without looking, so asking a value
-	// that holds no object for a member crashes the game. The asserts that
-	// would catch it are compiled out of a release build.
+	bool IsAnyNumber(const Value& a_value)
+	{
+		return a_value.IsNumber() || a_value.IsInt() || a_value.IsUInt();
+	}
+
+	// The engine reads a value's object without looking, so reading, writing
+	// or calling a member of a value that holds no object crashes the game.
+	// The asserts that would catch it are compiled out of a release build.
+	Value Member(const Value& a_object, std::string_view a_name)
+	{
+		Value member;
+		if (a_object.IsObject()) {
+			a_object.GetMember(a_name, &member);
+		}
+		return member;
+	}
+
 	double Number(const Value& a_object, std::string_view a_name, double a_absent)
 	{
 		Value member;
@@ -48,6 +66,20 @@ namespace Flash
 		return std::clamp(Number(a_clip, "alpha"sv), 0.0, 1.0);
 	}
 
+	// -------------------------------------------------------------------
+	// Writing a member and calling a function
+	// -------------------------------------------------------------------
+
+	bool Set(Value& a_object, std::string_view a_name, const Value& a_value)
+	{
+		return a_object.IsObject() && a_object.SetMember(a_name, a_value);
+	}
+
+	bool Call(Value& a_object, const char* a_name, std::span<const Value> a_args)
+	{
+		return a_object.IsObject() && a_object.Invoke(a_name, nullptr, a_args.data(), a_args.size());
+	}
+
 	Value Child(Value& a_parent, const char* a_name)
 	{
 		Value child;
@@ -67,6 +99,25 @@ namespace Flash
 		}
 		return child;
 	}
+
+	// -------------------------------------------------------------------
+	// Where a clip is
+	// -------------------------------------------------------------------
+
+	std::optional<Value> StageBounds(Value& a_clip)
+	{
+		Value stage;
+		Value bounds;
+		if (!a_clip.IsDisplayObject() || !a_clip.GetMember("stage"sv, &stage) || !stage.IsObject() ||
+			!a_clip.Invoke("getBounds", &bounds, &stage, 1) || !bounds.IsObject()) {
+			return std::nullopt;
+		}
+		return bounds;
+	}
+
+	// -------------------------------------------------------------------
+	// Text for an htmlText field
+	// -------------------------------------------------------------------
 
 	std::string HtmlEscaped(std::string_view a_text)
 	{

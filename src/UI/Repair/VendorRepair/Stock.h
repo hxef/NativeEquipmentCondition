@@ -39,14 +39,14 @@
 // Gage and the Atom Cats armor alone, and Kane, Lucas, the 2 gunsmiths of Far
 // Harbor and the Institute both.
 //
-// How far a trader repairs a kind follows how many rows of it they stock: the
-// first 3 rows reach 30% and every 2 more add another 10%, so 10 rows reach 70%
-// and 16 reach full. Weapons need more, 18 rows, so 10 rows of guns reach 60%
-// and only the best gun shops repair a broken gun to full. In vanilla that
-// takes the gunsmiths of Diamond City, Goodneighbor, Nuka-World and Far Harbor,
-// Cricket, and Smiling Larry at a level 3 store to full for weapons, Ronnie
-// Shaw at one, Eleanor and the Dunmores to 90%, and a level 3 store of the
-// player's own to 80%.
+// How far a trader repairs a kind follows how many rows of it they stock, in
+// a straight line from 30% at 1 row to full at 16 rows, rounded down to a
+// step of 10%, so 5 rows reach 40%, 10 reach 70% and 14 reach 90%. Weapons
+// need more, 18 rows, so 10 rows of guns reach 60% and only the best gun
+// shops repair a broken gun to full. In vanilla that takes the gunsmiths of
+// Diamond City, Goodneighbor, Nuka-World and Far Harbor, Cricket, and Smiling
+// Larry at a level 3 store to full for weapons, Ronnie Shaw at one, Eleanor
+// and the Dunmores to 90%, and a level 3 store of the player's own to 80%.
 //
 // Each of the 3 kinds is separate. A trader repairs what they stock, each kind
 // as far as its own rows go, so a trader with shelves full of all 3 repairs all
@@ -56,8 +56,8 @@ namespace VendorRepair
 {
 	// The 2 tests: MANY_ROWS rows of the trade with one row in MANY_SHARE one
 	// of them, or SOME_ROWS rows of the trade and what goes with it, ammunition,
-	// grenades and mines for weapons and power armor for armor, with one row in
-	// SOME_SHARE one of those.
+	// grenades and mines for weapons and power armor for armor, with one row
+	// in SOME_SHARE one of those.
 	inline constexpr std::size_t MANY_ROWS = 5;
 	inline constexpr std::size_t MANY_SHARE = 6;
 	inline constexpr std::size_t SOME_ROWS = 3;

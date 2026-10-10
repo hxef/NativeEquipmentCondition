@@ -2,6 +2,7 @@
 
 #include "Core/Text/Text.h"
 #include "Core/TraceLog.h"
+#include "UI/Flash.h"
 #include "UI/Repair/Restore.h"
 #include "UI/Repair/VendorRepair/Button.h"
 #include "UI/Repair/VendorRepair/Stock.h"
@@ -16,6 +17,10 @@ namespace VendorRepair
 	namespace
 	{
 		using Scaleform::GFx::Value;
+
+		// -------------------------------------------------------------------
+		// The trader's side and where the caps go
+		// -------------------------------------------------------------------
 
 		// The sound the game plays when caps change hands in a trade.
 		constexpr const char* PAID_SOUND = "ITMBarter";
@@ -57,6 +62,10 @@ namespace VendorRepair
 				Trader(a_menu), copy ? copy->GetGoldAmount() : 0);
 		}
 	}
+
+	// -------------------------------------------------------------------
+	// Paying for a repair
+	// -------------------------------------------------------------------
 
 	bool TradePending(RE::BarterMenu* a_menu)
 	{
@@ -129,7 +138,7 @@ namespace VendorRepair
 		Recopy(menu);
 		menu->partialPlayerUpdateList.push_back(selection.object);
 		menu->UpdateList(false);
-		menu->menuObj.SetMember("canInvest"sv, Value(menu->GetInvestmentAmount() > 0));
+		Flash::Set(menu->menuObj, "canInvest"sv, Value(menu->GetInvestmentAmount() > 0));
 
 		// The Pip-Boy's cards wait for the barter screen to close, see
 		// Payment.h and ItemCards.h. The item's own kind of card.

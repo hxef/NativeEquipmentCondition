@@ -12,7 +12,7 @@ namespace HudParts
 		namespace
 		{
 			// The parts of every readout. Each readout is a sprite of its own,
-			// so both use the same 3 names.
+			// so all of them use the same 3 names.
 			constexpr const char* TRACK_NAME = "NEC_ConditionTrack_mc";
 			constexpr const char* FILL_NAME = "NEC_ConditionFill_mc";
 			constexpr const char* LABEL_NAME = "NEC_ConditionLabel_tf";

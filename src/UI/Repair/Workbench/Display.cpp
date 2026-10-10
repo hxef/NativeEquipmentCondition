@@ -3,6 +3,7 @@
 #include "Core/TraceLog.h"
 #include "UI/Flash.h"
 #include "UI/Repair/Workbench/Bench.h"
+#include "UI/Repair/Workbench/Label.h"
 
 #include <algorithm>
 #include <array>
@@ -17,6 +18,10 @@ namespace Workbench
 	{
 		using Scaleform::GFx::Value;
 		using Params = Scaleform::GFx::FunctionHandler::Params;
+
+		// -------------------------------------------------------------------
+		// Fading the names of equipped rows
+		// -------------------------------------------------------------------
 
 		// The list down the left of the bench, showing whichever of its lists
 		// is in use, and the inventory it shows first. BaseInstance is the menu
@@ -54,12 +59,17 @@ namespace Workbench
 		// Called by the bench every frame. The rows are walked, not watched,
 		// since a row redraws whenever it is scrolled past, picked or put down
 		// and sends no event. Only a name that should be faded and is not is
-		// written.
+		// written. The button's word is kept first, since the checks below
+		// can return.
 		class FrameListener final : public Scaleform::GFx::FunctionHandler
 		{
 		public:
 			void Call(const Params& a_params) override
 			{
+				if (a_params.movie) {
+					Relabel(*a_params.movie);
+				}
+
 				// The inventory answers what is picked only while it is the
 				// list on show. In the slots and the mods the rows belong to
 				// somebody else.
@@ -115,6 +125,10 @@ namespace Workbench
 
 		FrameListener g_frameListener;
 
+		// -------------------------------------------------------------------
+		// The rows greyed or listed for repairs
+		// -------------------------------------------------------------------
+
 		// The items MarkWorn has listed since the bench opened, by their
 		// inventory handle, which is the item's and not a stack's. The bench
 		// is a menu, so only the menu's own thread comes here.
@@ -147,7 +161,7 @@ namespace Workbench
 
 		a_list.SetMember("entryList"sv, rows);
 		a_list.Invoke("RefreshList");
-		a_menu->menuObj.Invoke("UpdateButtons");
+		Flash::Call(a_menu->menuObj, "UpdateButtons");
 
 		TraceLog::Line("menu", "Workbench greyed out {:d} {:s} rows", count, a_what);
 	}
@@ -162,7 +176,7 @@ namespace Workbench
 		a_menu->uiMovie->CreateArray(&empty);
 		a_list.SetMember("entryList"sv, empty);
 		a_list.Invoke("RefreshList");
-		a_menu->menuObj.Invoke("UpdateButtons");
+		Flash::Call(a_menu->menuObj, "UpdateButtons");
 	}
 
 	void MarkWorn(RE::ExamineMenu* a_menu)
@@ -238,6 +252,10 @@ namespace Workbench
 	{
 		g_listed.clear();
 	}
+
+	// -------------------------------------------------------------------
+	// Starting the fade on each bench
+	// -------------------------------------------------------------------
 
 	void WatchEquipped(Scaleform::GFx::Movie& a_movie)
 	{

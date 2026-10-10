@@ -26,7 +26,8 @@
 #include "UI/Inventory/Pipboy.h"
 #include "UI/LoadingTips.h"
 #include "UI/Mcm/Mcm.h"
-#include "UI/Repair/ConfirmScroll/ConfirmScroll.h"
+#include "UI/MessageBox.h"
+#include "UI/Repair/ConfirmScroll.h"
 #include "UI/Repair/ConsoleRepair.h"
 #include "UI/Repair/VendorRepair/VendorRepair.h"
 #include "UI/Repair/Workbench/Workbench.h"
@@ -112,6 +113,9 @@ namespace
 		{ .name = "PowerArmorCondition", .on = &Settings::bHudCondition, .Load = PowerArmorCondition::Load, .OnMovieLoaded = PowerArmorCondition::OnMovieLoaded },
 		// Condition meters on the rows of the HUD's quick container.
 		{ .name = "QuickContainer", .on = &Settings::bQuickContainer, .part = Part::kQuick, .Install = QuickContainer::Install, .OnMovieLoaded = QuickContainer::OnMovieLoaded },
+		// NEC's own question box stays solid under a message box mod's style
+		// that would draw it see-through.
+		{ .name = "MessageBox", .OnMovieLoaded = MessageBox::OnMovieLoaded },
 		// Repairing a worn weapon or piece of armor at its workbench, for
 		// components.
 		{ .name = "Workbench", .part = Part::kBench, .Install = Workbench::Install, .Load = Workbench::Load, .OnMovieLoaded = Workbench::OnMovieLoaded },
@@ -120,7 +124,7 @@ namespace
 		{ .name = "ConfirmScroll", .on = &Settings::bConfirmScroll, .part = Part::kScroll, .Install = ConfirmScroll::Install },
 		// Paying a trader who deals in weapons, armor or clothing to repair
 		// one, for caps.
-		{ .name = "VendorRepair", .on = &Settings::bVendorRepair, .part = Part::kTraderRepairs, .Install = VendorRepair::Install },
+		{ .name = "VendorRepair", .on = &Settings::bVendorRepair, .part = Part::kTraderRepairs, .Install = VendorRepair::Install, .Load = VendorRepair::Load },
 		// The inspect screen at a trader shows the price for the side the
 		// item is on, where the game shows whichever side it priced last.
 		{ .name = "InspectPrice", .on = &Settings::bInspectPrice, .part = Part::kInspect, .Install = InspectPrice::Install },

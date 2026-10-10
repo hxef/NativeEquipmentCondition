@@ -77,8 +77,9 @@ namespace Workbench
 			}
 		}
 
-		// The mods behind a slot, greyed. The bench fills the list on its own
-		// account too, so it is worth leaving shut.
+		// The mods behind a slot, greyed for an item too worn to modify. The
+		// bench can fill this list without going through the slots, so it is
+		// greyed even though the slot list is empty.
 		void UpdateModChoiceListHk(RE::ExamineMenu* a_menu)
 		{
 			_UpdateModChoiceList(a_menu);

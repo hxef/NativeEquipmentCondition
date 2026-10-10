@@ -218,7 +218,7 @@ namespace Text
 			{ "zhhans", "能量伤害" },
 		};
 
-		// What a weapon's mods add to it, like a legendary's effect.
+		// What a weapon's mods add to it, like a legendary bonus.
 		constexpr Line PIECE_CARD_MOD_EFFECTS[]{
 			{ "en", "damage from weapon mod effects" },
 			{ "fr", "dégâts des effets des modules d'arme" },

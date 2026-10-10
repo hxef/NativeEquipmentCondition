@@ -90,10 +90,11 @@ namespace WeaponEvents
 		}
 
 		// Prints what a hit cost the target, the only way to tell whether the
-		// penalty reached combat. totalDamage is everything before armor,
-		// resistedPhysicalDamage what armor took off, physicalDamage what got
-		// through, healthDamage what the target lost. Total is the one to
-		// compare while testing.
+		// penalty reached combat. totalDamage is the physical damage before
+		// armor plus the typed damage that got through, resistedPhysicalDamage
+		// what armor took off the physical part, physicalDamage the physical
+		// part that got through, healthDamage what the target lost. Total is
+		// the one to compare while testing.
 		void LogPlayerHit(const RE::HitData& a_hit, const RE::TESForm* a_weapon, bool a_byHand, bool a_bash)
 		{
 			// The event's own target and cause are empty whenever it carries

@@ -83,11 +83,12 @@ LOOT WITH A HISTORY
 
 REPAIR AT THE WORKBENCH
 * At the weapon or armor workbench, select a worn item and a REPAIR button
-  appears. Press it, choose how far to repair it in steps of 10%, and pay in
-  the components it is built from. Gear that scraps into nothing, like
-  Grognak's Axe, costs what gear of its kind most often scraps into, and
-  wears at the same rate. Short of components, you get the power armor
-  station's list of what the repair takes, with the ones you lack faded.
+  takes RENAME's place until it is back at full. Press it, choose how far to
+  repair it in steps of 10%, and pay in the components it is built from.
+  Gear that scraps into nothing, like Grognak's Axe, costs what gear of its
+  kind most often scraps into, and wears at the same rate. Short of
+  components, you get the power armor station's list of what the repair
+  takes, with the ones you lack faded.
 * Barely worn gear, above 95%, gets a MEND button instead, which fixes it on
   the spot for free. The 95% is the Free mend above setting: 100 makes every
   repair cost components, and 0 mends everything but broken gear for free.
@@ -159,10 +160,9 @@ COMPATIBILITY
   by a person, so some lines may read a little off.
 * Both vanilla fixes under Little extras can be switched off, for a load order
   where another mod already fixes them.
-* A UI replacer that moves the HUD ammo counter, the quick container, the item
-  cards or the Pip-Boy can hide the condition shown there. Wear, damage and
-  prices work as ever. Repairs use the workbench's own REPAIR button and a
-  button on the barter bar, which replacers usually keep.
+* Works with UI replacers like FallUI and DEF_UI. A part NEC can't find is
+  skipped and named in NEC.log or the bug report logs, while wear, damage and
+  prices work as ever.
 * NEC works alongside other DLL mods that change the same things. When one
   takes over one of NEC's features, NEC lets it, and NEC's MCM page and
   NEC.log name that mod and what is off.

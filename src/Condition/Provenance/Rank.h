@@ -19,10 +19,10 @@ namespace Provenance
 	// place, and equal has to mean equal to a person: an average carries a
 	// fraction that depends on how many entries went in, so 2 factions given
 	// the same armor through lists of different lengths land 0.0001 apart.
-	// Ranked on exact equality, that split 460 characters in one armor set into
-	// 2 groups and put super mutants 10% of the scale above raiders wearing the
-	// same thing. A point of armor and a cap are the smallest units the game
-	// uses.
+	// Ranked on exact equality, 460 characters in one armor set would split
+	// into 2 groups, with super mutants 10% of the scale above raiders wearing
+	// the same thing. A point of armor and a cap are the smallest units the
+	// game uses.
 	inline constexpr float RUNG = 1.0F;
 
 	inline float OnARung(float a_measure)

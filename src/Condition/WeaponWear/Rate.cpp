@@ -72,8 +72,8 @@ namespace WeaponWear
 
 		// What the round does where it lands. A Fat Man's record reads 18
 		// damage and a Broadsider's 33, since the damage belongs to the shell,
-		// and counting the tube alone had a Fat Man lasting 1500 mini nukes.
-		// The engine adds the same number for the item card, see
+		// and counting the tube alone would have a Fat Man last 1500 mini
+		// nukes. The engine adds the same number for the item card, see
 		// CombatFormulas::GetWeaponDisplayDamage. Its own projectile lookup is
 		// used, so a barrel that swaps the projectile and a change of
 		// ammunition are both followed.

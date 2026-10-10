@@ -15,8 +15,9 @@
 // HUD draws on its own thread a moment later, so the last few lists are kept
 // and each row takes its meter from the newest whose names and counts match.
 //
-// Rows.cpp is the rows as the game builds them, and Meters.cpp the meters on
-// the HUD's rows. Rows.h and Meters.h are what they share.
+// Rows.cpp is the rows as the game builds them, Meters.cpp the meters on the
+// HUD's rows, and Draw.cpp how one meter looks. Rows.h, Meters.h and Draw.h are
+// what they share.
 namespace QuickContainer
 {
 	// Patches the calls that build the rows.

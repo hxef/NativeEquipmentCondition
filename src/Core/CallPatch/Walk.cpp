@@ -296,10 +296,11 @@ namespace CallPatch
 		}
 
 		// Whether a place leads to the very hook NEC hands each call on to, and
-		// that hook hands each call back to NEC, maybe through other DLLs: a
-		// DLL that hooked the place before NEC and again after it with 1 hook,
-		// which kept the hook above NEC in place of what it had. A DLL that only puts back what NEC
-		// found still hands on to the game, so it is no loop.
+		// that hook hands each call back to NEC, maybe through other DLLs. A
+		// DLL that hooked the place before NEC and again after it with the same
+		// hook does that, as its hook then keeps NEC's address in place of the
+		// one it kept before. A DLL that only puts back what NEC found still
+		// hands on to the game, so it is no loop.
 		bool Loops(std::uintptr_t a_first, const Ends& a_ends)
 		{
 			const auto lands = Follow(a_first);

@@ -122,8 +122,8 @@ namespace VendorRepair
 				rounds += chance;
 			} else if (const auto* weapon = object->As<RE::TESObjectWEAP>(); weapon && weapon->IsThrownWeapon()) {
 				thrown += chance;
-			} else if (object->Is(RE::ENUM_FORM_ID::kARMO)) {
-				// The one wearable that does not wear, see ArmorWear.h.
+			} else if (const auto* piece = object->As<RE::TESObjectARMO>(); piece && ArmorWear::IsPowerArmor(*piece)) {
+				// Armor's filler, see Stock.h.
 				powerArmor += chance;
 			}
 		}

@@ -1,5 +1,6 @@
 #include "Gameplay/SpawnCondition/SpawnCondition.h"
 
+#include "Condition/ArmorWear/ArmorWear.h"
 #include "Condition/Condition.h"
 #include "Condition/Provenance/Provenance.h"
 #include "Core/CallPatch/CallPatch.h"
@@ -21,6 +22,10 @@ namespace SpawnCondition
 {
 	namespace
 	{
+		// -------------------------------------------------------------------
+		// Where items enter an inventory
+		// -------------------------------------------------------------------
+
 		// The 6 calls to BGSInventoryList::AddStack, the one place a weapon can
 		// enter an inventory. A raider's gun, a footlocker's contents, a
 		// leveled list resolving, a quest reward, a console additem, a vendor
@@ -36,6 +41,10 @@ namespace SpawnCondition
 			{ 2194196, 0x12F, "container locked" },
 			{ 2194196, 0x155, "container" },
 		};
+
+		// -------------------------------------------------------------------
+		// The roll
+		// -------------------------------------------------------------------
 
 		// Gives one stack a condition, if it is the kind of thing that has one
 		// and has none yet. Returns what it aimed at, so the copies SplitOff
@@ -198,6 +207,10 @@ namespace SpawnCondition
 			return aim;
 		}
 
+		// -------------------------------------------------------------------
+		// Splitting a stack that arrived several at once
+		// -------------------------------------------------------------------
+
 		// Picks out the stack that just went in, by the extra data list it
 		// shares with the one handed to AddStack, while it still holds more
 		// than one item.
@@ -297,6 +310,40 @@ namespace SpawnCondition
 			}
 		}
 
+		// -------------------------------------------------------------------
+		// The AddStack hook, and armor put back to full
+		// -------------------------------------------------------------------
+
+		// A piece of armor NEC does not wear that still carries a health under
+		// full, see ArmorWear::Settles, goes back to full as it enters any
+		// inventory, a save's own stacks among them. A wedding ring worn to 0
+		// then goes on again. Nothing is taken off, and power armor is never
+		// touched. Only a stack nothing else shares, as for a gift. Returns
+		// true when it wrote. It runs whatever Worn loot says, since a piece
+		// NEC does not wear has no repair.
+		bool Settle(const RE::BGSInventoryList* a_list, const RE::TESBoundObject* a_object, RE::BGSInventoryItem::Stack* a_stack)
+		{
+			if (!a_object || !a_stack || !a_stack->extra || !a_object->Is(RE::ENUM_FORM_ID::kARMO) || !Private(*a_stack)) {
+				return false;
+			}
+
+			// -1 is no health and counts as new already.
+			const auto before = a_stack->extra->GetHealthPerc();
+			if (before < Condition::MIN_HEALTH || before >= Condition::MAX_HEALTH ||
+				!ArmorWear::Settles(static_cast<const RE::TESObjectARMO&>(*a_object))) {
+				return false;
+			}
+
+			a_stack->extra->SetHealthPerc(Condition::MAX_HEALTH);
+			const auto* restock = Restocking(a_list);
+			if (!restock) {
+				TraceLog::Group("SPAWN", "weapons and armor entering inventories");
+			}
+			Report(Players(a_list) || restock, "back to full", "{:<30s} [{:08X}] x{:<3d} back to full, NEC does not wear it, was {:.4f}",
+				NameOf(*a_object, "unnamed item"), a_object->formID, a_stack->count, before);
+			return true;
+		}
+
 		using AddStack_t = void (*)(RE::BGSInventoryList*, RE::TESBoundObject*, RE::BGSInventoryItem::Stack*, std::uint32_t*, std::uint32_t*);
 		std::array<CallPatch::Link<AddStack_t>, std::size(ADD_STACK_SITES)> g_links;
 
@@ -308,8 +355,11 @@ namespace SpawnCondition
 			// stack to merge the new one into, and stacks only merge when their
 			// extra data matches. Rolling first keeps 2 pipe pistols from one
 			// footlocker as 2 entries with their own health. Rolling afterwards
-			// would merge them and give the pair one condition.
-			const auto aim = Settings::bSpawnCondition.GetValue() && g_links[I].Live() ? Roll(a_list, a_object, a_stack) : std::nullopt;
+			// would merge them and give the pair one condition. Settling comes
+			// first for the same reason, and a stack put back to full is not
+			// rolled, so the trace names it once.
+			const bool settled = g_links[I].Live() && Settle(a_list, a_object, a_stack);
+			const auto aim = !settled && Settings::bSpawnCondition.GetValue() && g_links[I].Live() ? Roll(a_list, a_object, a_stack) : std::nullopt;
 			g_links[I](a_list, a_object, a_stack, a_oldCount, a_newCount);
 
 			// Splitting waits until the stack is in, since the split is the

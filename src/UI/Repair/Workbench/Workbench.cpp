@@ -11,6 +11,7 @@
 #include "UI/Repair/Workbench/Cost.h"
 #include "UI/Repair/Workbench/Display.h"
 #include "UI/Repair/Workbench/Job.h"
+#include "UI/Repair/Workbench/Label.h"
 #include "UI/Repair/Workbench/Lists.h"
 
 #include <cstdint>
@@ -23,6 +24,10 @@ namespace Workbench
 	namespace
 	{
 		using Params = Scaleform::GFx::FunctionHandler::Params;
+
+		// -------------------------------------------------------------------
+		// What the hooks stand in front of
+		// -------------------------------------------------------------------
 
 		// The sound the bench asks for when it turns the player away from the
 		// mod slots, and the number Flash calls PlaySound by. Nothing else in
@@ -52,6 +57,10 @@ namespace Workbench
 		CallPatch::LinkBase g_repairLink;
 		CallPatch::LinkBase g_tryCreateLink;
 		CallPatch::LinkBase g_highlightLink;
+
+		// -------------------------------------------------------------------
+		// The 3 places behind the REPAIR button
+		// -------------------------------------------------------------------
 
 		// Whenever the movie switches the item the bench shows, which vanilla
 		// does just before redrawing its buttons, and at every scrap. A list
@@ -143,6 +152,10 @@ namespace Workbench
 			}
 		}
 
+		// -------------------------------------------------------------------
+		// Building, and the part the bench colours
+		// -------------------------------------------------------------------
+
 		// What a build asks for, as the game prices it. A repair never passes
 		// here, see Box.h.
 		void TraceBuild(RE::ExamineMenu* a_menu)
@@ -197,6 +210,10 @@ namespace Workbench
 			}
 		}
 
+		// -------------------------------------------------------------------
+		// The bench turning the player away
+		// -------------------------------------------------------------------
+
 		// Everything Flash asks code to do passes through here by number. The
 		// one of interest is the cancel sound the bench asks for when it has
 		// just turned the player away from the mod slots, the moment to say why,
@@ -238,6 +255,10 @@ namespace Workbench
 		}
 	}
 
+	// -------------------------------------------------------------------
+	// Install, Load and the bench movie
+	// -------------------------------------------------------------------
+
 	void Install()
 	{
 		REL::Relocation<std::uintptr_t> menu{ RE::ExamineMenu::VTABLE[0] };
@@ -247,7 +268,7 @@ namespace Workbench
 		// puts its box up itself, see Box.h. A cut at any of them turns the
 		// repair and its mod lock off together, see Repairs. NEC owns the
 		// REPAIR button and never hands the call on at 2 of them while repairs
-		// run, so NEC never runs on top of a mod there, which it would skip.
+		// run, see CallPatch::NEVER_HANDS_ON.
 		const auto canRepair = CallPatch::PatchSlot(menu, 0x32, GetCanRepairSelectedItemHk, "bench can repair", Part::kNone,
 			CallPatch::NEVER_HANDS_ON, &g_canRepairLink);
 		const auto switchItem = CallPatch::PatchSlot(menu, 0x37, OnSwitchBaseItemHk, "bench switch item", Part::kNone, true, &g_switchLink);
@@ -264,7 +285,7 @@ namespace Workbench
 
 		// Every repair reaches NEC through the slots above. This hook only
 		// adds NEC's message once the game's call is through, so it shows
-		// whenever the call reaches NEC while repairs work, and another mod
+		// whenever the call reaches NEC while repairs work, and another DLL mod
 		// here takes nothing.
 		_Call = CallPatch::PatchSlot(menu, 0x01, CallHk, "bench calls", Part::kBenchMessages).value_or(0);
 
@@ -310,6 +331,7 @@ namespace Workbench
 	{
 		if (MenuMovies::IsMovie(a_file, "ExamineMenu.swf"sv)) {
 			ForgetListed();
+			ForgetWord();
 			WatchEquipped(a_movie);
 		}
 	}

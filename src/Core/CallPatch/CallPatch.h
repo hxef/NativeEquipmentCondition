@@ -187,8 +187,8 @@ namespace CallPatch
 	void SayOnTop();
 
 	// The game version F4SE reports, handed over as the plugin loads. On any
-	// version but 1.11.240 every function table slot counts as taken, since
-	// slot numbers can move between versions.
+	// version but 1.11.240 every pointer place, a function table slot or a
+	// console command's function, counts as taken, as what it holds can differ.
 	void SetGameVersion(const REL::Version& a_version);
 
 	// That version as text, such as 1.10.984.
@@ -290,7 +290,7 @@ namespace CallPatch
 	[[nodiscard]] std::string Words(std::span<const Owner> a_owners);
 
 	// Reads back every place NEC noted, written or left alone, and follows the
-	// hooks of one another DLL changed since. While the call still reaches NEC
+	// hooks of any DLL that changed one since. While the call still reaches NEC
 	// the place is shared, except in a set that has to run on every call, see
 	// EVERY_CALL. Else NEC's change there is off from now on, its pieces go to
 	// that DLL, and NEC.log says which. A trace only place is logged and takes

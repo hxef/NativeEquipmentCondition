@@ -31,8 +31,8 @@ namespace SpawnCondition
 
 	// The limits the ordinary roll stays between, in order, since the 4 numbers
 	// they come from live in different files and a clamp with its limits
-	// crossed is undefined behaviour. Worked out once, because Install prints
-	// them and RollHealth rolls inside them.
+	// crossed is undefined behaviour. Worked out in one place, because Install
+	// prints them and RollHealth rolls inside them.
 	struct Ends
 	{
 		float floor{ 0.0F };

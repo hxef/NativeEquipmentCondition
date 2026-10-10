@@ -15,4 +15,8 @@ namespace MenuMovies
 	// Whether a movie's file name is a_name, ignoring case, since the game's
 	// own file names are not consistent about it.
 	bool IsMovie(std::string_view a_file, std::string_view a_name);
+
+	// A movie's file name, such as HUDMenu.swf, or empty when the game gives
+	// none. It lives as long as the movie.
+	[[nodiscard]] std::string_view FileOf(const Scaleform::GFx::Movie& a_movie);
 }

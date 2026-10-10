@@ -173,8 +173,8 @@ namespace Provenance
 		// Every character ranked by the armor they are given, in 3 groups.
 		// Characters given some armor are ranked against each other. Characters
 		// given none go to the bottom, since most records are settlers,
-		// shopkeepers and children, and ranking them squeezed everyone who
-		// matters into the top half: a raider and a farmer landed 0.01 apart.
+		// shopkeepers and children, and ranking them would squeeze everyone who
+		// matters into the top half, a raider and a farmer 0.01 apart.
 		// Characters in power armor go to the top, since there is no rating to
 		// add up.
 		std::vector<std::pair<const RE::TESNPC*, float>> kits;

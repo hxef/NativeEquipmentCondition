@@ -5,6 +5,7 @@
 #include "Core/Settings.h"
 #include "UI/Hud/HudParts/HudParts.h"
 #include "UI/Repair/ConsoleRepair.h"
+#include "UI/Roles/Roles.h"
 
 #include <Scaleform/G/GFx_MovieDef.h>
 
@@ -15,22 +16,24 @@ namespace MenuMovies
 {
 	namespace
 	{
+		// -------------------------------------------------------------------
+		// Each movie as it loads
+		// -------------------------------------------------------------------
+
 		// F4SE calls this for every menu movie. The second argument is F4SE's
 		// object for this plugin inside the movie, for plugins that give
 		// ActionScript functions to call.
 		bool MovieLoaded(Scaleform::GFx::Movie* a_movie, Scaleform::GFx::Value*)
 		{
 			const auto* definition = a_movie ? a_movie->GetMovieDef() : nullptr;
-			const auto* url = definition ? definition->GetFileURL() : nullptr;
-			if (!url) {
+			if (!definition || !definition->GetFileURL()) {
 				return true;
 			}
+			const auto file = FileOf(*a_movie);
 
-			// The URL is a path such as Interface/HUDMenu.swf, and the file
-			// name says which menu it is.
-			const auto path = std::string_view{ url };
-			const auto slash = path.find_last_of("/\\");
-			const auto file = slash == std::string_view::npos ? path : path.substr(slash + 1);
+			// Each load of a movie starts its found and noted lines afresh,
+			// whichever features run.
+			Roles::OnMovieLoaded(*a_movie, file);
 
 			// A HUD menu can go without NEC's delete beside another DLL, so its
 			// colour targets are let go of before a new HUD or a colour change
@@ -61,12 +64,35 @@ namespace MenuMovies
 		}
 	}
 
+	// -------------------------------------------------------------------
+	// Which movie it is
+	// -------------------------------------------------------------------
+
 	bool IsMovie(std::string_view a_file, std::string_view a_name)
 	{
 		return std::ranges::equal(a_file, a_name, [](char a_lhs, char a_rhs) {
 			return std::tolower(static_cast<unsigned char>(a_lhs)) == std::tolower(static_cast<unsigned char>(a_rhs));
 		});
 	}
+
+	std::string_view FileOf(const Scaleform::GFx::Movie& a_movie)
+	{
+		const auto* definition = a_movie.GetMovieDef();
+		const auto* url = definition ? definition->GetFileURL() : nullptr;
+		if (!url) {
+			return {};
+		}
+
+		// The URL is a path such as Interface/HUDMenu.swf, and the file name
+		// says which menu it is.
+		const auto path = std::string_view{ url };
+		const auto slash = path.find_last_of("/\\");
+		return slash == std::string_view::npos ? path : path.substr(slash + 1);
+	}
+
+	// -------------------------------------------------------------------
+	// Joining the game's menus
+	// -------------------------------------------------------------------
 
 	void Install()
 	{

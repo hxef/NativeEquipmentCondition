@@ -26,8 +26,9 @@ struct Feature
 	Settings::Live<bool>* on = nullptr;
 
 	// The part this row's places belong to unless a patch call names
-	// another, see CallPatch.h. For a row with a switch it is also the part
-	// the switch stands for. Every row that patches has one.
+	// another, see CallPatch.h. Of the rows on 1 switch, only the 1 with a
+	// part names the part the switch stands for, see PartOf. Every row that
+	// patches has one.
 	Part part = Part::kNone;
 
 	// The part this row's switch rides on. When another mod takes a place of

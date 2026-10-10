@@ -6,6 +6,7 @@
 #include "UI/Repair/VendorRepair/Button.h"
 #include "UI/Repair/VendorRepair/Payment.h"
 #include "UI/Repair/VendorRepair/Quote.h"
+#include "UI/Repair/VendorRepair/Retry.h"
 #include "UI/Repair/VendorRepair/Stock.h"
 #include "UI/Repair/VendorRepair/Upkeep.h"
 
@@ -17,6 +18,10 @@ namespace VendorRepair
 {
 	namespace
 	{
+		// -------------------------------------------------------------------
+		// The barter screen's hooks
+		// -------------------------------------------------------------------
+
 		// What the game does before this file's hooks.
 		REL::Relocation<RE::UI_MESSAGE_RESULTS (*)(RE::BarterMenu*, RE::UIMessage&)> _ProcessMessage;
 		REL::Relocation<bool (*)(RE::BarterMenu*, const RE::BSFixedString&)>         _OnButtonEventRelease;
@@ -44,8 +49,8 @@ namespace VendorRepair
 			Refresh(a_menu);
 		}
 
-		// A list rebuilt, which is where the button is first put on the bar.
-		// What the trader restocks with is forgotten before the game builds
+		// A list rebuilt, which can come with a fresh list of hints for the
+		// bar. What the trader restocks with is forgotten before the game builds
 		// their side again, see ForgetStock, so a highlight the rebuild sets
 		// off reads it again.
 		void UpdateListHk(RE::BarterMenu* a_menu, bool a_inContainer)
@@ -86,6 +91,7 @@ namespace VendorRepair
 			if (*a_message.type == RE::UI_MESSAGE_TYPE::kShow) {
 				Forget();
 				ForgetQuestion();
+				ForgetWait();
 			}
 			const auto result = _ProcessMessage(a_menu, a_message);
 			if (*a_message.type == RE::UI_MESSAGE_TYPE::kHide) {
@@ -98,7 +104,44 @@ namespace VendorRepair
 			}
 			return result;
 		}
+
+		// -------------------------------------------------------------------
+		// The game's message boxes
+		// -------------------------------------------------------------------
+
+		// Set once Install writes all 4 barter places, so Load adds no sink
+		// while another mod holds any of them.
+		bool g_installed = false;
+
+		// Refreshes REPAIR whenever a message box opens or closes, since the
+		// game opens its trade and INVEST boxes over the barter screen without
+		// a call NEC hooks. Only queued here, since the game sends this while
+		// it works on its menus.
+		class BoxSink : public RE::BSTEventSink<RE::MenuOpenCloseEvent>
+		{
+		public:
+			F4_HEAP_REDEFINE_NEW(BoxSink);
+
+		private:
+			RE::BSEventNotifyControl ProcessEvent(const RE::MenuOpenCloseEvent& a_event, RE::BSTEventSource<RE::MenuOpenCloseEvent>*) override
+			{
+				if (a_event.menuName == RE::MessageBoxMenu::MENU_NAME) {
+					if (const auto* tasks = F4SE::GetTaskInterface()) {
+						tasks->AddTask([] {
+							if (auto* menu = OpenBarter(); menu && HighlightLive()) {
+								Refresh(menu);
+							}
+						});
+					}
+				}
+				return RE::BSEventNotifyControl::kContinue;
+			}
+		};
 	}
+
+	// -------------------------------------------------------------------
+	// Install and Load
+	// -------------------------------------------------------------------
 
 	void Install()
 	{
@@ -116,6 +159,7 @@ namespace VendorRepair
 		_OnButtonEventRelease = *key;
 		_UpdateItemPickpocketInfo = *highlight;
 		_UpdateList = *list;
+		g_installed = true;
 
 		REX::INFO("Traders who restock {:d} rows of weapons with one row in {:d} a weapon, "
 				  "or {:d} rows of weapons, ammunition, grenades and mines with one row in {:d} one of those, "
@@ -134,5 +178,22 @@ namespace VendorRepair
 
 		// RestockHk reads bVendorRepair and bSpawnCondition on every restock.
 		InstallUpkeep();
+	}
+
+	void Load()
+	{
+		// Once, since UI lasts as long as the game.
+		static bool registered = false;
+		auto*       ui = RE::UI::GetSingleton();
+		if (registered || !g_installed || !ui) {
+			return;
+		}
+		ui->RegisterSink<RE::MenuOpenCloseEvent>(new BoxSink());
+		registered = true;
+	}
+
+	bool HighlightLive()
+	{
+		return g_highlightLink.Live();
 	}
 }

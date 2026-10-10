@@ -2,6 +2,7 @@
 
 #include "Core/Settings.h"
 #include "Core/TraceLog.h"
+#include "UI/Flash.h"
 #include "UI/Hud/HudParts/HudParts.h"
 #include "UI/Hud/PowerArmorCondition/Dash.h"
 #include "UI/Hud/PowerArmorCondition/Layout.h"
@@ -19,6 +20,10 @@ namespace PowerArmorCondition
 	{
 		using Scaleform::GFx::Value;
 
+		// -------------------------------------------------------------------
+		// The bar's name and pace
+		// -------------------------------------------------------------------
+
 		// The name the readout carries, so the frame listener can find it.
 		constexpr const char* READOUT_NAME = "NEC_PACondition_mc";
 
@@ -31,6 +36,10 @@ namespace PowerArmorCondition
 
 		// A value Percent never returns, so the first frame always draws.
 		constexpr std::int32_t NOT_DRAWN = -2;
+
+		// -------------------------------------------------------------------
+		// The frame listener
+		// -------------------------------------------------------------------
 
 		// Called by the HUD every frame through an enterFrame listener on the
 		// bar.
@@ -115,6 +124,19 @@ namespace PowerArmorCondition
 					readout.SetMember("x"sv, Value(origin.x));
 					readout.SetMember("y"sv, Value(origin.y));
 					readout.SetMember("rotation"sv, Value(box.turn * DEGREES));
+
+					// The dash sizes the bar, so its scale stays 1. A HUD mod
+					// that scales every clip on the root would size it twice. A
+					// movie can scale it every frame, so the line is said once per
+					// HUD load.
+					if (Flash::Number(readout, "scaleX"sv) != 1.0 || Flash::Number(readout, "scaleY"sv) != 1.0) {
+						readout.SetMember("scaleX"sv, Value(1.0));
+						readout.SetMember("scaleY"sv, Value(1.0));
+						if (!saidScaled) {
+							saidScaled = true;
+							TraceLog::Line("menu", "Power armor CND bar was scaled by the HUD movie, put back at scale 1");
+						}
+					}
 				}
 
 				// A measured dash whose readout does not fit looks the same as
@@ -155,6 +177,7 @@ namespace PowerArmorCondition
 				bar = Bar{};
 				colored = false;
 				saidOffScreen = false;
+				saidScaled = false;
 			}
 
 		private:
@@ -167,10 +190,15 @@ namespace PowerArmorCondition
 			Bar               bar;
 			bool              colored = false;
 			bool              saidOffScreen = false;
+			bool              saidScaled = false;
 		};
 
 		// Lives as long as the plugin, see Flash.h.
 		FrameListener g_frameListener;
+
+		// -------------------------------------------------------------------
+		// Stepping out and building the bar
+		// -------------------------------------------------------------------
 
 		// The game lets go of the dash's renderer on this same event, so the
 		// trace line names the thread that happens on, see MeasureDash in

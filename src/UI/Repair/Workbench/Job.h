@@ -57,14 +57,4 @@ namespace Workbench
 	// Ends the job, whatever became of the repair. Touches nothing but the
 	// job, since it also runs while the bench closes.
 	void Drop();
-
-	// Says what the bench is looking at: whether the button offers REPAIR or
-	// RENAME, and whether the CURRENT MODS heading still applies. Both follow
-	// the item, so both are written wherever it or its condition changes.
-	void Announce(RE::ExamineMenu* a_menu, const Selection& a_selection);
-
-	// Gives the bench's REPAIR button its word: MEND over an item worn so
-	// little that repairing it is free, REPAIR otherwise. Called as the buttons
-	// redraw, when the bar is sure to hold the bench's own.
-	void Label(RE::ExamineMenu* a_menu, const Selection& a_selection);
 }

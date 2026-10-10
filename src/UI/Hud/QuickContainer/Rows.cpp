@@ -206,6 +206,30 @@ namespace QuickContainer
 			Publish(rows);
 			TraceRows(rows);
 		}
+
+		// -------------------------------------------------------------------
+		// Reading a name on screen
+		// -------------------------------------------------------------------
+
+		// The characters a sorting tag opens and closes with.
+		constexpr std::string_view TAG_OPENS{ "[({|" };
+		constexpr std::string_view TAG_CLOSES{ "])}|" };
+
+		// Whether a row's text is the name the game built. A UI mod may put a
+		// sorting tag and a space before the name once the rows reach the
+		// widget and draw the tag as an icon, so "Shotgun Shell" reads
+		// "[AmmoShells] Shotgun Shell".
+		bool SameName(std::string_view a_shown, std::string_view a_name)
+		{
+			if (a_shown == a_name) {
+				return true;
+			}
+			if (a_shown.size() < a_name.size() + 3 || !a_shown.ends_with(a_name)) {
+				return false;
+			}
+			const auto tag = a_shown.substr(0, a_shown.size() - a_name.size() - 1);
+			return a_shown[tag.size()] == ' ' && TAG_OPENS.contains(tag.front()) && TAG_CLOSES.contains(tag.back());
+		}
 	}
 
 	// -------------------------------------------------------------------
@@ -222,7 +246,7 @@ namespace QuickContainer
 
 			auto same = true;
 			for (std::size_t i = 0; i < a_size && same; i++) {
-				same = build.rows[i].count == a_shown[i].count && a_shown[i].text == build.rows[i].name.c_str();
+				same = build.rows[i].count == a_shown[i].count && SameName(a_shown[i].text, build.rows[i].name.c_str());
 			}
 			if (!same) {
 				continue;

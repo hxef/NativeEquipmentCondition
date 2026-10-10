@@ -26,7 +26,8 @@ namespace CritMeter
 		// A straight line from fCritMeterFloor at nothing to 1 at full, the
 		// shape of HealthDamage/Curve.h. Lower than the damage and fire rate
 		// floors, since a critical is a reward and not something a fight turns
-		// on.
+		// on. fCritMeterFloor keeps no clamp for a hand edit, as the MCM slider
+		// stops at 0 and 1.
 		float ChargeMult(float a_health)
 		{
 			return Condition::Share(a_health, Settings::fCritMeterFloor.GetValue());
@@ -113,8 +114,8 @@ namespace CritMeter
 			const auto mult = ChargeMult(health);
 			const auto chance = *blow.chance;
 
-			// A share of 0 or less, which only a floor at 0 reaches, leaves no
-			// chance at all.
+			// A share of 0 or less, which a floor of 0 at nothing or a floor
+			// below 0 reaches, leaves no chance at all.
 			const auto scaled = mult > 0.0F ? roll / mult : std::numeric_limits<float>::infinity();
 
 			// Whether it landed is the engine's own test, which follows this

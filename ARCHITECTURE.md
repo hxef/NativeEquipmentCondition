@@ -48,6 +48,7 @@ src/
     Feature.h                the shape of a feature and its 4 moments
     IniText.h/.cpp           one key changed in an ini file's text, every other line kept
     ItemCards.h/.cpp         asking the Pip-Boy to rebuild its item cards
+    LogFiles.h/.cpp          opening NEC.log and the 3 bug report logs, and keeping those of the 10 game starts before
     Parts.h/.cpp             every part another mod can take from NEC, and what each setting works through
     Pieces.h/.cpp            the pieces of every part, and what each piece needs
     Plugin.h                 the data handler the load order is read through
@@ -128,11 +129,18 @@ src/
       Hits.h/.cpp            the hit sink, and what a blow was
 
   UI/
-    Flash.h/.cpp             reading and reaching into a menu movie's objects, and writing text for it
+    Flash.h/.cpp             safe reads, writes and calls on a menu movie's objects, and text written for it
     MenuMovies.h/.cpp        the one doorway into the game's menu movies
-    MessageBox.h/.cpp        a question with as many answers as it is given
+    MessageBox.h/.cpp        a question with as many answers as it is given, kept solid under a message box mod
     LoadingTips.h/.cpp       the plugin's own tips on the loading screen
     InspectPrice.h/.cpp      the price on the inspect screen at a trader
+    Roles/
+      Roles.h/.cpp           the tests every part shares: on screen, the found, noted and missing lines
+      Conventions.h          the method names some menu movies share beyond the game's own
+      Bars.h/.cpp            every button hint list a menu draws
+      Card.h/.cpp            the item card and its CND row
+      Hud.h/.cpp             the ammo counter and its divider, where a quick container row's name starts and ends
+      Boxes.h/.cpp           the parts of the bench's confirmation box, where the bench's button bar starts, and the message box's background
     Mcm/
       Mcm.h/.cpp             the settings page in the Mod Configuration Menu
       Bridge.h/.cpp          the page's answers: values, changes and words
@@ -151,6 +159,7 @@ src/
         QuickContainer.h/.cpp        the feature: its install and the movie
         Rows.h/.cpp                  the rows as the game builds them
         Meters.h/.cpp                the meters on the HUD's rows
+        Draw.h/.cpp                  how one meter looks
     Inventory/
       Pipboy.h/.cpp          a worn out item's name faded in the Pip-Boy
       PaperDoll.h/.cpp       a CND bar over each region of the apparel tab's paper doll
@@ -165,9 +174,7 @@ src/
       Restore.h/.cpp         writing a repair onto one copy of an item
       RepairPrompt.h/.cpp    asking how far to bring a worn item back
       ConsoleRepair.h/.cpp   setting the weapon in hand or the armor worn from the console
-      ConfirmScroll/         the box the bench puts up, grown and scrolled
-        ConfirmScroll.h/.cpp the feature: the box grows and scrolls
-        BenchBar.h/.cpp      where the bench's button bar is
+      ConfirmScroll.h/.cpp   the box the bench puts up, grown and scrolled
       Workbench/             repairing at the weapon and armor benches
       VendorRepair/          paying a trader to repair weapons, armor or clothing, and their stock
 ```

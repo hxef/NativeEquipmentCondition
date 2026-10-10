@@ -1,10 +1,10 @@
-#include "UI/Repair/ConfirmScroll/ConfirmScroll.h"
+#include "UI/Repair/ConfirmScroll.h"
 
 #include "Core/CallPatch/CallPatch.h"
 #include "Core/Settings.h"
 #include "Core/TraceLog.h"
 #include "UI/Flash.h"
-#include "UI/Repair/ConfirmScroll/BenchBar.h"
+#include "UI/Roles/Boxes.h"
 
 #include <algorithm>
 #include <array>
@@ -165,16 +165,6 @@ namespace ConfirmScroll
 			return reinterpret_cast<std::uintptr_t>(a_menu);
 		}
 
-		// What the box asks, on one line, so a box names itself. The box
-		// writes it into its panel as it opens.
-		[[nodiscard]] std::string Question(RE::ExamineConfirmMenu& a_menu)
-		{
-			auto text = Flash::String(Flash::Child(a_menu.confirmObj, "ConfirmQuestion_tf"), "text"sv);
-			std::ranges::replace(text, '\r', ' ');
-			std::ranges::replace(text, '\n', ' ');
-			return text;
-		}
-
 		// A button as the trace names it: the device, its code there and its
 		// raw name, the one W and S still carry in a menu.
 		[[nodiscard]] std::string Named(const RE::ButtonEvent& a_event)
@@ -199,52 +189,31 @@ namespace ConfirmScroll
 		// box up by half of the growth, as Build does to keep it centred.
 		void Grow(RE::ExamineConfirmMenu& a_menu)
 		{
-			auto& panel = a_menu.confirmObj;
-			Value background;
-			Value buttons;
-			Value arrow;
-			if (!a_menu.uiMovie || !panel.IsDisplayObject() ||
-				!panel.GetMember("BGRect_mc"sv, &background) || !background.IsDisplayObject() ||
-				!panel.GetMember("ButtonHintBar_mc"sv, &buttons) || !buttons.IsDisplayObject() ||
-				!panel.GetMember("ScrollDown_mc"sv, &arrow) || !arrow.IsDisplayObject()) {
-				TraceLog::Line("menu", "Confirmation box left at its size, its panel is not the one the game ships");
+			auto parts = Roles::Boxes::ConfirmPanel(a_menu);
+			if (!parts) {
 				return;
 			}
-
-			// The down arrow shows only where Build cut rows off.
-			if (!Flash::Bool(arrow, "visible"sv)) {
-				return;
-			}
-
-			// The panel adds each entry as its newest child and Build stacks
-			// them in order, so the last child ends the list, and a clip still
-			// counts hidden rows in its height.
-			Value      last;
-			Value      start;
-			const auto children = static_cast<std::int32_t>(Flash::Number(panel, "numChildren"sv));
-			if (children < 1 || !panel.Invoke("getChildAt", &last, std::array{ Value(children - 1) }) ||
-				!last.IsDisplayObject() || !last.GetMember("originalY"sv, &start) || start.IsUndefined()) {
-				TraceLog::Line("menu", "Confirmation box left at its size, the end of its list was not found");
-				return;
-			}
-			const auto end = Flash::AsNumber(start) + Flash::Number(last, "height"sv) + ENTRY_GAP;
+			auto&      panel = a_menu.confirmObj;
+			auto&      background = parts->background;
+			auto&      buttons = parts->buttons;
+			auto&      arrow = parts->arrow;
+			const auto end = parts->listEnd + ENTRY_GAP;
 			const auto cut = Flash::Number(buttons, "y"sv) - BUTTON_GAP;
 
-			// Where the box is on the stage and how much of the stage the
-			// screen shows, read from the movie however it is scaled.
-			Value stage;
-			Value bounds;
-			if (!panel.GetMember("stage"sv, &stage) || !background.Invoke("getBounds", &bounds, std::array{ stage })) {
+			// Where the box sits on the stage, and the part of the stage the
+			// screen shows.
+			const auto bounds = Flash::StageBounds(background);
+			if (!bounds) {
 				TraceLog::Line("menu", "Confirmation box left at its size, its place on the screen was not found");
 				return;
 			}
-			const auto top = Flash::Number(bounds, "y"sv);
-			const auto height = Flash::Number(bounds, "height"sv);
+			const auto top = Flash::Number(*bounds, "y"sv);
+			const auto height = Flash::Number(*bounds, "height"sv);
 			const auto shown = a_menu.uiMovie->GetVisibleFrameRect();
 
 			// The bottom stops above the bench's button bar, or short of the
 			// screen's bottom edge where that is higher or no bar is shown.
-			const auto bar = BenchBarTop();
+			const auto bar = Roles::Boxes::BenchBarTop();
 			const auto edge = shown.y2 - SCREEN_MARGIN;
 			const auto bottom = bar ? std::min(edge, shown.y1 + (*bar * (shown.y2 - shown.y1)) - BAR_GAP) : edge;
 			const auto limit = bottom < edge ? std::format("its bottom kept above the bench's button bar at {:.1f}", bottom) :
@@ -299,7 +268,7 @@ namespace ConfirmScroll
 			switch (*a_message.type) {
 			case RE::UI_MESSAGE_TYPE::kShow:
 				if (TraceLog::IsOpen()) {
-					TraceLog::Line("menu", "Confirmation box {:X} opens, asking \"{:s}\"", Id(a_menu), Question(*a_menu));
+					TraceLog::Line("menu", "Confirmation box {:X} opens, asking \"{:s}\"", Id(a_menu), Roles::Boxes::Question(*a_menu));
 				}
 				if (Settings::bConfirmScroll.GetValue() && g_messagesLink.Live()) {
 					Grow(*a_menu);

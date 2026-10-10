@@ -338,9 +338,7 @@ namespace CraftingPerks
 		}
 
 		// No part of the item names a perk, so it is treated as any item of its
-		// kind: a weapon by its type, a piece of armor as armor. IsWeapon reads
-		// the form type byte, so it costs nothing and never comes back empty
-		// like a runtime cast can.
+		// kind: a weapon by its type, a piece of armor as armor.
 		if (!out.perk) {
 			out.perk = a_object.IsWeapon() ?
 			               g_kinds[KindOf(static_cast<const RE::TESObjectWEAP&>(a_object), a_extra)] :

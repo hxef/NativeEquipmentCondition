@@ -211,10 +211,9 @@ namespace ConsoleRepair
 
 		// The help and the parameters go with the command, so they stay as
 		// they are when the command is left alone, and Settle puts them back
-		// once its place is cut. A command with no function of its own is
-		// free too.
-		// srm replaces the command and hands the call on only once its place
-		// is cut, so NEC never runs on top of a mod here, which it would skip.
+		// once its place is cut. A command with no function of its own can be
+		// taken too. srm never hands the call on while its place holds, see
+		// CallPatch::NEVER_HANDS_ON.
 		const auto held = CallPatch::PatchPointer(reinterpret_cast<std::uintptr_t>(&command->executeFunction),
 			reinterpret_cast<std::uintptr_t>(&ExecuteHk), "console srm", Part::kNone, CallPatch::NEVER_HANDS_ON, &g_srmLink);
 		if (!held) {
@@ -230,8 +229,8 @@ namespace ConsoleRepair
 		REX::INFO("The console command srm repairs the weapon in hand, or with the word armor every worn piece, or sets them to the percent typed after it.");
 	}
 
-	// Each is put back only while it is still NEC's, so a mod that set its
-	// own keeps it.
+	// Each is put back only while it is still NEC's, so another DLL mod that
+	// set its own keeps it.
 	void Settle()
 	{
 		auto* const command = g_found.command;

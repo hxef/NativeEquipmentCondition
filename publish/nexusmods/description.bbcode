@@ -43,7 +43,7 @@ Your weapons and armor [b]wear down as you use them[/b], the way they did in Fal
 [size=3][b][font=Georgia][color=#1AFF80]Repair at the workbench[/color][/font][/b][/size]
 
 [list]
-[*]At the weapon or armor workbench, select a worn item and a REPAIR button appears. Press it, choose how far to repair it in steps of 10%, and pay in the components it is built from. Gear that scraps into nothing, like Grognak's Axe, costs what gear of its kind most often scraps into, and wears at the same rate. Short of components, you get the power armor station's list of what the repair takes, with the ones you lack faded.
+[*]At the weapon or armor workbench, select a worn item and a REPAIR button takes RENAME's place until it is back at full. Press it, choose how far to repair it in steps of 10%, and pay in the components it is built from. Gear that scraps into nothing, like Grognak's Axe, costs what gear of its kind most often scraps into, and wears at the same rate. Short of components, you get the power armor station's list of what the repair takes, with the ones you lack faded.
 [*]Barely worn gear, above 95%, gets a MEND button instead, which fixes it on the spot [b]for free[/b]. The 95% is the [b]Free mend above[/b] setting: 100 makes every repair cost components, and 0 mends everything but broken gear for free.
 [*]With Workbench repair cost at 0, every repair is free and done on the spot, broken gear included.
 [*][b]Crafting perks[/b] like Gun Nut, Science!, Blacksmith and Armorer make repairs take fewer components, down to half at the top rank. The perk behind most of an item's components sets the discount, and each rank's description says how much. The perks count too when a skill mod like Classic NV Skill System grants them from your skills.
@@ -89,7 +89,7 @@ Your weapons and armor [b]wear down as you use them[/b], the way they did in Fal
 [*]No ESP, so it takes no plugin slot.
 [*]The plugin's own text comes in every language the game ships in. The rest is the game's own words. Every language but English was translated by AI, not by a person, so some lines may read a little off.
 [*]Both vanilla fixes under Little extras can be switched off, for a load order where another mod already fixes them.
-[*]A UI replacer that moves the HUD ammo counter, the quick container, the item cards or the Pip-Boy can hide the condition shown there. Wear, damage and prices work as ever. Repairs use the workbench's own REPAIR button and a button on the barter bar, which replacers usually keep.
+[*]Works with UI replacers like FallUI and DEF_UI. A part NEC can't find is skipped and named in NEC.log or the bug report logs, while wear, damage and prices work as ever.
 [*]NEC works alongside other DLL mods that change the same things. When one takes over one of NEC's features, NEC lets it, and NEC's MCM page and NEC.log name that mod and what is off.
 [*]A DLL mod that changes item stats as the game starts, like RobCo Patcher, does not make gear wear too fast or too slow, since NEC reads the stats again at every save load and new game.
 [/list]
@@ -147,7 +147,7 @@ After that, [b]removing the mod is safe.[/b] It has no ESP and keeps no save dat
 [*]An item with no health that reaches the player through a Papyrus AddItem or RemoveItem, or the console, starts at 100%. The same 2 calls also reset an item to 100% when it is a quest item (in a Quest Object alias) from anyone but the player, or when it comes from a living character who is not a player teammate, like the gun Paladin Brandis gives you. Corpse loot otherwise keeps its roll.
 [*]Which crafting perk discounts a repair comes from the HasPerk conditions on the item's recipes.
 [*]What a trader repairs comes from the leveled lists their vendor chests restock from, because no item carries the weapon, armor and clothing VendorItem keywords. Without those keywords, NEC counts a piece as clothing if it sits on body slot 33 or protects against nothing.
-[*]NEC leaves out grenades, mines, unplayable weapons, power armor and wearables that give no protection or bonus.
+[*]NEC leaves out grenades, mines, unplayable weapons, power armor and wearables that give no protection or bonus and fit no armor mod that adds one, like a wedding ring. Which armor mods add protection, an effect or a bonus is read from the load order as the game loads, and again at every save load and new game.
 [/list]
 
 [b]Settings and other mods[/b]

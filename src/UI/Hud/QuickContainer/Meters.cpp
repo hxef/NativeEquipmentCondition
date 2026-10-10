@@ -3,14 +3,16 @@
 #include "Core/Settings.h"
 #include "Core/TraceLog.h"
 #include "UI/Flash.h"
+#include "UI/Hud/QuickContainer/Draw.h"
 #include "UI/Hud/QuickContainer/Rows.h"
+#include "UI/Roles/Hud.h"
 
-#include <algorithm>
 #include <array>
 #include <cmath>
 #include <cstdint>
 #include <limits>
 #include <optional>
+#include <string>
 
 namespace QuickContainer
 {
@@ -19,11 +21,8 @@ namespace QuickContainer
 		using Scaleform::GFx::Value;
 
 		// -------------------------------------------------------------------
-		// The meters on the HUD's rows
+		// Finding the rows
 		// -------------------------------------------------------------------
-
-		// Something no row holds, so a meter that was never drawn gets drawn.
-		constexpr std::int32_t NOT_DRAWN = -2;
 
 		// Where the widget sits in HUDMenu.swf, and its 5 rows from the top,
 		// each a QuickContainerItem.
@@ -33,24 +32,6 @@ namespace QuickContainer
 
 		// The name each row's meter carries, so the listener can find it again.
 		constexpr const char* METER_NAME = "NEC_Condition_mc";
-
-		// The meter's size in the row's coordinates, where the name is 20 high:
-		// the HP meter's drawing in small, a bar inside a 1 pixel frame with a
-		// pixel of space between.
-		constexpr double METER_WIDTH = 26.0;
-		constexpr double METER_HEIGHT = 8.0;
-
-		// The space before the meter, a little more than the 4 the row leaves
-		// before its first icon.
-		constexpr double METER_GAP = 6.0;
-
-		// The height the row's icons are centred on, read off the same symbol.
-		constexpr double METER_CENTER_Y = 14.0;
-
-		// The row's own text colours: white, and black on the highlighted row,
-		// whose bright bar would hide white.
-		constexpr std::uint32_t WHITE = 0xFFFFFF;
-		constexpr std::uint32_t BLACK = 0x000000;
 
 		// The widget's list of rows, or an undefined value where a HUD replacer
 		// moved it.
@@ -65,53 +46,23 @@ namespace QuickContainer
 			return list;
 		}
 
-		void Rect(Value& a_graphics, double a_x, double a_y, double a_width, double a_height)
-		{
-			a_graphics.Invoke("drawRect", std::array{ Value(a_x), Value(a_y), Value(a_width), Value(a_height) });
-		}
-
-		// Draws a meter with its left edge at x 0 and its middle at y 0.
-		void Draw(Value& a_meter, std::int32_t a_percent, bool a_selected)
-		{
-			Value graphics;
-			if (!a_meter.GetMember("graphics"sv, &graphics) || !graphics.IsObject()) {
-				return;
-			}
-
-			const auto top = -METER_HEIGHT / 2.0;
-			const auto bar = (METER_WIDTH - 4.0) * std::clamp(a_percent, 0, 100) / 100.0;
-
-			graphics.Invoke("clear");
-			graphics.Invoke("beginFill", std::array{ Value(a_selected ? BLACK : WHITE), Value(1.0) });
-
-			// 4 strips that never overlap, since overlapping shapes in one fill
-			// cut holes in each other.
-			Rect(graphics, 0.0, top, METER_WIDTH, 1.0);
-			Rect(graphics, 0.0, top + METER_HEIGHT - 1.0, METER_WIDTH, 1.0);
-			Rect(graphics, 0.0, top + 1.0, 1.0, METER_HEIGHT - 2.0);
-			Rect(graphics, METER_WIDTH - 1.0, top + 1.0, 1.0, METER_HEIGHT - 2.0);
-
-			// The bar, a pixel clear of the frame all round.
-			if (bar > 0.0) {
-				Rect(graphics, 2.0, top + 2.0, bar, METER_HEIGHT - 4.0);
-			}
-
-			graphics.Invoke("endFill");
-		}
-
 		// -------------------------------------------------------------------
 		// Keeping the meters in sync
 		// -------------------------------------------------------------------
+
+		// Something no row holds, so a meter that was never drawn gets drawn.
+		constexpr std::int32_t NOT_DRAWN = -2;
+
+		// How near 2 widths of a name must be to count as the same.
+		constexpr double SAME_WIDTH = 0.5;
 
 		// Keeps the meters in sync with the rows, from the HUD's thread.
 		class Meters
 		{
 		public:
-			// Forgets every meter drawn into an earlier HUD movie. a_nameWidth
-			// is how wide a row's name starts out.
-			void Reset(double a_nameWidth)
+			// Forgets every meter drawn into an earlier HUD movie.
+			void Reset()
 			{
-				nameWidth = a_nameWidth;
 				drawn.fill({});
 			}
 
@@ -133,7 +84,7 @@ namespace QuickContainer
 					for (std::size_t i = 0; i < MAX_ROWS; i++) {
 						auto row = Flash::Child(list, ROW_NAMES[i]);
 						if (a_afterRedraw || !Flash::Bool(row, "bIsDirty"sv)) {
-							Withdraw(row, i);
+							Withdraw(a_movie, row, i);
 						}
 					}
 					return;
@@ -155,13 +106,16 @@ namespace QuickContainer
 				}
 
 				const auto percents = FindConditions(shown, size);
+				if (!percents && size > 0) {
+					Roles::Noted(a_movie, "kept build matching the quick container rows"sv, "the rows get no CND meter"sv);
+				}
 				for (std::size_t i = 0; i < size; i++) {
 					// A row waiting to redraw would undo anything changed now.
 					// The render listener comes back to it.
 					if (!a_afterRedraw && Flash::Bool(rows[i], "bIsDirty"sv)) {
 						continue;
 					}
-					Apply(rows[i], i, percents ? std::optional{ (*percents)[i] } : std::nullopt);
+					Apply(a_movie, rows[i], i, shown[i], percents ? std::optional{ (*percents)[i] } : std::nullopt, a_afterRedraw);
 				}
 			}
 
@@ -173,7 +127,19 @@ namespace QuickContainer
 				bool         selected{ false };
 				double       x{ 0.0 };
 				bool         visible{ false };
+
+				// The item the slot shows, told by its text, count and icons'
+				// width, and its name's width: the movie's own and NEC's last
+				// write. A width within SAME_WIDTH of it is still NEC's.
+				Shown                 item;
+				double                icons{ 0.0 };
+				double                base{ 0.0 };
+				std::optional<double> written;
 			};
+
+			// -----------------------------------------------------------------
+			// Showing and hiding a meter
+			// -----------------------------------------------------------------
 
 			void Show(Value& a_meter, Drawn& a_drawn, double a_x)
 			{
@@ -194,10 +160,39 @@ namespace QuickContainer
 				}
 			}
 
+			// -----------------------------------------------------------------
+			// A row's name width and layout
+			// -----------------------------------------------------------------
+
+			// Whether a_field's width is still NEC's last write in a_drawn.
+			[[nodiscard]] static bool HoldsWrite(const Value& a_field, const Drawn& a_drawn)
+			{
+				return a_drawn.written && std::abs(Flash::Number(a_field, "width"sv) - *a_drawn.written) < SAME_WIDTH;
+			}
+
+			// Writes the name's width. A centred name's text moves when its
+			// field narrows, so the parts the movie placed against the text's
+			// start move as far. The row then lays its icons out again after
+			// the name's new end.
+			void WriteWidth(Scaleform::GFx::Movie& a_movie, Value& a_row, Value& a_field, const Value& a_meter, double a_width)
+			{
+				auto before = Roles::Hud::TextStart(a_movie, a_row, a_field, a_meter);
+				a_field.SetMember("width"sv, Value(a_width));
+				const auto after = before && !before->against.empty() ? Roles::Hud::TextStart(a_movie, a_row, a_field, a_meter) : std::nullopt;
+				if (after) {
+					for (auto& part : before->against) {
+						Flash::Set(part, "x"sv, Value(Flash::Number(part, "x"sv) + after->x - before->x));
+					}
+				}
+				a_row.Invoke("AddIconsToEntry");
+			}
+
 			// Hides the meter of a row NEC drew into, and gives the name back
-			// the width the meter took, but only while the name still has the
-			// width it had with a meter.
-			void Withdraw(Value& a_row, std::size_t a_index)
+			// the width the meter took, but only while the name still holds
+			// NEC's write, so a width the movie set since stays. A row with no
+			// data is hidden and sets its width at its next redraw, and
+			// AddIconsToEntry fails on it, so it gets no give back.
+			void Withdraw(Scaleform::GFx::Movie& a_movie, Value& a_row, std::size_t a_index)
 			{
 				auto& last = drawn[a_index];
 				if (last.percent == NOT_DRAWN && !last.visible) {
@@ -211,20 +206,16 @@ namespace QuickContainer
 				}
 				Hide(meter, last);
 
-				Value iconsWidth;
-				a_row.Invoke("CalcIconWidth", &iconsWidth);
-				const auto withoutMeter = nameWidth - Flash::AsNumber(iconsWidth);
-				const auto withMeter = withoutMeter - METER_GAP - METER_WIDTH;
-				if (std::abs(Flash::Number(field, "width"sv) - withMeter) < 0.5) {
-					field.SetMember("width"sv, Value(withoutMeter));
-					a_row.Invoke("AddIconsToEntry");
+				Value data;
+				if (a_row.GetMember("data"sv, &data) && data.IsObject() && HoldsWrite(field, last)) {
+					WriteWidth(a_movie, a_row, field, meter, last.base);
 				}
 				last = Drawn{};
 			}
 
 			// Lays out one row. a_percent is NO_CONDITION for an item that does
 			// not wear, or nothing when no kept build matches.
-			void Apply(Value& a_row, std::size_t a_index, std::optional<std::int32_t> a_percent)
+			void Apply(Scaleform::GFx::Movie& a_movie, Value& a_row, std::size_t a_index, const Shown& a_shown, std::optional<std::int32_t> a_percent, bool a_afterRedraw)
 			{
 				Value field;
 				auto  meter = Flash::Child(a_row, METER_NAME);
@@ -234,38 +225,52 @@ namespace QuickContainer
 				auto& last = drawn[a_index];
 
 				// The row makes room for its icons by narrowing the name by
-				// what CalcIconWidth says. Narrowing it by the meter too keeps
-				// name, icons and meter centred and shrinks a long name just
-				// enough.
+				// what CalcIconWidth says, and a movie may narrow it more for
+				// icons of its own. Narrowing it by the meter too keeps name,
+				// icons and meter centred and shrinks a long name just enough.
 				Value iconsWidth;
 				a_row.Invoke("CalcIconWidth", &iconsWidth);
 				const auto icons = Flash::AsNumber(iconsWidth);
-				const auto withoutMeter = nameWidth - icons;
-				const auto withMeter = withoutMeter - METER_GAP - METER_WIDTH;
+
+				// A slot showing another item takes its name's width afresh,
+				// since the movie's new width can equal NEC's last write. Any
+				// other width than that write is the movie's own. A change the
+				// frame listener sees first came without a redraw, so a width
+				// still at NEC's write is NEC's and goes back first.
+				if (last.item.text != a_shown.text || last.item.count != a_shown.count || last.icons != icons) {
+					if (!a_afterRedraw && HoldsWrite(field, last)) {
+						WriteWidth(a_movie, a_row, field, meter, last.base);
+					}
+					last.item = a_shown;
+					last.icons = icons;
+					last.written.reset();
+				}
 				const auto width = Flash::Number(field, "width"sv);
+				if (!last.written || std::abs(width - *last.written) >= SAME_WIDTH) {
+					last.base = width;
+					last.written.reset();
+				}
 
 				// With no build to go on the row is left alone, unless the game
 				// just redrew it and a meter left showing would sit on its
 				// name.
 				if (!a_percent) {
-					if (std::abs(width - withMeter) >= 0.5) {
+					if (!last.written) {
 						Hide(meter, last);
 					}
 					return;
 				}
 
-				const auto wanted = *a_percent >= 0 ? withMeter : withoutMeter;
-				if (std::abs(width - wanted) >= 0.5) {
-					field.SetMember("width"sv, Value(wanted));
-					// The row lays its icons out again after the name's new
-					// end.
-					a_row.Invoke("AddIconsToEntry");
+				const auto wanted = *a_percent >= 0 ? last.base - METER_GAP - METER_WIDTH : last.base;
+				if (std::abs(width - wanted) >= SAME_WIDTH) {
+					WriteWidth(a_movie, a_row, field, meter, wanted);
 				}
-
 				if (*a_percent < 0) {
+					last.written.reset();
 					Hide(meter, last);
 					return;
 				}
+				last.written = wanted;
 
 				const auto selected = Flash::Bool(a_row, "selected"sv);
 				if (last.percent != *a_percent || last.selected != selected) {
@@ -276,25 +281,27 @@ namespace QuickContainer
 
 				// The first icon sits 4 past the name's end, counted in
 				// CalcIconWidth, so the icons end at the name's end plus that
-				// width. A replaced row whose name is no text field has no
-				// line to measure, and the meter stays hidden.
-				Value       metrics;
-				const Value line{ 0 };
-				if (!field.Invoke("getLineMetrics", &metrics, &line, 1) || !metrics.IsObject()) {
+				// width. A row with no shown text to measure keeps the meter
+				// hidden.
+				const auto nameEnd = Roles::Hud::TextEnd(a_movie, a_row);
+				if (!nameEnd) {
+					Roles::Noted(a_movie, "quick container name's end"sv, "that row shows no CND meter"sv);
 					Hide(meter, last);
 					return;
 				}
-				const auto nameEnd = Flash::Number(field, "x"sv) + Flash::Number(metrics, "x"sv) + Flash::Number(metrics, "width"sv);
 
 				// Whole pixels keep the one pixel frame sharp.
-				Show(meter, last, std::round(nameEnd + icons + METER_GAP));
+				Show(meter, last, std::round(*nameEnd + icons + METER_GAP));
 			}
 
-			double                      nameWidth{ 0.0 };
 			std::array<Drawn, MAX_ROWS> drawn{};
 		};
 
 		Meters g_meters;
+
+		// -------------------------------------------------------------------
+		// Listening to the HUD
+		// -------------------------------------------------------------------
 
 		// The rows redraw from Flash's render event, raised before a frame is
 		// drawn whenever the widget gets new rows. The render listener lays
@@ -322,17 +329,9 @@ namespace QuickContainer
 		Listener g_frameListener{ false };
 	}
 
-	void ReadNameWidth(Scaleform::GFx::Movie& a_movie)
+	void ForgetMeters()
 	{
-		// The row keeps its starting name width to itself, so it is read from
-		// the name before any row is drawn. Every row is the same symbol, so
-		// reading the first is enough for all 5. A new HUD movie starts with
-		// nothing drawn.
-		auto       list = RowList(a_movie);
-		auto       row = Flash::Child(list, ROW_NAMES[0]);
-		Value      field;
-		const auto named = row.IsDisplayObject() && row.GetMember("ItemName_tf"sv, &field) && field.IsDisplayObject();
-		g_meters.Reset(named ? std::floor(Flash::Number(field, "width"sv)) : 0.0);
+		g_meters.Reset();
 	}
 
 	bool AddMeters(Scaleform::GFx::Movie& a_movie)

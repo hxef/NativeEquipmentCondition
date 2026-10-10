@@ -4,11 +4,11 @@
 
 // A worn item is worth less, everywhere the game shows a price. The engine
 // reads the condition when it prices an item and raises anything below full
-// back to full an instruction later, so a broken item sold for the price of a
-// new one. Install puts the condition back into the formula that value goes to,
-// which covers the Pip-Boy, the item card, vendors and containers. The curve is
-// Fallout 3's, condition to the power of 1.5: half condition gets 35% of the
-// price.
+// back to full an instruction later, so a broken item would sell for the price
+// of a new one. Install puts the condition back into the formula that value
+// goes to, which covers the Pip-Boy, the item card, vendors and containers. The
+// curve is Fallout 3's, condition to the power of 1.5: half condition gets 35%
+// of the price.
 namespace ItemValue
 {
 	// Patches the pair of calls every price in the game comes through.

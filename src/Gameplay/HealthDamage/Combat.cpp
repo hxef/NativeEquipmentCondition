@@ -302,10 +302,10 @@ namespace HealthDamage
 		// the slot from an object instance built around a null form, so it
 		// stops at the first equipped weapon with the low slot bit set, which
 		// on the player is not the weapon in hand, and returns a flat 1.0.
-		// Nothing in the unmodified game writes item health, so the bug never
-		// showed. Equipped::WeaponHealth picks the equipped weapon that takes
-		// part, the same stack the wear is written to. When it finds none the
-		// original still runs, so every actor without such a weapon keeps
+		// Nothing in the unmodified game writes a weapon's health, so the bug
+		// never showed. Equipped::WeaponHealth picks the equipped weapon that
+		// takes part, the same stack the wear is written to. When it finds none
+		// the original still runs, so every actor without such a weapon keeps
 		// vanilla behaviour.
 		// One per attack, P being its index in HEALTH_SITES.
 		template <std::size_t P>

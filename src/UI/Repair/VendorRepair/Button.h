@@ -8,15 +8,17 @@
 // Private to this folder.
 //
 // The button is an ordinary BSButtonHintData built in the menu's own movie,
-// drawn and laid out like the 11 beside it, added to the list of hints the game
-// filled. Its key is one the barter screen's own code leaves alone, the
+// drawn and laid out like the 11 beside it, added to whichever list of hints
+// the screen's bar draws, see UI/Roles/Bars.h, or waiting for one, see
+// Retry.h. Its key is one the barter screen's own code leaves alone, the
 // shoulder button on the other side from INVEST, C on a keyboard and the left
 // bumper on a pad. The movie sees every key first, and inside the quantity box
 // this one steps the count down. It shows for a worn weapon, piece of armor or
 // piece of clothing on the player's side at a trader who repairs that kind,
-// see Stock.h, greyed where the trader cannot go further, a trade is pending or
-// the player cannot pay for the smallest step. A greyed button ignores clicks,
-// so it only responds to the key and the pad, and says in the corner why.
+// see Stock.h, while no message box is up, greyed where the trader cannot go
+// further, a trade is pending or the player cannot pay for the smallest step.
+// A greyed button ignores clicks, so it only responds to the key and the pad,
+// and says in the corner why.
 //
 // Pressing an active button asks how far to repair the item with the price on
 // each button, and picking one pays, see Payment.h.
@@ -25,10 +27,11 @@ namespace VendorRepair
 	// The key the button answers, the way the barter screen names it.
 	inline constexpr std::string_view HINT_EVENT = "LShoulder"sv;
 
-	// Puts the button on the bar the first time and says whether it shows and
-	// whether it can be pressed. Called on every change of highlight, every
-	// move of the quantity slider, every rebuild of a list, and whenever the
-	// question opens or closes.
+	// Puts the button on the bar the screen draws now and says whether it
+	// shows and whether it can be pressed. Called on every change of
+	// highlight, every move of the quantity slider, every rebuild of a list,
+	// whenever a message box opens or closes, NEC's question among them, and
+	// each frame of a wait for a bar or a watch over one.
 	void Refresh(RE::BarterMenu* a_menu);
 
 	// The button pressed, by mouse or by key. False where there is nothing to
@@ -43,7 +46,8 @@ namespace VendorRepair
 	// last one's movie, button and all.
 	void ForgetQuestion();
 
-	// Whether a_menu has the button. A screen that refused one never does, and
-	// there the key is the game's.
+	// Whether a_menu has the button, on a bar or not. A screen that would not
+	// build one, or whose list would not take it, has none, and there the key
+	// is the game's.
 	[[nodiscard]] bool Offered(RE::BarterMenu* a_menu);
 }

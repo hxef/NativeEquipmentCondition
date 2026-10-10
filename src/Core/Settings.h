@@ -23,7 +23,9 @@
 // the change in NEC_custom.ini, see UI/Mcm/Mcm.h.
 //
 // A setting added here is added to publish/NEC.ini too, with a line saying
-// what it does.
+// what it does, and to SWITCHES or NUMBERS in Settings.cpp in NEC.ini's
+// order. A setting left out of those is missing from the Settings line, and
+// the MCM page can neither read nor change it.
 namespace Settings
 {
 	// Where a setting sits in NEC.ini, which is also its id on the MCM page.

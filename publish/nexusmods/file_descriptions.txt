@@ -1,3 +1,8 @@
+1.2.0
+Version 1.2.0 works with UI replacers like FallUI and DEF_UI. Gear that gives nothing, like the Minuteman Hat, or rings and Dogmeat's bandana with AWKCR or similar mods, no longer wears.
+
+FO4 1.11.240
+
 1.1.6
 Version 1.1.6 shows which components a workbench repair you can't afford is missing, in the power armor station's own list. Gear worn nearly to nothing reads 1%, not 0%, and a read only NEC.log no longer means a game start with no log.
 

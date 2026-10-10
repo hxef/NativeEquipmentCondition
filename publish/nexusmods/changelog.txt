@@ -1,3 +1,10 @@
+1.2.0
+* Works with UI replacers like FallUI and DEF_UI: CND on item cards, the HUD bar, quick container meters and the REPAIR button show where they belong. Anything NEC can't find is skipped and named in NEC.log or the bug report logs.
+* The repair question is easy to read with FallUI Confirm Boxes.
+* Quick container meters show with FallUI HUD and item sorters like FIS.
+* The trader's REPAIR button no longer stays on screen over the INVEST box.
+* Gear that gives nothing, like the Minuteman Hat, or rings and Dogmeat's bandana with AWKCR or similar mods, no longer wears, and worn ones go back to full.
+
 1.1.6
 * A workbench repair you can't afford shows the power armor station's list of what it takes, how many of each you have, and the ones you lack faded, instead of a line in the corner. That list and the repair's confirmation box both put the biggest count first.
 * Every workbench repair, MEND included, plays the crafting sounds a mod build does. Workbench repairs change 5 fewer spots in the game's code, so fewer other DLL mods can switch them off.

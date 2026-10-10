@@ -6,7 +6,9 @@
 #include "UI/Repair/RepairPrompt.h"
 #include "UI/Repair/VendorRepair/Payment.h"
 #include "UI/Repair/VendorRepair/Quote.h"
+#include "UI/Repair/VendorRepair/Retry.h"
 #include "UI/Repair/VendorRepair/Stock.h"
+#include "UI/Roles/Bars.h"
 
 #include <array>
 #include <cstddef>
@@ -21,6 +23,10 @@ namespace VendorRepair
 	namespace
 	{
 		using Scaleform::GFx::Value;
+
+		// -------------------------------------------------------------------
+		// The button and where it is kept
+		// -------------------------------------------------------------------
 
 		// The button, as the game builds its own.
 		constexpr const char*   HINT_CLASS = "Shared.AS3.BSButtonHintData";
@@ -62,7 +68,7 @@ namespace VendorRepair
 		Pressed g_pressed;
 
 		// The button this screen was given, not an object where it has none yet
-		// or refused one.
+		// or would not build one.
 		[[nodiscard]] Value Hint(RE::BarterMenu* a_menu)
 		{
 			Value hint;
@@ -70,6 +76,21 @@ namespace VendorRepair
 				a_menu->menuObj.GetMember(HINT_MEMBER, &hint);
 			}
 			return hint;
+		}
+
+		// -------------------------------------------------------------------
+		// Where REPAIR stands
+		// -------------------------------------------------------------------
+
+		// Whether one of the game's message boxes is up, NEC's own question
+		// among them. The game puts the barter screen in message box mode for
+		// its trade and INVEST boxes, which hides the screen's own hints and
+		// runs no NEC hook, so REPAIR goes off with them, see BoxSink in
+		// VendorRepair.cpp.
+		[[nodiscard]] bool BoxOpen()
+		{
+			const auto* ui = RE::UI::GetSingleton();
+			return ui && ui->GetMenuOpen<RE::MessageBoxMenu>();
 		}
 
 		// Where REPAIR stands for the item under the highlight, the one answer
@@ -87,7 +108,7 @@ namespace VendorRepair
 
 		[[nodiscard]] Stand StandOf(RE::BarterMenu* a_menu, const Selection& a_selection, std::uint32_t a_ceiling)
 		{
-			if (!Settings::bVendorRepair.GetValue() || g_asking || !a_menu || !Shown(a_selection, a_ceiling)) {
+			if (!Settings::bVendorRepair.GetValue() || g_asking || !a_menu || BoxOpen() || !Shown(a_selection, a_ceiling)) {
 				return Stand::kOff;
 			}
 			if (a_selection.percent >= a_ceiling) {
@@ -109,10 +130,11 @@ namespace VendorRepair
 
 		// Tells the trace log what the button does for a worn item under the
 		// highlight, once for each thing said, see TraceLog::First, so a row
-		// passed over again and again is not written again.
+		// passed over again and again is not written again. Silent while a box
+		// is up, where REPAIR is off whatever the trader repairs.
 		void Tell(RE::BarterMenu* a_menu, const Selection& a_selection, std::uint32_t a_ceiling, Stand a_stand)
 		{
-			if (!a_selection.Worn() || g_asking || !TraceLog::IsOpen()) {
+			if (!a_selection.Worn() || g_asking || !TraceLog::IsOpen() || BoxOpen()) {
 				return;
 			}
 
@@ -143,26 +165,14 @@ namespace VendorRepair
 			}
 		}
 
-		// Puts the button on the bar, once for each barter screen.
-		[[nodiscard]] bool Wire(RE::BarterMenu* a_menu)
+		// -------------------------------------------------------------------
+		// Putting the button on a bar
+		// -------------------------------------------------------------------
+
+		// Builds the button and keeps it on the screen. False when the screen
+		// refuses it.
+		[[nodiscard]] bool Build(RE::BarterMenu* a_menu, Value& a_hint)
 		{
-			if (!a_menu || !a_menu->uiMovie || !a_menu->menuObj.IsObject()) {
-				return false;
-			}
-			if (Hint(a_menu).IsObject()) {
-				return true;
-			}
-			if (g_refused) {
-				return false;
-			}
-
-			// Nothing to add to yet. The list is handed over while the menu is
-			// still being built, and this runs often enough to catch it.
-			auto* bar = a_menu->buttonHintBar.get();
-			if (!bar || !bar->sourceButtons.IsObject()) {
-				return false;
-			}
-
 			Value pressed;
 			a_menu->uiMovie->CreateFunction(&pressed, &g_pressed);
 
@@ -177,40 +187,71 @@ namespace VendorRepair
 				Value(nullptr),
 			};
 
-			Value hint;
-			a_menu->uiMovie->CreateObject(&hint, HINT_CLASS, made.data(),
+			a_menu->uiMovie->CreateObject(&a_hint, HINT_CLASS, made.data(),
 				static_cast<std::uint32_t>(made.size()));
-			if (!hint.IsObject()) {
+			if (!a_hint.IsObject()) {
 				g_refused = true;
 				REX::WARN("The barter screen would not build a button hint, so no trader offers REPAIR.");
 				return false;
 			}
 
-			hint.SetMember("onTextClick"sv, pressed);
-			hint.SetMember("ButtonVisible"sv, Value(false));
-
-			Value pushed;
-			if (!bar->sourceButtons.Invoke("push", &pushed, &hint, 1)) {
-				g_refused = true;
-				REX::WARN("The barter screen would not take another button hint, so no trader offers REPAIR.");
-				return false;
-			}
-
-			a_menu->menuObj.SetMember(HINT_MEMBER, hint);
-
-			// Handing the list back is how the game says a button has changed.
-			const Value again = bar->sourceButtons;
-			bar->Invoke("SetButtonHintData", nullptr, &again, 1);
-
-			TraceLog::Line("menu", "{:s} offers REPAIR on the bar, keyed to {:s}",
-				Trader(a_menu), HINT_EVENT);
+			// Hidden until Refresh says where REPAIR stands.
+			a_hint.SetMember("onTextClick"sv, pressed);
+			a_hint.SetMember("ButtonVisible"sv, Value(false));
+			a_menu->menuObj.SetMember(HINT_MEMBER, a_hint);
 			return true;
 		}
 
+		// Where REPAIR stands on the barter screen's bars after a refresh.
+		enum class Wired
+		{
+			kOn,       // on a bar
+			kWaiting,  // no bar answers yet
+			kOff,      // no screen, or the screen or its list refused the hint
+		};
+
+		// Puts the button on the bar the barter screen draws now, since a movie
+		// can hand its bar a fresh list later. The hint is built first, so the
+		// key answers even when no bar holds it.
+		[[nodiscard]] Wired Wire(RE::BarterMenu* a_menu)
+		{
+			if (g_refused || !a_menu || !a_menu->uiMovie || !a_menu->menuObj.IsObject()) {
+				return Wired::kOff;
+			}
+			auto hint = Hint(a_menu);
+			if (!hint.IsObject() && !Build(a_menu, hint)) {
+				return Wired::kOff;
+			}
+			auto bar = Roles::Bars::InUse(*a_menu, hint);
+			if (!bar) {
+				return Wired::kWaiting;
+			}
+			if (bar->ours) {
+				return Wired::kOn;
+			}
+			if (Roles::Bars::Add(*bar, hint)) {
+				TraceLog::Line("menu", "{:s} offers REPAIR on the bar, keyed to {:s}",
+					Trader(a_menu), HINT_EVENT);
+				return Wired::kOn;
+			}
+			// The hint leaves this screen too, so C goes back to the game here
+			// as on every later screen.
+			hint.SetMember("ButtonVisible"sv, Value(false));
+			a_menu->menuObj.SetMember(HINT_MEMBER, Value());
+			g_refused = true;
+			REX::WARN("The barter screen would not take another button hint, so no trader offers REPAIR.");
+			return Wired::kOff;
+		}
+
+		// -------------------------------------------------------------------
+		// The question
+		// -------------------------------------------------------------------
+
 		// Holds the barter screen while the question is up, the way the game
 		// does for its own boxes: message box mode hides the screen's own
-		// hints, g_asking hides REPAIR, and the box takes the keys. g_asking is
-		// only set here.
+		// hints, the open box hides REPAIR and takes the keys. g_asking hides
+		// REPAIR and stops a second press until the box is up. Hold and
+		// ForgetQuestion are its only writers.
 		void Hold(RE::BarterMenu* a_menu, bool a_held)
 		{
 			g_asking = a_held;
@@ -220,6 +261,10 @@ namespace VendorRepair
 			Refresh(a_menu);
 		}
 	}
+
+	// -------------------------------------------------------------------
+	// Refreshing and pressing the button
+	// -------------------------------------------------------------------
 
 	void Release()
 	{
@@ -237,12 +282,25 @@ namespace VendorRepair
 			return;
 		}
 
-		if (!Wire(a_menu)) {
+		// A bar REPAIR joined can be handed a fresh list without it a few
+		// frames later, so the screen is watched a while, see Retry.h.
+		const auto wired = Wire(a_menu);
+		if (wired != Wired::kWaiting) {
+			EndWait(wired == Wired::kOn);
+		}
+		if (wired == Wired::kOn) {
+			WatchBar(*a_menu);
+		}
+		auto hint = Hint(a_menu);
+		if (wired == Wired::kOff || !hint.IsObject()) {
 			return;
 		}
 
-		auto hint = Hint(a_menu);
-		if (!hint.IsObject()) {
+		// A list the hint showed on can be replaced by one no bar draws yet,
+		// so the hint is hidden until a bar takes it.
+		if (wired == Wired::kWaiting) {
+			hint.SetMember("ButtonVisible"sv, Value(false));
+			WaitForBar(*a_menu);
 			return;
 		}
 

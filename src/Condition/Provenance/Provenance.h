@@ -82,7 +82,8 @@ namespace Provenance
 	[[nodiscard]] float HighestCentre();
 
 	// Both halves for one stack on its way into one inventory, a_kind saying
-	// which scale the supply half reads. Safe before Load has run and with a
-	// list that has no owner. Both halves then come back UNMEASURED.
+	// which scale the supply half reads. Before Load has run both come back
+	// UNMEASURED, and with a list whose owner is not a character the care half
+	// does.
 	[[nodiscard]] Origin Of(const RE::BGSInventoryList& a_list, const RE::BGSInventoryItem::Stack& a_stack, Condition::Kind a_kind);
 }

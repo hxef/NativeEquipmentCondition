@@ -49,7 +49,8 @@ namespace SpawnCondition
 		// Gives one stack a condition, if it is the kind of thing that has one
 		// and has none yet. Returns what it aimed at, so the copies SplitOff
 		// takes out roll the same way, or nothing when the stack was left
-		// alone. Every item is logged to the trace log either way.
+		// alone. Every weapon and piece of armor is logged to the trace log
+		// either way.
 		std::optional<Aim> Roll(RE::BGSInventoryList* a_list, RE::TESBoundObject* a_object, RE::BGSInventoryItem::Stack* a_stack)
 		{
 			if (!a_object || !a_stack) {
@@ -180,8 +181,9 @@ namespace SpawnCondition
 			// from is never asked.
 			const auto stock = restock && restock->band ? std::optional{ restock->band(*a_object) } : std::nullopt;
 
-			// Where this item came from and who is about to hold it. A list
-			// with no owner leaves both halves unmeasured.
+			// Where this item came from and who is about to hold it. An owner
+			// that is not a character, a footlocker for one, leaves the care
+			// half unmeasured.
 			const auto origin = a_list && !stock ? Provenance::Of(*a_list, *a_stack, Condition::KindOf(*a_object)) :
 			                                       Provenance::Origin{};
 

@@ -21,11 +21,21 @@
 //
 // Restock.h works out what a trader restocks with, Stock.h reads the item under
 // the highlight and what the trader deals in, Quote.h what the work costs,
-// Button.h the button, Payment.h the paying and Upkeep.h the trader's own
-// stock.
+// Button.h the button, Retry.h the wait for a bar under a UI replacer and
+// the watch over it, Payment.h the paying and Upkeep.h the trader's own stock.
 namespace VendorRepair
 {
 	// Patches the barter menu's function table, and the restock where
 	// weapons and armor spawn worn.
 	void Install();
+
+	// Listens for the game's message boxes, which take REPAIR off the bar
+	// while they are up.
+	void Load();
+
+	// Whether the barter highlight hook still runs, false once another mod
+	// cut its place. A refresh no hook starts, for a message box or a frame
+	// of a wait or a watch, asks it first, since it would show the item that
+	// hook last stored.
+	[[nodiscard]] bool HighlightLive();
 }

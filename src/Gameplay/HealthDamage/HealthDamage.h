@@ -14,8 +14,8 @@ namespace HealthDamage
 	//
 	// A weapon's object effects are spells, the radiation a Radium Rifle
 	// applies to what it hits, and the engine casts them at full power. Install
-	// hands those casts the weapon's condition as their power, so they weaken
-	// with wear like the rest.
+	// multiplies their power by the share of damage the condition leaves, see
+	// Curve.h, so they weaken with wear like the rest.
 	//
 	// Everybody fights at the condition their weapon is in. Only the player's
 	// weapons wear, see WeaponEvents.h, so a raider's rusted pipe gun does

@@ -35,9 +35,9 @@ namespace Mcm
 		// passes.
 		constexpr auto WAIT = std::chrono::milliseconds{ 500 };
 
-		// ---------------------------------------------------------------------
+		// -------------------------------------------------------------------
 		// Changes NEC_custom.ini does not have yet
-		// ---------------------------------------------------------------------
+		// -------------------------------------------------------------------
 
 		struct Change
 		{
@@ -61,9 +61,9 @@ namespace Mcm
 			return at != 0 && Clock::now() - Clock::time_point{ Clock::duration{ at } } >= WAIT;
 		}
 
-		// Writes every change owed into NEC_custom.ini and logs a line for each,
-		// then the Settings line, and the summary when a change made it read
-		// differently.
+		// Writes every change owed into NEC_custom.ini and logs a line for
+		// each, then the Settings line, and the summary when a change made it
+		// read differently.
 		void Write()
 		{
 			std::vector<Change> owed;
@@ -93,9 +93,9 @@ namespace Mcm
 			}
 		}
 
-		// ---------------------------------------------------------------------
+		// -------------------------------------------------------------------
 		// What the game keeps worked out from a setting
-		// ---------------------------------------------------------------------
+		// -------------------------------------------------------------------
 
 		std::atomic<bool>                                                   g_queued{ false };
 		std::array<std::atomic<bool>, std::to_underlying(FollowUp::kTotal)> g_owes{};
@@ -138,9 +138,9 @@ namespace Mcm
 			}
 		}
 
-		// ---------------------------------------------------------------------
+		// -------------------------------------------------------------------
 		// NEC's functions on root.mcm
-		// ---------------------------------------------------------------------
+		// -------------------------------------------------------------------
 
 		// The start of every line of text config.json asks NEC for.
 		constexpr std::string_view LINE = "NEC|"sv;
@@ -308,9 +308,9 @@ namespace Mcm
 			return g_heard.load();
 		}
 
-		// ---------------------------------------------------------------------
+		// -------------------------------------------------------------------
 		// The main and pause menus
-		// ---------------------------------------------------------------------
+		// -------------------------------------------------------------------
 
 		std::atomic<bool> g_said{ false };
 

@@ -26,6 +26,9 @@ namespace Roles::Boxes
 		constexpr const char* HOLDER_NAME = "ButtonBarHolder_mc";
 		constexpr const char* BAR_NAME = "ButtonHintBar_mc";
 
+		// The barter and container screens' quantity box.
+		constexpr const char* QUANTITY_NAME = "QuantityMenu_mc";
+
 		// What the player sees when the box cannot be grown.
 		constexpr auto KEPT = "the box keeps the size its movie gave it"sv;
 
@@ -45,7 +48,8 @@ namespace Roles::Boxes
 			return std::isfinite(number) ? std::optional{ number } : std::nullopt;
 		}
 
-		// Says in the trace why the box found no bench button bar to stay above.
+		// Says in the trace why the box found no bench button bar to stay
+		// above.
 		std::nullopt_t NoBar(std::string_view a_why)
 		{
 			TraceLog::Line("menu", "Confirmation box found no bench button bar to stay above, {:s}", a_why);
@@ -192,5 +196,17 @@ namespace Roles::Boxes
 	Value MessageBackground(RE::MessageBoxMenu& a_menu)
 	{
 		return Flash::Member(a_menu.menuObj, BACKGROUND_NAME);
+	}
+
+	// -------------------------------------------------------------------
+	// The quantity box
+	// -------------------------------------------------------------------
+
+	// Vanilla's movie gives the box an opened getter, and the UI replacers
+	// checked keep it.
+	bool QuantityOpen(RE::IMenu& a_menu)
+	{
+		const auto box = Flash::Member(a_menu.menuObj, QUANTITY_NAME);
+		return box.IsDisplayObject() && Flash::Bool(box, "opened"sv);
 	}
 }

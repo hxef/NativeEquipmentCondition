@@ -11,7 +11,8 @@ namespace Text
 {
 	namespace
 	{
-		// The Pip-Boy's perk list, its item cards and a broken item's faded name.
+		// The Pip-Boy's perk list, its item cards and a broken item's faded
+		// name.
 		constexpr Line PIECE_PIPBOY[]{
 			{ "en", "the Pip-Boy" },
 			{ "fr", "le Pip-Boy" },

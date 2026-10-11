@@ -92,10 +92,12 @@ namespace CallPatch
 		// hook asks nothing of its place, so its 2 messages still show
 		// whenever the call reaches it, unless Workbench repairs is off. Every
 		// place that turns repairs off comes before it, see Workbench.cpp, so
-		// its line reads a cut in the same pass too. A walk NEC could not
-		// follow to its end says so first, so the line never blames the DLL
-		// for a cut that comes from NEC's doubt. A set that has to run on
-		// every call is cut either way.
+		// its line reads a cut in the same pass too. The barter input place's
+		// key rule stops with its hook, and does nothing while Trader repairs
+		// is off, whose 4 places come before it, see VendorRepair.cpp. A walk
+		// NEC could not follow to its end says so first, so the line never
+		// blames the DLL for a cut that comes from NEC's doubt. A set that has
+		// to run on every call is cut either way.
 		std::string CutLine(const Place& a_place, bool a_everyCall, const Walked& a_walked)
 		{
 			std::string tail;
@@ -107,6 +109,9 @@ namespace CallPatch
 			if (a_place.part == Part::kBenchMessages) {
 				const auto off = PiecesOffTail(a_place);
 				tail += off.empty() ? " NEC's 2 messages when MODIFY opens nothing show only while the call reaches NEC, so repairs are not affected."sv : std::string_view{ off };
+			} else if (a_place.part == Part::kTraderKeys) {
+				const auto off = PiecesOffTail(a_place);
+				tail += off.empty() ? " REPAIR's key may answer a UI replacer's own button combinations again, so trader repairs are not affected."sv : std::string_view{ off };
 			} else {
 				tail += a_place.use == Use::kTraceOnly ? " It only fed the bug report logs, so play is not affected."sv :
 				        a_everyCall                    ? " NEC's change there has to run on every call, so it is off from now on."sv :
@@ -176,8 +181,8 @@ namespace CallPatch
 					continue;
 				}
 				std::memcpy(place.seen.data(), now, place.watch);
-				// Counted for the warning below, and taken back out for a
-				// change that gets no line, so the warning counts only what
+				// Counted for the line below, and taken back out for a
+				// change that gets no line, so the line counts only what
 				// NEC.log names. A change with no line leaves everything the
 				// summary reads as it was, so the answer at the end stays
 				// right.
@@ -314,7 +319,11 @@ namespace CallPatch
 			}
 			for (const auto* place : lone) {
 				const auto off = PiecesOffTail(*place);
-				lines.push_back({ REX::ELogLevel::Warning,
+				// A place no mod takes anything from, see Part::kTrace and the
+				// parts after it, loses nothing while the call still reaches
+				// NEC, so its line is an INFO.
+				const auto quiet = place->use == Use::kTraceOnly && off.empty();
+				lines.push_back({ quiet ? REX::ELogLevel::Info : REX::ELogLevel::Warning,
 					SwitchLeft(*place) ? ChangedLine(*place, Tail(*place)) :
 					!off.empty()       ? ChangedLine(*place, off) :
 					                     ChangedLine(*place, " NEC's change there keeps working as long as the call still reaches NEC."sv, TraceTail(*place)) });
@@ -355,10 +364,17 @@ namespace CallPatch
 		}
 		Write(lines);
 
+		// A WARN only when a line of the pass is a warning or an error, or
+		// turns a setting off.
+		const auto warn = std::ranges::any_of(lines, [](const Line& a_line) {
+			return !a_line.off.empty() || a_line.level == REX::ELogLevel::Warning || a_line.level == REX::ELogLevel::Error;
+		});
 		if (changed == 0) {
 			REX::DEBUG("Checked {:d} places again as {:s}, none changed.", checked, a_moment);
-		} else {
+		} else if (warn) {
 			REX::WARN("Checked {:d} places again as {:s}, {:d} changed.", checked, a_moment, changed);
+		} else {
+			REX::INFO("Checked {:d} places again as {:s}, {:d} changed.", checked, a_moment, changed);
 		}
 		return changed != 0 && Summary() != before;
 	}

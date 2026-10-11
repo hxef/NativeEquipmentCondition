@@ -117,13 +117,17 @@ namespace CallPatch
 		if (a_place.use != Use::kTraceOnly) {
 			return ""sv;
 		}
-		if (a_place.part != Part::kBenchMessages) {
-			return " It only feeds the bug report logs, so play is not affected."sv;
+		// The messages and the key rule come from NEC's hooks, so a place NEC
+		// never wrote has none.
+		if (a_place.part == Part::kBenchMessages) {
+			return a_place.size == 0 ? " NEC's 2 messages when MODIFY opens nothing stay off, so repairs are not affected."sv :
+			                           " It only shows NEC's 2 messages when MODIFY opens nothing, so repairs are not affected."sv;
 		}
-		// The messages come from NEC's hook, so a place NEC never wrote has
-		// none.
-		return a_place.size == 0 ? " NEC's 2 messages when MODIFY opens nothing stay off, so repairs are not affected."sv :
-		                           " It only shows NEC's 2 messages when MODIFY opens nothing, so repairs are not affected."sv;
+		if (a_place.part == Part::kTraderKeys) {
+			return a_place.size == 0 ? " REPAIR's key may answer a UI replacer's own button combinations, so trader repairs are not affected."sv :
+			                           " It only keeps REPAIR's key out of a UI replacer's own button combinations, so trader repairs are not affected."sv;
+		}
+		return " It only feeds the bug report logs, so play is not affected."sv;
 	}
 
 	std::string ClashLine(const Place& a_place)

@@ -14,8 +14,9 @@ namespace WeaponWear
 	void Load();
 
 	// Measures the ordinary weapon and the ordinary automatic again, at every
-	// save load and new game. A DLL mod such as RobCo Patcher can change
-	// weapons after Load measured, as game data loads. Says only what moved.
+	// save load, new game and coc from the main menu. A DLL mod such as RobCo
+	// Patcher can change weapons after Load measured, as game data loads.
+	// Says only what moved.
 	void MeasureAgain();
 
 	// What that ordinary weapon hits for, the number every wear rate is

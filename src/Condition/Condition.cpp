@@ -109,6 +109,14 @@ namespace Condition
 			curHealth = MAX_HEALTH;
 		}
 
+		// Nothing comes off at a wear speed of 0 or for an amount too small to
+		// change the number. A write would still give an item never touched a
+		// health of its own, which the engine keeps apart from its stack. The
+		// same test turns away a NaN or a negative amount.
+		if (!(curHealth - a_amount < curHealth)) {
+			return false;
+		}
+
 		// The scale is logged whenever there is one, so the log shows what a
 		// bash, a power attack or a charged shot cost.
 		const auto newHealth = SetHealth(a_extra, curHealth - a_amount);

@@ -14,8 +14,9 @@ namespace Workbench
 		using Repair::Debt;
 		using Repair::Whole;
 
-		// The most fBenchCostMult counts for. The order lays a bill out one unit
-		// at a time, so a multiple in the millions runs the game out of memory.
+		// The most fBenchCostMult counts for. The order lays a bill out one
+		// unit at a time, so a multiple in the millions runs the game out of
+		// memory.
 		constexpr float MAX_COST_MULT = 10.0F;
 
 		// The whole number of units an item at a condition still owes, rounded

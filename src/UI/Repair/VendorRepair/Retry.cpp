@@ -46,7 +46,9 @@ namespace VendorRepair
 		// The movie waiting and when it stops, and a movie given up on until
 		// the next screen opens. The movies are compared, never read through,
 		// since the screen can close inside the wait. Only the barter screen's
-		// thread comes here.
+		// own calls and the task BoxSink queues come here. They can run on
+		// different threads, but the game runs its menu work and the queued
+		// tasks one after the other, never at once.
 		const Scaleform::GFx::Movie* g_movie = nullptr;
 		std::optional<Clock::time_point> g_deadline;
 		const Scaleform::GFx::Movie* g_gaveUp = nullptr;

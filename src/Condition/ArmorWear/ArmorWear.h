@@ -29,12 +29,12 @@ namespace ArmorWear
 	// Forgets what LoadMods found, and every slot counts until it runs again.
 	void UnloadMods();
 
-	// Reads the armor mods again before every save load and at a new game,
-	// since a DLL mod such as RobCo Patcher can change them after LoadMods.
-	// Says only what moved. Builds a whole table and swaps it in under a lock
-	// that readers share, the way FireRate guards its NPC readings, since item
-	// cards, hits and inventories ask WhyNoCondition from other threads
-	// meanwhile.
+	// Reads the armor mods again before every save load, at a new game and
+	// after a coc from the main menu, since a DLL mod such as RobCo Patcher
+	// can change them after LoadMods. Says only what moved. Builds a whole
+	// table and swaps it in under a lock that readers share, the way FireRate
+	// guards its NPC readings, since item cards, hits and inventories ask
+	// WhyNoCondition from other threads meanwhile.
 	void MeasureModsAgain();
 
 	// Whether this armor takes part, as a reason: nullptr for one that does,

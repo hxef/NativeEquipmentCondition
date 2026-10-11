@@ -46,9 +46,9 @@ namespace Roles
 			return key;
 		}
 
-		// The movie's file name for a line and a key, HUDMenu.swf, or a stand in
-		// when the game gives none. Every function here goes through it, so a
-		// movie load clears the same key its lines sit under.
+		// The movie's file name for a line and a key, HUDMenu.swf, or a stand
+		// in when the game gives none. Every function here goes through it, so
+		// a movie load clears the same key its lines sit under.
 		[[nodiscard]] std::string_view NameOf(std::string_view a_file)
 		{
 			return a_file.empty() ? "a menu movie"sv : a_file;

@@ -9,6 +9,7 @@
 #include "UI/Repair/VendorRepair/Retry.h"
 #include "UI/Repair/VendorRepair/Stock.h"
 #include "UI/Roles/Bars.h"
+#include "UI/Roles/Boxes.h"
 
 #include <array>
 #include <cstddef>
@@ -323,6 +324,11 @@ namespace VendorRepair
 		const auto stand = StandOf(menu, selection, ceiling);
 		if (stand == Stand::kOff) {
 			return false;
+		}
+		if (Roles::Boxes::QuantityOpen(*menu)) {
+			RE::UIUtils::PlayMenuSound(RepairPrompt::REFUSED_SOUND);
+			TraceLog::Line("menu", "{:s} keeps REPAIR shut while the quantity box is open", Trader(menu));
+			return true;
 		}
 
 		if (stand == Stand::kPastCeiling) {

@@ -129,8 +129,8 @@ namespace SpawnCondition
 			}
 
 			// A script handing the player something is a quest paying out, a
-			// character giving a gift or another mod's script, so it arrives new
-			// as well.
+			// character giving a gift or another mod's script, so it arrives
+			// new as well.
 			if (FromScript() && players) {
 				a_stack->extra->SetHealthPerc(Condition::MAX_HEALTH);
 				Report(listed, "given by a script", "{:<30s} [{:08X}] x{:<3d} starts at {:.4f}, from a script",

@@ -139,8 +139,9 @@ namespace ArmorWear
 		// mod that asks for one of these fits once the mod that adds it is
 		// on. It is not checked that the adding mod fits the piece, or that
 		// a mod that sets a keyword takes the copy's other keywords off, so
-		// in doubt a piece wears. A keyword that a piece's object template
-		// adds is not counted. The forms are only compared, never read.
+		// in doubt a piece wears. A piece's object template is not read at
+		// all, so neither a keyword nor a mod it puts on a copy is counted.
+		// The forms are only compared, never read.
 		Added AddedKeywords()
 		{
 			using Property = RE::BGSMod::Property::Mod;

@@ -281,8 +281,8 @@ namespace CallPatch
 				}
 				const auto landing = Follow(a_kept);
 				const auto image = landing ? ImageAt(landing) : Image{};
-				// A hook that hands on into its own DLL's code is still 1 link of
-				// that DLL, named once.
+				// A hook that hands on into its own DLL's code is still 1 link
+				// of that DLL, named once.
 				Owner owner{ image ? ModuleOf(landing) : std::string{}, true };
 				if (walked.dlls.empty() || walked.dlls.back() != owner) {
 					walked.dlls.push_back(std::move(owner));

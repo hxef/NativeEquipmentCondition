@@ -49,8 +49,9 @@ namespace Materials
 	void Unload();
 
 	// Measures the 2 medians of ReferenceQuality again from what each
-	// component is worth now, at every save load and new game, and says only
-	// what moved. The recipes stay the ones Load found.
+	// component is worth now, at every save load, new game and coc from the
+	// main menu, and says only what moved. The recipes stay the ones Load
+	// found.
 	void MeasureAgain();
 
 	// The worth of 1 unit of an average component for an item of a_kind, the

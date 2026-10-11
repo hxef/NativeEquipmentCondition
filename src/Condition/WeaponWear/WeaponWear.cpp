@@ -6,7 +6,7 @@
 #include "Core/TraceLog.h"
 
 #include <cstdint>
-#include <string>
+#include <string_view>
 
 namespace WeaponWear
 {
@@ -14,9 +14,16 @@ namespace WeaponWear
 	{
 		// What the game says when a weapon breaks. sWeaponBreak is a game
 		// setting Fallout 4 still has but never reads, the message the older
-		// games printed. Read as game data loads, and empty when the setting is
-		// missing, which only loses the message.
-		std::string g_breakMessage;
+		// games printed. Its text is read at each break, so a change during
+		// play shows. The setting is built into the game, so the pointer
+		// outlives a full reset. Null when it is missing, which only loses the
+		// message.
+		const RE::Setting* g_breakMessage = nullptr;
+
+		std::string_view BreakMessage()
+		{
+			return g_breakMessage ? g_breakMessage->GetString() : ""sv;
+		}
 	}
 
 	void Load()
@@ -28,16 +35,14 @@ namespace WeaponWear
 		MeasureReference(false);
 
 		// Whatever this load order says, see g_breakMessage.
-		auto*       settings = RE::GameSettingCollection::GetSingleton();
-		const auto* breaks = settings ? settings->GetSetting("sWeaponBreak"sv) : nullptr;
-		if (breaks) {
-			g_breakMessage = breaks->GetString();
-		}
+		auto* settings = RE::GameSettingCollection::GetSingleton();
+		g_breakMessage = settings ? settings->GetSetting("sWeaponBreak"sv) : nullptr;
 
-		if (g_breakMessage.empty()) {
+		const auto message = BreakMessage();
+		if (message.empty()) {
 			REX::WARN("sWeaponBreak is missing, so a weapon worn out will be put away without a word.");
 		} else {
-			REX::INFO("A weapon worn out is put away, and the game says \"{:s}\".", g_breakMessage);
+			REX::INFO("A weapon worn out is put away, and the game says \"{:s}\".", message);
 		}
 	}
 
@@ -178,9 +183,11 @@ namespace WeaponWear
 					false, false, true, false, nullptr);
 
 				// Only the player is told, since only the player sees the
-				// message in the corner of the screen.
-				if (holder == RE::PlayerCharacter::GetSingleton() && !g_breakMessage.empty()) {
-					RE::SendHUDMessage::ShowHUDMessage(g_breakMessage.c_str(), nullptr, true, false);
+				// message in the corner of the screen. The setting's text ends
+				// in a 0 byte, so data() is safe to pass on.
+				const auto message = BreakMessage();
+				if (holder == RE::PlayerCharacter::GetSingleton() && !message.empty()) {
+					RE::SendHUDMessage::ShowHUDMessage(message.data(), nullptr, true, false);
 				}
 
 				TraceLog::Line("wear", "{:s} [{:08X}] is worn out and has been put away",

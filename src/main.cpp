@@ -16,6 +16,7 @@
 
 #include <spdlog/details/os.h>
 
+#include <atomic>
 #include <ctime>
 #include <format>
 #include <ranges>
@@ -67,8 +68,16 @@ namespace
 		HudParts::Weapon::Forget();
 	}
 
+	// Set while a game could begin with no save load or new game message,
+	// as a coc from the main menu does. 0 means nothing is due, 1 that the
+	// main menu opened and 2 that a loading screen opened after it. A quit's
+	// own loading screen opens before the main menu, so it closes at 1.
+	std::atomic<int> g_unmeasured{ 0 };
+
 	// The main menu opening drops the last game's readings too, since a coc
-	// from there starts a game with no load or new game message. Queued,
+	// from there starts a game with no load or new game message. A loading
+	// screen that opened after the main menu measures the load order again
+	// when it closes, unless a save load or new game came first. Queued,
 	// since the game sends this while it works on its menus.
 	class MainMenuSink : public RE::BSTEventSink<RE::MenuOpenCloseEvent>
 	{
@@ -79,11 +88,27 @@ namespace
 		RE::BSEventNotifyControl ProcessEvent(const RE::MenuOpenCloseEvent& a_event, RE::BSTEventSource<RE::MenuOpenCloseEvent>*) override
 		{
 			if (a_event.opening && a_event.menuName == RE::MainMenu::MENU_NAME) {
+				g_unmeasured = 1;
 				if (const auto* tasks = F4SE::GetTaskInterface()) {
 					tasks->AddTask([] {
 						REX::INFO("The main menu has opened.");
 						TraceLog::Mark("MAINMENU", "the main menu has opened");
 						ForgetPlay();
+					});
+				}
+			} else if (a_event.opening && a_event.menuName == RE::LoadingMenu::MENU_NAME) {
+				int menuOpened = 1;
+				g_unmeasured.compare_exchange_strong(menuOpened, 2);
+			} else if (int loadingOpened = 2; a_event.menuName == RE::LoadingMenu::MENU_NAME && g_unmeasured.compare_exchange_strong(loadingOpened, 0)) {
+				// Long after every data ready handler returned. A save load
+				// closes it after kPreLoadGame cleared the flag.
+				if (const auto* tasks = F4SE::GetTaskInterface()) {
+					tasks->AddTask([] {
+						REX::INFO("A loading screen closed with no save load or new game since the main menu opened, as after a coc from there, so NEC measures the load order again.");
+						TraceLog::Mark("COC", "a loading screen closed with no save load or new game since the main menu opened");
+						ArmorWear::MeasureModsAgain();
+						Materials::MeasureAgain();
+						WeaponWear::MeasureAgain();
 					});
 				}
 			}
@@ -147,6 +172,7 @@ namespace
 
 		if (a_msg->type == F4SE::MessagingInterface::kPreLoadGame ||
 			a_msg->type == F4SE::MessagingInterface::kNewGame) {
+			g_unmeasured = 0;
 			ForgetPlay();
 			// The armor mods, measured again for a DLL mod that changed them
 			// after game data loaded. It runs before the saved items arrive,
@@ -223,11 +249,16 @@ namespace
 		TraceLog::Mark("DATA", "every file has loaded");
 
 		// UI lasts as long as the game, so the sink is added at the first load
-		// only.
+		// only. The first main menu opened before it, and a stat patcher
+		// such as RobCo Patcher changes forms after this handler, so a coc
+		// from that menu needs the measure the sink runs.
 		static bool registered = false;
 		if (auto* ui = RE::UI::GetSingleton(); ui && !registered) {
 			ui->RegisterSink<RE::MenuOpenCloseEvent>(new MainMenuSink());
 			registered = true;
+			if (ui->GetMenuOpen<RE::MainMenu>()) {
+				g_unmeasured = 1;
+			}
 		}
 
 		for (const auto& feature : features) {
@@ -264,8 +295,9 @@ F4SE_PLUGIN_LOAD(const F4SE::LoadInterface* a_f4se)
 	// LogFiles.h. The trampoline is a block of executable memory near the game
 	// that patched calls jump through, since a call can only reach 2 gigabytes
 	// and Windows can load the plugin anywhere. Each hooked call takes its own
-	// 14 byte stub so NEC can hand each site on to what it found there, about
-	// 1100 bytes, so 2048 leaves room.
+	// stub, 14 bytes, or 8 for a call through a pointer, so NEC can hand each
+	// site on to what it found there, about 1100 bytes in all, so 2048 leaves
+	// room.
 	F4SE::Init(a_f4se, {
 						  .log = false,
 						  .trampoline = true,

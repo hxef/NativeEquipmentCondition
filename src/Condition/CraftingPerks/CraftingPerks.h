@@ -25,11 +25,11 @@
 // An item whose bill names no perk, the Cryolator, the pool cue or a pack with
 // no recipes, falls back on its kind: the perk behind most of the mods that
 // kind can take, matched through attach points, which a mod and the item it
-// goes on both name with the same keywords. In vanilla with every DLC, Gun Nut
-// wins guns by 370 recipes to Science's 218, Blacksmith wins every melee kind,
-// and Armorer wins armor, which counts as one kind. A slot nothing offers is
-// skipped. A perk from another mod wins once its recipes outnumber the others,
-// and Demolition Expert never wins, since it only unlocks grenades and mines.
+// goes on both name with the same keywords. In the game as it ships, Gun Nut
+// wins guns, Blacksmith every melee kind, and Armorer armor, which counts as
+// one kind. A slot nothing offers is skipped. A perk from another mod wins
+// once its recipes outnumber the others, and Demolition Expert never wins,
+// since it only unlocks grenades and mines.
 //
 // A ladder is a perk and all its ranks, read the way the game reads it: each
 // rank is a separate perk record, linked in a ring by next, so Gun Nut 4 points

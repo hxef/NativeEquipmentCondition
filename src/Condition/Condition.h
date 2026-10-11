@@ -95,8 +95,9 @@ namespace Condition
 	// trace line, gun fire or a melee hit, and a_scale is how many ordinary
 	// uses the event counted as, already included in a_amount. a_theirs sends
 	// the line to the NPC log, for an item someone else is wearing down.
-	// Returns true when the health changed. Runs under the inventory lock, so
-	// the caller acts on a change after releasing it.
+	// Nothing is written when nothing comes off, so an item never touched stays
+	// untouched. Returns true when the health changed. Runs under the
+	// inventory lock, so the caller acts on a change after releasing it.
 	bool Decrease(RE::ExtraDataList& a_extra, const RE::TESBoundObject& a_object, float a_amount, const char* a_source, float a_scale,
 		bool a_theirs = false);
 }

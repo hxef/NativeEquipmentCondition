@@ -9,11 +9,11 @@ namespace CraftingPerks
 	namespace
 	{
 		// Whether the player holds one rank, as the HasPerk condition the
-		// recipes use answers it. A skill mod can answer that condition from its
-		// skills through another DLL mod that writes its own function into the
-		// game's table, and GetPerkRank would then say no and price every repair
-		// at 2x. The game reads the table at every check, and so does this, so
-		// a function written there later still counts.
+		// recipes use answers it. A skill mod can answer that condition from
+		// its skills through another DLL mod that writes its own function into
+		// the game's table, and GetPerkRank would then say no and price every
+		// repair at 2x. The game reads the table at every check, and so does
+		// this, so a function written there later still counts.
 		[[nodiscard]] bool Holds(RE::PlayerCharacter& a_player, const RE::BGSPerk& a_rank)
 		{
 			auto* const perk = const_cast<RE::BGSPerk*>(&a_rank);

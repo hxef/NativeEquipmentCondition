@@ -216,12 +216,12 @@ namespace Workbench
 
 		// Everything Flash asks code to do passes through here by number. The
 		// one of interest is the cancel sound the bench asks for when it has
-		// just turned the player away from the mod slots, the moment to say why,
-		// and the only one, since the refusal happens inside the movie. That
-		// holds however the player got there, MODIFY included, see Display.h.
-		// The bench asks for the same sound for an item with no slots, such as
-		// one listed only to be repaired, and that one is told so whatever its
-		// condition, since a repair would open nothing.
+		// just turned the player away from the mod slots, the moment to say
+		// why, and the only one, since the refusal happens inside the movie.
+		// That holds however the player got there, MODIFY included, see
+		// Display.h. The bench asks for the same sound for an item with no
+		// slots, such as one listed only to be repaired, and that one is told
+		// so whatever its condition, since a repair would open nothing.
 		void CallHk(RE::ExamineMenu* a_menu, const Params& a_params)
 		{
 			_Call(a_menu, a_params);

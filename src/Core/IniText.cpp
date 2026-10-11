@@ -142,8 +142,8 @@ namespace IniText
 					return std::nullopt;
 				}
 				if (meaning.kind == Meaning::Kind::kBroken) {
-					// The reader files the keys after it under a name that holds
-					// a line break, which is never NEC's.
+					// The reader files the keys after it under a name that
+					// holds a line break, which is never NEC's.
 					inSection = false;
 				} else if (meaning.kind == Meaning::Kind::kSection) {
 					inSection = SameName(meaning.name, a_section);

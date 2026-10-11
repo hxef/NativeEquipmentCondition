@@ -159,7 +159,8 @@ namespace Equipped
 			return std::nullopt;
 		}
 
-		// The walk's read lock inside this write lock is fine, see TryWeaponHealth.
+		// The walk's read lock inside this write lock is fine, see
+		// TryWeaponHealth.
 		auto pieces = ArmorPieces(a_actor);
 		inv->rwLock.unlock_write();
 		return pieces;

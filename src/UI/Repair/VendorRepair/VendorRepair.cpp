@@ -3,6 +3,7 @@
 #include "Condition/Repair.h"
 #include "Core/CallPatch/CallPatch.h"
 #include "Core/ItemCards.h"
+#include "Core/TraceLog.h"
 #include "UI/Repair/VendorRepair/Button.h"
 #include "UI/Repair/VendorRepair/Payment.h"
 #include "UI/Repair/VendorRepair/Quote.h"
@@ -13,6 +14,7 @@
 #include <cstdint>
 #include <format>
 #include <string>
+#include <utility>
 
 namespace VendorRepair
 {
@@ -22,22 +24,82 @@ namespace VendorRepair
 		// The barter screen's hooks
 		// -------------------------------------------------------------------
 
-		// What the game does before this file's hooks.
+		// What the game does before this file's hooks. The screen has a
+		// function table as a menu and one as an input user.
 		REL::Relocation<RE::UI_MESSAGE_RESULTS (*)(RE::BarterMenu*, RE::UIMessage&)> _ProcessMessage;
 		REL::Relocation<bool (*)(RE::BarterMenu*, const RE::BSFixedString&)>         _OnButtonEventRelease;
 		REL::Relocation<void (*)(RE::BarterMenu*, std::int32_t, bool, std::int32_t)> _UpdateItemPickpocketInfo;
 		REL::Relocation<void (*)(RE::BarterMenu*, bool)>                             _UpdateList;
+		REL::Relocation<bool (*)(RE::BSInputEventUser*, const RE::InputEvent*)>      _ShouldHandleEvent;
 
-		// Whether each of the 4 places still runs, see CallPatch::PatchSlot.
+		// Whether each of the 4 places still runs, see CallPatch::PatchSlot,
+		// and the input place, which trader repairs work without.
 		CallPatch::LinkBase g_messagesLink;
 		CallPatch::LinkBase g_keyLink;
 		CallPatch::LinkBase g_highlightLink;
 		CallPatch::LinkBase g_listLink;
+		CallPatch::LinkBase g_inputLink;
+
+		// A UI replacer can use the key in button combinations of its own and
+		// leave the key's release to the game, as one can with LB on a pad. So
+		// a release presses REPAIR only when no other button and no stick went
+		// down while the key was held. g_releaseJoined holds that answer for
+		// the key's last release, read by the release hook just after, since
+		// the input place sees each event first.
+		bool g_keyDown = false;
+		bool g_keyJoined = false;
+		bool g_releaseJoined = false;
+
+		// A new screen starts with the key up.
+		void ForgetKey()
+		{
+			g_keyDown = false;
+			g_keyJoined = false;
+			g_releaseJoined = false;
+		}
+
+		// The key going down and up, and any other button or stick going down
+		// between. A release is told by the same test IMenu::OnButtonEvent
+		// uses before it calls OnButtonEventRelease.
+		void Track(const RE::InputEvent& a_event)
+		{
+			if (const auto* stick = a_event.As<RE::ThumbstickEvent>()) {
+				const auto moved = stick->prevDir == RE::DIRECTION_VAL::kNone && stick->currDir != RE::DIRECTION_VAL::kNone;
+				g_keyJoined = g_keyJoined || (g_keyDown && moved);
+				return;
+			}
+			const auto* button = a_event.As<RE::ButtonEvent>();
+			if (!button) {
+				return;
+			}
+			const auto key = button->QUserEvent() == HINT_EVENT;
+			if (key && button->QJustPressed()) {
+				g_keyDown = true;
+				g_keyJoined = false;
+			} else if (key && !button->QPressed() && button->QHeldDownSecs() >= 0.0F) {
+				g_releaseJoined = g_keyDown && g_keyJoined;
+				g_keyDown = false;
+				g_keyJoined = false;
+			} else if (!key && button->QJustPressed()) {
+				g_keyJoined = g_keyJoined || g_keyDown;
+			}
+		}
+
+		// Asked about every input before the screen's movie sees it. It only
+		// watches and gives the game's own answer, which is no while the
+		// screen opens or is suppressed.
+		bool ShouldHandleEventHk(RE::BSInputEventUser* a_this, const RE::InputEvent* a_event)
+		{
+			if (g_inputLink.Live()) {
+				Track(*a_event);
+			}
+			return _ShouldHandleEvent(a_this, a_event);
+		}
 
 		// The movie telling code where the highlight landed. It asks for the
-		// pickpocket odds whenever the highlight lands or the lists are rebuilt,
-		// and on every move of the quantity slider, for the item the slider is
-		// open on.
+		// pickpocket odds whenever the highlight lands or the lists are
+		// rebuilt, and on every move of the quantity slider, for the item the
+		// slider is open on.
 		void UpdateItemPickpocketInfoHk(RE::BarterMenu* a_menu, std::int32_t a_index, bool a_inContainer,
 			std::int32_t a_count)
 		{
@@ -50,9 +112,9 @@ namespace VendorRepair
 		}
 
 		// A list rebuilt, which can come with a fresh list of hints for the
-		// bar. What the trader restocks with is forgotten before the game builds
-		// their side again, see ForgetStock, so a highlight the rebuild sets
-		// off reads it again.
+		// bar. What the trader restocks with is forgotten before the game
+		// builds their side again, see ForgetStock, so a highlight the rebuild
+		// sets off reads it again.
 		void UpdateListHk(RE::BarterMenu* a_menu, bool a_inContainer)
 		{
 			if (!g_listLink.Live()) {
@@ -70,11 +132,17 @@ namespace VendorRepair
 		// menu mode names, after the movie has seen each, and passes the rest
 		// on. A greyed REPAIR is answered too, which is how the player hears
 		// why it is greyed, and a screen with no REPAIR leaves the key to the
-		// game.
+		// game. So does a release after another button or a stick went down,
+		// see g_keyJoined.
 		bool OnButtonEventReleaseHk(RE::BarterMenu* a_menu, const RE::BSFixedString& a_event)
 		{
-			if (g_keyLink.Live() && a_event == HINT_EVENT && Offered(a_menu) && Press()) {
-				return true;
+			if (g_keyLink.Live() && a_event == HINT_EVENT && Offered(a_menu)) {
+				if (std::exchange(g_releaseJoined, false)) {
+					TraceLog::Line("menu", "REPAIR's key came up at {:s} after another button or a stick went down while it was held, so REPAIR opens nothing and the key goes on to the game",
+						Trader(a_menu));
+				} else if (Press()) {
+					return true;
+				}
 			}
 			return _OnButtonEventRelease(a_menu, a_event);
 		}
@@ -90,6 +158,7 @@ namespace VendorRepair
 			}
 			if (*a_message.type == RE::UI_MESSAGE_TYPE::kShow) {
 				Forget();
+				ForgetKey();
 				ForgetQuestion();
 				ForgetWait();
 			}
@@ -146,6 +215,7 @@ namespace VendorRepair
 	void Install()
 	{
 		REL::Relocation<std::uintptr_t> menu{ RE::BarterMenu::VTABLE[0] };
+		REL::Relocation<std::uintptr_t> input{ RE::BarterMenu::VTABLE[1] };
 
 		const auto messages = CallPatch::PatchSlot(menu, 0x03, ProcessMessageHk, "barter messages", Part::kNone, true, &g_messagesLink);
 		const auto key = CallPatch::PatchSlot(menu, 0x0F, OnButtonEventReleaseHk, "barter key", Part::kNone, true, &g_keyLink);
@@ -160,6 +230,10 @@ namespace VendorRepair
 		_UpdateItemPickpocketInfo = *highlight;
 		_UpdateList = *list;
 		g_installed = true;
+
+		// Noted only when the 4 can go in. Trader repairs work without it, so
+		// another mod there turns nothing off, see Part::kTraderKeys.
+		_ShouldHandleEvent = CallPatch::PatchSlot(input, 0x01, ShouldHandleEventHk, "barter input", Part::kTraderKeys, true, &g_inputLink).value_or(0);
 
 		REX::INFO("Traders who restock {:d} rows of weapons with one row in {:d} a weapon, "
 				  "or {:d} rows of weapons, ammunition, grenades and mines with one row in {:d} one of those, "

@@ -312,8 +312,8 @@ namespace HealthDamage
 		float EquippedHealthHk(RE::Actor* a_actor, RE::BGSEquipIndex a_equipIndex)
 		{
 			// Runs marks the proof for this site so a shared pair comes back.
-			// While the pair does not run, the game's own answer goes on and the
-			// calc hook leaves the blow alone, see t_health.
+			// While the pair does not run, the game's own answer goes on and
+			// the calc hook leaves the blow alone, see t_health.
 			if (!g_attacks[P].Runs(g_healthLinks[P])) {
 				t_health[P] = false;
 				return g_healthLinks[P](a_actor, a_equipIndex);

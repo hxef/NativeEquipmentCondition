@@ -12,13 +12,17 @@
 // the screen's bar draws, see UI/Roles/Bars.h, or waiting for one, see
 // Retry.h. Its key is one the barter screen's own code leaves alone, the
 // shoulder button on the other side from INVEST, C on a keyboard and the left
-// bumper on a pad. The movie sees every key first, and inside the quantity box
-// this one steps the count down. It shows for a worn weapon, piece of armor or
-// piece of clothing on the player's side at a trader who repairs that kind,
-// see Stock.h, while no message box is up, greyed where the trader cannot go
-// further, a trade is pending or the player cannot pay for the smallest step.
-// A greyed button ignores clicks, so it only responds to the key and the pad,
-// and says in the corner why.
+// bumper on a pad. The movie gets every key before REPAIR's key hook, and
+// inside the quantity box this one steps the count down. The key presses
+// REPAIR as it comes up, but not after another button or a stick went down
+// while it was held, since a UI replacer can use it in combinations of its
+// own, see VendorRepair.cpp. The button shows for a worn weapon, piece of
+// armor or piece of clothing on the player's side at a trader who repairs that
+// kind, see Stock.h, while no message box is up, greyed where the trader
+// cannot go further, a trade is pending or the player cannot pay for the
+// smallest step. A greyed button ignores clicks, so it only responds to the
+// key and the pad, and says in the corner why. The quantity box's buttons
+// share the bar, so a click on REPAIR there only plays the refusal sound.
 //
 // Pressing an active button asks how far to repair the item with the price on
 // each button, and picking one pays, see Payment.h.

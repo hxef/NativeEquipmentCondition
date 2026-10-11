@@ -37,9 +37,10 @@ namespace CraftingPerks
 		// How many mod recipes each perk unlocks across the load order, weapon
 		// mods and armor mods counted apart. The total breaks the tie for a
 		// weapon that names 2 perks equally, like the Fat Man, half Gun Nut and
-		// half Science: Gun Nut unlocks 370 and Science 284, 44 of them armor
-		// mods, so it goes under Gun Nut, where vanilla puts it. The 2 counts
-		// say what a perk's page should name.
+		// half Science: Gun Nut unlocks more mod recipes in all than Science,
+		// so the Fat Man goes under Gun Nut, where vanilla puts it. NEC.log
+		// names each perk's total. The weapon and armor counts say what a
+		// perk's page should name.
 		struct Gates
 		{
 			std::uint32_t weapons{ 0 };

@@ -157,8 +157,8 @@ namespace Jam
 				return;
 			}
 
-			// Only the reload that puts the first round in rolls. A Laser Musket
-			// finishes a reload per charge cranked in.
+			// Only the reload that puts the first round in rolls. A Laser
+			// Musket finishes a reload per charge cranked in.
 			const auto loaded = LoadedRounds(a_player, a_equipIndex);
 			TraceLog::Begin("RELOAD", "{:s} [{:08X}] from {:d} to {:d} loaded", RE::TESFullName::GetFullName(weapon), weapon.formID,
 				a_loadedBefore, loaded);
@@ -167,8 +167,8 @@ namespace Jam
 				return;
 			}
 
-			// The reload after a jam always loads. Under 10% every reload jams, and
-			// this keeps such guns firing at all.
+			// The reload after a jam always loads. Under 10% every reload jams,
+			// and this keeps such guns firing at all.
 			const RE::TESObjectWEAP* retry = &weapon;
 			if (g_retryLoads.compare_exchange_strong(retry, nullptr)) {
 				TraceLog::Line("jam", "clear, the reload after a jam always loads");
@@ -182,7 +182,8 @@ namespace Jam
 				return;
 			}
 
-			// The magazine is 1 round, so the magazine's chance is this reload's.
+			// The magazine is 1 round, so the magazine's chance is this
+			// reload's.
 			const auto perMagazine = ChancePerMagazine(health);
 			if (perMagazine <= 0.0F) {
 				TraceLog::Line("jam", "clear, no chance at condition {:.3f}", health);

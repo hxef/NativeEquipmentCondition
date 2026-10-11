@@ -127,8 +127,8 @@ namespace PowerArmorCondition
 
 					// The dash sizes the bar, so its scale stays 1. A HUD mod
 					// that scales every clip on the root would size it twice. A
-					// movie can scale it every frame, so the line is said once per
-					// HUD load.
+					// movie can scale it every frame, so the line is said once
+					// per HUD load.
 					if (Flash::Number(readout, "scaleX"sv) != 1.0 || Flash::Number(readout, "scaleY"sv) != 1.0) {
 						readout.SetMember("scaleX"sv, Value(1.0));
 						readout.SetMember("scaleY"sv, Value(1.0));

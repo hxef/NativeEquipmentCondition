@@ -123,7 +123,7 @@ namespace CallPatch
 		return PatchSites(a_sites, a_target, a_hooks, links, a_what, a_part);
 	}
 
-	// One call of a PatchTogether set: the site, what it calls, the hook, its Link.
+	// One call of a PatchTogether set: site, what it calls, hook and Link.
 	struct Patch
 	{
 		CallSite       site;

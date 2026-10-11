@@ -140,7 +140,7 @@ src/
       Bars.h/.cpp            every button hint list a menu draws
       Card.h/.cpp            the item card and its CND row
       Hud.h/.cpp             the ammo counter and its divider, where a quick container row's name starts and ends
-      Boxes.h/.cpp           the parts of the bench's confirmation box, where the bench's button bar starts, and the message box's background
+      Boxes.h/.cpp           the parts of the bench's confirmation box, where the bench's button bar starts, the message box's background, and whether the barter screen's quantity box is open
     Mcm/
       Mcm.h/.cpp             the settings page in the Mod Configuration Menu
       Bridge.h/.cpp          the page's answers: values, changes and words
@@ -201,9 +201,10 @@ and one row in `src/Features.cpp`. `src/main.cpp` walks the rows:
 
 Outside the 4 steps, `src/main.cpp` drops what play remembers of the last
 game, the gun that jammed, the fire speeds and the HUD's last reading, when a
-save loads, a new game begins or the main menu opens. As a save loads or a new
-game begins, it also measures again what a DLL mod can change after game data
-loads, in an order its comments explain.
+save loads, a new game begins or the main menu opens. As a save loads, a new
+game begins or a coc from the main menu leaves its loading screen, it also
+measures again what a DLL mod can change after game data loads, in an order
+its comments explain.
 
 Every row runs at every step whatever its switch says. Its hooks ask the
 switch on every call and leave the game as it is while it is off. A row whose

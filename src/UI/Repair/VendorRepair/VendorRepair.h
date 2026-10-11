@@ -25,8 +25,8 @@
 // the watch over it, Payment.h the paying and Upkeep.h the trader's own stock.
 namespace VendorRepair
 {
-	// Patches the barter menu's function table, and the restock where
-	// weapons and armor spawn worn.
+	// Patches the barter menu's 2 function tables, as a menu and as an input
+	// user, and the restock where weapons and armor spawn worn.
 	void Install();
 
 	// Listens for the game's message boxes, which take REPAIR off the bar

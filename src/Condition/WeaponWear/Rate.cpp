@@ -26,9 +26,9 @@ namespace WeaponWear
 
 		// What the reference weapon hits for. Measured by Load and
 		// MeasureAgain, since an overhaul that multiplies every damage in the
-		// game would otherwise wear everything out many times faster. Vanilla's
-		// own value is used until then, and in a load order with no weapon
-		// that hits. Atomic, since wear reads it on other threads.
+		// game would otherwise wear everything out many times faster. A round
+		// number is used until then, and in a load order with no weapon that
+		// hits. Atomic, since wear reads it on other threads.
 		constexpr float    DEFAULT_REFERENCE_DAMAGE = 30.0F;
 		std::atomic<float> g_referenceDamage{ DEFAULT_REFERENCE_DAMAGE };
 
@@ -38,12 +38,12 @@ namespace WeaponWear
 		std::unordered_set<std::uint32_t> g_seen;
 
 		// How many times a second the ordinary automatic weapon fires, 9.09 in
-		// vanilla. Measured with the damage, and 0 while the load order has
-		// none, which leaves every weapon's wear as it is.
+		// the game as it ships. Measured with the damage, and 0 while the load
+		// order has none, which leaves every weapon's wear as it is.
 		std::atomic<float> g_referenceAutoRate{ 0.0F };
 
-		// The middle value, the higher of the 2 in the middle for an even count.
-		// 0 for none.
+		// The middle value, the higher of the 2 in the middle for an even
+		// count. 0 for none.
 		float Median(std::vector<float>& a_values)
 		{
 			if (a_values.empty()) {

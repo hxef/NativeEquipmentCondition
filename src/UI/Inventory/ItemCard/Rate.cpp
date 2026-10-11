@@ -62,7 +62,8 @@ namespace ItemCard
 		List g_better{ "The better check", {} };
 		List g_sort{ "The sort", {} };
 
-		// The condition of the stack a list asks the rate of next, and the list.
+		// The condition of the stack a list asks the rate of next, and the
+		// list.
 		thread_local float       t_listHealth = Condition::INVALID_HEALTH;
 		thread_local const List* t_list = nullptr;
 

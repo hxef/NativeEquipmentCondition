@@ -1,3 +1,8 @@
+1.2.1
+Version 1.2.1 fixes small things: gear used at a wear speed of 0 stays in its stack, the repair question no longer opens over a trader's quantity box, and FallUI's LB combinations on a pad no longer open it.
+
+FO4 1.11.240
+
 1.2.0
 Version 1.2.0 works with UI replacers like FallUI and DEF_UI. Gear that gives nothing, like the Minuteman Hat, or rings and Dogmeat's bandana with AWKCR or similar mods, no longer wears.
 

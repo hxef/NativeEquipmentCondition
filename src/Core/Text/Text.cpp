@@ -11,9 +11,9 @@
 #include <string>
 #include <string_view>
 
-// Picking the language, and the sentences shown outside a repair: the perk page,
-// the corner of the screen, and the section titles of the MCM page. Text.h
-// says where the other tables are.
+// Picking the language, and the sentences shown outside a repair: the perk
+// page, the corner of the screen, and the section titles of the MCM page.
+// Text.h says where the other tables are.
 namespace Text
 {
 	namespace
@@ -248,9 +248,10 @@ namespace Text
 
 	std::string Language()
 	{
-		// Read from the game's own setting at every call. The plugin loads before
-		// the game reads Fallout4.ini, and until then it holds its default, en.
-		// Read by ID, so a call does not search every INI setting by name.
+		// Read from the game's own setting at every call. The plugin loads
+		// before the game reads Fallout4.ini, and until then it holds its
+		// default, en. Read by ID, so a call does not search every INI setting
+		// by name.
 		static const REL::Relocation<RE::Setting*> setting{ RE::ID::Setting::sLanguage };
 		std::string out{ setting.get()->GetString() };
 		std::transform(out.begin(), out.end(), out.begin(),

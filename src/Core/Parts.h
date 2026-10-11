@@ -49,6 +49,7 @@ enum class Part : std::uint8_t
 	// row's part.
 	kTrace,          // a place that only feeds the trace logs
 	kBenchMessages,  // the bench place that also shows NEC's 2 messages when MODIFY opens nothing
+	kTraderKeys,     // the barter place that keeps REPAIR's key out of other buttons' combinations
 	kTotal,
 };
 

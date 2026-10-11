@@ -15,9 +15,10 @@ namespace SpawnCondition
 		// Whether this thread is part way through a console command. Asking
 		// whether the console is open would be wrong: loading cells keeps
 		// filling raiders and footlockers on other threads while it is open,
-		// and asking the menu would take the global menu lock under the
-		// inventory write lock, the deadlock ItemCards.h describes. A flag on
-		// the working thread costs one read.
+		// and asking the menu would take the game's menu lock under the
+		// inventory write lock. The game holds that lock as a writer while it
+		// tears menus down, which can touch inventories, so the game could
+		// freeze. A flag on the working thread costs one read.
 		thread_local bool g_runningConsoleCommand = false;
 
 		// Sets a flag while alive and clears it however the call ends. A flag

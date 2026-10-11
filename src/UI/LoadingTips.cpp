@@ -37,8 +37,9 @@ namespace LoadingTips
 
 		// The wear tip tells of damage, protection and price, so it shows only
 		// while no piece of those is off for another mod. The player's own
-		// switches do not hide it. LossOf takes the ledger's lock, and no holder
-		// of that lock ever waits on the loading menu, so this cannot hang.
+		// switches do not hide it. LossOf takes the ledger's lock, and no
+		// holder of that lock ever waits on the loading menu, so this cannot
+		// hang.
 		bool WearWorks()
 		{
 			return ItemValue::Works() && !CallPatch::LossOf(Part::kDamage) && !CallPatch::LossOf(Part::kArmor);
@@ -215,8 +216,9 @@ namespace LoadingTips
 
 			// The picture is the vanilla screen's own, shared, and one the
 			// loading menu can draw. A loading screen frees its picture when
-			// destroyed, and a tip never is, but the vanilla screen is destroyed
-			// on a full reset, which is why Unload hands the picture back first.
+			// destroyed, and a tip never is, but the vanilla screen is
+			// destroyed on a full reset, which is why Unload hands the picture
+			// back first.
 			const auto* picture = RE::TESForm::GetFormByID<RE::TESLoadScreen>(tip.picture);
 			if (!picture || !picture->GetLoadNIFModel()) {
 				REX::ERROR("Loading screen {:08X} has no picture to lend, its tip is left out.", tip.picture);

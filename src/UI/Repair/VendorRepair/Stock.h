@@ -55,9 +55,9 @@
 namespace VendorRepair
 {
 	// The 2 tests: MANY_ROWS rows of the trade with one row in MANY_SHARE one
-	// of them, or SOME_ROWS rows of the trade and what goes with it, ammunition,
-	// grenades and mines for weapons and power armor for armor, with one row
-	// in SOME_SHARE one of those.
+	// of them, or SOME_ROWS rows of the trade and what goes with it,
+	// ammunition, grenades and mines for weapons and power armor for armor,
+	// with one row in SOME_SHARE one of those.
 	inline constexpr std::size_t MANY_ROWS = 5;
 	inline constexpr std::size_t MANY_SHARE = 6;
 	inline constexpr std::size_t SOME_ROWS = 3;

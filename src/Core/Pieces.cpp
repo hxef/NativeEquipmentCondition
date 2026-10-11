@@ -240,6 +240,10 @@ namespace
 		{ "barter key", { kTraderRepairs } },
 		{ "barter highlight", { kTraderRepairs } },
 		{ "barter list", { kTraderRepairs } },
+		// No mod takes anything here either, see Part::kTraderKeys. It only
+		// lets the place's line say the key rule does nothing while Trader
+		// repairs is off.
+		{ "barter input", { kTraderRepairs } },
 		// A restock falls due only as the screen opens, for both kinds of
 		// chest. A trade and an investment build the screen again with the
 		// game paused, so what was due has already restocked.

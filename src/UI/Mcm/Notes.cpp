@@ -45,9 +45,9 @@ namespace Mcm
 		// many more there are when they do not fit.
 		constexpr std::size_t MOST_OWNER_LINES = 8;
 
-		// ---------------------------------------------------------------------
+		// -------------------------------------------------------------------
 		// The cap on a grey row
-		// ---------------------------------------------------------------------
+		// -------------------------------------------------------------------
 
 		// MCM's list is 450 px tall, and with NEC's page in None mode, see
 		// Layout.cpp, a row taller than that never shows: at most 18
@@ -134,9 +134,9 @@ namespace Mcm
 			return kept;
 		}
 
-		// ---------------------------------------------------------------------
+		// -------------------------------------------------------------------
 		// The rows
-		// ---------------------------------------------------------------------
+		// -------------------------------------------------------------------
 
 		// One of the 10 feature switches by its key, bJam.
 		Settings::Live<bool>* SwitchFor(std::string_view a_key)
@@ -312,7 +312,8 @@ namespace Mcm
 			}
 
 			// Too tall for the page, an owner's line is cut back to as many of
-			// its parts as fit, and the more line goes, as the rest line says it.
+			// its parts as fit, and the more line goes, as the rest line says
+			// it.
 			return Capped(std::move(lines), [&](std::size_t a_line, std::size_t a_room) -> std::optional<std::string> {
 				const auto owner = a_line - first;
 				for (auto count = a_line >= first && owner < shown ? parts[owner].size() : 0; count > 1; count--) {

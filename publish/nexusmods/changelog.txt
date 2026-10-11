@@ -1,3 +1,11 @@
+1.2.1
+* With a wear speed of 0, the gear you use stays in its stack.
+* Clicking REPAIR while a trader's quantity box is open no longer opens the repair question over it.
+* The message when a weapon breaks follows a mod, a script or the console that changes it during play.
+* A game started with coc from the main menu reads the stats again too, so another DLL mod like RobCo Patcher no longer makes gear wear too fast or too slow there.
+* On a pad, FallUI's LB button combinations at a trader no longer open the repair question.
+* NEC.log no longer warns when another DLL mod, like Perk Conditions Framework, shares a part of the game's code with NEC without breaking anything.
+
 1.2.0
 * Works with UI replacers like FallUI and DEF_UI: CND on item cards, the HUD bar, quick container meters and the REPAIR button show where they belong. Anything NEC can't find is skipped and named in NEC.log or the bug report logs.
 * The repair question is easy to read with FallUI Confirm Boxes.

@@ -5,8 +5,8 @@
 #include <optional>
 #include <string>
 
-// The bench's confirmation box, as NEC grows it, and the background of the
-// game's message box.
+// The bench's confirmation box, as NEC grows it, the background of the
+// game's message box, and the barter screen's quantity box.
 namespace Roles::Boxes
 {
 	// The parts of the box, the engine's confirmObj, that a growth moves.
@@ -36,4 +36,8 @@ namespace Roles::Boxes
 	// The message box's background clip, at vanilla's place, or a value that
 	// is not a display object.
 	[[nodiscard]] Value MessageBackground(RE::MessageBoxMenu& a_menu);
+
+	// Whether a_menu's quantity box is open. A movie with no quantity box at
+	// vanilla's place reads as closed.
+	[[nodiscard]] bool QuantityOpen(RE::IMenu& a_menu);
 }

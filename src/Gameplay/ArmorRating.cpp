@@ -21,11 +21,11 @@ namespace ArmorRating
 		using CallPatch::CallSite;
 
 		// The calls to the armor rating visitor, one per equipped piece.
-		// CalcArmorRating1 adds up the actor's own DamageResist. CalcArmorRating2
-		// rates one item for the menus, and the AI rates a piece it might pick
-		// up or put on through the other 2, so everybody sees the same worn
-		// number. The engine's RecalcArmorRating holds the 6th call and has
-		// no callers.
+		// CalcArmorRating1 adds up the actor's own DamageResist.
+		// CalcArmorRating2 rates one item for the menus, and the AI rates a
+		// piece it might pick up or put on through the other 2, so everybody
+		// sees the same worn number. The engine's RecalcArmorRating holds the
+		// 6th call and has no callers.
 		constexpr CallSite VISITOR_SITES[] = {
 			{ RE::ID::Actor::CalcArmorRating1.id(), 0x0FC, "damage resist" },
 			{ RE::ID::Actor::CalcArmorRating2.id(), 0x02B, "one piece rating" },

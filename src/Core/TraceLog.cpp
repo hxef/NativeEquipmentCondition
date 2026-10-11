@@ -49,9 +49,7 @@ namespace TraceLog
 		};
 
 		// The block a file's lines go into. One per file, since a file is one
-		// timeline written by several threads. The lock covers deciding where a
-		// line belongs and writing it. Nothing but the file is touched under
-		// it, so it cannot deadlock with the game's locks.
+		// timeline written by several threads.
 		struct Block
 		{
 			std::string       tag;
@@ -60,8 +58,10 @@ namespace TraceLog
 			Clock::time_point last;
 		};
 
-		// One file and everything that belongs to it. Holding one file's lock
-		// never keeps another file waiting.
+		// One file and everything that belongs to it. Its lock covers deciding
+		// where a line belongs and writing it. Nothing but the file is touched
+		// under it, so it cannot deadlock with the game's locks. Holding one
+		// file's lock never keeps another file waiting.
 		struct File
 		{
 			std::shared_ptr<spdlog::logger> logger;
@@ -236,7 +236,8 @@ namespace TraceLog
 
 			std::shared_ptr<spdlog::logger> logger;
 			try {
-				// Keeps earlier game starts the way NEC.log does, see LogFiles.h.
+				// Keeps earlier game starts the way NEC.log does, see
+				// LogFiles.h.
 				logger = std::make_shared<spdlog::logger>(a_name, LogFiles::OpenFile(a_path, a_maxSize));
 			} catch (const std::exception& e) {
 				REX::WARN("Could not open the bug report log {:s}: {:s}", a_path.string(), e.what());

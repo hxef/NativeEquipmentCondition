@@ -1,7 +1,7 @@
 # How the plugin is put together
 
 Native Equipment Condition is one DLL that gives Fallout 4 weapons and armor a
-condition that wears down with use. It patches about 100 places in the
+condition that wears down with use. It patches about 110 places in the
 game's own code, reads what the load order says about weapons, armor, recipes,
 perks and leveled lists, and draws its readouts into the game's own menus. It
 ships no ESP, no scripts and no assets, only the DLL, `NEC.ini` beside it and
@@ -49,8 +49,10 @@ src/
     IniText.h/.cpp           one key changed in an ini file's text, every other line kept
     ItemCards.h/.cpp         asking the Pip-Boy to rebuild its item cards
     LogFiles.h/.cpp          opening NEC.log and the 3 bug report logs, and keeping those of the 10 game starts before
+    LogLevel.cpp             NEC.log's level, from sLogLevel or the MCM page, declared in Settings.h
     Parts.h/.cpp             every part another mod can take from NEC, and what each setting works through
     Pieces.h/.cpp            the pieces of every part, and what each piece needs
+    Places.cpp               which pieces each patched place is
     Plugin.h                 the data handler the load order is read through
     Settings.h/.cpp          every setting, read from NEC.ini
     Text/
@@ -65,6 +67,7 @@ src/
         PiecesPlay.cpp       the names of the pieces of the parts that change play, from Perk repair discount text to Damage shown in menus
         PiecesUi.cpp         the names of the pieces of the parts drawn in menus
         PiecesArmor.cpp      the names of the pieces of Worn armor protection, Protection shown in menus and Broken gear rules
+        Phrases.cpp          what a setting's sentence says in place of a piece's name
       Menu/
         MenuSwitches.cpp     the MCM page's switches: help, and the bug report logs switch's name
         MenuNumbers.cpp      the MCM page's Balance numbers: names and help
@@ -105,10 +108,15 @@ src/
     CritMeter.h/.cpp         fewer criticals from a worn weapon
     BrokenEquip.h/.cpp       a broken item comes off and stays off until repaired
     ItemValue.h/.cpp         a worn item is worth less
+    InHand.h/.cpp            the condition of the weapon in the player's hands, measured once a frame
     Jam.h/.cpp               a worn gun can jam, and the reload call
     FireRate/
       FireRate.h/.cpp        a worn automatic weapon fires slower
       Cuts.h/.cpp            a worn blade's held attack cuts less often
+    Aim/
+      Aim.h                  a worn gun is less accurate and carries its damage less far
+      Accuracy.cpp           every shot's spread, the crosshair and the VATS hit chance
+      Range.cpp              how soon a ranged hit's damage falls off
     HealthDamage/
       HealthDamage.h/.cpp    the feature and its install
       Hooks.h                what the folder's files share
@@ -167,7 +175,8 @@ src/
         ItemCard.h/.cpp      the feature: its install and the movies
         Cards.h              what the folder's files share
         Hooks.cpp            the CND row
-        Rate.cpp             the fire rate a card prints
+        Rate.cpp             the fire rate a card prints, and the sort's note of each stack
+        Aim.cpp              the accuracy and range a card prints, and the sort by accuracy
         Raise.cpp            moving the row up past Damage
     Repair/
       SelectedItem.h/.cpp    the item highlighted in a menu's list
@@ -200,11 +209,11 @@ and one row in `src/Features.cpp`. `src/main.cpp` walks the rows:
    `src/UI/MenuMovies.cpp`.
 
 Outside the 4 steps, `src/main.cpp` drops what play remembers of the last
-game, the gun that jammed, the fire speeds and the HUD's last reading, when a
-save loads, a new game begins or the main menu opens. As a save loads, a new
-game begins or a coc from the main menu leaves its loading screen, it also
-measures again what a DLL mod can change after game data loads, in an order
-its comments explain.
+game, the gun that jammed, the fire speeds, the weapon in hand and the HUD's
+last reading, when a save loads, a new game begins or the main menu opens. As
+a save loads, a new game begins or a coc from the main menu leaves its loading
+screen, it also measures again what a DLL mod can change after game data
+loads, in an order its comments explain.
 
 Every row runs at every step whatever its switch says. Its hooks ask the
 switch on every call and leave the game as it is while it is off. A row whose

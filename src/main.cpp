@@ -9,6 +9,7 @@
 #include "Core/Text/Text.h"
 #include "Core/TraceLog.h"
 #include "Gameplay/FireRate/FireRate.h"
+#include "Gameplay/InHand.h"
 #include "Gameplay/Jam.h"
 #include "UI/Hud/HudParts/HudParts.h"
 #include "UI/MenuMovies.h"
@@ -65,6 +66,7 @@ namespace
 	{
 		Jam::Unload();
 		FireRate::Unload();
+		InHand::Unload();
 		HudParts::Weapon::Forget();
 	}
 
@@ -270,7 +272,7 @@ namespace
 		// A check of the patches once every file has loaded, which finds a DLL
 		// that patched as game data loaded. The summary is due as well when it
 		// reads differently with the game settings loaded, since some places
-		// count for a piece only then, see RestocksAnyDay in Core/Pieces.cpp.
+		// count for a piece only then, see RestocksAnyDay in Core/Places.cpp.
 		if (CallPatch::Recheck("every file has loaded") || CallPatch::KeepSummary(CallPatch::Summary())) {
 			Settings::ReportLine();
 		}

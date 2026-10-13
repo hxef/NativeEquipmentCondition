@@ -3,13 +3,8 @@
 #include "Core/CallPatch/CallPatch.h"
 #include "Core/IniText.h"
 
-#include <spdlog/spdlog.h>
-
 #include <algorithm>
-#include <cctype>
-#include <climits>
 #include <cstdint>
-#include <cstdlib>
 #include <filesystem>
 #include <format>
 #include <fstream>
@@ -44,8 +39,6 @@ namespace Settings
 
 		Live<bool>* const SWITCHES[]{
 			&bJam,
-			&bFireRate,
-			&bCritMeter,
 			&bSpawnCondition,
 			&bVendorRepair,
 			&bLoadingTips,
@@ -63,6 +56,8 @@ namespace Settings
 			&fValueExponent,
 			&fFireRateFloor,
 			&fCritMeterFloor,
+			&fAccuracyFloor,
+			&fRangeFloor,
 			&fBenchCostMult,
 			&iFreeMendAbove,
 			&fTraderPriceMult,
@@ -76,54 +71,6 @@ namespace Settings
 		{
 			std::error_code ec;
 			return std::filesystem::exists(a_file, ec);
-		}
-
-		// The levels by the words spdlog uses for them, matched in any case.
-		// page marks the 5 the MCM page steps through, in its order.
-		struct Level
-		{
-			std::string_view word;
-			REX::ELogLevel   level;
-			bool             page;
-		};
-
-		constexpr Level LEVELS[]{
-			{ "trace", REX::ELogLevel::Trace, true },
-			{ "debug", REX::ELogLevel::Debug, true },
-			{ "info", REX::ELogLevel::Info, true },
-			{ "warning", REX::ELogLevel::Warning, true },
-			{ "warn", REX::ELogLevel::Warning, false },
-			{ "error", REX::ELogLevel::Error, true },
-			{ "critical", REX::ELogLevel::Critical, false },
-		};
-
-		std::optional<REX::ELogLevel> ParseLevel(std::string_view a_word)
-		{
-			for (const auto& [word, level, page] : LEVELS) {
-				if (std::ranges::equal(a_word, word, [](char a_lhs, char a_rhs) {
-						return std::tolower(static_cast<unsigned char>(a_lhs)) == std::tolower(static_cast<unsigned char>(a_rhs));
-					})) {
-					return level;
-				}
-			}
-			return std::nullopt;
-		}
-
-		// The level NEC.log is at now, which the MCM page can change, or the
-		// one it opens at before it is open.
-		REX::ELogLevel LevelNow()
-		{
-			const auto logger = spdlog::default_logger();
-			if (!logger) {
-				return LogLevel();
-			}
-			return static_cast<REX::ELogLevel>(std::min(static_cast<int>(logger->level()), static_cast<int>(REX::ELogLevel::Critical)));
-		}
-
-		std::string_view WordFor(REX::ELogLevel a_level)
-		{
-			const auto it = std::ranges::find(LEVELS, a_level, &Level::level);
-			return it != std::end(LEVELS) ? it->word : "info"sv;
 		}
 
 		// The whole file, or false when any of it cannot be read or it
@@ -204,7 +151,7 @@ namespace Settings
 		// hides the line.
 		void Say(const std::string& a_line, std::source_location a_where = std::source_location::current())
 		{
-			REX::Impl::Log(a_where, std::max(LevelNow(), REX::ELogLevel::Info), a_line);
+			REX::Impl::Log(a_where, std::max(LogLevelNow(), REX::ELogLevel::Info), a_line);
 		}
 
 		// What an edit of NEC_custom.ini came to.
@@ -282,57 +229,6 @@ namespace Settings
 		Say(std::format("{:s}: {:s} to {:s}, {:s}.", a_key, a_old, a_new, a_from));
 	}
 
-	REX::ELogLevel LogLevel()
-	{
-		return ParseLevel(sLogLevel.GetValue()).value_or(REX::ELogLevel::Info);
-	}
-
-	void SetLogLevel(std::size_t a_index)
-	{
-		std::size_t index = 0;
-		for (const auto& [word, level, page] : LEVELS) {
-			if (!page || index++ != a_index) {
-				continue;
-			}
-			// spdlog keeps both levels as atomics, so this is safe while other
-			// threads log. The cast is the one CommonLibF4's F4SE::Init uses.
-			if (const auto logger = spdlog::default_logger()) {
-				logger->set_level(static_cast<spdlog::level::level_enum>(level));
-				logger->flush_on(static_cast<spdlog::level::level_enum>(level));
-			}
-			return;
-		}
-	}
-
-	std::size_t LogLevelIndex()
-	{
-		const auto  now = static_cast<int>(LevelNow());
-		std::size_t index = 0;
-		std::size_t nearest = 0;
-		int         gap = INT_MAX;
-		for (const auto& [word, level, page] : LEVELS) {
-			if (!page) {
-				continue;
-			}
-			if (std::abs(static_cast<int>(level) - now) < gap) {
-				gap = std::abs(static_cast<int>(level) - now);
-				nearest = index;
-			}
-			index++;
-		}
-		return nearest;
-	}
-
-	std::string_view LogLevelWord()
-	{
-		return WordFor(LevelNow());
-	}
-
-	std::string_view LogLevelDefaultWord()
-	{
-		return WordFor(ParseLevel(sLogLevel.GetValueDefault()).value_or(REX::ELogLevel::Info));
-	}
-
 	bool Keep(std::string_view a_section, std::string_view a_key, std::string_view a_text)
 	{
 		return Rewrite(a_key, [&](std::string_view a_file) {
@@ -367,7 +263,7 @@ namespace Settings
 		}
 
 		const auto level = sLogLevel.GetValue();
-		if (!ParseLevel(level)) {
+		if (!IsLogLevel(level)) {
 			REX::WARN("sLogLevel \"{:s}\" is not a level, so the log is at info.", level);
 		}
 		ReportLine();
@@ -395,7 +291,7 @@ namespace Settings
 		REX::INFO("{:s}", line);
 		// Above info NEC.log drops these lines, so no summary is kept and the
 		// next one at info is written in full.
-		if (LevelNow() > REX::ELogLevel::Info) {
+		if (LogLevelNow() > REX::ELogLevel::Info) {
 			CallPatch::KeepSummary({});
 			return;
 		}

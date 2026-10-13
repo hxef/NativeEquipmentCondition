@@ -1,15 +1,18 @@
 #include "Gameplay/WeaponEvents/WeaponEvents.h"
 
 #include "Condition/Condition.h"
+#include "Condition/Equipped.h"
 #include "Condition/WeaponWear/WeaponWear.h"
 #include "Core/CallPatch/CallPatch.h"
 #include "Core/TraceLog.h"
+#include "Gameplay/Aim/Aim.h"
 #include "Gameplay/FireRate/FireRate.h"
 #include "Gameplay/Jam.h"
 #include "Gameplay/WeaponEvents/Hits.h"
 
 #include <algorithm>
 #include <cstdint>
+#include <optional>
 
 namespace WeaponEvents
 {
@@ -88,8 +91,10 @@ namespace WeaponEvents
 				return;
 			}
 
-			// The player's gun, when this shot wears it.
-			RE::TESObjectWEAP* worn = nullptr;
+			// The player's gun, when this shot wears it, and the shot's
+			// condition for its spread, see Aim.h.
+			RE::TESObjectWEAP*        worn = nullptr;
+			std::optional<Aim::Fired> fired;
 
 			// Once per shot for every actor, so the player is picked out.
 			// Throwing a grenade sends the same event as pulling a trigger, and
@@ -116,12 +121,14 @@ namespace WeaponEvents
 				} else {
 					TraceLog::Begin(tag, "{:s} [{:08X}]", name, weapon.formID);
 
-					// A jammed shot never reaches the engine, so it costs no
-					// wear.
-					if (Jam::Roll(*player, *a_weapon, a_equipIndex)) {
+					// 1 reading serves the jam and the spread. A jammed shot
+					// never reaches the engine, so it costs no wear.
+					const auto health = Equipped::WeaponHealth(player, &weapon);
+					if (Jam::Roll(*player, *a_weapon, a_equipIndex, health)) {
 						return;
 					}
 					worn = &weapon;
+					fired.emplace(player, weapon, health);
 				}
 			} else if (a_source && object && object->IsWeapon() &&
 				Condition::WearsOut(static_cast<const RE::TESObjectWEAP&>(*object))) {
@@ -132,10 +139,17 @@ namespace WeaponEvents
 				TraceLog::Npc::Begin("SHOT"sv, "{:s} with {:s} [{:08X}]", TraceLog::Who{ a_source },
 					RE::TESFullName::GetFullName(weapon), weapon.formID);
 
-				// It fires at that condition too, so the pace is read here,
-				// ahead of Fire and its sound, see FireRate.h.
-				if (auto* actor = a_source->As<RE::Actor>()) {
-					FireRate::NoteNpcWeapon(*actor, *a_weapon);
+				// It fires at that condition too, so 1 reading here, ahead of
+				// Fire, serves the pace and its sound, see FireRate.h, and the
+				// spread, while either changes anything. A busy inventory
+				// keeps the last pace and the game's spread.
+				auto* actor = a_source->As<RE::Actor>();
+				if (actor && (FireRate::SlowsNow() || Aim::SpreadsNow())) {
+					const auto health = Equipped::TryWeaponHealth(actor, &weapon);
+					FireRate::NoteNpcWeapon(*actor, *a_weapon, health);
+					if (health) {
+						fired.emplace(a_source, weapon, *health);
+					}
 				}
 			}
 

@@ -1,3 +1,11 @@
+1.3.0
+* Worn guns are less accurate. Shots spread wider, the crosshair opens wider and the VATS hit chance drops. At 0 condition a gun keeps 75% of its accuracy.
+* Worn guns lose range. Their damage starts dropping at a shorter distance, while up close nothing changes. At 0 condition a gun keeps 75% of its range.
+* Wear widens the spread you would normally have, so perks, crouching and aiming down the sights help as much as before.
+* Both work for NPCs too, and each has a slider on the MCM page. At 1, wear never lowers it.
+* Item cards show a worn gun's Accuracy and Range, and the compare arrows and sorting follow them.
+* The switches for slower fire and the VATS critical meter are gone, to make room on the MCM page. If you had one off, set its slider, Fire rate or Criticals at 0 condition, to 1.
+
 1.2.1
 * With a wear speed of 0, the gear you use stays in its stack.
 * Clicking REPAIR while a trader's quantity box is open no longer opens the repair question over it.

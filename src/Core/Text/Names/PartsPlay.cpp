@@ -2,9 +2,6 @@
 
 #include "Core/Parts.h"
 
-#include <cstddef>
-#include <iterator>
-
 // The names of the parts of the Condition and Gameplay rows, see Core/Parts.h.
 namespace Text
 {
@@ -199,6 +196,68 @@ namespace Text
 			{ "zhhans", "其他角色爆击减少" },
 		};
 
+		constexpr Line PART_ACCURACY[]{
+			{ "en", "Lower accuracy when worn" },
+			{ "fr", "Précision réduite par l'usure" },
+			{ "de", "Geringere Präzision bei Abnutzung" },
+			{ "it", "Precisione ridotta dall'usura" },
+			{ "es", "Menor precisión por desgaste" },
+			{ "esmx", "Menor precisión por desgaste" },
+			{ "ptbr", "Precisão menor com desgaste" },
+			{ "pl", "Niższa celność przy zużyciu" },
+			{ "ru", "Меньшая меткость при износе" },
+			{ "ja", "消耗による精度の低下" },
+			{ "zhhant", "損耗降低準度" },
+			{ "zhhans", "损耗降低准度" },
+		};
+
+		// The crosshair opens with the spread.
+		constexpr Line PART_CROSSHAIR[]{
+			{ "en", "Wider crosshair when worn" },
+			{ "fr", "Réticule élargi par l'usure" },
+			{ "de", "Breiteres Fadenkreuz bei Abnutzung" },
+			{ "it", "Mirino allargato dall'usura" },
+			{ "es", "Punto de mira más abierto por desgaste" },
+			{ "esmx", "Punto de mira más abierto por desgaste" },
+			{ "ptbr", "Retículo mais aberto com desgaste" },
+			{ "pl", "Szerszy celownik przy zużyciu" },
+			{ "ru", "Более широкий прицел при износе" },
+			{ "ja", "消耗による照準マーカーの拡大" },
+			{ "zhhant", "損耗擴大準星" },
+			{ "zhhans", "损耗扩大准星" },
+		};
+
+		// VATS counts a worn gun's accuracy in its hit chance.
+		constexpr Line PART_VATS_ACCURACY[]{
+			{ "en", "Lower VATS hit chance when worn" },
+			{ "fr", "Chances de toucher en SVAV réduites par l'usure" },
+			{ "de", "Geringere V.A.T.S.-Trefferchance bei Abnutzung" },
+			{ "it", "Probabilità di colpire nello S.P.A.V. ridotta dall'usura" },
+			{ "es", "Menor probabilidad de impacto en V.A.T.S. por desgaste" },
+			{ "esmx", "Menor probabilidad de impacto en V.A.T.S. por desgaste" },
+			{ "ptbr", "Chance de acerto no VATS menor com desgaste" },
+			{ "pl", "Niższa szansa trafienia w V.A.T.S. przy zużyciu" },
+			{ "ru", "Меньший шанс попадания в VATS при износе" },
+			{ "ja", "消耗によるV.A.T.S.命中率の低下" },
+			{ "zhhant", "損耗降低VATS命中率" },
+			{ "zhhans", "损耗降低VATS命中率" },
+		};
+
+		constexpr Line PART_RANGE[]{
+			{ "en", "Shorter range when worn" },
+			{ "fr", "Portée réduite par l'usure" },
+			{ "de", "Geringere Reichweite bei Abnutzung" },
+			{ "it", "Portata ridotta dall'usura" },
+			{ "es", "Menor alcance por desgaste" },
+			{ "esmx", "Menor alcance por desgaste" },
+			{ "ptbr", "Alcance menor com desgaste" },
+			{ "pl", "Mniejszy zasięg przy zużyciu" },
+			{ "ru", "Меньшая дальность при износе" },
+			{ "ja", "消耗による射程の低下" },
+			{ "zhhant", "損耗縮短射程" },
+			{ "zhhans", "损耗缩短射程" },
+		};
+
 		constexpr Line PART_JAM[]{
 			{ "en", "Jamming" },
 			{ "fr", "Enrayage" },
@@ -308,6 +367,10 @@ namespace Text
 			{ Part::kFireSound, PART_FIRE_SOUND },
 			{ Part::kCritMeter, PART_CRIT_METER },
 			{ Part::kNpcCrits, PART_NPC_CRITS },
+			{ Part::kAccuracy, PART_ACCURACY },
+			{ Part::kCrosshair, PART_CROSSHAIR },
+			{ Part::kVatsAccuracy, PART_VATS_ACCURACY },
+			{ Part::kRange, PART_RANGE },
 			{ Part::kJam, PART_JAM },
 			{ Part::kReloadJam, PART_RELOAD_JAM },
 			{ Part::kSpawn, PART_SPAWN },
@@ -316,19 +379,7 @@ namespace Text
 			{ Part::kGifts, PART_GIFTS },
 		};
 
-		// 1 row a part, in the enum's order from kPerks to kGifts, so a part's
-		// name is found by its place.
-		consteval bool InOrder()
-		{
-			const auto first = static_cast<std::size_t>(Part::kPerks);
-			for (std::size_t i = 0; i < std::size(PARTS); i++) {
-				if (static_cast<std::size_t>(PARTS[i].part) != first + i) {
-					return false;
-				}
-			}
-			return std::size(PARTS) == static_cast<std::size_t>(Part::kGifts) - first + 1;
-		}
-		static_assert(InOrder());
+		static_assert(PartsInOrder(PARTS, Part::kPerks, Part::kGifts));
 	}
 
 	std::span<const PartRow> PlayParts()

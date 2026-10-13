@@ -1,8 +1,8 @@
 #include "Gameplay/FireRate/Cuts.h"
 
 #include "Core/CallPatch/CallPatch.h"
-#include "Core/Settings.h"
 #include "Core/TraceLog.h"
+#include "Gameplay/FireRate/FireRate.h"
 
 #include <cstdint>
 #include <mutex>
@@ -116,7 +116,7 @@ namespace FireRate
 		// the way a worn gun's animation fires only its share of the shots.
 		void CutHk(RE::Actor* a_actor, std::uint32_t a_equipIndex, bool a_deal)
 		{
-			if (!Settings::bFireRate.GetValue() || !g_cutLink.Live() || Cuts(*a_actor, a_equipIndex)) {
+			if (!SlowsNow() || Cuts(*a_actor, a_equipIndex)) {
 				g_cutLink(a_actor, a_equipIndex, a_deal);
 			}
 		}
@@ -125,6 +125,11 @@ namespace FireRate
 	bool InstallCuts()
 	{
 		return CallPatch::PatchCall(CUT_SITE, RE::ID::Actor::QueueMeleeHit.address(), reinterpret_cast<std::uintptr_t>(&CutHk), g_cutLink);
+	}
+
+	bool CutLive()
+	{
+		return g_cutLink.Live();
 	}
 
 	void ForgetCuts()

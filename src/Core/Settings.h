@@ -14,7 +14,8 @@
 // The plugin's settings, read from NEC.ini beside NEC.dll in Data\F4SE\Plugins.
 // NEC_custom.ini in the same folder holds the player's changes, so an update
 // writes over nothing of theirs. A key in neither file keeps the default
-// written here.
+// written here. A key not written here is never read, so a key an older NEC
+// had, left in either file, does nothing and NEC.log says nothing of it.
 //
 // CommonLibF4's setting store reads both files once, as the game starts, and
 // nothing reads them again while the game runs. Read a setting where it is
@@ -93,8 +94,15 @@ namespace Settings
 	// info.
 	[[nodiscard]] REX::ELogLevel LogLevel();
 
+	// Whether a_word names a level, in any case.
+	[[nodiscard]] bool IsLogLevel(std::string_view a_word);
+
+	// The level NEC.log is at now, which the MCM page can change, or the one
+	// it opens at before it is open.
+	[[nodiscard]] REX::ELogLevel LogLevelNow();
+
 	// Sets NEC.log to the page's level a_index on the spot. The page's levels
-	// are the entries of LEVELS in Settings.cpp marked for it, in
+	// are the entries of LEVELS in LogLevel.cpp marked for it, in
 	// config.json's order. The MCM page keeps the word with its other changes.
 	void SetLogLevel(std::size_t a_index);
 
@@ -125,13 +133,6 @@ namespace Settings
 	// Worn guns can jam.
 	inline Live<bool> bJam{ "Features", "bJam", true };
 
-	// Worn automatic weapons fire slower, in anyone's hands, see FireRate.h.
-	inline Live<bool> bFireRate{ "Features", "bFireRate", true };
-
-	// Worn weapons fill the VATS critical meter slower, and an NPC's worn
-	// weapon lands fewer critical hits, see CritMeter.h.
-	inline Live<bool> bCritMeter{ "Features", "bCritMeter", true };
-
 	// Weapons and armor spawn already worn, see SpawnCondition.h. Provenance
 	// measures the load order for it at every data load, whatever the switch
 	// says, so it works as soon as it is switched on in play.
@@ -157,7 +158,8 @@ namespace Settings
 	// is on, see InspectPrice.h.
 	inline Live<bool> bInspectPrice{ "Features", "bInspectPrice", true };
 
-	// Balance. Each tunes a feature and is read where it is used.
+	// Balance. Each tunes a feature and is read where it is used. A floor at
+	// 1 leaves the game's own result, so a feature with a floor has no switch.
 
 	// What every weapon's wear rate is multiplied by, see WeaponWear/Rate.cpp.
 	inline Live<float> fWearRateMult{ "Balance", "fWearRateMult", 1.0F };
@@ -186,6 +188,14 @@ namespace Settings
 	// fills, and how much of its critical chance an NPC's weapon at nothing
 	// keeps, see CritMeter.cpp.
 	inline Live<float> fCritMeterFloor{ "Balance", "fCritMeterFloor", 0.5F };
+
+	// How accurate a gun at nothing still is, as a share of its accuracy, see
+	// Gameplay/Aim/Accuracy.cpp.
+	inline Live<float> fAccuracyFloor{ "Balance", "fAccuracyFloor", 0.75F };
+
+	// How far a gun at nothing still carries its damage, as a share of its
+	// range, see Gameplay/Aim/Range.cpp.
+	inline Live<float> fRangeFloor{ "Balance", "fRangeFloor", 0.75F };
 
 	// What a repair at a workbench costs, against the mod as tuned, see
 	// Workbench/Cost.h.
@@ -235,7 +245,7 @@ namespace Settings
 	// setting only takes whole steps.
 	using Number = std::variant<Live<float>*, Live<std::int32_t>*>;
 
-	// The 10 switches under [Features] and the 14 numbers under [Balance] and
+	// The 8 switches under [Features] and the 16 numbers under [Balance] and
 	// [HUD], in NEC.ini's order, for Report and the MCM page.
 	[[nodiscard]] std::span<Live<bool>* const> Switches();
 	[[nodiscard]] std::span<const Number>      Numbers();

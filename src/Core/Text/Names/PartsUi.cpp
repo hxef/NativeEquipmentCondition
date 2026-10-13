@@ -2,9 +2,6 @@
 
 #include "Core/Parts.h"
 
-#include <cstddef>
-#include <iterator>
-
 // The names of the parts of the UI rows, see Core/Parts.h.
 namespace Text
 {
@@ -41,6 +38,56 @@ namespace Text
 			{ "ja", "メニューの発射速度表示" },
 			{ "zhhant", "選單中顯示的射速" },
 			{ "zhhans", "菜单中显示的射速" },
+		};
+
+		// A worn gun's accuracy and range on item cards, and where a container
+		// or a trader sorts by accuracy.
+		constexpr Line PART_CARD_ACCURACY[]{
+			{ "en", "Accuracy shown in menus" },
+			{ "fr", "Précision affichée dans les menus" },
+			{ "de", "Präzisionsanzeige in Menüs" },
+			{ "it", "Precisione nei menu" },
+			{ "es", "Precisión en los menús" },
+			{ "esmx", "Precisión en los menús" },
+			{ "ptbr", "Precisão exibida nos menus" },
+			{ "pl", "Celność widoczna w menu" },
+			{ "ru", "Меткость в меню" },
+			{ "ja", "メニューの精度表示" },
+			{ "zhhant", "選單中顯示的準度" },
+			{ "zhhans", "菜单中显示的准度" },
+		};
+
+		constexpr Line PART_CARD_RANGE[]{
+			{ "en", "Range shown in menus" },
+			{ "fr", "Portée affichée dans les menus" },
+			{ "de", "Reichweitenanzeige in Menüs" },
+			{ "it", "Portata nei menu" },
+			{ "es", "Alcance en los menús" },
+			{ "esmx", "Alcance en los menús" },
+			{ "ptbr", "Alcance exibido nos menus" },
+			{ "pl", "Zasięg widoczny w menu" },
+			{ "ru", "Дальность в меню" },
+			{ "ja", "メニューの射程表示" },
+			{ "zhhant", "選單中顯示的射程" },
+			{ "zhhans", "菜单中显示的射程" },
+		};
+
+		// The note of each stack a container's or a trader's sort takes, which
+		// its sorts read. Built from the game's own words, $SORT and its word
+		// for the inventory.
+		constexpr Line PART_SORT[]{
+			{ "en", "Inventory sorting" },
+			{ "fr", "Tri de l'inventaire" },
+			{ "de", "Sortieren im Inventar" },
+			{ "it", "Ordinamento dell'inventario" },
+			{ "es", "Orden del inventario" },
+			{ "esmx", "Orden del inventario" },
+			{ "ptbr", "Ordenação do inventário" },
+			{ "pl", "Sortowanie ekwipunku" },
+			{ "ru", "Сортировка предметов" },
+			{ "ja", "所持品のソート" },
+			{ "zhhant", "道具排序" },
+			{ "zhhans", "道具排序" },
 		};
 
 		// The bars by the ammo counter and on the power armor dash.
@@ -202,6 +249,9 @@ namespace Text
 		constexpr PartRow PARTS[]{
 			{ Part::kCardCnd, PART_CARD_CND },
 			{ Part::kCardRate, PART_CARD_RATE },
+			{ Part::kCardAccuracy, PART_CARD_ACCURACY },
+			{ Part::kCardRange, PART_CARD_RANGE },
+			{ Part::kSort, PART_SORT },
 			{ Part::kHudBar, PART_HUD_BAR },
 			{ Part::kQuick, PART_QUICK },
 			{ Part::kBench, PART_BENCH },
@@ -214,19 +264,7 @@ namespace Text
 			{ Part::kTips, PART_TIPS },
 		};
 
-		// 1 row a part, in the enum's order from kCardCnd to kTips, so a
-		// part's name is found by its place.
-		consteval bool InOrder()
-		{
-			const auto first = static_cast<std::size_t>(Part::kCardCnd);
-			for (std::size_t i = 0; i < std::size(PARTS); i++) {
-				if (static_cast<std::size_t>(PARTS[i].part) != first + i) {
-					return false;
-				}
-			}
-			return std::size(PARTS) == static_cast<std::size_t>(Part::kTips) - first + 1;
-		}
-		static_assert(InOrder());
+		static_assert(PartsInOrder(PARTS, Part::kCardCnd, Part::kTips));
 	}
 
 	std::span<const PartRow> UiParts()

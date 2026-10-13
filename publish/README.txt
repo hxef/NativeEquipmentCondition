@@ -19,9 +19,9 @@ actually does.
 
 DOES WHAT, EXACTLY?
 Your weapons and armor wear down as you use them, the way they did in
-Fallout 3 and New Vegas. Worn weapons do less damage, worn armor protects
-less, and both sell for less. Keep them in shape at a workbench with
-components, or pay a trader in caps.
+Fallout 3 and New Vegas. Worn weapons and armor lose effectiveness and sell
+for less. Keep them in shape at a workbench with components, or pay a trader
+in caps.
 
 Worn gear can't be modded until it is repaired to full, so swapping in cheap
 mods can't cut the repair bill.
@@ -49,8 +49,8 @@ WEAR AND TEAR
 * A weapon that breaks is unequipped automatically, and broken gear can't be
   equipped again until it is repaired.
 * Your guns can jam once they drop below 50% condition.
-* Worn automatic weapons fire slower, down to 75% of their rate at 0
-  condition.
+* Worn guns spread their shots wider and lose damage sooner at range, and
+  worn automatic weapons fire slower, each down to 75% at 0 condition.
 * A worn weapon fills the VATS critical meter slower, down to 50% of its rate
   at 0 condition, like in Fallout 3, where worn weapons landed fewer critical
   hits.
@@ -122,7 +122,8 @@ REPAIR AT A TRADER
   on its shelves comes in much worse shape, since it doesn't repair armor.
 
 SEE IT AT A GLANCE
-* CND on the item cards, with the worn damage, resistances and fire rate.
+* CND on the item cards, with the worn damage, resistances, fire rate,
+  accuracy and range.
 * CND bars on the HUD ammo counter, the power armor dash and the Pip-Boy
   apparel figure, and condition meters on the quick container rows.
 * Broken items fade out in the Pip-Boy lists.
@@ -142,9 +143,8 @@ LITTLE EXTRAS
 
 MAKE IT YOURS
 * With MCM, NEC's page changes any setting on the spot. Switch off jamming,
-  slower fire, worn loot, trader repairs, the HUD condition bars and more, or
-  tune wear speed, damage and protection at 0 condition, prices and repair
-  costs.
+  worn loot, trader repairs, the HUD condition bars and more, or tune wear
+  speed, how much gear keeps at 0 condition, prices and repair costs.
 * Without MCM, NEC.ini in Data\F4SE\Plugins explains every setting. Copy a
   line into NEC_custom.ini beside it, under the same section heading, change
   the value and restart the game.

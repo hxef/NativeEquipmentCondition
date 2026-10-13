@@ -35,6 +35,7 @@ namespace CallPatch
 			bool               off = false;
 			bool               own = false;     // a place of its own is off
 			bool               folded = false;  // off only as the switch it rides on is left to another mod
+			bool               waits = false;   // off only while a held set waits, so it can come back
 			Part               cause = Part::kNone;
 			Piece              root = Piece::kNone;
 			std::vector<Owner> owners;
@@ -51,12 +52,9 @@ namespace CallPatch
 		// names.
 		const Feature* RowOf(Part a_part)
 		{
-			for (const auto& row : Features()) {
-				if (row.part == a_part) {
-					return &row;
-				}
-			}
-			return nullptr;
+			const auto rows = Features();
+			const auto it = std::ranges::find(rows, a_part, &Feature::part);
+			return it != rows.end() ? &*it : nullptr;
 		}
 
 		// The row a_part's places were noted for.
@@ -128,6 +126,7 @@ namespace CallPatch
 						continue;
 					}
 					auto& state = At(states, piece);
+					state.waits = (!state.own || state.waits) && !IsOff(place);
 					state.off = state.own = true;
 					state.cause = RowOfPiece(piece).part;
 					state.root = piece;
@@ -138,14 +137,15 @@ namespace CallPatch
 			for (const auto& row : PieceRows()) {
 				auto& state = At(states, row.piece);
 				for (const auto need : row.needs) {
-					if (state.off || need == Piece::kNone || !At(states, need).off) {
-						continue;
+					// A need off for good outlasts an off that only waits.
+					const auto* from = need != Piece::kNone ? &At(states, need) : nullptr;
+					if (from && from->off && (!state.off || (state.waits && !from->waits))) {
+						state.off = true;
+						state.cause = from->cause;
+						state.root = from->root;
+						state.owners = from->owners;
+						state.waits = from->waits;
 					}
-					const auto& from = At(states, need);
-					state.off = true;
-					state.cause = from.cause;
-					state.root = from.root;
-					state.owners = from.owners;
 				}
 				// A switch's own part is off with its switch, named after the
 				// part it went off with.
@@ -174,9 +174,9 @@ namespace CallPatch
 			return states;
 		}
 
-		// Whether the player has on every switch a piece works through: the
-		// switch of its part's row, and those of the pieces it needs, all the
-		// way down. Fire rate shown in menus works through bFireRate that way.
+		// Whether every switch a piece works through is on: the switch of its
+		// part's row and those of the pieces it needs, all the way down. Trader
+		// stock condition works through bVendorRepair and bSpawnCondition.
 		bool SwitchedOn(Piece a_piece)
 		{
 			const auto& row = RowOfPiece(a_piece);
@@ -190,9 +190,9 @@ namespace CallPatch
 			return std::ranges::all_of(row.needs, [](Piece a_need) { return a_need == Piece::kNone || SwitchedOn(a_need); });
 		}
 
-		// a_part's shown pieces that are off, grouped by cause and owners, and
-		// the ones still working, which leaves out a piece whose switch the
-		// player has off. A folded piece is neither.
+		// a_part's shown pieces that are off, grouped by cause, owners and
+		// whether they wait, and the ones still working, which leaves out a
+		// piece whose switch the player has off. A folded piece is neither.
 		std::optional<Loss> LossFrom(Part a_part, const States& a_states)
 		{
 			Loss loss;
@@ -212,9 +212,9 @@ namespace CallPatch
 					continue;
 				}
 				auto it = std::ranges::find_if(loss.causes,
-					[&](const Cause& a_cause) { return a_cause.part == state.cause && a_cause.owners == state.owners; });
+					[&](const Cause& a_cause) { return a_cause.part == state.cause && a_cause.owners == state.owners && a_cause.waits == state.waits; });
 				if (it == loss.causes.end()) {
-					loss.causes.push_back(Cause{ state.cause, {}, {}, state.owners });
+					loss.causes.push_back(Cause{ state.cause, {}, {}, state.owners, state.waits });
 					it = loss.causes.end() - 1;
 				}
 				it->pieces.push_back(row.piece);
@@ -226,7 +226,7 @@ namespace CallPatch
 		}
 
 		// The first sentence of a switch's line, the same in Say and OffLine:
-		// "Slower fire when worn: off, left to A.dll.", or for a switch that
+		// "Loot preview meters: off, left to A.dll.", or for a switch that
 		// went off with another part "Jamming: off, since Gun wear from firing
 		// is left to A.dll."
 		std::string SwitchLine(Part a_part, Part a_cause, std::span<const Owner> a_owners)

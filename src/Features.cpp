@@ -6,12 +6,14 @@
 #include "Condition/Provenance/Provenance.h"
 #include "Condition/WeaponWear/WeaponWear.h"
 #include "Core/Settings.h"
+#include "Gameplay/Aim/Aim.h"
 #include "Gameplay/ArmorEvents.h"
 #include "Gameplay/ArmorRating.h"
 #include "Gameplay/BrokenEquip.h"
 #include "Gameplay/CritMeter.h"
 #include "Gameplay/FireRate/FireRate.h"
 #include "Gameplay/HealthDamage/HealthDamage.h"
+#include "Gameplay/InHand.h"
 #include "Gameplay/ItemValue.h"
 #include "Gameplay/Jam.h"
 #include "Gameplay/SpawnCondition/SpawnCondition.h"
@@ -82,11 +84,19 @@ namespace
 		{ .name = "BrokenEquip", .part = Part::kBroken, .Install = BrokenEquip::Install },
 		// A worn item is worth less, everywhere the game prints a price.
 		{ .name = "ItemValue", .part = Part::kPrices, .Install = ItemValue::Install },
+		// The condition of the weapon in the player's hands, measured once a
+		// frame for the hooks below that run every frame.
+		{ .name = "InHand", .Unload = InHand::Unload },
 		// A worn automatic weapon fires slower, in anybody's hands.
-		{ .name = "FireRate", .on = &Settings::bFireRate, .part = Part::kFireRate, .Install = FireRate::Install, .Unload = FireRate::Unload },
+		{ .name = "FireRate", .part = Part::kFireRate, .Install = FireRate::Install, .Unload = FireRate::Unload },
 		// A worn weapon fills the VATS critical meter slower, and an NPC's worn
 		// weapon lands fewer critical hits.
-		{ .name = "CritMeter", .on = &Settings::bCritMeter, .part = Part::kCritMeter, .Install = CritMeter::Install },
+		{ .name = "CritMeter", .part = Part::kCritMeter, .Install = CritMeter::Install },
+		// A worn gun spreads its shots wider, in anybody's hands, and the
+		// crosshair and VATS follow.
+		{ .name = "Accuracy", .part = Part::kAccuracy, .Install = Aim::InstallAccuracy, .Load = Aim::LoadAccuracy },
+		// A worn gun loses damage sooner at range, in anybody's hands.
+		{ .name = "Range", .part = Part::kRange, .Install = Aim::InstallRange },
 		// A worn gun can jam. Every shot's roll comes through WeaponEvents'
 		// fire call, so it rides on Gun wear from firing.
 		{ .name = "Jam", .on = &Settings::bJam, .part = Part::kJam, .needs = Part::kGunWear, .Install = Jam::Install, .Load = Jam::Load, .Unload = Jam::Unload },
@@ -96,9 +106,9 @@ namespace
 
 		// UI: what is drawn into the game's own menus.
 
-		// A CND row on every item card, and a worn gun's fire rate wherever a
-		// menu shows or weighs it. Asks FireRate whether a worn gun slows, so
-		// it comes after.
+		// A CND row on every item card, and a worn gun's fire rate, accuracy
+		// and range wherever a menu shows or weighs them. Asks FireRate,
+		// Accuracy and Range whether their patches are in, so it comes after.
 		{ .name = "ItemCard", .part = Part::kCardCnd, .Install = ItemCard::Install, .OnMovieLoaded = ItemCard::OnMovieLoaded },
 		// Faded names for worn out items in the Pip-Boy's lists.
 		{ .name = "Pipboy", .OnMovieLoaded = Pipboy::OnMovieLoaded },

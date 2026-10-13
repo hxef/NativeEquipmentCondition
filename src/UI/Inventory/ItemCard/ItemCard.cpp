@@ -22,5 +22,6 @@ namespace ItemCard
 	{
 		g_patched = PatchCards();
 		PatchRates();
+		PatchAims();
 	}
 }

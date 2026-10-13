@@ -13,7 +13,9 @@
 // Nobody else's weapon wears. An NPC's shots and blows are logged to the NPC
 // trace log, see TraceLog.h, and read for the pace an automatic weapon keeps,
 // see FireRate.h. Each of the player's shots rolls for a jam before it fires,
-// see Jam.h, which watches the reload itself.
+// see Jam.h, which watches the reload itself. Every shot of a gun that wears
+// carries the gun's condition into Fire for its spread, an NPC's only while
+// its inventory is free, see Aim.h.
 //
 // Hits.cpp is the hit sink and what a blow was, and Hits.h what it shares with
 // WeaponEvents.cpp.

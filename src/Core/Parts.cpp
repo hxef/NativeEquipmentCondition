@@ -22,11 +22,6 @@ namespace
 	// call.
 	constexpr Piece JAM[]{ kJamShot };
 	constexpr Piece JAM_SIDE[]{ kJamReload };
-	constexpr Piece FIRE_RATE[]{ kFireRate };
-	constexpr Piece FIRE_RATE_SIDE[]{ kFireRateNpcGuns, kFireSound, kRateCardsContainers, kRateCardsWorkbench, kRateCardsCooking,
-		kRateCardsPipboy, kRateBetter, kRateSort };
-	constexpr Piece CRIT_METER[]{ kCritMeter };
-	constexpr Piece CRIT_METER_SIDE[]{ kNpcCrits };
 	// The 3 exceptions are cases Worn loot handles on their own, so losing one
 	// takes nothing from the switch.
 	constexpr Piece WORN_LOOT[]{ kWornLoot };
@@ -54,6 +49,18 @@ namespace
 		kCardArmorPipboy, kCardArmorDoll };
 	// Read only inside Worn item prices' own hook.
 	constexpr Piece PRICES[]{ kPrices };
+	constexpr Piece FIRE_RATE[]{ kFireRate };
+	constexpr Piece FIRE_RATE_SIDE[]{ kFireRateNpcGuns, kFireSound, kRateCardsContainers, kRateCardsWorkbench, kRateCardsCooking,
+		kRateCardsPipboy, kRateBetter, kRateSort };
+	// Your meter and an NPC's roll each work alone.
+	constexpr Piece CRIT_METER[]{ kCritMeter, kNpcCrits };
+	// Every shot's spread, yours and every NPC's, and the VATS hit chance
+	// each work alone. The crosshair and the menus show the spread.
+	constexpr Piece ACCURACY[]{ kAccuracy, kVatsAccuracy };
+	constexpr Piece ACCURACY_SIDE[]{ kCrosshair, kAccuracyCardsContainers, kAccuracyCardsWorkbench, kAccuracyCardsCooking,
+		kAccuracyCardsPipboy, kAccuracySort };
+	constexpr Piece RANGE[]{ kRange };
+	constexpr Piece RANGE_SIDE[]{ kRangeCardsContainers, kRangeCardsWorkbench, kRangeCardsCooking, kRangeCardsPipboy };
 	constexpr Piece BENCH[]{ kBench };
 	// The perk pages tell of a discount on a bench repair, and the bench's
 	// lists show what it repairs, so the line of each part shows in this
@@ -62,8 +69,6 @@ namespace
 
 	constexpr SettingLink SETTINGS[]{
 		{ &Settings::bJam, nullptr, JAM, JAM_SIDE },
-		{ &Settings::bFireRate, nullptr, FIRE_RATE, FIRE_RATE_SIDE },
-		{ &Settings::bCritMeter, nullptr, CRIT_METER, CRIT_METER_SIDE },
 		{ &Settings::bSpawnCondition, nullptr, WORN_LOOT, {}, WORN_LOOT_EXCEPTIONS },
 		{ &Settings::bVendorRepair, nullptr, TRADER_REPAIRS, TRADER_REPAIRS_SIDE },
 		{ &Settings::bLoadingTips, nullptr, TIPS },
@@ -75,8 +80,10 @@ namespace
 		{ &Settings::fDamageFloor, nullptr, DAMAGE },
 		{ &Settings::fArmorFloor, nullptr, ARMOR },
 		{ &Settings::fValueExponent, nullptr, PRICES },
-		{ &Settings::fFireRateFloor, &Settings::bFireRate, FIRE_RATE, FIRE_RATE_SIDE },
-		{ &Settings::fCritMeterFloor, &Settings::bCritMeter, CRIT_METER, CRIT_METER_SIDE },
+		{ &Settings::fFireRateFloor, nullptr, FIRE_RATE, FIRE_RATE_SIDE },
+		{ &Settings::fCritMeterFloor, nullptr, CRIT_METER },
+		{ &Settings::fAccuracyFloor, nullptr, ACCURACY, ACCURACY_SIDE },
+		{ &Settings::fRangeFloor, nullptr, RANGE, RANGE_SIDE },
 		{ &Settings::fBenchCostMult, nullptr, BENCH, {}, BENCH_EXCEPTIONS },
 		{ &Settings::iFreeMendAbove, &Settings::fBenchCostMult, BENCH },
 		{ &Settings::fTraderPriceMult, &Settings::bVendorRepair, TRADER_REPAIRS, TRADER_PRICE_SIDE },

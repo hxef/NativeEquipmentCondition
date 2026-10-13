@@ -32,8 +32,9 @@ namespace Equipped
 	// needs one.
 	inline constexpr std::uint32_t ANY_STACK = static_cast<std::uint32_t>(-1);
 
-	// The weapon the actor holds, or nothing when none takes part. Needed only
-	// for the one bash path that names no weapon, see WeaponEvents/Hits.cpp.
+	// The weapon the actor holds, or nothing when none takes part. Used by the
+	// one bash path that names no weapon (WeaponEvents/Hits.cpp), the console
+	// repair and TryHeldWeapon.
 	// WearsOut keeps grenades and mines out, so a rifle wins over the grenades
 	// carried beside it.
 	RE::TESObjectWEAP* Weapon(RE::Actor* a_actor);
@@ -52,6 +53,18 @@ namespace Equipped
 	// F4SE's queue or an NPC's shot or hit. Nothing while the inventory is
 	// busy.
 	std::optional<float> TryWeaponHealth(RE::Actor* a_actor, const RE::TESForm* a_weapon = nullptr);
+
+	// The weapon an actor holds that takes part and its health, as Weapon and
+	// WeaponHealth read them: no weapon and INVALID_HEALTH for none.
+	struct HeldWeapon
+	{
+		RE::TESObjectWEAP* weapon{ nullptr };
+		float              health{ Condition::INVALID_HEALTH };
+	};
+
+	// HeldWeapon for a caller outside the engine's own code path, see
+	// TryWeaponHealth. Nothing while the inventory is busy.
+	std::optional<HeldWeapon> TryHeldWeapon(RE::Actor* a_actor);
 
 	// One piece of armor an actor has on that takes part.
 	struct ArmorPiece

@@ -33,6 +33,13 @@ namespace CritMeter
 			return Condition::Share(a_health, Settings::fCritMeterFloor.GetValue());
 		}
 
+		// Whether wear changes criticals at all. At 1 a worn weapon keeps the
+		// game's own.
+		bool Changes()
+		{
+			return Settings::fCritMeterFloor.GetValue() != 1.0F;
+		}
+
 		CallPatch::Link<float(const RE::ActorValueOwner*, const RE::BGSObjectInstanceT<RE::TESObjectWEAP>&)> g_chargeLink;
 
 		float CritChargeHk(const RE::ActorValueOwner* a_avOwner, const RE::BGSObjectInstanceT<RE::TESObjectWEAP>& a_weapon)
@@ -42,7 +49,7 @@ namespace CritMeter
 			// Nothing to scale in an empty charge. Unarmed names the race's
 			// bare hands weapon, and the condition lookup below leaves those
 			// alone.
-			if (base <= 0.0F || !a_weapon.object || !Settings::bCritMeter.GetValue() || !g_chargeLink.Live()) {
+			if (base <= 0.0F || !a_weapon.object || !g_chargeLink.Live() || !Changes()) {
 				return base;
 			}
 
@@ -91,10 +98,10 @@ namespace CritMeter
 			const auto* object = a_weapon ? a_weapon->object : nullptr;
 			const auto* weapon = object && object->IsWeapon() ? static_cast<const RE::TESObjectWEAP*>(object) : nullptr;
 			const bool  npc = a_attacker && a_attacker != RE::PlayerCharacter::GetSingleton();
-			// The set is asked before the switch, so a pair that waits still
-			// sees this hook run while bCritMeter is off.
+			// The set is asked first, so a pair that waits still sees this
+			// hook run at a floor of 1.
 			const bool runs = g_rolled.Runs(g_chanceLink);
-			t_blow = runs && Settings::bCritMeter.GetValue() && npc && weapon && Condition::WearsOut(*weapon) ? Blow{ a_attacker, weapon, a_chance } : Blow{};
+			t_blow = runs && Changes() && npc && weapon && Condition::WearsOut(*weapon) ? Blow{ a_attacker, weapon, a_chance } : Blow{};
 		}
 
 		// Stands in for BSRandom::Float0To1 where the roll is made. The blow is
@@ -131,25 +138,22 @@ namespace CritMeter
 	{
 		const auto floor = Settings::fCritMeterFloor.GetValue();
 
-		// Both are noted before either is judged, so each mod that has one is
-		// named. A held pair is never written while the meter is another
-		// mod's, so its hooks give the game's own result.
+		// The meter and the NPC pair each go alone, so another mod on one
+		// leaves the other working.
 		const auto meter = CallPatch::PatchCall(CHARGE_SITE, RE::ID::CombatFormulas::CalcVATSCriticalCharge.address(),
 			reinterpret_cast<std::uintptr_t>(&CritChargeHk), g_chargeLink);
 
-		// The roll reads what the chance noted, so the 2 go in together. A
-		// smaller part: without them an NPC's worn weapon lands criticals as
-		// often as a new one, and the meter still fills slower.
+		// The roll reads what the chance noted, so the 2 go in together.
 		g_rolled = CallPatch::PatchTogether({
 			{ CHANCE_SITE, RE::ID::BGSEntryPoint::HandleEntryPoint.address(), reinterpret_cast<std::uintptr_t>(&ChanceHk), &g_chanceLink },
 			{ ROLL_SITE, RE::ID::BSRandom::Float0To1.address(), reinterpret_cast<std::uintptr_t>(&RollHk), &g_rollLink },
 		}, Part::kNpcCrits);
 
-		if (!meter) {
+		if (meter) {
+			REX::INFO("A worn weapon fills the VATS critical meter slower, down to {:.2f} of the rate at nothing.", floor);
+		} else {
 			REX::WARN("A worn weapon will keep filling the VATS critical meter as fast as a new one.");
-			return;
 		}
-		REX::INFO("A worn weapon fills the VATS critical meter slower, down to {:.2f} of the rate at nothing.", floor);
 		if (!g_rolled) {
 			REX::WARN("An NPC's worn weapon will keep landing critical hits as often as a new one.");
 		} else {

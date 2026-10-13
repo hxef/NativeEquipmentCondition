@@ -26,8 +26,9 @@
 // option of the MCM page is a row in MenuSwitches.cpp, MenuNumbers.cpp or
 // MenuHudLog.cpp, which MenuLine finds, with no function of its own. A part's
 // name is a table in PartsPlay.cpp or PartsUi.cpp, a piece's in PiecesPlay.cpp,
-// PiecesArmor.cpp or PiecesUi.cpp. A grey line of the MCM page is a table in
-// MenuNotes.cpp, or in MenuPieces.cpp where it names pieces.
+// PiecesArmor.cpp or PiecesUi.cpp, and its phrase in Phrases.cpp. A grey line
+// of the MCM page is a table in MenuNotes.cpp, or in MenuPieces.cpp where it
+// names pieces.
 namespace Text
 {
 	// What a trader deals in, named in what a trader says. A trader repairs

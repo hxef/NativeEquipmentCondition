@@ -1,8 +1,10 @@
 #pragma once
 
+#include "UI/Flash.h"
 #include "UI/Roles/Roles.h"
 
 #include <optional>
+#include <string>
 #include <vector>
 
 // The HUD parts NEC's readouts and meters follow.
@@ -25,12 +27,60 @@ namespace Roles::Hud
 		bool operator==(const Line&) const = default;
 	};
 
-	// The divider between the counter's 2 numbers, measured now. a_ownVisible
-	// is the movie's own visible while NEC's bar covers the divider, so NEC's
-	// hide is not taken for the movie's. Nothing while the movie hides it, it
-	// is off screen or not laid out, or its own rotation is not 0, since a
-	// turned divider measures about its thickness across.
-	[[nodiscard]] std::optional<Line> Divider(Scaleform::GFx::Movie& a_movie, Value& a_counter, std::optional<bool> a_ownVisible);
+	// The divider between the counter's 2 numbers, in the counter's units.
+	// place is where its origin sits and how wide its bounds are there, and
+	// box its bounds. length and thick are its own size, the same however it
+	// is turned, with thick rounded to a twip, the 20th of a pixel Flash
+	// keeps sizes in.
+	struct DividerShape
+	{
+		Line   place;
+		Box    box;
+		double length = 0.0;
+		double thick = 0.0;
+		double turn = 0.0;  // its rotation in degrees, 0 upright
+	};
+
+	// The divider, measured now. a_ownVisible is the movie's own visible
+	// while NEC's bar covers the divider, so NEC's hide is not taken for the
+	// movie's. Nothing while the movie hides it or it is off screen or not
+	// laid out.
+	[[nodiscard]] std::optional<DividerShape> Divider(Scaleform::GFx::Movie& a_movie, Value& a_counter, std::optional<bool> a_ownVisible);
+
+	// A HUD part by its instance name and its box in the counter's units.
+	// shown is false for a number faded or switched off now.
+	struct Part
+	{
+		std::string name;
+		Box         box;
+		bool        shown = true;
+	};
+
+	// The counter's numbers, its text fields, shown or not, so a number that
+	// drops out for a moment still tells where the divider runs. Each box
+	// runs the width of its field inside the margins, so it stays put as the
+	// count changes, and from the top of the field's first line down to the
+	// lowest its baseline can sit, where digits end. A turned field, or one
+	// whose line cannot be measured, counts by its whole bounds.
+	[[nodiscard]] std::vector<Part> Numbers(Value& a_counter);
+
+	// Every other part in the counter's parent but a_ours, by what it draws
+	// now: a text field as the numbers are, every line of it, a clip by its
+	// pieces, anything else by its bounds. A piece switched off or faded to
+	// 0 draws nothing, and with a_frame, the screen in the counter's units,
+	// neither does one off screen. A part that draws nothing is left out, so
+	// a hidden part or a copy a HUD mod keeps far off screen moves nothing.
+	[[nodiscard]] std::vector<Part> Beside(Value& a_counter, const Value& a_ours, const std::optional<Box>& a_frame);
+
+	// The counter's other children, neither a number nor its divider, such
+	// as a box a HUD mod draws around it, measured as Beside does.
+	[[nodiscard]] std::vector<Part> Inside(Value& a_counter, const std::optional<Box>& a_frame);
+
+	// The colour the divider is drawn in, as the counter's parent sees it:
+	// the counter's colour over the divider's own, or the counter's alone
+	// with no divider. A HUD mod may colour either. Nothing when the counter
+	// has none to read.
+	[[nodiscard]] std::optional<Flash::Tint> DividerTint(Value& a_counter);
 
 	// Hides the divider while NEC's bar covers it, asked every frame and
 	// writing only on a change, so a movie that shows it again is hidden the

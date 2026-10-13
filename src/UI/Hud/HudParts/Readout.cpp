@@ -72,10 +72,39 @@ namespace HudParts
 			SetTranslatedText(label, CND_TEXT, WRITTEN_SIZE);
 			label.SetMember("scaleX"sv, Value(a_label.wide * scale));
 			label.SetMember("scaleY"sv, Value(scale));
-			const auto margin = FIELD_MARGIN * a_label.wide * scale;
+			const auto margin = Flash::FIELD_MARGIN * a_label.wide * scale;
 			label.SetMember("x"sv, Value(a_label.gap - margin));
 			label.SetMember("y"sv, Value(a_label.drop - (Flash::Number(label, "height"sv) / 2.0)));
 			return a_label.gap + Flash::Number(label, "width"sv) - (margin * 2.0);
+		}
+
+		LabelPlace LabelExtent(Value& a_readout)
+		{
+			auto label = Flash::Child(a_readout, LABEL_NAME);
+			if (!label.IsDisplayObject()) {
+				return LabelPlace{};
+			}
+
+			// The field is made from code, so its box starts at its own 0,0.
+			const auto       left = Flash::Number(label, "x"sv);
+			const auto       top = Flash::Number(label, "y"sv);
+			const auto       across = Flash::Number(label, "scaleX"sv);
+			const auto       down = Flash::Number(label, "scaleY"sv);
+			const Flash::Box field{ left, top, left + Flash::Number(label, "width"sv), top + Flash::Number(label, "height"sv) };
+			if (const auto line = Flash::FirstLine(label)) {
+				return LabelPlace{ field, { left + (line->left * across), top + (line->top * down), left + (line->right * across), top + (line->baseline * down) }, true };
+			}
+			const auto margin = Flash::FIELD_MARGIN;
+			return LabelPlace{ field, { field.left + (margin * across), field.top + (margin * down), field.right - (margin * across), field.bottom - (margin * down) } };
+		}
+
+		void MoveLabel(Value& a_readout, double a_x, double a_y)
+		{
+			auto label = Flash::Child(a_readout, LABEL_NAME);
+			if (label.IsDisplayObject()) {
+				label.SetMember("x"sv, Value(a_x));
+				label.SetMember("y"sv, Value(a_y));
+			}
 		}
 
 		void SetTrack(Value& a_readout, double a_width, double a_deep)

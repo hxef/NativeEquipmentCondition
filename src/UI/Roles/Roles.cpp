@@ -5,8 +5,10 @@
 #include "UI/MenuMovies.h"
 
 #include <algorithm>
+#include <array>
 #include <cctype>
 #include <cmath>
+#include <cstdint>
 #include <mutex>
 #include <set>
 #include <string>
@@ -100,6 +102,68 @@ namespace Roles
 		// A clip only touching its edge counts as off screen.
 		const auto shown = a_movie.GetVisibleFrameRect();
 		return left < shown.x2 && right > shown.x1 && top < shown.y2 && bottom > shown.y1;
+	}
+
+	// -------------------------------------------------------------------
+	// A part's box
+	// -------------------------------------------------------------------
+
+	std::optional<Box> BoundsIn(Value& a_clip, Value& a_space)
+	{
+		Value bounds;
+		if (!a_clip.IsDisplayObject() || !a_space.IsDisplayObject() ||
+			!a_clip.Invoke("getBounds", &bounds, &a_space, 1) || !bounds.IsObject()) {
+			return std::nullopt;
+		}
+		const auto left = Flash::Number(bounds, "x"sv);
+		const auto top = Flash::Number(bounds, "y"sv);
+		const auto width = Flash::Number(bounds, "width"sv);
+		const auto height = Flash::Number(bounds, "height"sv);
+		if (!std::isfinite(left) || !std::isfinite(top) || !(width > 0.0) || !(height > 0.0) ||
+			!std::isfinite(width) || !std::isfinite(height)) {
+			return std::nullopt;
+		}
+		return Box{ left, top, left + width, top + height };
+	}
+
+	std::optional<Box> FrameIn(Scaleform::GFx::Movie& a_movie, Value& a_clip)
+	{
+		// Each corner of the frame goes through the clip's globalToLocal, the
+		// stage units InFrame compares in to the clip's own.
+		struct Point
+		{
+			double x = 0.0;
+			double y = 0.0;
+		};
+		const auto local = [&](float a_x, float a_y) -> std::optional<Point> {
+			const std::array args{ Value(static_cast<double>(a_x)), Value(static_cast<double>(a_y)) };
+			Value             global;
+			Value             mapped;
+			a_movie.CreateObject(&global, "flash.geom.Point", args.data(), static_cast<std::uint32_t>(args.size()));
+			if (!global.IsObject() || !a_clip.IsDisplayObject() || !a_clip.Invoke("globalToLocal", &mapped, &global, 1) ||
+				!mapped.IsObject()) {
+				return std::nullopt;
+			}
+			const Point point{ Flash::Number(mapped, "x"sv), Flash::Number(mapped, "y"sv) };
+			return std::isfinite(point.x) && std::isfinite(point.y) ? std::optional{ point } : std::nullopt;
+		};
+
+		const auto shown = a_movie.GetVisibleFrameRect();
+		const auto first = local(shown.x1, shown.y1);
+		const auto last = local(shown.x2, shown.y2);
+		const auto side = local(shown.x1, shown.y2);
+		if (!first || !last || !side) {
+			return std::nullopt;
+		}
+
+		// Unturned, the frame's lower left corner keeps the upper left's x
+		// and the lower right's y.
+		constexpr double LEEWAY = 0.01;
+		if (std::abs(side->x - first->x) > LEEWAY || std::abs(side->y - last->y) > LEEWAY) {
+			return std::nullopt;
+		}
+		const Box frame{ std::min(first->x, last->x), std::min(first->y, last->y), std::max(first->x, last->x), std::max(first->y, last->y) };
+		return frame.right > frame.left && frame.bottom > frame.top ? std::optional{ frame } : std::nullopt;
 	}
 
 	// -------------------------------------------------------------------

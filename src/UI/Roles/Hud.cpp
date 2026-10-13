@@ -4,7 +4,7 @@
 
 #include <algorithm>
 #include <cmath>
-#include <cstdint>
+#include <utility>
 
 namespace Roles::Hud
 {
@@ -45,6 +45,81 @@ namespace Roles::Hud
 			}
 			return visible.GetBoolean();
 		}
+
+		[[nodiscard]] bool IsText(Value& a_clip)
+		{
+			Value text;
+			return a_clip.GetMember("text"sv, &text) && text.IsString();
+		}
+
+		// -------------------------------------------------------------------
+		// What a part draws
+		// -------------------------------------------------------------------
+
+		// The most a line can leave free in its field and still count as
+		// filling it.
+		constexpr double FILL_LEEWAY = 1.0;
+
+		// How many clips deep a part is walked. Deeper clips count by their
+		// bounds.
+		constexpr int WALK_DEPTH = 8;
+
+		// Where a text field's text can be, in a_space's units: across its
+		// width inside the margins, so the box stays put as the text changes,
+		// and from the top of its first line down to the lowest its baseline
+		// can sit. A line that leaves room in its field may sit anywhere down
+		// it, since a HUD mod may align it to the bottom. A field of 2 or more
+		// lines counts down to the end of its last. A turned field, or one
+		// whose line cannot be measured, counts by its whole bounds.
+		[[nodiscard]] std::optional<Box> TextBox(Value& a_field, Value& a_space, bool a_turned)
+		{
+			const auto box = BoundsIn(a_field, a_space);
+			const auto own = box && !a_turned ? BoundsIn(a_field, a_field) : std::nullopt;
+			const auto line = own ? Flash::FirstLine(a_field) : std::nullopt;
+			if (!line) {
+				return box;
+			}
+			const auto across = (box->right - box->left) / (own->right - own->left);
+			const auto down = (box->bottom - box->top) / (own->bottom - own->top);
+			const auto lines = Flash::Number(a_field, "numLines"sv) > 1.0;
+			const auto height = Flash::Number(a_field, "textHeight"sv);
+			const auto fills = (height + (2.0 * Flash::FIELD_MARGIN)) * down >= box->bottom - box->top - FILL_LEEWAY;
+			const auto inset = Flash::FIELD_MARGIN * across;
+			const auto lowest = fills ? box->top + ((lines ? Flash::FIELD_MARGIN + height : line->baseline) * down) :
+			                            box->bottom - ((Flash::FIELD_MARGIN + (lines ? 0.0 : line->descent)) * down);
+			const Box  text{ box->left + inset, box->top + (line->top * down), box->right - inset, lowest };
+			const auto fits = text.left <= text.right && text.top < text.bottom && text.bottom <= box->bottom;
+			return fits ? text : box;
+		}
+
+		// What a_clip draws, in a_counter's units: a text field by its text, a
+		// clip by its children, anything else by its bounds. A clip switched
+		// off or faded to 0 draws nothing, an empty field neither unless it
+		// draws a background or border, and with a_frame a piece off screen is
+		// left out. a_turned says a clip above it is turned against the
+		// counter. A container with a text member, such as a label component,
+		// counts as a clip.
+		[[nodiscard]] std::optional<Box> Drawn(Value& a_clip, Value& a_counter, const std::optional<Box>& a_frame, bool a_turned, int a_depth = WALK_DEPTH)
+		{
+			if (!(Flash::Opacity(a_clip) > 0.0)) {
+				return std::nullopt;
+			}
+			const auto turned = a_turned || Flash::Number(a_clip, "rotation"sv) != 0.0;
+			const auto text = IsText(a_clip) && !Flash::IsAnyNumber(Flash::Member(a_clip, "numChildren"sv));
+			if (!text && a_depth > 0 && Flash::Number(a_clip, "numChildren"sv) > 0.0) {
+				std::optional<Box> pieces;
+				for (auto& child : Flash::Children(a_clip)) {
+					if (const auto own = Drawn(child, a_counter, a_frame, turned, a_depth - 1)) {
+						pieces = pieces ? pieces->With(*own) : *own;
+					}
+				}
+				return pieces;
+			}
+			const auto empty = text && Flash::String(a_clip, "text"sv).empty();
+			const auto box = !text || (empty && (Flash::Bool(a_clip, "background"sv) || Flash::Bool(a_clip, "border"sv))) ? BoundsIn(a_clip, a_counter) :
+			                 (empty ? std::nullopt : TextBox(a_clip, a_counter, turned));
+			return box && (!a_frame || a_frame->Meets(*box)) ? box : std::nullopt;
+		}
 	}
 
 	// -------------------------------------------------------------------
@@ -68,7 +143,7 @@ namespace Roles::Hud
 	// The divider
 	// -------------------------------------------------------------------
 
-	std::optional<Line> Divider(Scaleform::GFx::Movie& a_movie, Value& a_counter, std::optional<bool> a_ownVisible)
+	std::optional<DividerShape> Divider(Scaleform::GFx::Movie& a_movie, Value& a_counter, std::optional<bool> a_ownVisible)
 	{
 		auto divider = DividerOf(a_counter);
 		if (!divider.IsDisplayObject()) {
@@ -79,19 +154,28 @@ namespace Roles::Hud
 		// movie's own.
 		const auto shown = VisibleOf(divider).value_or(true) || a_ownVisible.value_or(false);
 		const auto alpha = Flash::Number(divider, "alpha"sv);
-		const auto rotation = Flash::Number(divider, "rotation"sv);
-		if (!shown || !(alpha > 0.0) || rotation != 0.0 || !InFrame(a_movie, divider)) {
+		if (!shown || !(alpha > 0.0) || !InFrame(a_movie, divider)) {
 			return std::nullopt;
 		}
 
 		// x, y and width are in the counter's units, width the bounds the
-		// divider takes there.
-		const Line line{ Flash::Number(divider, "x"sv), Flash::Number(divider, "y"sv), Flash::Number(divider, "width"sv) };
-		if (!std::isfinite(line.x) || !std::isfinite(line.y) || !std::isfinite(line.width) || line.width <= 0.0) {
+		// divider takes there. Its bounds in its own units are its size
+		// before its scale and turn.
+		const Line place{ Flash::Number(divider, "x"sv), Flash::Number(divider, "y"sv), Flash::Number(divider, "width"sv) };
+		const auto box = BoundsIn(divider, a_counter);
+		const auto own = BoundsIn(divider, divider);
+		if (!std::isfinite(place.x) || !std::isfinite(place.y) || !std::isfinite(place.width) || place.width <= 0.0 || !box || !own) {
+			return std::nullopt;
+		}
+		constexpr double TWIPS_PER_PIXEL = 20.0;
+		const auto length = (own->right - own->left) * std::abs(Flash::Number(divider, "scaleX"sv));
+		const auto thick = std::round((own->bottom - own->top) * std::abs(Flash::Number(divider, "scaleY"sv)) * TWIPS_PER_PIXEL) / TWIPS_PER_PIXEL;
+		const auto turn = Flash::Number(divider, "rotation"sv);
+		if (!(length > 0.0) || !(thick > 0.0) || !std::isfinite(length) || !std::isfinite(thick) || !std::isfinite(turn)) {
 			return std::nullopt;
 		}
 		Found(a_movie, "ammo divider"sv, "at vanilla's place"sv);
-		return line;
+		return DividerShape{ place, *box, length, thick, turn };
 	}
 
 	void Cover(Value& a_counter, bool a_covered, std::optional<bool>& a_ownVisible)
@@ -123,6 +207,73 @@ namespace Roles::Hud
 	}
 
 	// -------------------------------------------------------------------
+	// Around the counter
+	// -------------------------------------------------------------------
+
+	std::vector<Part> Numbers(Value& a_counter)
+	{
+		std::vector<Part> numbers;
+		for (auto& child : Flash::Children(a_counter)) {
+			const auto box = IsText(child) ? TextBox(child, a_counter, Flash::Number(child, "rotation"sv) != 0.0) : std::nullopt;
+			if (box) {
+				numbers.push_back(Part{ Flash::String(child, "name"sv), *box, Flash::Opacity(child) > 0.0 });
+			}
+		}
+		return numbers;
+	}
+
+	std::vector<Part> Beside(Value& a_counter, const Value& a_ours, const std::optional<Box>& a_frame)
+	{
+		std::vector<Part> parts;
+		Value             parent;
+		if (!a_counter.IsDisplayObject() || !a_counter.GetMember("parent"sv, &parent) || !parent.IsDisplayObject()) {
+			return parts;
+		}
+
+		// The counter and NEC's own readout are left out by name, as
+		// TextStart tells clips apart. A part beside a turned counter is
+		// turned against it.
+		const auto counter = Flash::String(a_counter, "name"sv);
+		const auto ours = Flash::String(a_ours, "name"sv);
+		const auto turned = Flash::Number(a_counter, "rotation"sv) != 0.0;
+		for (auto& child : Flash::Children(parent)) {
+			auto name = Flash::String(child, "name"sv);
+			if (name == counter || name == ours) {
+				continue;
+			}
+			if (const auto drawn = Drawn(child, a_counter, a_frame, turned)) {
+				parts.push_back(Part{ std::move(name), *drawn });
+			}
+		}
+		return parts;
+	}
+
+	std::vector<Part> Inside(Value& a_counter, const std::optional<Box>& a_frame)
+	{
+		std::vector<Part> parts;
+		for (auto& child : Flash::Children(a_counter)) {
+			auto name = Flash::String(child, "name"sv);
+			if (name == DIVIDER_NAME || IsText(child)) {
+				continue;
+			}
+			if (const auto drawn = Drawn(child, a_counter, a_frame, false)) {
+				parts.push_back(Part{ std::move(name), *drawn });
+			}
+		}
+		return parts;
+	}
+
+	std::optional<Flash::Tint> DividerTint(Value& a_counter)
+	{
+		const auto counter = Flash::TintOf(a_counter);
+		if (!counter) {
+			return std::nullopt;
+		}
+		const auto divider = Flash::TintOf(DividerOf(a_counter));
+		return divider ? counter->Over(*divider) : *counter;
+	}
+
+	// -------------------------------------------------------------------
 	// A quick container row's text
 	// -------------------------------------------------------------------
 
@@ -134,7 +285,8 @@ namespace Roles::Hud
 
 		// Where a text field's first line starts and ends, in its parent's
 		// units. Nothing for a clip that is no text field, or that shows no
-		// text unless a_empty.
+		// text unless a_empty. It reads the line itself, since Flash::FirstLine
+		// drops a line with no height, which an empty name may have.
 		struct Span
 		{
 			double start = 0.0;
@@ -158,19 +310,6 @@ namespace Roles::Hud
 			return Span{ start, end };
 		}
 
-		// The children of a clip, from the bottom up.
-		[[nodiscard]] std::vector<Value> ChildrenOf(Value& a_clip)
-		{
-			std::vector<Value> children;
-			const auto         count = Flash::Number(a_clip, "numChildren"sv);
-			for (std::uint32_t i = 0; i < count; i++) {
-				if (auto child = Flash::ChildAt(a_clip, i); child.IsDisplayObject()) {
-					children.push_back(child);
-				}
-			}
-			return children;
-		}
-
 		[[nodiscard]] bool Shows(const Value& a_clip)
 		{
 			return a_clip.IsDisplayObject() && Flash::Opacity(a_clip) > 0.0;
@@ -183,7 +322,7 @@ namespace Roles::Hud
 		{
 			if (Flash::Number(a_clip, "numChildren"sv) > 0.0) {
 				std::optional<double> right;
-				for (auto& child : ChildrenOf(a_clip)) {
+				for (auto& child : Flash::Children(a_clip)) {
 					const auto edge = Shows(child) ? RightEdge(child, a_space) : std::nullopt;
 					if (edge) {
 						right = std::max(right.value_or(*edge), *edge);
@@ -204,7 +343,7 @@ namespace Roles::Hud
 	{
 		std::optional<double> end;
 		auto                  others = false;
-		for (auto& child : ChildrenOf(a_row)) {
+		for (auto& child : Flash::Children(a_row)) {
 			const auto span = SpanOf(child);
 			if (span && OnScreen(a_movie, child)) {
 				end = std::max(end.value_or(span->end), span->end);
@@ -243,7 +382,7 @@ namespace Roles::Hud
 		const auto name = Flash::String(a_name, "name"sv);
 		const auto ours = Flash::String(a_ours, "name"sv);
 		Start      start{ span->start, {} };
-		for (auto& child : ChildrenOf(a_row)) {
+		for (auto& child : Flash::Children(a_row)) {
 			const auto own = Flash::String(child, "name"sv);
 			if (!Shows(child) || own == name || own == ours) {
 				continue;

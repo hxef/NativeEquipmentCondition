@@ -277,7 +277,8 @@ namespace Jam
 		REX::INFO("Worn guns can jam. The message reads \"{:s}\".", g_message);
 	}
 
-	bool Roll(RE::PlayerCharacter& a_player, const RE::BGSObjectInstanceT<RE::TESObjectWEAP>& a_weapon, std::uint32_t a_equipIndex)
+	bool Roll(RE::PlayerCharacter& a_player, const RE::BGSObjectInstanceT<RE::TESObjectWEAP>& a_weapon, std::uint32_t a_equipIndex,
+		float a_health)
 	{
 		// Switched off, nothing rolls. The fire hook belongs to WeaponEvents
 		// and calls in here whatever the switch says.
@@ -309,17 +310,16 @@ namespace Jam
 			return false;
 		}
 
-		const auto health = Equipped::WeaponHealth(&a_player, &weapon);
-		if (health < 0.0F) {
+		if (a_health < 0.0F) {
 			TraceLog::Line("jam", "clear, it does not wear");
 			return false;
 		}
 
 		// A roll that cannot jam is still logged, or a gun in good condition
 		// would look like one the roll never reached.
-		const auto perMagazine = ChancePerMagazine(health);
+		const auto perMagazine = ChancePerMagazine(a_health);
 		if (perMagazine <= 0.0F) {
-			TraceLog::Line("jam", "clear, no chance at condition {:.3f}", health);
+			TraceLog::Line("jam", "clear, no chance at condition {:.3f}", a_health);
 			return false;
 		}
 		const auto capacity = static_cast<std::uint32_t>(stats.ammoCapacity);
@@ -329,7 +329,7 @@ namespace Jam
 		// Every roll goes to the trace log, so the chance can be watched
 		// climbing as a magazine empties.
 		TraceLog::Line("jam", "{:s} at {:.2f}% with {:d} of {:d} loaded, {:.2f} a magazine at condition {:.3f}",
-			jammed ? "JAMMED" : "clear", perShot * 100.0, loaded, capacity, perMagazine, health);
+			jammed ? "JAMMED" : "clear", perShot * 100.0, loaded, capacity, perMagazine, a_health);
 		if (jammed) {
 			JamGun(a_player, index, stats);
 		}

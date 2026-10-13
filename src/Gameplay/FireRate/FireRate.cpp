@@ -6,10 +6,10 @@
 #include "Core/Settings.h"
 #include "Core/TraceLog.h"
 #include "Gameplay/FireRate/Cuts.h"
+#include "Gameplay/InHand.h"
 #include "Gameplay/WeaponEvents/WeaponEvents.h"
 
 #include <algorithm>
-#include <atomic>
 #include <mutex>
 #include <optional>
 #include <shared_mutex>
@@ -19,10 +19,14 @@ namespace FireRate
 {
 	namespace
 	{
-		// The 3 calls the pace of an automatic weapon is read through. The
-		// weapon speed the animation graph is given every frame,
-		// weaponSpeedMult for the first equip slot and leftWeaponSpeedMult for
-		// the second.
+		// -------------------------------------------------------------------
+		// Where the game asks for a pace
+		// -------------------------------------------------------------------
+
+		// The 3 calls the rate of an automatic weapon is read through. The
+		// sound is a smaller part, see Install. The weapon speed the animation
+		// graph is given every frame, weaponSpeedMult for the first equip slot
+		// and leftWeaponSpeedMult for the second.
 		constexpr CallPatch::CallSite SPEED_SITE{ 2235244, 0x32, "fire speed" };
 
 		// The rate the player's attack handler builds its countdown from. Only
@@ -38,6 +42,10 @@ namespace FireRate
 		CallPatch::Link<float(const RE::Actor*, const RE::BGSObjectInstanceT<RE::TESObjectWEAP>&, std::uint32_t)> g_speedLink;
 		CallPatch::Link<float(const RE::TESObjectWEAP&, const RE::TESObjectWEAP::InstanceData*)>                  g_countdownLink;
 		CallPatch::Link<float(const RE::TESObjectWEAP&, const RE::TESObjectWEAP::InstanceData*)>                  g_soundLink;
+
+		// -------------------------------------------------------------------
+		// The share and NPCs
+		// -------------------------------------------------------------------
 
 		// The slowest a worn gun's animation plays. A gun at 0 would never get
 		// through its attack.
@@ -58,19 +66,18 @@ namespace FireRate
 			return Condition::Share(a_health, Floor());
 		}
 
+		// Whether fFireRateFloor slows a worn weapon.
+		bool Lowers()
+		{
+			return Floor() < 1.0F;
+		}
+
 		// A share and the weapon it was read for.
 		struct Reading
 		{
 			RE::TESFormID weapon{ 0 };
 			float         share{ 1.0F };
 		};
-
-		// The share for the gun in the player's hands. A Reading is 8 bytes, so
-		// one atomic holds it whole.
-		std::atomic<Reading> g_reading{ Reading{} };
-
-		// Set while a measurement waits in the task queue.
-		std::atomic<bool> g_queued{ false };
 
 		// The share of every NPC whose automatic weapon is worn, by form ID,
 		// and the weapon it was read for. No entry means full rate. The
@@ -79,66 +86,60 @@ namespace FireRate
 		std::shared_mutex                          g_npcLock;
 		std::unordered_map<RE::TESFormID, Reading> g_npcReadings;
 
-		// Measures the share for the player's equipped copy. The weapon arrives
-		// as a form ID and is looked up again, so a form the game has freed is
-		// never touched. While another thread holds the inventory lock, the
-		// last share is kept for a frame.
-		void Measure(RE::TESFormID a_weapon)
+		// The weapon an NPC used when it keeps a pace NEC reads: an automatic
+		// weapon that wears, while worn weapons slow, see SlowsNow. Null for
+		// any other.
+		const RE::TESObjectWEAP* Paced(const RE::BGSObjectInstanceT<RE::TESObjectWEAP>& a_weapon)
 		{
-			auto*       player = RE::PlayerCharacter::GetSingleton();
-			const auto* weapon = RE::TESForm::GetFormByID(a_weapon);
-			const auto  health = player && weapon ?
-			                         Equipped::TryWeaponHealth(player, weapon) :
-			                         std::optional{ Condition::INVALID_HEALTH };
-			if (!health) {
-				TraceLog::Once("fire speed", "{:s}  kept its last share, another thread had the player's inventory",
-					TraceLog::Who{ weapon });
+			const auto* object = a_weapon.object;
+			if (!SlowsNow() || !object || !object->IsWeapon()) {
+				return nullptr;
+			}
+			const auto& weapon = static_cast<const RE::TESObjectWEAP&>(*object);
+			const auto* data = static_cast<const RE::TESObjectWEAP::InstanceData*>(a_weapon.instanceData.get());
+			return IsAutomatic(weapon, data) && Condition::WearsOut(weapon) ? &weapon : nullptr;
+		}
+
+		// Keeps an NPC's share from a_health, or its last share while the
+		// health could not be read.
+		void Keep(RE::Actor& a_actor, const RE::TESObjectWEAP& a_weapon, std::optional<float> a_health)
+		{
+			if (!a_health) {
+				TraceLog::Npc::Line("fire speed", "{:s} with {:s}  kept its last share, its inventory was busy",
+					TraceLog::Who{ &a_actor }, TraceLog::Who{ &a_weapon });
 				return;
 			}
 
-			// INVALID_HEALTH here means the player holds no copy of this gun
-			// that wears, so it plays at full speed.
-			const Reading now{ a_weapon, Share(*health) };
-			const auto    before = g_reading.exchange(now);
-			if (before.weapon == now.weapon && before.share == now.share) {
-				return;
+			// No entry means full rate, so a weapon at full condition takes the
+			// entry out.
+			const Reading now{ a_weapon.formID, Share(*a_health) };
+			auto          before = 1.0F;
+			{
+				const std::unique_lock l{ g_npcLock };
+				const auto             it = g_npcReadings.find(a_actor.formID);
+				if (it != g_npcReadings.end()) {
+					if (it->second.weapon == now.weapon) {
+						before = it->second.share;
+					}
+					if (now.share == 1.0F) {
+						g_npcReadings.erase(it);
+					} else {
+						it->second = now;
+					}
+				} else if (now.share != 1.0F) {
+					g_npcReadings.emplace(a_actor.formID, now);
+				}
 			}
-			if (*health < 0.0F) {
-				TraceLog::Line("fire speed", "{:s}  no copy that wears in hand  played at x {:.4f}", TraceLog::Who{ weapon }, now.share);
-			} else {
-				TraceLog::Line("fire speed", "{:s}  health {:.6f}  played at x {:.4f}",
-					TraceLog::Who{ weapon }, *health, now.share);
+
+			if (before != now.share) {
+				TraceLog::Npc::Line("fire speed", "{:s} with {:s}  health {:.6f}  played at x {:.4f}",
+					TraceLog::Who{ &a_actor }, TraceLog::Who{ &a_weapon }, *a_health, now.share);
 			}
 		}
 
-		// Asks for the share to be measured again, as HudParts.cpp asks for the
-		// HUD's condition. At most one waits at a time.
-		void Queue(const RE::TESObjectWEAP& a_weapon)
-		{
-			if (g_queued.exchange(true)) {
-				return;
-			}
-
-			const auto* tasks = F4SE::GetTaskInterface();
-			if (!tasks) {
-				g_queued = false;
-				return;
-			}
-
-			// F4SE runs queued tasks a frame later, on a worker thread during
-			// play.
-			tasks->AddTask([id = a_weapon.formID] {
-				Measure(id);
-				g_queued = false;
-			});
-		}
-
-		// Whether worn weapons slow right now. Asked on every call, so the
-		// switch works while the game runs.
-		bool On()
-		{
-			return Settings::bFireRate.GetValue();
-		}
+		// -------------------------------------------------------------------
+		// The hooks
+		// -------------------------------------------------------------------
 
 		// Stands in for CombatFormulas::CalcWeaponSpeedMult where the animation
 		// graph is given its weaponSpeedMult. The equip slot arrives as a plain
@@ -150,7 +151,7 @@ namespace FireRate
 			// Both slots of every actor are asked every frame, so anything but
 			// an automatic weapon in the first slot returns at once.
 			const auto* object = a_weapon.object;
-			if (!On() || !g_speedLink.Live() || a_equipIndex != 0 || !a_actor || !object || !object->IsWeapon()) {
+			if (!SlowsNow() || a_equipIndex != 0 || !a_actor || !object || !object->IsWeapon()) {
 				return speed;
 			}
 
@@ -168,9 +169,8 @@ namespace FireRate
 				return gun && !WeaponEvents::FireLive() ? speed : speed * NpcShareOf(*a_actor, weapon);
 			}
 
-			// The player's is measured for the next frame and read from the
-			// last.
-			Queue(weapon);
+			// The player's is read from this frame's measurement, see
+			// InHand.h.
 			return speed * ShareOf(weapon);
 		}
 
@@ -180,7 +180,7 @@ namespace FireRate
 		float CountdownHk(const RE::TESObjectWEAP& a_weapon, const RE::TESObjectWEAP::InstanceData* a_data)
 		{
 			const auto rate = g_countdownLink(a_weapon, a_data);
-			if (!On() || !g_countdownLink.Live() || rate <= 0.0F || !IsAutomatic(a_weapon, a_data)) {
+			if (!SlowsNow() || rate <= 0.0F || !IsAutomatic(a_weapon, a_data)) {
 				return rate;
 			}
 
@@ -201,9 +201,10 @@ namespace FireRate
 			const auto rate = g_soundLink(a_weapon, a_data);
 
 			// Every actor's shots start their sound here, and WeaponEvents says
-			// whose shot is on its way through Fire.
+			// whose shot is on its way through Fire. The sound stands alone
+			// and follows the pace.
 			const auto* shooter = WeaponEvents::Shooter();
-			if (!On() || !g_soundLink.Live() || rate <= 0.0F || !shooter || !IsAutomatic(a_weapon, a_data)) {
+			if (!g_soundLink.Live() || !SlowsNow() || rate <= 0.0F || !shooter || !IsAutomatic(a_weapon, a_data)) {
 				return rate;
 			}
 
@@ -229,18 +230,18 @@ namespace FireRate
 
 	void Install()
 	{
-		// Every place is noted before any is judged, so each mod that has one
-		// is named. The animation is what fires a burst, and the 3 main places
-		// work as one: with any of them left to another mod NEC writes none of
-		// the row, see End in CallPatch.h.
+		// The animation is what fires a burst, and the pace needs the speed,
+		// countdown and cut places, see Slows. Each stands alone, so a mod
+		// that still hands the call on to NEC shares its place and the pace
+		// keeps working.
 		const auto rateOfFire = RE::ID::TESObjectWEAP::GetRateOfFire.address();
 		const auto speed = CallPatch::PatchCall(SPEED_SITE, RE::ID::CombatFormulas::CalcWeaponSpeedMult.address(),
 			reinterpret_cast<std::uintptr_t>(&SpeedHk), g_speedLink);
 		const auto rate = CallPatch::PatchCall(RATE_SITE, rateOfFire, reinterpret_cast<std::uintptr_t>(&CountdownHk), g_countdownLink);
+		const auto cuts = InstallCuts();
 		// A smaller part: without it a worn gun still fires slower and sounds
 		// as fast as a new one.
 		const auto sound = CallPatch::PatchCall(SOUND_SITE, rateOfFire, reinterpret_cast<std::uintptr_t>(&SoundHk), g_soundLink, Part::kFireSound);
-		const auto cuts = InstallCuts();
 		if (!speed || !rate || !cuts) {
 			REX::WARN("A worn automatic weapon will keep firing at its full rate.");
 			return;
@@ -254,7 +255,6 @@ namespace FireRate
 
 	void Unload()
 	{
-		g_reading = Reading{};
 		{
 			const std::unique_lock l{ g_npcLock };
 			g_npcReadings.clear();
@@ -264,58 +264,31 @@ namespace FireRate
 
 	bool Slows()
 	{
-		return !CallPatch::IsYielded(Settings::bFireRate);
+		return g_speedLink.Live() && g_countdownLink.Live() && CutLive();
+	}
+
+	bool SlowsNow()
+	{
+		return Slows() && Lowers();
 	}
 
 	float RateShare(const RE::TESObjectWEAP& a_weapon, const RE::TESObjectWEAP::InstanceData* a_data, float a_health)
 	{
-		return On() && IsAutomatic(a_weapon, a_data) ? Share(a_health) : 1.0F;
+		return SlowsNow() && IsAutomatic(a_weapon, a_data) ? Share(a_health) : 1.0F;
 	}
 
 	void NoteNpcWeapon(RE::Actor& a_actor, const RE::BGSObjectInstanceT<RE::TESObjectWEAP>& a_weapon)
 	{
-		const auto* object = a_weapon.object;
-		if (!On() || !object || !object->IsWeapon()) {
-			return;
+		const auto* weapon = Paced(a_weapon);
+		if (weapon) {
+			Keep(a_actor, *weapon, Equipped::TryWeaponHealth(&a_actor, weapon));
 		}
+	}
 
-		const auto& weapon = static_cast<const RE::TESObjectWEAP&>(*object);
-		const auto* data = static_cast<const RE::TESObjectWEAP::InstanceData*>(a_weapon.instanceData.get());
-		if (!IsAutomatic(weapon, data) || !Condition::WearsOut(weapon)) {
-			return;
-		}
-
-		const auto health = Equipped::TryWeaponHealth(&a_actor, &weapon);
-		if (!health) {
-			TraceLog::Npc::Line("fire speed", "{:s} with {:s}  kept its last share, its inventory was busy",
-				TraceLog::Who{ &a_actor }, TraceLog::Who{ &weapon });
-			return;
-		}
-
-		// No entry means full rate, so a weapon at full condition takes the
-		// entry out.
-		const Reading now{ weapon.formID, Share(*health) };
-		auto          before = 1.0F;
-		{
-			const std::unique_lock l{ g_npcLock };
-			const auto             it = g_npcReadings.find(a_actor.formID);
-			if (it != g_npcReadings.end()) {
-				if (it->second.weapon == now.weapon) {
-					before = it->second.share;
-				}
-				if (now.share == 1.0F) {
-					g_npcReadings.erase(it);
-				} else {
-					it->second = now;
-				}
-			} else if (now.share != 1.0F) {
-				g_npcReadings.emplace(a_actor.formID, now);
-			}
-		}
-
-		if (before != now.share) {
-			TraceLog::Npc::Line("fire speed", "{:s} with {:s}  health {:.6f}  played at x {:.4f}",
-				TraceLog::Who{ &a_actor }, TraceLog::Who{ &weapon }, *health, now.share);
+	void NoteNpcWeapon(RE::Actor& a_actor, const RE::BGSObjectInstanceT<RE::TESObjectWEAP>& a_weapon, std::optional<float> a_health)
+	{
+		if (const auto* weapon = Paced(a_weapon)) {
+			Keep(a_actor, *weapon, a_health);
 		}
 	}
 
@@ -327,8 +300,7 @@ namespace FireRate
 
 	float ShareOf(const RE::TESObjectWEAP& a_weapon)
 	{
-		const auto reading = g_reading.load();
-		return reading.weapon == a_weapon.formID ? reading.share : 1.0F;
+		return Share(InHand::Health(a_weapon));
 	}
 
 	float NpcShareOf(const RE::TESForm& a_actor, const RE::TESObjectWEAP& a_weapon)

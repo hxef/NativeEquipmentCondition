@@ -24,36 +24,6 @@ namespace Text
 			{ "zhhans", "你的枪支状况低于一半时可能卡弹，重新装填才能排除。关闭时，枪支不会卡弹。" },
 		};
 
-		constexpr Line FIRE_RATE_HELP[]{
-			{ "en", "Worn automatic weapons fire slower, for you and for NPCs. When off, they fire at full rate." },
-			{ "fr", "Les armes automatiques usées tirent moins vite, pour vous comme pour les PNJ. Désactivé\u00A0: cadence normale." },
-			{ "de", "Abgenutzte automatische Waffen feuern langsamer, bei dir und bei NPCs. Aus: Volle Feuerrate." },
-			{ "it", "Le armi automatiche usurate sparano più lentamente, per te e per i PNG. Se disattivato, sparano a cadenza piena." },
-			{ "es", "Las armas automáticas desgastadas disparan más despacio, las use quien las use. Desactivado: cadencia de tiro normal." },
-			{ "esmx", "Las armas automáticas desgastadas disparan más despacio, las use quien las use. Desactivado: cadencia de tiro normal." },
-			{ "ptbr", "Armas automáticas desgastadas atiram mais devagar, nas suas mãos e nas dos NPCs. Desativado: cadência total." },
-			{ "pl", "Zużyta broń automatyczna strzela wolniej, także u NPC. Wyłączone: strzela z pełną szybkostrzelnością." },
-			{ "ru", "Изношенное автоматическое оружие стреляет медленнее, у вас и у NPC. Если отключено, скорострельность полная." },
-			{ "ja", "消耗したフルオートの武器は、誰が使っても発射速度が下がります。OFFにすると、本来の発射速度で撃てます" },
-			{ "zhhant", "損耗的自動武器射速會變慢，你和其他角色皆然。關閉時，射速保持正常。" },
-			{ "zhhans", "损耗的自动武器射速会变慢，你和其他角色都一样。关闭时，射速保持正常。" },
-		};
-
-		constexpr Line CRIT_METER_HELP[]{
-			{ "en", "Worn weapons fill your critical meter slower and give NPCs fewer criticals. When off, criticals are normal." },
-			{ "fr", "Une arme usée remplit moins vite votre jauge de critique et donne moins de critiques aux PNJ. Désactivé\u00A0: critiques normaux." },
-			{ "de", "Abgenutzte Waffen füllen deinen Krit-Balken langsamer und geben NPCs weniger kritische Treffer. Aus: Normal." },
-			{ "it", "Con armi usurate la tua barra dei critici sale più piano e i PNG fanno meno critici. Se disattivato, critici normali." },
-			{ "es", "Las armas desgastadas llenan menos tu medidor de críticos y logran menos críticos en manos de otros. Desactivado: críticos normales." },
-			{ "esmx", "Las armas desgastadas llenan menos tu medidor de críticos y logran menos críticos en manos de otros. Desactivado: críticos normales." },
-			{ "ptbr", "Armas desgastadas enchem sua barra de crítico mais devagar e NPCs acertam menos críticos. Desativado: críticos normais." },
-			{ "pl", "Zużyta broń wolniej wypełnia twój wskaźnik trafień krytycznych, a u NPC daje ich mniej. Wyłączone: jak zwykle." },
-			{ "ru", "Изношенное оружие медленнее заполняет вашу шкалу КРИТ и дает NPC меньше критических атак. Если отключено, все как обычно." },
-			{ "ja", "消耗した武器はクリティカルメーターが貯まりにくく、NPCのクリティカルも減ります。OFFにすると、クリティカルは通常どおりです" },
-			{ "zhhant", "損耗的武器會讓你的爆擊條累積變慢，其他角色持用時也較少爆擊。關閉時，爆擊一切如常。" },
-			{ "zhhans", "损耗的武器会让你的爆击条积累变慢，其他角色使用时也较少爆击。关闭时，爆击一切如常。" },
-		};
-
 		constexpr Line SPAWN_CONDITION_HELP[]{
 			{ "en", "Weapons and armor you find are already worn, based on who had them. When off, they turn up new." },
 			{ "fr", "Les armes et armures trouvées sont déjà usées, selon leur ancien porteur. Désactivé\u00A0: elles sont neuves." },
@@ -192,8 +162,6 @@ namespace Text
 
 		constexpr MenuRow ROWS[]{
 			{ &Settings::bJam, {}, JAM_HELP },
-			{ &Settings::bFireRate, {}, FIRE_RATE_HELP },
-			{ &Settings::bCritMeter, {}, CRIT_METER_HELP },
 			{ &Settings::bSpawnCondition, {}, SPAWN_CONDITION_HELP },
 			{ &Settings::bVendorRepair, {}, VENDOR_REPAIR_HELP },
 			{ &Settings::bLoadingTips, {}, LOADING_TIPS_HELP },

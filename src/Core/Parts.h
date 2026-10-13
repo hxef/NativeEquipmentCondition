@@ -27,6 +27,10 @@ enum class Part : std::uint8_t
 	kFireSound,      // Slower firing sound
 	kCritMeter,      // Fewer criticals when worn
 	kNpcCrits,       // Fewer NPC criticals
+	kAccuracy,       // Lower accuracy when worn
+	kCrosshair,      // Wider crosshair when worn
+	kVatsAccuracy,   // Lower VATS hit chance when worn
+	kRange,          // Shorter range when worn
 	kJam,            // Jamming
 	kReloadJam,      // Single shot gun jams
 	kSpawn,          // Worn loot
@@ -35,6 +39,9 @@ enum class Part : std::uint8_t
 	kGifts,          // Quest rewards arrive new
 	kCardCnd,        // CND on item cards
 	kCardRate,       // Fire rate shown in menus
+	kCardAccuracy,   // Accuracy shown in menus
+	kCardRange,      // Range shown in menus
+	kSort,           // Inventory sorting
 	kHudBar,         // HUD condition bars
 	kQuick,          // Loot preview meters
 	kBench,          // Workbench repairs

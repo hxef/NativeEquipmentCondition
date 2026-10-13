@@ -43,7 +43,9 @@ namespace Jam
 
 	// Rolls for a jam on one shot of the player's gun, before the engine fires
 	// it. Guns that fire once per reload never jam here, they jam as the
-	// reload finishes. True when it jammed: the magazine is empty, the player
-	// has been told, and the caller must not fire the shot.
-	bool Roll(RE::PlayerCharacter& a_player, const RE::BGSObjectInstanceT<RE::TESObjectWEAP>& a_weapon, std::uint32_t a_equipIndex);
+	// reload finishes. a_health is the gun's, as the fire call read it. True
+	// when it jammed: the magazine is empty, the player has been told, and the
+	// caller must not fire the shot.
+	bool Roll(RE::PlayerCharacter& a_player, const RE::BGSObjectInstanceT<RE::TESObjectWEAP>& a_weapon, std::uint32_t a_equipIndex,
+		float a_health);
 }

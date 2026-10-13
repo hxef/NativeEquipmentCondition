@@ -44,12 +44,13 @@ namespace Mcm
 		};
 
 		constexpr Owes OWES[]{
-			{ &Settings::bFireRate, FollowUp::kCards },
 			{ &Settings::fDamageFloor, FollowUp::kCards },
 			{ &Settings::fArmorFloor, FollowUp::kCards },
 			{ &Settings::fArmorFloor, FollowUp::kResistances },
 			{ &Settings::fValueExponent, FollowUp::kCards },
 			{ &Settings::fFireRateFloor, FollowUp::kCards },
+			{ &Settings::fAccuracyFloor, FollowUp::kCards },
+			{ &Settings::fRangeFloor, FollowUp::kCards },
 		};
 
 		// Said once for each id, since the page asks again every time it is

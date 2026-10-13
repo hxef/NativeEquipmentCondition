@@ -17,14 +17,16 @@
 // freshly drawn CND row up past Damage.
 //
 // The same 2 patches tell the card which copy of a weapon it is about, for the
-// fire rate: the game works a card's rate out from the weapon and its mods
-// alone, so a worn automatic would show the rate of a new one. While FireRate
-// slows worn weapons, Install hooks those calls too, and the 2 lists that
-// compare weapons by rate without a card, the quick container's better mark and
-// a container's sort.
+// fire rate, accuracy and range: the game works them out from the weapon and
+// its mods alone, so a worn gun would show the figures of a new one. While
+// FireRate slows worn weapons, Install hooks the rate calls too, and the 2
+// lists that compare weapons by rate without a card, the quick container's
+// better mark and a container's sort. While worn guns lose accuracy or range,
+// it hooks those calls on the cards the same way, and accuracy in the sort.
 //
-// Hooks.cpp is the CND row, Rate.cpp the fire rate, Raise.cpp moves the row
-// past Damage, and Cards.h is what they share.
+// Hooks.cpp is the CND row, Rate.cpp the fire rate and the sort's note,
+// Aim.cpp accuracy and range, Raise.cpp moves the row past Damage, and Cards.h
+// is what they share.
 namespace ItemCard
 {
 	// Patches the calls that fill item cards.

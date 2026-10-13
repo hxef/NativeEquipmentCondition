@@ -51,6 +51,38 @@ namespace Text
 			{ "zhhans", "{0}：已停用，因为“{1}”已交由{2}处理。" },
 		};
 
+		// The 2 lines above for pieces off only while a held set waits for its
+		// hook to run, which brings them back, see CallPatch/Sets.cpp.
+		constexpr Line PART_OFF_NOW[]{
+			{ "en", "{0}: off for now, left to {1}." },
+			{ "fr", "{0}\u00A0: désactivé pour l'instant, laissé à {1}." },
+			{ "de", "{0}: vorerst aus, {1} überlassen." },
+			{ "it", "{0}: disattivato per ora, parte lasciata a {1}." },
+			{ "es", "{0}: desactivado por ahora, en manos de {1}." },
+			{ "esmx", "{0}: desactivado por ahora, en manos de {1}." },
+			{ "ptbr", "{0}: desativado por enquanto, a cargo de {1}." },
+			{ "pl", "{0}: na razie wyłączone na rzecz {1}." },
+			{ "ru", "{0}: пока отключено, уступлено {1}." },
+			{ "ja", "{0}: 今のところ無効。{1}に任せています" },
+			{ "zhhant", "{0}：目前已停用，交由{1}處理。" },
+			{ "zhhans", "{0}：暂时停用，交由{1}处理。" },
+		};
+
+		constexpr Line PART_SINCE_NOW[]{
+			{ "en", "{0}: off for now, since {1} is left to {2}." },
+			{ "fr", "{0}\u00A0: désactivé pour l'instant, car la partie {1} est laissée à {2}." },
+			{ "de", "{0}: vorerst aus, da die Funktion {1} {2} überlassen ist." },
+			{ "it", "{0}: disattivato per ora, perché la parte {1} è lasciata a {2}." },
+			{ "es", "{0}: desactivado por ahora, porque depende de {1}, en manos de {2}." },
+			{ "esmx", "{0}: desactivado por ahora, porque depende de {1}, en manos de {2}." },
+			{ "ptbr", "{0}: desativado por enquanto, pois a parte {1} está a cargo de {2}." },
+			{ "pl", "{0}: na razie wyłączone, bo część {1} jest wyłączona na rzecz {2}." },
+			{ "ru", "{0}: пока отключено, так как часть «{1}» уступлена {2}." },
+			{ "ja", "{0}: 今のところ無効。{1}を{2}に任せているためです" },
+			{ "zhhant", "{0}：目前已停用，因為「{1}」已交由{2}處理。" },
+			{ "zhhans", "{0}：暂时停用，因为“{1}”已交由{2}处理。" },
+		};
+
 		constexpr Line PART_VERSION[]{
 			{ "en", "{0}: off, as this game version ({1}) is not supported." },
 			{ "fr", "{0}\u00A0: désactivé, car cette version du jeu ({1}) n'est pas prise en charge." },
@@ -271,9 +303,10 @@ namespace Text
 			if (owners.empty()) {
 				lines.push_back(SayFor(a_out, PART_VERSION, title, CallPatch::GameVersion()));
 			} else if (cause.part != a_loss.part) {
-				lines.push_back(SayFor(a_out, PART_SINCE, title, PartPieces(cause.part, cause.taken, a_out), List(owners, a_out)));
+				lines.push_back(SayFor(a_out, cause.waits ? PART_SINCE_NOW : PART_SINCE, title, PartPieces(cause.part, cause.taken, a_out),
+					List(owners, a_out)));
 			} else {
-				lines.push_back(SayFor(a_out, PART_OFF, title, List(owners, a_out)));
+				lines.push_back(SayFor(a_out, cause.waits ? PART_OFF_NOW : PART_OFF, title, List(owners, a_out)));
 			}
 		}
 		if (!lines.empty() && !a_loss.works.empty()) {

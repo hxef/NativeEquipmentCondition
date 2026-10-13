@@ -7,6 +7,7 @@
 #include "Core/Settings.h"
 #include "Core/Text/Text.h"
 
+#include <cstddef>
 #include <cstdint>
 #include <format>
 #include <span>
@@ -53,7 +54,7 @@ namespace Text
 		std::span<const Line>  help;
 	};
 
-	// The 10 switches and bTraceLogs, in MenuSwitches.cpp, the 10 Balance
+	// The 8 switches and bTraceLogs, in MenuSwitches.cpp, the 12 Balance
 	// numbers, in MenuNumbers.cpp, and the 4 HUD numbers and sLogLevel, in
 	// MenuHudLog.cpp, each in NEC.ini's order.
 	[[nodiscard]] std::span<const MenuRow> MenuSwitches();
@@ -71,8 +72,21 @@ namespace Text
 	[[nodiscard]] std::span<const PartRow> PlayParts();
 	[[nodiscard]] std::span<const PartRow> UiParts();
 
+	// Whether a_rows hold 1 row a part, from a_first to a_last in the enum's
+	// order, so a part's name is found by its place.
+	consteval bool PartsInOrder(std::span<const PartRow> a_rows, Part a_first, Part a_last)
+	{
+		const auto first = static_cast<std::size_t>(a_first);
+		for (std::size_t i = 0; i < a_rows.size(); i++) {
+			if (static_cast<std::size_t>(a_rows[i].part) != first + i) {
+				return false;
+			}
+		}
+		return a_rows.size() == static_cast<std::size_t>(a_last) - first + 1;
+	}
+
 	// One piece's name, or the phrase a setting's sentence uses for it, see
-	// Core/Pieces.h. The phrases are in PiecesUi.cpp. Pieces that share a name
+	// Core/Pieces.h. The phrases are in Phrases.cpp. Pieces that share a name
 	// share its table. A name stands alone in brackets after its part's name,
 	// "Worn weapon damage (energy gun damage)", and in a list after
 	// "Still works:", so it has no comma and needs no capital.

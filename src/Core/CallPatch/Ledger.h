@@ -162,7 +162,7 @@ namespace CallPatch
 	[[nodiscard]] bool           InGame(std::uintptr_t a_address);
 
 	// The ledger itself, kept in Ledger.cpp. Everything below is used only
-	// while Lock() is held, and none of it takes the lock. About 100 places
+	// while Lock() is held, and none of it takes the lock. About 110 places
 	// are patched, each set holding 1 or more. Set 0 is none and never runs.
 	inline constexpr std::size_t MAX_SETS = 512;
 	inline constexpr std::size_t MAX_PLACES = 512;
@@ -219,7 +219,7 @@ namespace CallPatch
 			bool           was;  // the switch was on
 		};
 
-		std::bitset<PART_COUNT> parts;  // parts that lost a place in it
+		std::bitset<PART_COUNT> parts;  // parts that lost a place in it, for good or for now
 		std::vector<Off>        offs;   // switches turned off in it
 	};
 

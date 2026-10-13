@@ -310,6 +310,11 @@ namespace CallPatch
 			// turns off.
 			for (const auto* place : held) {
 				const auto off = PiecesOffTail(*place);
+				// A place that comes back gets its part's "off for now" line
+				// from Say too. A trace only place takes nothing off.
+				if (!IsOff(*place) && !SwitchLeft(*place) && off.empty() && place->use != Use::kTraceOnly) {
+					pass.parts.set(static_cast<std::size_t>(place->part));
+				}
 				// A held place is off only since a sibling's cut, as its own
 				// walk reached NEC, and that cut's line comes first.
 				lines.push_back({ REX::ELogLevel::Warning,

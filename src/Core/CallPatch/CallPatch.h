@@ -216,7 +216,7 @@ namespace CallPatch
 	[[nodiscard]] std::vector<std::string> OwnerNames(std::span<const Owner> a_owners, std::string_view a_unnamed);
 
 	// Whether a switch is left to another mod while the game runs. Asked by
-	// the walks, FireRate and the MCM page, never by a hot hook.
+	// the walks and the MCM page, never by a hot hook.
 	[[nodiscard]] bool IsYielded(const Settings::Live<bool>& a_switch);
 
 	// Why pieces of a part are off, see Core/Pieces.h: the part whose places
@@ -228,6 +228,7 @@ namespace CallPatch
 		std::vector<Piece> pieces;  // the shown pieces of the lost part off for this cause
 		std::vector<Piece> taken;
 		std::vector<Owner> owners;  // each once, in the order of Before
+		bool               waits = false;  // off only while a held set waits for its hook to run, see Sets.cpp
 	};
 
 	// A part another mod took some of: 1 cause, or 1 for each where its pieces
@@ -257,13 +258,12 @@ namespace CallPatch
 		std::vector<Piece> off;
 		std::vector<Piece> works;
 		bool               idle = false;  // the player has its switch, or the one it sits under, off, so it gets no line or mark
-
 		[[nodiscard]] bool None() const { return !off.empty() && works.empty(); }
 	};
 
 	[[nodiscard]] Effect EffectOf(const Settings::Named& a_setting);
 
-	// The log line of a switch left to another mod, "Slower fire when worn:
+	// The log line of a switch left to another mod, "Loot preview meters:
 	// off, left to NECClashTest.dll.", empty while it is free.
 	[[nodiscard]] std::string OffLine(const Settings::Live<bool>& a_switch);
 

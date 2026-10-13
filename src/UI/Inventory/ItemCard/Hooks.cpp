@@ -111,8 +111,8 @@ namespace ItemCard
 		//
 		// Both sites build the same card, so while either is left to another
 		// mod NEC leaves the card as the game builds it: no CND row, the fire
-		// rate of an unworn gun and no faded name. With 1 site the row would
-		// come and go.
+		// rate, accuracy and range of an unworn gun and no faded name. With 1
+		// site the row would come and go.
 		void PopulatePipboy(RE::PipboyInventoryData* a_this, const RE::BGSInventoryItem* a_item,
 			const RE::BGSInventoryItem::Stack* a_stack, RE::PipboyObject* a_data, const CallPatch::Link<Pipboy_t>& a_link)
 		{

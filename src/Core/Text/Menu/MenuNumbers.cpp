@@ -220,6 +220,66 @@ namespace Text
 			{ "zhhans", "武器在状况为0时保留多少爆击，对你的爆击条和其他角色都适用。设为1时，损耗不会减少爆击。" },
 		};
 
+		constexpr Line ACCURACY_FLOOR_NAME[]{
+			{ "en", "Accuracy at 0 condition" },
+			{ "fr", "Précision à l'état 0" },
+			{ "de", "Präzision bei Zustand 0" },
+			{ "it", "Precisione a condizioni 0" },
+			{ "es", "Precisión con estado 0" },
+			{ "esmx", "Precisión con estado 0" },
+			{ "ptbr", "Precisão com condição 0" },
+			{ "pl", "Celność przy stanie 0" },
+			{ "ru", "Меткость при состоянии 0" },
+			{ "ja", "状態0での精度" },
+			{ "zhhant", "狀況為0時的準度" },
+			{ "zhhans", "状况为0时的准度" },
+		};
+
+		constexpr Line ACCURACY_FLOOR_HELP[]{
+			{ "en", "How accurate a gun still is at 0 condition. At 0.75, its shots spread a third wider. At 1, wear never lowers it." },
+			{ "fr", "La précision qu'une arme à feu garde à l'état 0. À 0.75, ses tirs se dispersent d'un tiers de plus. À 1, l'usure ne la réduit jamais." },
+			{ "de", "Wie präzise eine Schusswaffe bei Zustand 0 noch ist. Bei 0.75 streuen ihre Schüsse um ein Drittel weiter. Bei 1 senkt die Abnutzung sie nie." },
+			{ "it", "Quanta precisione conserva un'arma da fuoco a condizioni 0. A 0.75, i colpi si disperdono un terzo in più. A 1, l'usura non la riduce mai." },
+			{ "es", "Cuánta precisión conserva un arma de fuego con estado 0. Con 0.75, sus disparos se dispersan un tercio más. Con 1, el desgaste nunca la reduce." },
+			{ "esmx", "Cuánta precisión conserva un arma de fuego con estado 0. Con 0.75, sus disparos se dispersan un tercio más. Con 1, el desgaste nunca la reduce." },
+			{ "ptbr", "Quanta precisão uma arma de fogo mantém com condição 0. Com 0.75, os disparos se espalham um terço a mais. Com 1, o desgaste nunca a reduz." },
+			{ "pl", "Jak celna jest jeszcze broń palna w stanie 0. Przy 0.75 jej rozrzut rośnie o jedną trzecią. Przy 1 zużycie nigdy nie obniża celności." },
+			{ "ru", "Насколько метким остается стрелковое оружие в состоянии 0. При 0.75 разброс выстрелов на треть шире. При 1 износ не снижает меткость." },
+			{ "ja", "状態0の銃に残る精度の割合です。0.75では弾のばらつきが3分の1広がります。1にすると、消耗しても下がりません" },
+			{ "zhhant", "槍枝在狀況為0時仍保有多少準度。設為0.75時，射擊散布會擴大三分之一。設為1時，損耗不會降低準度。" },
+			{ "zhhans", "枪支在状况为0时仍保有多少准度。设为0.75时，射击散布会扩大三分之一。设为1时，损耗不会降低准度。" },
+		};
+
+		constexpr Line RANGE_FLOOR_NAME[]{
+			{ "en", "Range at 0 condition" },
+			{ "fr", "Portée à l'état 0" },
+			{ "de", "Reichweite bei Zustand 0" },
+			{ "it", "Portata a condizioni 0" },
+			{ "es", "Alcance con estado 0" },
+			{ "esmx", "Alcance con estado 0" },
+			{ "ptbr", "Alcance com condição 0" },
+			{ "pl", "Zasięg przy stanie 0" },
+			{ "ru", "Дальность при состоянии 0" },
+			{ "ja", "状態0での射程" },
+			{ "zhhant", "狀況為0時的射程" },
+			{ "zhhans", "状况为0时的射程" },
+		};
+
+		constexpr Line RANGE_FLOOR_HELP[]{
+			{ "en", "How far a gun still carries its damage at 0 condition. At 0, a broken gun hits as if from afar at any distance. At 1, wear never shortens it." },
+			{ "fr", "Jusqu'où une arme à feu garde ses dégâts à l'état 0. À 0, une arme cassée frappe comme de loin à toute distance. À 1, l'usure ne la réduit jamais." },
+			{ "de", "Wie weit eine Schusswaffe bei Zustand 0 noch vollen Schaden trägt. Bei 0 trifft eine kaputte Waffe auf jede Distanz wie aus der Ferne. Bei 1 verkürzt die Abnutzung sie nie." },
+			{ "it", "Fin dove un'arma da fuoco conserva i suoi danni a condizioni 0. A 0, un'arma rotta colpisce come da lontano a ogni distanza. A 1, l'usura non la riduce mai." },
+			{ "es", "Hasta dónde conserva su daño un arma de fuego con estado 0. Con 0, un arma rota golpea como desde lejos a cualquier distancia. Con 1, el desgaste nunca lo reduce." },
+			{ "esmx", "Hasta dónde conserva su daño un arma de fuego con estado 0. Con 0, un arma rota golpea como desde lejos a cualquier distancia. Con 1, el desgaste nunca lo reduce." },
+			{ "ptbr", "Até onde uma arma de fogo mantém seu dano com condição 0. Com 0, uma arma quebrada acerta como de longe a qualquer distância. Com 1, o desgaste nunca o reduz." },
+			{ "pl", "Jak daleko broń palna w stanie 0 zachowuje obrażenia. Przy 0 zepsuta broń trafia jak z daleka na każdym dystansie. Przy 1 zużycie nigdy nie skraca zasięgu." },
+			{ "ru", "Как далеко стрелковое оружие в состоянии 0 сохраняет урон. При 0 сломанное оружие бьет как издалека на любой дистанции. При 1 износ не сокращает дальность." },
+			{ "ja", "状態0の銃がダメージを保つ距離の割合です。0では壊れた銃はどの距離でも遠くから撃ったようなダメージになります。1にすると、消耗しても短くなりません" },
+			{ "zhhant", "槍枝在狀況為0時仍能維持傷害的距離比例。設為0時，損壞的槍枝在任何距離都像遠距離射擊。設為1時，損耗不會縮短射程。" },
+			{ "zhhans", "枪支在状况为0时仍能保持伤害的距离比例。设为0时，损坏的枪支在任何距离都像远距离射击。设为1时，损耗不会缩短射程。" },
+		};
+
 		constexpr Line BENCH_COST_NAME[]{
 			{ "en", "Workbench repair cost" },
 			{ "fr", "Coût des réparations à l'établi" },
@@ -320,6 +380,8 @@ namespace Text
 			{ &Settings::fValueExponent, VALUE_EXPONENT_NAME, VALUE_EXPONENT_HELP },
 			{ &Settings::fFireRateFloor, FIRE_RATE_FLOOR_NAME, FIRE_RATE_FLOOR_HELP },
 			{ &Settings::fCritMeterFloor, CRIT_METER_FLOOR_NAME, CRIT_METER_FLOOR_HELP },
+			{ &Settings::fAccuracyFloor, ACCURACY_FLOOR_NAME, ACCURACY_FLOOR_HELP },
+			{ &Settings::fRangeFloor, RANGE_FLOOR_NAME, RANGE_FLOOR_HELP },
 			{ &Settings::fBenchCostMult, BENCH_COST_NAME, BENCH_COST_HELP },
 			{ &Settings::iFreeMendAbove, FREE_MEND_NAME, FREE_MEND_HELP },
 			{ &Settings::fTraderPriceMult, TRADER_PRICE_NAME, TRADER_PRICE_HELP },

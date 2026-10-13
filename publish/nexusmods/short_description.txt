@@ -1,1 +1,1 @@
-Native F4SE plugin. Gear wears down with use, so weapons do less damage and armor protects less. Repair at a workbench or pay a trader.
+Native F4SE plugin. Weapons and armor wear down with use and lose effectiveness. Repair them at a workbench or pay a trader.

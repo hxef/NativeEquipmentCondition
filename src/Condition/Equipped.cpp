@@ -122,6 +122,27 @@ namespace Equipped
 		return found;
 	}
 
+	std::optional<HeldWeapon> TryHeldWeapon(RE::Actor* a_actor)
+	{
+		auto* inv = a_actor ? a_actor->inventoryList : nullptr;
+		if (!inv) {
+			return HeldWeapon{};
+		}
+		if (!inv->rwLock.try_lock_write()) {
+			return std::nullopt;
+		}
+
+		// Both walks take the read lock inside this write lock, see
+		// TryWeaponHealth.
+		HeldWeapon held;
+		held.weapon = Weapon(a_actor);
+		if (held.weapon) {
+			held.health = WeaponHealth(a_actor, held.weapon);
+		}
+		inv->rwLock.unlock_write();
+		return held;
+	}
+
 	std::vector<ArmorPiece> ArmorPieces(RE::Actor* a_actor)
 	{
 		std::vector<ArmorPiece> found;

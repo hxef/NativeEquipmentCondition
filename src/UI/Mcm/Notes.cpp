@@ -23,7 +23,7 @@
 // The page's grey rows: the list at the top and the note of each block.
 // config.json gives every block lead a hidden switch: a feature switch 2,
 // <key>:Free for its row and <key>:Note for its note, a number 1, <key>:Note,
-// and the list 1, parts:Note. MCM has 30 a page, 26 are used. Each note is
+// and the list 1, parts:Note. MCM has 30 a page and 26 are used. Each note is
 // worked out from SettingLinks and CallPatch's losses, so a setting needs no
 // code of its own here. MCM asks once a pause menu visit, after NEC's recheck
 // as the menu opens. NEC.log keeps every line the page leaves out.
@@ -138,7 +138,7 @@ namespace Mcm
 		// The rows
 		// -------------------------------------------------------------------
 
-		// One of the 10 feature switches by its key, bJam.
+		// One of the feature switches by its key, bJam.
 		Settings::Live<bool>* SwitchFor(std::string_view a_key)
 		{
 			for (auto* on : Settings::Switches()) {

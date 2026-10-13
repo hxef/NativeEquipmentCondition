@@ -13,7 +13,7 @@
 // place can be 1 piece, 2 or none. The MCM page and NEC.log name each piece
 // that is off, "CND on item cards (containers and traders): off, left to
 // A.dll." A piece is off when a place of it is off, or when a piece it needs
-// is off. PLACES in Pieces.cpp says which place is which piece, and the names
+// is off. PLACES in Places.cpp says which place is which piece, and the names
 // live in Core/Text.
 enum class Piece : std::uint8_t
 {
@@ -66,6 +66,12 @@ enum class Piece : std::uint8_t
 	// Fewer criticals when worn, Fewer NPC criticals
 	kCritMeter,
 	kNpcCrits,
+	// Lower accuracy when worn, Wider crosshair when worn, Lower VATS hit
+	// chance when worn, Shorter range when worn
+	kAccuracy,
+	kCrosshair,
+	kVatsAccuracy,
+	kRange,
 	// Jamming, Single shot gun jams
 	kJamShot,
 	kJamReload,
@@ -86,7 +92,23 @@ enum class Piece : std::uint8_t
 	kRateCardsCooking,
 	kRateCardsPipboy,
 	kRateBetter,
+	// Inventory sorting, above the sorts that need it
+	kSortNote,
+	// Fire rate shown in menus again
 	kRateSort,
+	// Accuracy shown in menus
+	kAccuracyCards,
+	kAccuracyCardsContainers,
+	kAccuracyCardsWorkbench,
+	kAccuracyCardsCooking,
+	kAccuracyCardsPipboy,
+	kAccuracySort,
+	// Range shown in menus
+	kRangeCards,
+	kRangeCardsContainers,
+	kRangeCardsWorkbench,
+	kRangeCardsCooking,
+	kRangeCardsPipboy,
 	// The rest of the parts from HUD condition bars to Loading screen tips,
 	// each 1 piece but Worn items in workbench lists and Trader stock
 	// condition, which have 2 each
@@ -141,7 +163,7 @@ struct PieceRow
 // The pieces a place is now, by the name the place is patched with, "card
 // fire rate". None for a place that only feeds the trace logs, and none
 // for a place whose loss alone changes nothing a player sees, see PLACES in
-// Pieces.cpp.
+// Places.cpp.
 [[nodiscard]] std::span<const Piece> PiecesAt(std::string_view a_what);
 
 // Whether a_piece is a piece of a_part the page names.

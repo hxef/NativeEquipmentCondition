@@ -3,6 +3,7 @@
 #include "Core/Plugin.h"
 
 #include "Core/Settings.h"
+#include "UI/Flash.h"
 
 #include <cstdint>
 #include <string_view>
@@ -42,9 +43,6 @@ namespace HudParts
 	// FontConfig.txt maps each to a font in the game's library.
 	inline constexpr const char* FONT_NAME = "$MAIN_Font_Bold";
 
-	// A text field keeps a 2 wide margin inside its box.
-	inline constexpr double FIELD_MARGIN = 2.0;
-
 	// The condition of the weapon in the player's hands, as the HUD knows it.
 	// It is checked through F4SE's task queue and read from an atomic a frame
 	// later, and both readouts share it. F4SE runs the task on a worker thread
@@ -82,11 +80,12 @@ namespace HudParts
 	// little past the bar. A readout's origin is the right end of its bar,
 	// halfway down, so placing a readout means saying where its bar ends.
 	//
-	// The ammo counter and the Pip-Boy's doll size everything from the font
-	// size, in the AP meter's proportions below: at font size 20 the bar is 6
-	// deep, like the AP bar. The power armor readout sizes its bar and its word
-	// separately to fit the dash, with the word level with the bar and
-	// anti-aliased for animation since it moves.
+	// The Pip-Boy's doll sizes everything from the font size, in the AP
+	// meter's proportions below: at font size 20 the bar is 6 deep, like the
+	// AP bar. The ammo counter sizes its word the same way and its bar from
+	// the counter's divider, see HudCondition.h. The power armor readout sizes
+	// its bar and its word separately to fit the dash, with the word level
+	// with the bar and anti-aliased for animation since it moves.
 	namespace Readout
 	{
 		inline constexpr double BAR_DEEP = 6.0 / 20.0;
@@ -118,6 +117,23 @@ namespace HudParts
 		// the bar it reaches. It measures text, so call it when the size
 		// changes, not every frame.
 		double SetLabel(Value& a_readout, const Label& a_label);
+
+		// Where the word sits from the readout's origin: its field, and the
+		// box its letters fill, from the top of the line to the baseline. The
+		// letters are the field inside its margins when they cannot be
+		// measured, and measured says which. All 0 before SetLabel or when the
+		// readout has no word.
+		struct LabelPlace
+		{
+			Flash::Box field;
+			Flash::Box letters;
+			bool       measured = false;
+		};
+		[[nodiscard]] LabelPlace LabelExtent(Value& a_readout);
+
+		// Puts the word's field with its top left corner at a_x, a_y from the
+		// readout's origin.
+		void MoveLabel(Value& a_readout, double a_x, double a_y);
 
 		// Lays the track out a_width across and a_deep deep.
 		void SetTrack(Value& a_readout, double a_width, double a_deep);

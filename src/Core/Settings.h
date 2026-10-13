@@ -213,11 +213,12 @@ namespace Settings
 	// across and 720 down on any screen. Read every frame, so a change shows
 	// at once. 0 and 0 is the bar's own place.
 
-	// How far right of the ammo divider the CND bar sits, below 0 to the
-	// left. Off the divider, the divider shows again, see HudCondition.h.
+	// How far right of its own spot by the ammo counter the CND bar sits,
+	// below 0 to the left. Off the divider, the divider shows again, see
+	// HudCondition.h.
 	inline Live<float> fHudBarX{ "HUD", "fHudBarX", 0.0F };
 
-	// How far up from the ammo divider the CND bar sits, below 0 down.
+	// How far up from its own spot the CND bar sits, below 0 down.
 	inline Live<float> fHudBarY{ "HUD", "fHudBarY", 0.0F };
 
 	// How far right of the dash's ammo digits the power armor CND bar sits,

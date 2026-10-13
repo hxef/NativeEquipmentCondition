@@ -18,7 +18,7 @@
 #include "Gameplay/Jam.h"
 #include "Gameplay/SpawnCondition/SpawnCondition.h"
 #include "Gameplay/WeaponEvents/WeaponEvents.h"
-#include "UI/Hud/HudCondition.h"
+#include "UI/Hud/HudCondition/HudCondition.h"
 #include "UI/Hud/HudParts/HudParts.h"
 #include "UI/Hud/PowerArmorCondition/PowerArmorCondition.h"
 #include "UI/Hud/QuickContainer/QuickContainer.h"

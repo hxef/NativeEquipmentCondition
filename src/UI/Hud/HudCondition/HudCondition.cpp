@@ -1,6 +1,8 @@
-#include "UI/Hud/HudCondition.h"
+#include "UI/Hud/HudCondition/HudCondition.h"
 
 #include "UI/Flash.h"
+#include "UI/Hud/HudCondition/Place.h"
+#include "UI/Hud/HudCondition/Spot.h"
 #include "UI/Hud/HudParts/HudParts.h"
 #include "UI/MenuMovies.h"
 #include "UI/Roles/Hud.h"
@@ -10,33 +12,31 @@
 #include <algorithm>
 #include <array>
 #include <chrono>
-#include <cmath>
 #include <cstdint>
 #include <optional>
+#include <string_view>
 
 namespace HudCondition
 {
 	namespace
 	{
 		using Scaleform::GFx::Value;
-		using Roles::Hud::Line;
 
 		// -------------------------------------------------------------------
-		// Where the bar goes
+		// The readout
 		// -------------------------------------------------------------------
 
 		// The name the readout carries, so the frame listener can find it.
 		constexpr const char* READOUT_NAME = "NEC_Condition_mc";
 
 		// Where the bar goes with no divider measured: 44 wide, with its
-		// origin on its right end, as HUDMenu.swf ships it.
-		constexpr Line SHIPPED{ 0.0, 0.0, 44.0 };
+		// origin on its right end, as HUDMenu.swf ships the divider, and as
+		// deep as on that divider, which is 2 thick.
+		constexpr Spot SHIPPED{ { 0.0, 0.0, 44.0 }, DEEP_PER_THICK * 2.0, true };
 
-		// The word's font size, which sets every other size, see
-		// HudParts::Readout. That makes the bar 6 deep, where the divider is 2
-		// and the gap between the numbers about 12.
+		// The word's font size, which sets its gap and drop, see
+		// HudParts::Readout.
 		constexpr double TEXT_SIZE = 20.0;
-		constexpr double BAR_DEEP = HudParts::Readout::BAR_DEEP * TEXT_SIZE;
 
 		// How long the readout fades on its own, about as long as the counter's
 		// own fade.
@@ -49,62 +49,39 @@ namespace HudCondition
 		// A value Percent never returns, so the first frame always draws.
 		constexpr std::int32_t NOT_DRAWN = -2;
 
-		// Where a clip sits and how big it is drawn.
-		struct Transform
+		// Writes the word with a_first, once a movie since it never changes,
+		// and returns where it sits from the bar's right end. Both have their
+		// origin on their right end, so the bar runs left and the word follows
+		// past it. The trace says the first try and the one that measures.
+		HudParts::Readout::LabelPlace Label(Value& a_readout, bool a_first)
 		{
-			double x = 0.0;
-			double y = 0.0;
-			double scaleX = 1.0;
-			double scaleY = 1.0;
-
-			bool operator==(const Transform&) const = default;
-		};
-
-		// How far the player moved the bar from the divider, from fHudBarX and
-		// fHudBarY, above 0 to the right and up. 0 and 0 is the divider's own
-		// place.
-		struct Shift
-		{
-			double x = 0.0;
-			double y = 0.0;
-
-			bool operator==(const Shift&) const = default;
-		};
-
-		Shift ShiftNow()
-		{
-			const Shift shift{ Settings::fHudBarX.GetValue(), Settings::fHudBarY.GetValue() };
-
-			// A nan typed into the ini never equals itself, so the bar would be
-			// placed again every frame. It counts as 0 and 0.
-			return std::isfinite(shift.x) && std::isfinite(shift.y) ? shift : Shift{};
+			if (a_first) {
+				HudParts::Readout::SetLabel(a_readout, { .size = TEXT_SIZE, .gap = HudParts::Readout::LABEL_GAP * TEXT_SIZE, .drop = HudParts::Readout::LABEL_DROP * TEXT_SIZE });
+			}
+			const auto  label = HudParts::Readout::LabelExtent(a_readout);
+			const auto& [field, letters, measured] = label;
+			if (a_first || measured) {
+				TraceLog::Line("menu", "HUD CND word's letters fill {:.1f},{:.1f} to {:.1f},{:.1f} from the bar's end, its field {:.1f},{:.1f} to {:.1f},{:.1f}{:s}",
+					letters.left, letters.top, letters.right, letters.bottom, field.left, field.top, field.right, field.bottom, measured ? "" : ", not measured yet");
+			}
+			return label;
 		}
 
-		Transform TransformOf(const Value& a_clip)
+		// The bar takes the colour the divider is drawn in, checked every
+		// reading, since the HUD colour or a HUD mod can change it. In vanilla
+		// the counter is a HUD part as the bar is, so both are expected to
+		// carry the HUD colour and nothing is written. Alpha stays the bar's
+		// own. A colour written again and again is traced once, by a_told.
+		void Recolor(Value& a_readout, Value& a_counter, std::optional<Flash::Tint>& a_told)
 		{
-			return Transform{ Flash::Number(a_clip, "x"sv), Flash::Number(a_clip, "y"sv),
-				Flash::Number(a_clip, "scaleX"sv), Flash::Number(a_clip, "scaleY"sv) };
-		}
-
-		// Lays the readout out along the divider it replaces. Both have their
-		// origin on their right end, so the bar runs left over the divider's
-		// length and the word follows past the end.
-		void Layout(Value& a_readout, const Line& a_divider)
-		{
-			HudParts::Readout::SetLabel(a_readout, { .size = TEXT_SIZE, .gap = HudParts::Readout::LABEL_GAP * TEXT_SIZE, .drop = HudParts::Readout::LABEL_DROP * TEXT_SIZE });
-			HudParts::Readout::SetTrack(a_readout, a_divider.width, BAR_DEEP);
-		}
-
-		// Puts the readout where the divider is, moved by the player's shift.
-		// It sits beside the counter in the same parent, so the counter's
-		// position and scale are copied onto it. The HUD's y runs down, so the
-		// shift's y is taken off.
-		void Place(Value& a_readout, const Transform& a_counter, const Line& a_divider, const Shift& a_shift)
-		{
-			a_readout.SetMember("x"sv, Value(a_counter.x + a_divider.x * a_counter.scaleX + a_shift.x));
-			a_readout.SetMember("y"sv, Value(a_counter.y + a_divider.y * a_counter.scaleY - a_shift.y));
-			a_readout.SetMember("scaleX"sv, Value(a_counter.scaleX));
-			a_readout.SetMember("scaleY"sv, Value(a_counter.scaleY));
+			const auto wanted = Roles::Hud::DividerTint(a_counter);
+			const auto now = Flash::TintOf(a_readout);
+			if (!wanted || !now || now->Near(*wanted) || !Flash::SetTint(a_readout, *wanted) || (a_told && a_told->Near(*wanted))) {
+				return;
+			}
+			a_told = wanted;
+			TraceLog::Line("menu", "HUD CND bar takes the colour the ammo divider is drawn in, times {:.3f} {:.3f} {:.3f} plus {:.0f} {:.0f} {:.0f}",
+				wanted->red, wanted->green, wanted->blue, wanted->redAdd, wanted->greenAdd, wanted->blueAdd);
 		}
 
 		// -------------------------------------------------------------------
@@ -139,10 +116,12 @@ namespace HudCondition
 				auto& counter = *found;
 
 				// The HUD menu is listed once it has finished being built, a
-				// frame after its movie loads.
+				// frame after its movie loads. The colour is copied from a reading
+				// after the colour target is made, so the game's own colour lands first.
 				if (!colored) {
 					if (auto* menu = HudParts::MenuFor(*a_params.movie)) {
 						HudParts::AddColorTarget(*menu, readout);
+						recolorFrom = frames + FRAMES_PER_READING;
 						counterCanBeVisible = HudParts::ComponentCanBeVisible(*menu, RE::VTABLE::HUDAmmoCounter[0].address());
 						colored = true;
 						TraceLog::Line("menu", "HUD CND is a HUD part of its own, in the gameplay HUD colour, {:s}",
@@ -157,30 +136,25 @@ namespace HudCondition
 				const auto reading = frames++ % FRAMES_PER_READING == 0;
 				if (reading) {
 					HudParts::Weapon::Queue();
-
-					// The first frame lays the bar out at the line measured or
-					// the shipped place. Later only a line that differs lays it
-					// out, draws and places it again. While the divider is
-					// hidden, turned or not laid out, the bar keeps the
-					// divider's last place.
-					const auto line = Roles::Hud::Divider(*a_params.movie, counter, ownVisible);
-					if (!line) {
-						Roles::Noted(*a_params.movie, "ammo divider"sv, "the CND bar keeps its last place"sv);
+					// The letters are measured again each reading until a line
+					// reads, so a field not laid out yet is not kept for good.
+					if (!label.measured) {
+						label = Label(readout, !labelled);
+						labelled = true;
 					}
-					if (!laidOut || (line && *line != divider)) {
-						divider = line.value_or(divider);
-						Layout(readout, divider);
-						laidOut = true;
-						shownPercent = NOT_DRAWN;
-						placed = false;
-						TraceLog::Line("menu", "HUD CND bar takes the ammo divider's place at {:.0f},{:.0f}, {:.0f} across and {:.0f} deep",
-							divider.x, divider.y, divider.width, BAR_DEEP);
+					const auto choice = Choose(*a_params.movie, counter, readout, ownVisible, label.letters);
+					Follow(choice, readout);
+					if (choice) {
+						teller.Tell(*choice, now);
+					}
+					if (colored && frames > recolorFrom) {
+						Recolor(readout, counter, toldTint);
 					}
 				}
 
 				const auto percent = HudParts::Weapon::Percent();
 				if (percent != shownPercent) {
-					HudParts::Readout::SetPercent(readout, divider.width, BAR_DEEP, percent);
+					HudParts::Readout::SetPercent(readout, spot.line.width, spot.deep, percent);
 					shownPercent = percent;
 					if (percent >= 0) {
 						TraceLog::Line("menu", "HUD CND bar drawn at {:d}%", percent);
@@ -194,7 +168,7 @@ namespace HudCondition
 				const auto shape = TransformOf(counter);
 				const auto shift = ShiftNow();
 				if (!placed || shape != placedAgainst || shift != placedShift) {
-					Place(readout, shape, divider, shift);
+					Place(readout, shape, spot.line, shift);
 					placedAgainst = shape;
 					placedShift = shift;
 					placed = true;
@@ -231,9 +205,9 @@ namespace HudCondition
 
 				// The divider hides while the bar is drawn over it, checked
 				// every frame, since a movie can show it again. With no
-				// condition to show, or the bar moved off it, the counter keeps
-				// its divider.
-				const auto covered = counterShows && percent >= 0 && shift == Shift{};
+				// condition to show, or the bar off it, the counter keeps its
+				// divider.
+				const auto covered = counterShows && percent >= 0 && shift == Shift{} && spot.onDivider;
 				Roles::Hud::Cover(counter, covered, ownVisible);
 				if (covered != dividerHidden) {
 					dividerHidden = covered;
@@ -243,7 +217,7 @@ namespace HudCondition
 				if (opacity != shownOpacity) {
 					if ((opacity > 0.0) != (shownOpacity > 0.0)) {
 						TraceLog::Line("menu", "HUD CND {:s} {:s}, percent {}", opacity > 0.0 ? "shows" : "hides",
-							counterShows ? "in place of the ammo divider" : "on its own", percent);
+							!counterShows ? "on its own" : (spot.onDivider ? "in place of the ammo divider" : "beside the ammo counter"), percent);
 					}
 					readout.SetMember("alpha"sv, Value(opacity));
 					readout.SetMember("visible"sv, Value(opacity > 0.0));
@@ -257,30 +231,71 @@ namespace HudCondition
 				shownPercent = NOT_DRAWN;
 				shownOpacity = -1.0;
 				fade = 0.0;
-				divider = SHIPPED;
+				spot = SHIPPED;
+				label = HudParts::Readout::LabelPlace{};
+				teller.Reset();
 				placedAgainst = Transform{};
 				placedShift = Shift{};
 				placed = false;
 				laidOut = false;
+				labelled = false;
 				colored = false;
+				recolorFrom = 0;
+				toldTint.reset();
 				dividerHidden = false;
 				ownVisible.reset();
 				counterCanBeVisible = nullptr;
 			}
 
 		private:
+			// The first reading lays the bar out at the spot chosen or the
+			// shipped place. Later only a spot that differs lays it out,
+			// draws and places it again.
+			void Follow(const std::optional<Choice>& a_choice, Value& a_readout)
+			{
+				if (laidOut && (!a_choice || a_choice->spot == spot)) {
+					return;
+				}
+				spot = a_choice ? a_choice->spot : spot;
+				HudParts::Readout::SetTrack(a_readout, spot.line.width, spot.deep);
+				HudParts::Readout::MoveLabel(a_readout, label.field.left + spot.wordX, label.field.top + spot.wordY);
+				laidOut = true;
+				shownPercent = NOT_DRAWN;
+				placed = false;
+				const auto said = a_choice ? std::string_view{ a_choice->said } : std::string_view{};
+				if (!spot.onDivider) {
+					TraceLog::Line("menu", "HUD CND {:s}, at {:.0f},{:.0f}, {:.0f} across and {:.1f} deep", said, spot.line.x, spot.line.y, spot.line.width, spot.deep);
+					return;
+				}
+				TraceLog::Line("menu", "HUD CND bar takes the ammo divider's place at {:.0f},{:.0f}, {:.0f} across and {:.1f} deep",
+					spot.line.x, spot.line.y, spot.line.width, spot.deep);
+				if (!said.empty()) {
+					TraceLog::Line("menu", "HUD CND {:s}, the word moved by {:.0f},{:.0f}", said, spot.wordX, spot.wordY);
+				}
+			}
+
 			Clock::time_point lastFrame;
 			std::uint32_t     frames = 0;
 			std::int32_t      shownPercent = NOT_DRAWN;
 			double            shownOpacity = -1.0;
 			double            fade = 0.0;
-			Line              divider = SHIPPED;
+			Spot              spot = SHIPPED;
+			Teller            teller;
 			Transform         placedAgainst;
 			Shift             placedShift;
 			bool              placed = false;
 			bool              laidOut = false;
+			bool              labelled = false;
 			bool              colored = false;
 			bool              dividerHidden = false;
+
+			// Where the word and its letters sit at its place past the bar.
+			HudParts::Readout::LabelPlace label;
+
+			// The first frame count a reading may copy the counter's colour
+			// at, and the colour last traced.
+			std::uint32_t              recolorFrom = 0;
+			std::optional<Flash::Tint> toldTint;
 
 			// The divider's own visible from before NEC's bar covered it, given
 			// back when the bar moves off.

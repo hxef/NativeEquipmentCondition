@@ -1,7 +1,9 @@
 #pragma once
 
 #include "Core/Plugin.h"
+#include "UI/Flash.h"
 
+#include <optional>
 #include <string_view>
 
 // Finds the parts of whatever movie draws a menu, by the job each part does:
@@ -24,6 +26,16 @@ namespace Roles
 
 	// The bounds half of OnScreen, for a part whose visible NEC wrote itself.
 	[[nodiscard]] bool InFrame(Scaleform::GFx::Movie& a_movie, Value& a_clip);
+
+	using Flash::Box;
+
+	// A clip's bounds in a_space's units. Nothing for a clip outside the
+	// display list, with no size or with bounds that are not numbers.
+	[[nodiscard]] std::optional<Box> BoundsIn(Value& a_clip, Value& a_space);
+
+	// The frame the screen shows, in a clip's units. Nothing when the clip is
+	// turned on the screen, since a box cannot hold a turned frame.
+	[[nodiscard]] std::optional<Box> FrameIn(Scaleform::GFx::Movie& a_movie, Value& a_clip);
 
 	// One trace line per movie load and part, saying how it was found: through
 	// the engine, at vanilla's place, by a walk or by a Conventions method.

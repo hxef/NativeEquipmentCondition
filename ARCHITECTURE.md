@@ -137,17 +137,17 @@ src/
       Hits.h/.cpp            the hit sink, and what a blow was
 
   UI/
-    Flash.h/.cpp             safe reads, writes and calls on a menu movie's objects, and text written for it
+    Flash.h/.cpp             safe reads, writes and calls on a menu movie's objects, their colour, and text written for it
     MenuMovies.h/.cpp        the one doorway into the game's menu movies
     MessageBox.h/.cpp        a question with as many answers as it is given, kept solid under a message box mod
     LoadingTips.h/.cpp       the plugin's own tips on the loading screen
     InspectPrice.h/.cpp      the price on the inspect screen at a trader
     Roles/
-      Roles.h/.cpp           the tests every part shares: on screen, the found, noted and missing lines
+      Roles.h/.cpp           the tests every part shares: on screen, a part's box, the found, noted and missing lines
       Conventions.h          the method names some menu movies share beyond the game's own
       Bars.h/.cpp            every button hint list a menu draws
       Card.h/.cpp            the item card and its CND row
-      Hud.h/.cpp             the ammo counter and its divider, where a quick container row's name starts and ends
+      Hud.h/.cpp             the ammo counter, its divider, numbers and colour, the parts beside it, where a quick container row's name starts and ends
       Boxes.h/.cpp           the parts of the bench's confirmation box, where the bench's button bar starts, the message box's background, and whether the barter screen's quantity box is open
     Mcm/
       Mcm.h/.cpp             the settings page in the Mod Configuration Menu
@@ -158,7 +158,10 @@ src/
       HudParts/
         HudParts.h/.cpp      what the HUD readouts share
         Readout.cpp          the readout itself, a bar and the word CND
-      HudCondition.h/.cpp    the CND bar in the ammo counter
+      HudCondition/
+        HudCondition.h/.cpp          the CND bar by the ammo counter: the frame listener and the movie
+        Spot.h/.cpp                  where the bar and its word go, the divider's place or the nearest free spot, and the NEC.log line
+        Place.h/.cpp                 where the readout sits in the counter's parent, moved by fHudBarX and fHudBarY
       PowerArmorCondition/
         PowerArmorCondition.h/.cpp   the frame listener and the movie
         Dash.h/.cpp                  finding the dash through its own camera

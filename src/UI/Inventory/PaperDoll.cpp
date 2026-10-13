@@ -230,7 +230,7 @@ namespace PaperDoll
 
 			const auto left = shield.found ? shield.left : box.left;
 			const auto top = shield.found ? shield.top : box.top;
-			const auto right = box.found ? box.left + HudParts::FIELD_MARGIN + a_digits : shield.right;
+			const auto right = box.found ? box.left + Flash::FIELD_MARGIN + a_digits : shield.right;
 
 			Placement out;
 			out.x = std::max(right, left + BAR_LEAST);

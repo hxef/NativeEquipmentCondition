@@ -13,7 +13,7 @@ namespace Text
 		constexpr Settings::Named LOG_LEVEL{ "Log", "sLogLevel" };
 
 		// The divider line is the game's own line between the rounds in the
-		// gun and the rounds carried, which the bar covers at 0.
+		// gun and the rounds carried, which the bar covers at 0 where it fits.
 		constexpr Line HUD_BAR_X_NAME[]{
 			{ "en", "HUD bar left or right" },
 			{ "fr", "Barre de l'ATH gauche ou droite" },

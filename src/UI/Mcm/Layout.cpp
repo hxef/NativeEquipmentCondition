@@ -14,7 +14,8 @@
 // and a row that does not fit is left out until a scroll makes it fit. So
 // while NEC's page shows, NEC puts the list in None mode, and back in
 // Multi-Line once another page shows. Only a name would wrap differently, and
-// no name on NEC's page is wider than 1 line.
+// no name on NEC's page is wider than 1 line. On NEC's page it also writes the
+// HUD bar sliders' live ends, see HudBar.cpp.
 //
 // MCM's menu is a child of _root.Menu_mc, its list is configPanel_mc's
 // configList_mc, and the list holds the shown page's entries in entryList.
@@ -80,13 +81,6 @@ namespace Mcm
 			return a_entries.GetArraySize() > 0 && a_entries.GetElement(0, &first) && first.IsObject() &&
 			       first.GetMember("modName"sv, &mod) && mod.IsString() && mod.GetString() && std::string_view{ mod.GetString() } == MOD;
 		}
-
-		// Sets the list's mode, and has MCM lay its rows out again with it.
-		void SetMode(Value& a_list, const char* a_mode)
-		{
-			a_list.SetMember("textOption"sv, Value(a_mode));
-			a_list.Invoke("InvalidateData");
-		}
 	}
 
 	void Layout(Scaleform::GFx::Movie& a_movie)
@@ -109,15 +103,25 @@ namespace Mcm
 			return;
 		}
 
+		// MCM lays its rows out again once for both changes.
 		const std::string_view now{ mode.GetString() };
+		auto                   redraw = false;
 		if (IsNecPage(entries)) {
 			if (now == MULTI_LINE) {
-				SetMode(list, NONE);
+				list.SetMember("textOption"sv, Value(NONE));
 				g_changed.store(true);
+				redraw = true;
+			}
+			if (HudBarRanges(entries)) {
+				redraw = true;
 			}
 		} else if (g_changed.load() && now == NONE) {
-			SetMode(list, MULTI_LINE);
+			list.SetMember("textOption"sv, Value(MULTI_LINE));
 			g_changed.store(false);
+			redraw = true;
+		}
+		if (redraw) {
+			list.Invoke("InvalidateData");
 		}
 	}
 }

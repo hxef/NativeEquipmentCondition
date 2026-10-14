@@ -3,7 +3,7 @@
 #include "Core/Settings.h"
 
 // The names and help lines of the HUD numbers and the log level on the MCM
-// page, see MenuLine in Text.h.
+// page, see MenuLine in Text.h, and the HUD bar sliders' Default sentence.
 namespace Text
 {
 	namespace
@@ -12,66 +12,81 @@ namespace Text
 		// the key itself.
 		constexpr Settings::Named LOG_LEVEL{ "Log", "sLogLevel" };
 
-		// The divider line is the game's own line between the rounds in the
-		// gun and the rounds carried, which the bar covers at 0 where it fits.
+		// The 2 HUD bar sliders show where the bar starts, see Mcm/HudBar.cpp.
+		// The page puts HUD_BAR_DEFAULT after their help.
 		constexpr Line HUD_BAR_X_NAME[]{
-			{ "en", "HUD bar left or right" },
-			{ "fr", "Barre de l'ATH gauche ou droite" },
-			{ "de", "HUD-Balken links oder rechts" },
-			{ "it", "Barra interfaccia in orizzontale" },
-			{ "es", "Barra del HUD a izquierda o derecha" },
-			{ "esmx", "Barra del HUD a izquierda o derecha" },
-			{ "ptbr", "Barra do HUD à esquerda ou direita" },
-			{ "pl", "Pasek interfejsu w poziomie" },
-			{ "ru", "Полоса интерфейса по горизонтали" },
-			{ "ja", "HUDバーの左右位置" },
-			{ "zhhant", "狀態欄狀況條左右位置" },
-			{ "zhhans", "状态栏状况条左右位置" },
+			{ "en", "HUD bar from left" },
+			{ "fr", "Barre de l'ATH depuis la gauche" },
+			{ "de", "HUD-Balken von links" },
+			{ "it", "Barra interfaccia da sinistra" },
+			{ "es", "Barra del HUD desde la izquierda" },
+			{ "esmx", "Barra del HUD desde la izquierda" },
+			{ "ptbr", "Barra do HUD a partir da esquerda" },
+			{ "pl", "Pasek interfejsu od lewej" },
+			{ "ru", "Полоса интерфейса от левого края" },
+			{ "ja", "HUDバーの画面左端からの位置" },
+			{ "zhhant", "狀態欄狀況條距左緣" },
+			{ "zhhans", "状态栏状况条距左边缘" },
 		};
 
 		constexpr Line HUD_BAR_X_HELP[]{
-			{ "en", "Moves the bar by the ammo counter: right above 0, left below 0. Away from 0, the game's divider line shows again." },
-			{ "fr", "Déplace la barre du compteur de munitions\u00A0: à droite au-dessus de 0, à gauche en dessous. Sauf à 0, le séparateur du jeu réapparaît." },
-			{ "de", "Schiebt den Balken an der Munitionsanzeige: über 0 nach rechts, unter 0 nach links. Nur bei 0 verdeckt er die Trennlinie." },
-			{ "it", "Sposta la barra accanto alle munizioni: a destra sopra 0, a sinistra sotto 0. Se non è a 0, riappare la linea divisoria." },
-			{ "es", "Mueve la barra junto a la munición: positivo a la derecha, negativo a la izquierda. Si no es 0, reaparece la línea divisoria del juego." },
-			{ "esmx", "Mueve la barra junto a la munición: positivo a la derecha, negativo a la izquierda. Si no es 0, reaparece la línea divisoria del juego." },
-			{ "ptbr", "Move a barra junto ao contador de munição: acima de 0 à direita, abaixo de 0 à esquerda. Fora do 0, o divisor do jogo reaparece." },
-			{ "pl", "Przesuwa pasek przy liczniku amunicji: powyżej 0 w prawo, poniżej 0 w lewo. Przy wartości innej niż 0 znów widać linię podziału z gry." },
-			{ "ru", "Сдвигает полосу у счетчика патронов: выше 0 вправо, ниже 0 влево. Если не 0, снова видна разделительная линия игры." },
-			{ "ja", "弾薬カウンターのバーを、プラスで右へ、マイナスで左へ動かします。0以外では、本来の区切り線も表示されます" },
-			{ "zhhant", "移動彈藥計數旁的狀況條：大於0向右，小於0向左。不為0時，遊戲原有的分隔線會重新顯示。" },
-			{ "zhhans", "移动弹药计数旁的状况条：大于0向右，小于0向左。不为0时，游戏原有的分隔线会重新显示。" },
+			{ "en", "Where the bar by the ammo counter and its CND word start, counted from the left edge of the screen. A number keeps its place at any resolution." },
+			{ "fr", "Où commencent la barre du compteur de munitions et son mot, en comptant depuis le bord gauche de l'écran. Un nombre garde sa place à toute résolution." },
+			{ "de", "Wo der Balken an der Munitionsanzeige samt Wort beginnt, gezählt vom linken Bildrand. Ein Wert bleibt bei jeder Auflösung an derselben Stelle." },
+			{ "it", "Dove iniziano la barra accanto alle munizioni e la sua parola, contando dal bordo sinistro dello schermo. Un valore resta nello stesso punto a ogni risoluzione." },
+			{ "es", "Dónde empiezan la barra junto a la munición y su palabra, contando desde el borde izquierdo de la pantalla. Un valor conserva su lugar en cualquier resolución." },
+			{ "esmx", "Dónde empiezan la barra junto a la munición y su palabra, contando desde el borde izquierdo de la pantalla. Un valor conserva su lugar en cualquier resolución." },
+			{ "ptbr", "Onde começam a barra junto ao contador de munição e sua palavra, contando a partir da borda esquerda da tela. Um valor mantém o lugar em qualquer resolução." },
+			{ "pl", "Gdzie zaczyna się pasek przy liczniku amunicji wraz z napisem, licząc od lewej krawędzi ekranu. Wartość zostaje na swoim miejscu w każdej rozdzielczości." },
+			{ "ru", "Где начинается полоса у счетчика патронов вместе с надписью, считая от левого края экрана. Значение сохраняет свое место при любом разрешении." },
+			{ "ja", "弾薬カウンターのバーと文字の開始位置で、画面の左端から数えます。どの解像度でも同じ数値なら同じ位置です" },
+			{ "zhhant", "彈藥計數旁的狀況條與文字的起點，從螢幕左緣算起。同一數值在任何解析度下都在同一位置。" },
+			{ "zhhans", "弹药计数旁的状况条与文字的起点，从屏幕左边缘算起。同一数值在任何分辨率下都在同一位置。" },
 		};
 
 		constexpr Line HUD_BAR_Y_NAME[]{
-			{ "en", "HUD bar up or down" },
-			{ "fr", "Barre de l'ATH haut ou bas" },
-			{ "de", "HUD-Balken oben oder unten" },
-			{ "it", "Barra interfaccia in verticale" },
-			{ "es", "Barra del HUD arriba o abajo" },
-			{ "esmx", "Barra del HUD arriba o abajo" },
-			{ "ptbr", "Barra do HUD para cima ou baixo" },
-			{ "pl", "Pasek interfejsu w pionie" },
-			{ "ru", "Полоса интерфейса по вертикали" },
-			{ "ja", "HUDバーの上下位置" },
-			{ "zhhant", "狀態欄狀況條上下位置" },
-			{ "zhhans", "状态栏状况条上下位置" },
+			{ "en", "HUD bar from top" },
+			{ "fr", "Barre de l'ATH depuis le haut" },
+			{ "de", "HUD-Balken von oben" },
+			{ "it", "Barra interfaccia dall'alto" },
+			{ "es", "Barra del HUD desde arriba" },
+			{ "esmx", "Barra del HUD desde arriba" },
+			{ "ptbr", "Barra do HUD a partir do topo" },
+			{ "pl", "Pasek interfejsu od góry" },
+			{ "ru", "Полоса интерфейса от верхнего края" },
+			{ "ja", "HUDバーの画面上端からの位置" },
+			{ "zhhant", "狀態欄狀況條距上緣" },
+			{ "zhhans", "状态栏状况条距上边缘" },
 		};
 
 		constexpr Line HUD_BAR_Y_HELP[]{
-			{ "en", "Moves the bar by the ammo counter: up above 0, down below 0. Away from 0, the game's divider line shows again." },
-			{ "fr", "Déplace la barre du compteur de munitions\u00A0: en haut au-dessus de 0, en bas en dessous. Sauf à 0, le séparateur du jeu réapparaît." },
-			{ "de", "Schiebt den Balken an der Munitionsanzeige: über 0 nach oben, unter 0 nach unten. Nur bei 0 verdeckt er die Trennlinie." },
-			{ "it", "Sposta la barra accanto alle munizioni: in alto sopra 0, in basso sotto 0. Se non è a 0, riappare la linea divisoria." },
-			{ "es", "Mueve la barra junto a la munición: positivo hacia arriba, negativo hacia abajo. Si no es 0, reaparece la línea divisoria del juego." },
-			{ "esmx", "Mueve la barra junto a la munición: positivo hacia arriba, negativo hacia abajo. Si no es 0, reaparece la línea divisoria del juego." },
-			{ "ptbr", "Move a barra junto ao contador de munição: acima de 0 sobe, abaixo de 0 desce. Fora do 0, o divisor do jogo reaparece." },
-			{ "pl", "Przesuwa pasek przy liczniku amunicji: powyżej 0 w górę, poniżej 0 w dół. Przy wartości innej niż 0 znów widać linię podziału z gry." },
-			{ "ru", "Сдвигает полосу у счетчика патронов: выше 0 вверх, ниже 0 вниз. Если не 0, снова видна разделительная линия игры." },
-			{ "ja", "弾薬カウンターのバーを、プラスで上へ、マイナスで下へ動かします。0以外では、本来の区切り線も表示されます" },
-			{ "zhhant", "移動彈藥計數旁的狀況條：大於0向上，小於0向下。不為0時，遊戲原有的分隔線會重新顯示。" },
-			{ "zhhans", "移动弹药计数旁的状况条：大于0向上，小于0向下。不为0时，游戏原有的分隔线会重新显示。" },
+			{ "en", "Where the bar by the ammo counter and its CND word start, counted from the top edge of the screen. A number keeps its place at any resolution." },
+			{ "fr", "Où commencent la barre du compteur de munitions et son mot, en comptant depuis le bord supérieur de l'écran. Un nombre garde sa place à toute résolution." },
+			{ "de", "Wo der Balken an der Munitionsanzeige samt Wort beginnt, gezählt vom oberen Bildrand. Ein Wert bleibt bei jeder Auflösung an derselben Stelle." },
+			{ "it", "Dove iniziano la barra accanto alle munizioni e la sua parola, contando dal bordo superiore dello schermo. Un valore resta nello stesso punto a ogni risoluzione." },
+			{ "es", "Dónde empiezan la barra junto a la munición y su palabra, contando desde el borde superior de la pantalla. Un valor conserva su lugar en cualquier resolución." },
+			{ "esmx", "Dónde empiezan la barra junto a la munición y su palabra, contando desde el borde superior de la pantalla. Un valor conserva su lugar en cualquier resolución." },
+			{ "ptbr", "Onde começam a barra junto ao contador de munição e sua palavra, contando a partir da borda superior da tela. Um valor mantém o lugar em qualquer resolução." },
+			{ "pl", "Gdzie zaczyna się pasek przy liczniku amunicji wraz z napisem, licząc od górnej krawędzi ekranu. Wartość zostaje na swoim miejscu w każdej rozdzielczości." },
+			{ "ru", "Где начинается полоса у счетчика патронов вместе с надписью, считая от верхнего края экрана. Значение сохраняет свое место при любом разрешении." },
+			{ "ja", "弾薬カウンターのバーと文字の開始位置で、画面の上端から数えます。どの解像度でも同じ数値なら同じ位置です" },
+			{ "zhhant", "彈藥計數旁的狀況條與文字的起點，從螢幕上緣算起。同一數值在任何解析度下都在同一位置。" },
+			{ "zhhans", "弹药计数旁的状况条与文字的起点，从屏幕上边缘算起。同一数值在任何分辨率下都在同一位置。" },
+		};
+
+		constexpr Line HUD_BAR_DEFAULT[]{
+			{ "en", "Default: {0}." },
+			{ "fr", "Par défaut\u00A0: {0}." },
+			{ "de", "Standard: {0}." },
+			{ "it", "Predefinito: {0}." },
+			{ "es", "Predeterminado: {0}." },
+			{ "esmx", "Predeterminado: {0}." },
+			{ "ptbr", "Padrão: {0}." },
+			{ "pl", "Domyślnie: {0}." },
+			{ "ru", "По умолчанию: {0}." },
+			{ "ja", "初期値は{0}です" },
+			{ "zhhant", "預設為{0}。" },
+			{ "zhhans", "默认为{0}。" },
 		};
 
 		constexpr Line POWER_ARMOR_BAR_X_NAME[]{
@@ -178,5 +193,10 @@ namespace Text
 	std::span<const MenuRow> MenuHudLog()
 	{
 		return ROWS;
+	}
+
+	std::string MenuHudBarDefault(std::string_view a_help, std::int32_t a_number)
+	{
+		return Sentences(a_help, Say(HUD_BAR_DEFAULT, a_number), Out::kPage);
 	}
 }

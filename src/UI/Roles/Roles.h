@@ -37,6 +37,13 @@ namespace Roles
 	// turned on the screen, since a box cannot hold a turned frame.
 	[[nodiscard]] std::optional<Box> FrameIn(Scaleform::GFx::Movie& a_movie, Value& a_clip);
 
+	using Flash::Point;
+
+	// A point in a clip's units on the stage, or back. Nothing when the movie
+	// refuses it.
+	[[nodiscard]] std::optional<Point> ToStage(Scaleform::GFx::Movie& a_movie, Value& a_clip, const Point& a_point);
+	[[nodiscard]] std::optional<Point> FromStage(Scaleform::GFx::Movie& a_movie, Value& a_clip, const Point& a_point);
+
 	// One trace line per movie load and part, saying how it was found: through
 	// the engine, at vanilla's place, by a walk or by a Conventions method.
 	void Found(Scaleform::GFx::Movie& a_movie, std::string_view a_part, std::string_view a_how);

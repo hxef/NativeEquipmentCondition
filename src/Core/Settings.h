@@ -209,13 +209,13 @@ namespace Settings
 	// VendorRepair/Quote.h.
 	inline Live<float> fTraderPriceMult{ "Balance", "fTraderPriceMult", 1.0F };
 
-	// HUD. Where the CND bars sit, in pixels of the HUD, which is 1280
-	// across and 720 down on any screen. Read every frame, so a change shows
-	// at once. 0 and 0 is the bar's own place.
+	// HUD. Where the CND bars sit, moved from their own place in units of
+	// the HUD, which is 1280 across and 720 down on any screen. Read every
+	// frame, so a change shows at once. 0 and 0 is the bar's own place.
 
 	// How far right of its own spot by the ammo counter the CND bar sits,
-	// below 0 to the left. Off the divider, the divider shows again, see
-	// HudCondition.h.
+	// below 0 to the left. Off its spot, the divider shows again.
+	// HudCondition.h says how it stays on screen and what the MCM page shows.
 	inline Live<float> fHudBarX{ "HUD", "fHudBarX", 0.0F };
 
 	// How far up from its own spot the CND bar sits, below 0 down.

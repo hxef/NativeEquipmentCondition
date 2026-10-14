@@ -1,13 +1,15 @@
 #pragma once
 
 #include "Core/Plugin.h"
+#include "Core/Settings.h"
 
 #include <cstddef>
+#include <cstdint>
 #include <optional>
 #include <string>
 #include <string_view>
 
-// What the 4 files of the folder share. Private to this folder.
+// What the 5 files of the folder share. Private to this folder.
 namespace Mcm
 {
 	using Params = Scaleform::GFx::FunctionHandler::Params;
@@ -25,6 +27,10 @@ namespace Mcm
 	void SetInt(const Params& a_params, std::string_view a_id);
 	void SetFloat(const Params& a_params, std::string_view a_id);
 	void GetFullName(const Params& a_params, std::string_view a_id);
+
+	// Whether a_id is a_setting's id on the page, its key and section as in
+	// bJam:Features, in Bridge.cpp.
+	[[nodiscard]] bool IsIdOf(const Settings::Named& a_setting, std::string_view a_id);
 
 	// What the hidden switches of the page's grey rows say, and what those
 	// rows read, in Notes.cpp. a_id is parts:Note, bJam:Free, bJam:Note or
@@ -51,8 +57,24 @@ namespace Mcm
 
 	void Queue(FollowUp a_followUp);
 
+	// The HUD bar sliders, in HudBar.cpp: the bar's place in HUD units from
+	// the screen's top left, from HudCondition::Measured. HudBarShows
+	// answers bHudCondition:Placed, false until the HUD has measured the
+	// bar. HudBarValue and HudBarShift answer the 2 slider ids and
+	// HudBarDefault their help ids, each nothing for any other id or before
+	// that measure. HudBarRanges writes the live ends and value on NEC's
+	// entries, true when it wrote one. HudBarHidden says whether a_setting is
+	// a slider the page hides until that measure.
+	[[nodiscard]] bool                        IsHudBar(std::string_view a_id);
+	[[nodiscard]] bool                        HudBarHidden(const Settings::Named& a_setting);
+	[[nodiscard]] std::optional<bool>         HudBarShows(std::string_view a_id);
+	[[nodiscard]] std::optional<double>       HudBarValue(std::string_view a_id);
+	[[nodiscard]] std::optional<float>        HudBarShift(std::string_view a_id, float a_number);
+	[[nodiscard]] std::optional<std::int32_t> HudBarDefault(std::string_view a_id);
+	[[nodiscard]] bool                        HudBarRanges(Scaleform::GFx::Value& a_entries);
+
 	// Puts MCM's settings list in None mode while NEC's page shows, and back
-	// once another page shows, in Layout.cpp. Called every frame of the main
-	// or pause menu.
+	// once another page shows, and keeps the HUD bar sliders' live ends, in
+	// Layout.cpp. Called every frame of the main or pause menu.
 	void Layout(Scaleform::GFx::Movie& a_movie);
 }

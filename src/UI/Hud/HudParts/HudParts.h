@@ -119,15 +119,16 @@ namespace HudParts
 		double SetLabel(Value& a_readout, const Label& a_label);
 
 		// Where the word sits from the readout's origin: its field, and the
-		// box its letters fill, from the top of the line to the baseline. The
-		// letters are the field inside its margins when they cannot be
-		// measured, and measured says which. All 0 before SetLabel or when the
-		// readout has no word.
+		// box its letters fill, from the top of the line to the baseline, and
+		// how far the line reaches below that. The letters are the field
+		// inside its margins when they cannot be measured, and measured says
+		// which. All 0 when the readout has no word.
 		struct LabelPlace
 		{
 			Flash::Box field;
 			Flash::Box letters;
 			bool       measured = false;
+			double     descent = 0.0;
 		};
 		[[nodiscard]] LabelPlace LabelExtent(Value& a_readout);
 

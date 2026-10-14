@@ -71,7 +71,7 @@ src/
       Menu/
         MenuSwitches.cpp     the MCM page's switches: help, and the bug report logs switch's name
         MenuNumbers.cpp      the MCM page's Balance numbers: names and help
-        MenuHudLog.cpp       the MCM page's HUD numbers and log level: names and help
+        MenuHudLog.cpp       the MCM page's HUD numbers and log level: names and help, and the HUD bar sliders' default
         MenuNotes.cpp        the MCM page's grey lines about parts left to other mods
         MenuPieces.cpp       a part with its pieces in brackets, what still works, and a setting's sentence with pieces off
     TraceLog.h/.cpp          the trace logs, for lines that arrive in floods
@@ -137,13 +137,13 @@ src/
       Hits.h/.cpp            the hit sink, and what a blow was
 
   UI/
-    Flash.h/.cpp             safe reads, writes and calls on a menu movie's objects, their colour, and text written for it
+    Flash.h/.cpp             safe reads, writes and calls on a menu movie's objects, their colour, boxes and points, a text field's first line, and text written for it
     MenuMovies.h/.cpp        the one doorway into the game's menu movies
     MessageBox.h/.cpp        a question with as many answers as it is given, kept solid under a message box mod
     LoadingTips.h/.cpp       the plugin's own tips on the loading screen
     InspectPrice.h/.cpp      the price on the inspect screen at a trader
     Roles/
-      Roles.h/.cpp           the tests every part shares: on screen, a part's box, the found, noted and missing lines
+      Roles.h/.cpp           the tests every part shares: on screen, a part's box, a point to and from the stage, the found, noted and missing lines
       Conventions.h          the method names some menu movies share beyond the game's own
       Bars.h/.cpp            every button hint list a menu draws
       Card.h/.cpp            the item card and its CND row
@@ -153,7 +153,8 @@ src/
       Mcm.h/.cpp             the settings page in the Mod Configuration Menu
       Bridge.h/.cpp          the page's answers: values, changes and words
       Notes.cpp              the page's grey rows: the list at the top and each block's note
-      Layout.cpp             MCM's list in None mode while NEC's page shows
+      Layout.cpp             MCM's list in None mode while NEC's page shows, and the HUD bar sliders' live ends
+      HudBar.cpp             the HUD bar sliders: the bar's place in HUD units from the screen's top left, with the screen as their range
     Hud/
       HudParts/
         HudParts.h/.cpp      what the HUD readouts share
@@ -161,7 +162,7 @@ src/
       HudCondition/
         HudCondition.h/.cpp          the CND bar by the ammo counter: the frame listener and the movie
         Spot.h/.cpp                  where the bar and its word go, the divider's place or the nearest free spot, and the NEC.log line
-        Place.h/.cpp                 where the readout sits in the counter's parent, moved by fHudBarX and fHudBarY
+        Place.h/.cpp                 where the readout sits in the counter's parent, moved by fHudBarX and fHudBarY and held whole on screen, and that place kept for the MCM page
       PowerArmorCondition/
         PowerArmorCondition.h/.cpp   the frame listener and the movie
         Dash.h/.cpp                  finding the dash through its own camera

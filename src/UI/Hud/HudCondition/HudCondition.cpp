@@ -50,19 +50,23 @@ namespace HudCondition
 		constexpr std::int32_t NOT_DRAWN = -2;
 
 		// Writes the word with a_first, once a movie since it never changes,
-		// and returns where it sits from the bar's right end. Both have their
-		// origin on their right end, so the bar runs left and the word follows
-		// past it. The trace says the first try and the one that measures.
-		HudParts::Readout::LabelPlace Label(Value& a_readout, bool a_first)
+		// and returns where it sits from the bar's right end, a_moved taken
+		// back, which is how far Follow moved it. Both have their origin on
+		// their right end, so the bar runs left and the word follows past it.
+		// The trace says the first try and the one that measures.
+		HudParts::Readout::LabelPlace Label(Value& a_readout, bool a_first, const Flash::Point& a_moved)
 		{
 			if (a_first) {
 				HudParts::Readout::SetLabel(a_readout, { .size = TEXT_SIZE, .gap = HudParts::Readout::LABEL_GAP * TEXT_SIZE, .drop = HudParts::Readout::LABEL_DROP * TEXT_SIZE });
 			}
-			const auto  label = HudParts::Readout::LabelExtent(a_readout);
-			const auto& [field, letters, measured] = label;
-			if (a_first || measured) {
+			auto label = HudParts::Readout::LabelExtent(a_readout);
+			label.field = label.field.Moved(-a_moved.x, -a_moved.y);
+			label.letters = label.letters.Moved(-a_moved.x, -a_moved.y);
+			const auto& field = label.field;
+			const auto& letters = label.letters;
+			if (a_first || label.measured) {
 				TraceLog::Line("menu", "HUD CND word's letters fill {:.1f},{:.1f} to {:.1f},{:.1f} from the bar's end, its field {:.1f},{:.1f} to {:.1f},{:.1f}{:s}",
-					letters.left, letters.top, letters.right, letters.bottom, field.left, field.top, field.right, field.bottom, measured ? "" : ", not measured yet");
+					letters.left, letters.top, letters.right, letters.bottom, field.left, field.top, field.right, field.bottom, label.measured ? "" : ", not measured yet");
 			}
 			return label;
 		}
@@ -116,8 +120,9 @@ namespace HudCondition
 				auto& counter = *found;
 
 				// The HUD menu is listed once it has finished being built, a
-				// frame after its movie loads. The colour is copied from a reading
-				// after the colour target is made, so the game's own colour lands first.
+				// frame after its movie loads. The colour is copied from a
+				// reading after the colour target is made, so the game's own
+				// colour lands first.
 				if (!colored) {
 					if (auto* menu = HudParts::MenuFor(*a_params.movie)) {
 						HudParts::AddColorTarget(*menu, readout);
@@ -139,10 +144,10 @@ namespace HudCondition
 					// The letters are measured again each reading until a line
 					// reads, so a field not laid out yet is not kept for good.
 					if (!label.measured) {
-						label = Label(readout, !labelled);
+						label = Label(readout, !labelled, Flash::Point{ spot.wordX, spot.wordY });
 						labelled = true;
 					}
-					const auto choice = Choose(*a_params.movie, counter, readout, ownVisible, label.letters);
+					const auto choice = Choose(*a_params.movie, counter, readout, ownVisible, label);
 					Follow(choice, readout);
 					if (choice) {
 						teller.Tell(*choice, now);
@@ -163,15 +168,14 @@ namespace HudCondition
 					}
 				}
 
-				// A HUD mod or a power armor HUD can move the counter, and the
-				// bar goes with it. The MCM page can move the bar.
-				const auto shape = TransformOf(counter);
-				const auto shift = ShiftNow();
-				if (!placed || shape != placedAgainst || shift != placedShift) {
-					Place(readout, shape, spot.line, shift);
-					placedAgainst = shape;
-					placedShift = shift;
-					placed = true;
+				// A HUD mod or a power armor HUD can move the counter or a clip
+				// it sits in, and the bar goes with it. The MCM page can move
+				// the bar, and a new screen size can move the screen's edges.
+				const auto shown = a_params.movie->GetVisibleFrameRect();
+				const Basis basis{ TransformOf(counter), ParentsOf(meters), ShiftNow(), Flash::Box{ shown.x1, shown.y1, shown.x2, shown.y2 } };
+				if (reading || basis != placedFrom) {
+					placedFrom = basis;
+					PlaceOnScreen(*a_params.movie, meters, counter, readout, basis);
 				}
 
 				// A gun keeps the counter showing, and the bar fades with it. A
@@ -195,23 +199,20 @@ namespace HudCondition
 					fade = target > fade ? std::min(target, fade + step) : std::max(target, fade - step);
 					opacity = fade;
 				}
-
-				// A HUD mod can move the counter off screen, and the bar goes
-				// with it. A counter a melee weapon hides is not asked, since
-				// that hide is on purpose.
-				if (reading && counterShows && !Roles::OnScreen(*a_params.movie, counter)) {
-					Roles::Noted(*a_params.movie, "on screen ammo counter"sv, "the CND bar goes off screen with it"sv);
+				if (!placeable) {
+					opacity = 0.0;
+					fade = 0.0;
 				}
 
 				// The divider hides while the bar is drawn over it, checked
 				// every frame, since a movie can show it again. With no
 				// condition to show, or the bar off it, the counter keeps its
 				// divider.
-				const auto covered = counterShows && percent >= 0 && shift == Shift{} && spot.onDivider;
+				const auto covered = counterShows && percent >= 0 && onSpot && spot.onDivider;
 				Roles::Hud::Cover(counter, covered, ownVisible);
 				if (covered != dividerHidden) {
 					dividerHidden = covered;
-					TraceLog::Line("menu", "HUD ammo divider {:s}, the bar moved by {:.0f},{:.0f}", covered ? "hides under the CND bar" : "shows", shift.x, shift.y);
+					TraceLog::Line("menu", "HUD ammo divider {:s}, the bar moved by {:.0f},{:.0f}", covered ? "hides under the CND bar" : "shows", basis.shift.x, basis.shift.y);
 				}
 
 				if (opacity != shownOpacity) {
@@ -234,9 +235,11 @@ namespace HudCondition
 				spot = SHIPPED;
 				label = HudParts::Readout::LabelPlace{};
 				teller.Reset();
-				placedAgainst = Transform{};
-				placedShift = Shift{};
-				placed = false;
+				placedFrom.reset();
+				placedAt.reset();
+				placeable = false;
+				onSpot = false;
+				held = false;
 				laidOut = false;
 				labelled = false;
 				colored = false;
@@ -248,6 +251,37 @@ namespace HudCondition
 			}
 
 		private:
+			// Places the bar on screen and keeps that place for the MCM page.
+			// The bar hides while its counter is wholly off screen, which is
+			// how HUD mods hide the counter, and while the movie refuses a
+			// point, so it is never drawn where NEC cannot tell it is on
+			// screen.
+			void PlaceOnScreen(Scaleform::GFx::Movie& a_movie, Value& a_meters, Value& a_counter, Value& a_readout, const Basis& a_basis)
+			{
+				const auto counterIn = Roles::InFrame(a_movie, a_counter);
+				const auto placed = counterIn ? Place(a_movie, a_meters, a_basis, spot.line, Filled(spot, label)) : std::nullopt;
+				placeable = placed.has_value();
+				onSpot = placed && placed->onSpot;
+				if (!placed) {
+					Roles::Noted(a_movie, counterIn ? "stage place for the CND bar"sv : "on screen ammo counter"sv,
+						counterIn ? "the bar hides"sv : "the CND bar hides with it"sv);
+					return;
+				}
+				if (placed->at != placedAt) {
+					Put(a_readout, placed->at);
+					placedAt = placed->at;
+				}
+				Keep(placed->box, a_basis.frame);
+				if (placed->held != held) {
+					held = placed->held;
+					if (held) {
+						TraceLog::Line("menu", "HUD CND bar held whole on screen, {:.0f},{:.0f} short of where fHudBarX and fHudBarY put it", placed->shortBy.x, placed->shortBy.y);
+					} else {
+						TraceLog::Line("menu", "HUD CND bar sits where fHudBarX and fHudBarY put it");
+					}
+				}
+			}
+
 			// The first reading lays the bar out at the spot chosen or the
 			// shipped place. Later only a spot that differs lays it out,
 			// draws and places it again.
@@ -261,7 +295,6 @@ namespace HudCondition
 				HudParts::Readout::MoveLabel(a_readout, label.field.left + spot.wordX, label.field.top + spot.wordY);
 				laidOut = true;
 				shownPercent = NOT_DRAWN;
-				placed = false;
 				const auto said = a_choice ? std::string_view{ a_choice->said } : std::string_view{};
 				if (!spot.onDivider) {
 					TraceLog::Line("menu", "HUD CND {:s}, at {:.0f},{:.0f}, {:.0f} across and {:.1f} deep", said, spot.line.x, spot.line.y, spot.line.width, spot.deep);
@@ -281,9 +314,6 @@ namespace HudCondition
 			double            fade = 0.0;
 			Spot              spot = SHIPPED;
 			Teller            teller;
-			Transform         placedAgainst;
-			Shift             placedShift;
-			bool              placed = false;
 			bool              laidOut = false;
 			bool              labelled = false;
 			bool              colored = false;
@@ -291,6 +321,16 @@ namespace HudCondition
 
 			// Where the word and its letters sit at its place past the bar.
 			HudParts::Readout::LabelPlace label;
+
+			// What the bar was last placed from and where it went. placeable
+			// is false while its counter is off screen or the movie refused a
+			// point, onSpot while it sits on its spot, and held while the
+			// screen's edge holds it short of the shift.
+			std::optional<Basis>     placedFrom;
+			std::optional<Transform> placedAt;
+			bool                     placeable = false;
+			bool                     onSpot = false;
+			bool                     held = false;
 
 			// The first frame count a reading may copy the counter's colour
 			// at, and the colour last traced.
@@ -321,7 +361,7 @@ namespace HudCondition
 				return;
 			}
 
-			// One readout beside the counter, in the same parent, so it stays
+			// 1 readout beside the counter, in the same parent, so it stays
 			// when the counter hides. The first frames measure the divider, lay
 			// the parts out and colour them. Nothing is added to the HUD until
 			// the whole readout is built, so a movie that refuses any part
@@ -344,7 +384,7 @@ namespace HudCondition
 			}
 
 			HudParts::Weapon::Queue();
-			TraceLog::Line("menu", "HUDMenu.swf loaded, CND takes the divider's place between the ammo numbers");
+			TraceLog::Line("menu", "HUDMenu.swf loaded, CND goes by the ammo counter");
 		}
 
 		HudParts::Waiter g_waiter{ Settings::bHudCondition, &Build };
@@ -353,6 +393,7 @@ namespace HudCondition
 	void OnMovieLoaded(Scaleform::GFx::Movie& a_movie, std::string_view a_file)
 	{
 		if (MenuMovies::IsMovie(a_file, "HUDMenu.swf"sv)) {
+			Forget();
 			g_waiter.Watch(a_movie, "the CND bar");
 		}
 	}

@@ -61,6 +61,20 @@ namespace Roles
 		{
 			return a_set.emplace(a_part).second;
 		}
+
+		// a_point through the clip's localToGlobal or globalToLocal, a_how.
+		[[nodiscard]] std::optional<Point> Mapped(Scaleform::GFx::Movie& a_movie, Value& a_clip, const char* a_how, const Point& a_point)
+		{
+			const std::array args{ Value(a_point.x), Value(a_point.y) };
+			Value             given;
+			Value             mapped;
+			a_movie.CreateObject(&given, "flash.geom.Point", args.data(), static_cast<std::uint32_t>(args.size()));
+			if (!given.IsObject() || !a_clip.IsDisplayObject() || !a_clip.Invoke(a_how, &mapped, &given, 1) || !mapped.IsObject()) {
+				return std::nullopt;
+			}
+			const Point point{ Flash::Number(mapped, "x"sv), Flash::Number(mapped, "y"sv) };
+			return std::isfinite(point.x) && std::isfinite(point.y) ? std::optional{ point } : std::nullopt;
+		}
 	}
 
 	// -------------------------------------------------------------------
@@ -128,30 +142,12 @@ namespace Roles
 
 	std::optional<Box> FrameIn(Scaleform::GFx::Movie& a_movie, Value& a_clip)
 	{
-		// Each corner of the frame goes through the clip's globalToLocal, the
-		// stage units InFrame compares in to the clip's own.
-		struct Point
-		{
-			double x = 0.0;
-			double y = 0.0;
-		};
-		const auto local = [&](float a_x, float a_y) -> std::optional<Point> {
-			const std::array args{ Value(static_cast<double>(a_x)), Value(static_cast<double>(a_y)) };
-			Value             global;
-			Value             mapped;
-			a_movie.CreateObject(&global, "flash.geom.Point", args.data(), static_cast<std::uint32_t>(args.size()));
-			if (!global.IsObject() || !a_clip.IsDisplayObject() || !a_clip.Invoke("globalToLocal", &mapped, &global, 1) ||
-				!mapped.IsObject()) {
-				return std::nullopt;
-			}
-			const Point point{ Flash::Number(mapped, "x"sv), Flash::Number(mapped, "y"sv) };
-			return std::isfinite(point.x) && std::isfinite(point.y) ? std::optional{ point } : std::nullopt;
-		};
-
+		// 3 corners of the frame go from the stage into the clip's units, the
+		// 3rd to tell a turned clip.
 		const auto shown = a_movie.GetVisibleFrameRect();
-		const auto first = local(shown.x1, shown.y1);
-		const auto last = local(shown.x2, shown.y2);
-		const auto side = local(shown.x1, shown.y2);
+		const auto first = FromStage(a_movie, a_clip, Point{ shown.x1, shown.y1 });
+		const auto last = FromStage(a_movie, a_clip, Point{ shown.x2, shown.y2 });
+		const auto side = FromStage(a_movie, a_clip, Point{ shown.x1, shown.y2 });
 		if (!first || !last || !side) {
 			return std::nullopt;
 		}
@@ -164,6 +160,20 @@ namespace Roles
 		}
 		const Box frame{ std::min(first->x, last->x), std::min(first->y, last->y), std::max(first->x, last->x), std::max(first->y, last->y) };
 		return frame.right > frame.left && frame.bottom > frame.top ? std::optional{ frame } : std::nullopt;
+	}
+
+	// -------------------------------------------------------------------
+	// A point to and from the stage
+	// -------------------------------------------------------------------
+
+	std::optional<Point> ToStage(Scaleform::GFx::Movie& a_movie, Value& a_clip, const Point& a_point)
+	{
+		return Mapped(a_movie, a_clip, "localToGlobal", a_point);
+	}
+
+	std::optional<Point> FromStage(Scaleform::GFx::Movie& a_movie, Value& a_clip, const Point& a_point)
+	{
+		return Mapped(a_movie, a_clip, "globalToLocal", a_point);
 	}
 
 	// -------------------------------------------------------------------

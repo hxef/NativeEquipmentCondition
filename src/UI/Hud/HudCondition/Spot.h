@@ -1,5 +1,6 @@
 #pragma once
 
+#include "UI/Hud/HudParts/HudParts.h"
 #include "UI/Roles/Hud.h"
 
 #include <chrono>
@@ -43,27 +44,35 @@ namespace HudCondition
 	// Measures the HUD around the counter now and chooses the spot. Nothing
 	// while the divider is hidden or off screen, so the bar keeps its last
 	// spot. a_ownVisible is the divider's own visible while NEC covers it,
-	// and a_word where the word's letters sit from the bar's right end.
+	// and a_label where the word sits from the bar's right end.
 	//
 	// The bar and the word never cover a shown number or another part, text
 	// counted across its field and down to its letters' end, and stay on
-	// screen while the counter is. A child of the counter whose box holds
-	// all its numbers is a backdrop they sit on, as the numbers do.
+	// screen while the counter is, the word down to the bottom of its line
+	// as Filled holds it. A child of the counter whose box holds all its
+	// numbers is a backdrop they sit on, as the numbers do.
 	//
 	// The divider's own place comes first. The bar fits there when the
 	// divider is upright and at least 4 times as long as the bar is deep.
-	// The numbers count as clear when the divider runs between them, one
-	// above and one below, as the game draws them. The word then takes the
+	// The numbers count as clear when the divider runs between them, 1
+	// above and 1 below, as the game draws them. The word then takes the
 	// nearest free spot beside the bar, past its end first.
 	//
 	// Otherwise the bar and the word past its end take the nearest free spot
 	// above, below, left or right of what the counter draws, a bar's depth
-	// away, keeping off the divider, which shows again. With none free the
-	// bar keeps the divider's place, as before NEC looked for a spot, its
-	// word placed as on a divider that fits, and NEC.log says so. Widgets a
-	// mod adds in another layer of the movie are not avoided.
+	// away, keeping off the divider, which shows again. A spot where only
+	// the word's letters fit is taken when none fits its whole line. With
+	// none free the bar keeps the divider's place, as before NEC looked for
+	// a spot, its word placed as on a divider that fits, and NEC.log says
+	// so. Widgets a mod adds in another layer of the movie are not avoided.
 	[[nodiscard]] std::optional<Choice> Choose(Scaleform::GFx::Movie& a_movie, Roles::Value& a_counter, const Roles::Value& a_readout,
-		std::optional<bool> a_ownVisible, const Roles::Box& a_word);
+		std::optional<bool> a_ownVisible, const HudParts::Readout::LabelPlace& a_label);
+
+	// The box the bar and its word fill from the bar's right end, which the
+	// HUD holds whole on screen. It reaches down to the bottom of the word's
+	// line, since letters in some languages, Chinese for one, reach below
+	// the baseline.
+	[[nodiscard]] Flash::Box Filled(const Spot& a_spot, const HudParts::Readout::LabelPlace& a_label);
 
 	// Says a choice in NEC.log once it has held for a second, so a HUD mod
 	// still laying its parts out after a load writes nothing. Each key is

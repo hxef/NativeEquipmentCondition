@@ -116,12 +116,19 @@ namespace Text
 	[[nodiscard]] std::string JamTip();
 	[[nodiscard]] std::string LootTip();
 
+	// What a help line's id adds to its setting's key on the MCM page.
+	inline constexpr std::string_view MENU_HELP = ".help";
+
 	// A line of the MCM page by its id: a setting's key for its name, the key
-	// and ".help" for its help, or a section's id, Wear, Weapons, Loot,
+	// and MENU_HELP for its help, or a section's id, Wear, Weapons, Loot,
 	// Repairs, HUD, Extras or Log, for its title. Empty for an id it does not
 	// know. Each row of the word tables points at its setting and takes the
 	// key from it.
 	[[nodiscard]] std::string MenuLine(std::string_view a_id);
+
+	// a_help, a HUD bar slider's help, then "Default: 1170." with the bar's
+	// default place on the page.
+	[[nodiscard]] std::string MenuHudBarDefault(std::string_view a_help, std::int32_t a_number);
 
 	// A part's name, "Workbench repairs", in the player's language.
 	[[nodiscard]] std::string PartName(Part a_part);

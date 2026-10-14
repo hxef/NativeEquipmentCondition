@@ -13,6 +13,7 @@ namespace HudCondition
 {
 	namespace
 	{
+		using Flash::Point;
 		using Roles::Box;
 		using Roles::Hud::Part;
 
@@ -29,8 +30,9 @@ namespace HudCondition
 		// What the HUD shows around the counter now, in the counter's units.
 		// inside holds the counter's other children but a backdrop, beside the
 		// parts next to the counter. word is where the word's letters sit from
-		// the bar's right end, deep how deep the bar is, and frame the screen,
-		// or nothing while it cannot be told.
+		// the bar's right end and line the same down to the bottom of their
+		// line, deep how deep the bar is, and frame the screen, or nothing
+		// while it cannot be told.
 		struct Around
 		{
 			Roles::Hud::DividerShape divider;
@@ -38,6 +40,7 @@ namespace HudCondition
 			std::vector<Part>        inside;
 			std::vector<Part>        beside;
 			Box                      word;
+			Box                      line;
 			double                   deep = 0.0;
 			std::optional<Box>       frame;
 		};
@@ -48,13 +51,6 @@ namespace HudCondition
 		{
 			std::string said;
 			std::string kind;
-		};
-
-		// A point in the counter's units.
-		struct Point
-		{
-			double x = 0.0;
-			double y = 0.0;
 		};
 
 		// An origin to try for a box, and the side of what it stands beside,
@@ -90,6 +86,19 @@ namespace HudCondition
 		[[nodiscard]] bool OnScreen(const Around& a_around, const Box& a_box)
 		{
 			return !a_around.frame || a_around.frame->Holds(a_box);
+		}
+
+		// Whether the word's whole line, the box Filled holds, is on screen
+		// with the bar's right end at a_x, a_y.
+		[[nodiscard]] bool WordOnScreen(const Around& a_around, double a_x, double a_y)
+		{
+			return OnScreen(a_around, a_around.line.Moved(a_x, a_y));
+		}
+
+		// The word's letters down to the bottom of their line.
+		[[nodiscard]] Box WholeLine(const HudParts::Readout::LabelPlace& a_label)
+		{
+			return Box{ a_label.letters.left, a_label.letters.top, a_label.letters.right, a_label.letters.bottom + a_label.descent };
 		}
 
 		// The first shown part a box would cover, or null.
@@ -180,17 +189,18 @@ namespace HudCondition
 			return a_own.empty() ? a_word : std::format("{:s}{:s}{:s}", a_own, a_and, a_word);
 		}
 
-		// The bar at a_line, on the divider's place, and its word past its end,
-		// else in the nearest free spot beside the bar, a gap as wide as the one
-		// past the end away. With none free the word stays past the end. a_said
-		// and a_key say why the bar sits there, empty for a bar that fits.
+		// The bar at a_line, on the divider's place, and its word past its
+		// end, else in the nearest free spot beside the bar, a gap as wide as
+		// the one past the end away. With none free the word stays past the
+		// end. a_said and a_key say why the bar sits there, empty for a bar
+		// that fits.
 		[[nodiscard]] Choice WithWord(const Around& a_around, const Roles::Hud::Line& a_line, std::span<const Part> a_keepOff, const std::string& a_said,
 			const std::string& a_key)
 		{
 			Spot        spot{ a_line, a_around.deep, true };
 			const auto  word = a_around.word.Moved(a_line.x, a_line.y);
 			const auto* over = Covered(word, a_keepOff);
-			const auto  shown = OnScreen(a_around, word);
+			const auto  shown = WordOnScreen(a_around, a_line.x, a_line.y);
 			if (shown && !over) {
 				return Choice{ spot, a_said, a_key };
 			}
@@ -200,7 +210,7 @@ namespace HudCondition
 			const auto bar = BarAt(a_line.x, a_line.y, a_line.width, a_around.deep);
 			for (const auto& at : Tries(bar, a_around.word, std::max(a_around.word.left, 0.0), Point{ a_line.x, a_line.y }, a_keepOff)) {
 				const auto moved = a_around.word.Moved(at.x, at.y);
-				if (OnScreen(a_around, moved) && !Covered(moved, a_keepOff)) {
+				if (WordOnScreen(a_around, at.x, at.y) && !Covered(moved, a_keepOff)) {
 					spot.wordX = at.x - a_line.x;
 					spot.wordY = at.y - a_line.y;
 					return Choice{ spot, Joined(a_said, ", and its "sv, std::format("word sits {:s} its bar, since past the bar's end it would {:s}", at.side, reason)),
@@ -241,17 +251,31 @@ namespace HudCondition
 			keepOff.insert(keepOff.end(), a_others.begin(), a_others.end());
 			keepOff.push_back(Part{ "its divider", divider });
 
-			const auto  bar = BarAt(0.0, 0.0, length, a_around.deep);
-			const Point aim{ MiddleAcross(divider) + (length / 2.0), MiddleDown(divider) };
+			// With no try that fits the word's whole line, the first whose
+			// letters fit still beats the divider's place. The HUD then lifts
+			// it by less than the line reaches below the letters.
+			const auto         bar = BarAt(0.0, 0.0, length, a_around.deep);
+			const Point        aim{ MiddleAcross(divider) + (length / 2.0), MiddleDown(divider) };
+			std::optional<Try> best;
 			for (const auto& at : Tries(drawn, bar.With(a_around.word), a_around.deep, aim, keepOff)) {
 				const auto movedBar = bar.Moved(at.x, at.y);
 				const auto movedWord = a_around.word.Moved(at.x, at.y);
-				if (OnScreen(a_around, movedBar) && OnScreen(a_around, movedWord) && !Covered(movedBar, keepOff) && !Covered(movedWord, keepOff)) {
-					return Choice{ Spot{ Roles::Hud::Line{ at.x, at.y, length }, a_around.deep, false },
-						std::format("bar sits {:s} the ammo counter, since {:s}", at.side, a_why.said), std::format("bar {:s}, {:s}", at.side, a_why.kind) };
+				if (!OnScreen(a_around, movedBar) || !OnScreen(a_around, movedWord) || Covered(movedBar, keepOff) || Covered(movedWord, keepOff)) {
+					continue;
+				}
+				if (WordOnScreen(a_around, at.x, at.y)) {
+					best = at;
+					break;
+				}
+				if (!best) {
+					best = at;
 				}
 			}
-			return std::nullopt;
+			if (!best) {
+				return std::nullopt;
+			}
+			return Choice{ Spot{ Roles::Hud::Line{ best->x, best->y, length }, a_around.deep, false },
+				std::format("bar sits {:s} the ammo counter, since {:s}", best->side, a_why.said), std::format("bar {:s}, {:s}", best->side, a_why.kind) };
 		}
 
 		// With no free spot the bar keeps the divider's place, as before NEC
@@ -267,7 +291,7 @@ namespace HudCondition
 	}
 
 	std::optional<Choice> Choose(Scaleform::GFx::Movie& a_movie, Roles::Value& a_counter, const Roles::Value& a_readout,
-		std::optional<bool> a_ownVisible, const Box& a_word)
+		std::optional<bool> a_ownVisible, const HudParts::Readout::LabelPlace& a_label)
 	{
 		const auto shape = Roles::Hud::Divider(a_movie, a_counter, a_ownVisible);
 		if (!shape) {
@@ -284,7 +308,8 @@ namespace HudCondition
 		std::erase_if(inside, [&](const Part& a_part) {
 			return !numbers.empty() && std::ranges::all_of(numbers, [&](const Part& a_number) { return a_part.box.Holds(a_number.box); });
 		});
-		const Around around{ *shape, std::move(numbers), std::move(inside), Roles::Hud::Beside(a_counter, a_readout, frame), a_word, DEEP_PER_THICK * shape->thick, frame };
+		const Around around{ *shape, std::move(numbers), std::move(inside), Roles::Hud::Beside(a_counter, a_readout, frame), a_label.letters, WholeLine(a_label),
+			DEEP_PER_THICK * shape->thick, frame };
 
 		std::vector<Part> others{ around.inside };
 		others.insert(others.end(), around.beside.begin(), around.beside.end());
@@ -298,6 +323,11 @@ namespace HudCondition
 			return nearest;
 		}
 		return Kept(around, *why, keepOff);
+	}
+
+	Box Filled(const Spot& a_spot, const HudParts::Readout::LabelPlace& a_label)
+	{
+		return BarAt(0.0, 0.0, a_spot.line.width, a_spot.deep).With(WholeLine(a_label).Moved(a_spot.wordX, a_spot.wordY));
 	}
 
 	void Teller::Tell(const Choice& a_choice, Clock::time_point a_now)

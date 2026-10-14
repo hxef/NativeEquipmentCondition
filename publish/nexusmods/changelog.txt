@@ -1,3 +1,7 @@
+1.3.2
+* The HUD CND bar and its word find a free spot by the ammo counter on any HUD layout and never leave the screen.
+* The MCM sliders for the HUD CND bar count from the screen's top left and keep their numbers at any resolution.
+
 1.3.0
 * Worn guns are less accurate. Shots spread wider, the crosshair opens wider and the VATS hit chance drops. At 0 condition a gun keeps 75% of its accuracy.
 * Worn guns lose range. Their damage starts dropping at a shorter distance, while up close nothing changes. At 0 condition a gun keeps 75% of its range.

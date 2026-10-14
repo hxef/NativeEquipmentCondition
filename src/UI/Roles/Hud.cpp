@@ -64,13 +64,10 @@ namespace Roles::Hud
 		// bounds.
 		constexpr int WALK_DEPTH = 8;
 
-		// Where a text field's text can be, in a_space's units: across its
-		// width inside the margins, so the box stays put as the text changes,
-		// and from the top of its first line down to the lowest its baseline
-		// can sit. A line that leaves room in its field may sit anywhere down
-		// it, since a HUD mod may align it to the bottom. A field of 2 or more
-		// lines counts down to the end of its last. A turned field, or one
-		// whose line cannot be measured, counts by its whole bounds.
+		// Where a text field's text can be, in a_space's units, as Numbers in
+		// Hud.h says. A line that leaves room in its field may sit anywhere
+		// down it, since a HUD mod may align it to the bottom. A field of 2 or
+		// more lines counts down to the end of its last.
 		[[nodiscard]] std::optional<Box> TextBox(Value& a_field, Value& a_space, bool a_turned)
 		{
 			const auto box = BoundsIn(a_field, a_space);

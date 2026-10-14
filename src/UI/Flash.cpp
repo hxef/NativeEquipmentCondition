@@ -2,9 +2,18 @@
 
 #include <algorithm>
 #include <cmath>
+#include <initializer_list>
 
 namespace Flash
 {
+	namespace
+	{
+		[[nodiscard]] bool AllFinite(std::initializer_list<double> a_values)
+		{
+			return std::ranges::all_of(a_values, [](double a_value) { return std::isfinite(a_value); });
+		}
+	}
+
 	// -------------------------------------------------------------------
 	// Reading a member
 	// -------------------------------------------------------------------
@@ -141,8 +150,7 @@ namespace Flash
 		}
 		const Tint tint{ Number(colors, "redMultiplier"sv), Number(colors, "greenMultiplier"sv), Number(colors, "blueMultiplier"sv),
 			Number(colors, "redOffset"sv), Number(colors, "greenOffset"sv), Number(colors, "blueOffset"sv) };
-		const auto parts = { tint.red, tint.green, tint.blue, tint.redAdd, tint.greenAdd, tint.blueAdd };
-		if (!std::ranges::all_of(parts, [](double a_part) { return std::isfinite(a_part); })) {
+		if (!AllFinite({ tint.red, tint.green, tint.blue, tint.redAdd, tint.greenAdd, tint.blueAdd })) {
 			return std::nullopt;
 		}
 		return tint;
@@ -186,8 +194,7 @@ namespace Flash
 		// past the 2 wide margin, as it does the line's top.
 		const auto     left = FIELD_MARGIN + Number(metrics, "x"sv);
 		const TextLine first{ left, left + Number(metrics, "width"sv), FIELD_MARGIN, FIELD_MARGIN + Number(metrics, "ascent"sv), Number(metrics, "descent"sv) };
-		const auto     parts = { first.left, first.right, first.baseline, first.descent };
-		if (!std::ranges::all_of(parts, [](double a_part) { return std::isfinite(a_part); }) || first.right < first.left || !(first.baseline > first.top)) {
+		if (!AllFinite({ first.left, first.right, first.baseline, first.descent }) || first.right < first.left || !(first.baseline > first.top)) {
 			return std::nullopt;
 		}
 		return first;

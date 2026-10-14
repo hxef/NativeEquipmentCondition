@@ -23,8 +23,8 @@
 // MCM.swf asks root.mcm for a value as GetModSettingBool("NEC", "bJam:Features"),
 // changes it with the new value as a third argument, and asks for a line of
 // text as GetFullName("NEC|bJam"). These answer the calls Mcm.cpp finds are
-// NEC's, from Settings, Core/Text and, through Notes.cpp, what CallPatch left
-// to other mods.
+// NEC's, from Settings, Core/Text, through Notes.cpp what CallPatch left to
+// other mods, and through HudBar.cpp the HUD bar's place on screen.
 namespace Mcm
 {
 	namespace
@@ -74,15 +74,6 @@ namespace Mcm
 			}
 		}
 
-		// Whether a_id is a_setting's id on the page, its key and section as
-		// in bJam:Features.
-		bool IsIdOf(const Settings::Named& a_setting, std::string_view a_id)
-		{
-			return a_id.size() == a_setting.key.size() + 1 + a_setting.section.size() &&
-			       a_id.starts_with(a_setting.key) && a_id[a_setting.key.size()] == ':' &&
-			       a_id.ends_with(a_setting.section);
-		}
-
 		Settings::Live<bool>* SwitchFor(std::string_view a_id)
 		{
 			for (auto* on : Settings::Switches()) {
@@ -121,6 +112,13 @@ namespace Mcm
 		}
 	}
 
+	bool IsIdOf(const Settings::Named& a_setting, std::string_view a_id)
+	{
+		return a_id.size() == a_setting.key.size() + 1 + a_setting.section.size() &&
+		       a_id.starts_with(a_setting.key) && a_id[a_setting.key.size()] == ':' &&
+		       a_id.ends_with(a_setting.section);
+	}
+
 	// -------------------------------------------------------------------
 	// The answers
 	// -------------------------------------------------------------------
@@ -128,6 +126,10 @@ namespace Mcm
 	void GetBool(const Params& a_params, std::string_view a_id)
 	{
 		if (const auto shows = Shows(a_id)) {
+			Answer(a_params, *shows);
+			return;
+		}
+		if (const auto shows = HudBarShows(a_id)) {
 			Answer(a_params, *shows);
 			return;
 		}
@@ -154,6 +156,10 @@ namespace Mcm
 
 	void GetFloat(const Params& a_params, std::string_view a_id)
 	{
+		if (const auto shown = HudBarValue(a_id)) {
+			Answer(a_params, *shown);
+			return;
+		}
 		const auto* number = NumberFor<float>(a_id);
 		if (!number) {
 			Unknown(a_id);
@@ -253,8 +259,17 @@ namespace Mcm
 			Answer(a_params, false);
 			return;
 		}
-		// A slider dragged back to 0 can send -0, which prints as -0 and
-		// would never match NEC.ini's 0.
+		if (IsHudBar(a_id)) {
+			const auto shift = HudBarShift(a_id, value);
+			if (!shift) {
+				Answer(a_params, false);
+				return;
+			}
+			value = *shift;
+		}
+		// A slider dragged back to 0, or a HUD bar number at the bar's own
+		// place, can give -0, which prints as -0 and would never match
+		// NEC.ini's 0.
 		if (value == 0.0F) {
 			value = 0.0F;
 		}
@@ -277,7 +292,11 @@ namespace Mcm
 		if (auto note = Note(a_id)) {
 			text = std::move(*note);
 		} else {
-			text = Flash::HtmlEscaped(Text::MenuLine(a_id));
+			auto line = Text::MenuLine(a_id);
+			if (const auto number = HudBarDefault(a_id); number && !line.empty()) {
+				line = Text::MenuHudBarDefault(line, *number);
+			}
+			text = Flash::HtmlEscaped(line);
 			if (text.empty()) {
 				Unknown(std::format("NEC|{:s}", a_id));
 			}

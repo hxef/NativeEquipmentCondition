@@ -160,9 +160,10 @@ COMPATIBILITY
   by a person, so some lines may read a little off.
 * Both vanilla fixes under Little extras can be switched off, for a load order
   where another mod already fixes them.
-* Works with UI replacers like FallUI and DEF_UI. A part NEC can't find is
-  skipped and named in NEC.log or the bug report logs, while wear, damage and
-  prices work as ever.
+* Works with UI replacers like FallUI and DEF_UI. The HUD CND bar finds a
+  free spot by the ammo counter on any HUD layout and stays on screen at any
+  resolution. A part NEC can't find is skipped and named in NEC.log or the
+  bug report logs, while wear, damage and prices work as ever.
 * NEC works alongside other DLL mods that change the same things. When one
   takes over one of NEC's features, NEC lets it, and NEC's MCM page and
   NEC.log name that mod and what is off.

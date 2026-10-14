@@ -11,9 +11,10 @@
 #include <vector>
 
 // Safe readers, writers and calls for a menu movie's objects, their colour,
-// and text written for it. Each one that takes a clip checks that it is an object
-// first, so a clip a UI replacer removed reads as absent. A number comes
-// back whichever of the 3 number types the movie keeps it in.
+// boxes and points, a text field's first line, and text written for it. Each
+// one that takes a clip checks that it is an object first, so a clip a UI
+// replacer removed reads as absent. A number comes back whichever of the 3
+// number types the movie keeps it in.
 //
 // Every native function NEC gives a movie, each listener and handler, is a
 // global. Scaleform counts references to it and its count starts at 1,
@@ -33,6 +34,8 @@ namespace Flash
 		double top = 0.0;
 		double right = 0.0;
 		double bottom = 0.0;
+
+		bool operator==(const Box&) const = default;
 
 		// Boxes that only touch do not meet.
 		[[nodiscard]] constexpr bool Meets(const Box& a_other) const noexcept
@@ -55,6 +58,13 @@ namespace Flash
 		{
 			return Box{ std::min(left, a_other.left), std::min(top, a_other.top), std::max(right, a_other.right), std::max(bottom, a_other.bottom) };
 		}
+	};
+
+	// A point in some clip's units.
+	struct Point
+	{
+		double x = 0.0;
+		double y = 0.0;
 	};
 
 	// A value as a number, whichever of the 3 number types it is. 0 for

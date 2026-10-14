@@ -23,10 +23,11 @@
 // The page's grey rows: the list at the top and the note of each block.
 // config.json gives every block lead a hidden switch: a feature switch 2,
 // <key>:Free for its row and <key>:Note for its note, a number 1, <key>:Note,
-// and the list 1, parts:Note. MCM has 30 a page and 26 are used. Each note is
-// worked out from SettingLinks and CallPatch's losses, so a setting needs no
-// code of its own here. MCM asks once a pause menu visit, after NEC's recheck
-// as the menu opens. NEC.log keeps every line the page leaves out.
+// and the list 1, parts:Note. MCM has 30 a page and 27 are used, 1 by the HUD
+// bar sliders, see HudBar.cpp. Each note is worked out from SettingLinks and
+// CallPatch's losses, so a setting needs no code of its own here. MCM asks
+// once a pause menu visit, after NEC's recheck as the menu opens. NEC.log
+// keeps every line the page leaves out.
 namespace Mcm
 {
 	namespace
@@ -222,7 +223,7 @@ namespace Mcm
 			// once.
 			std::vector<std::string> none;
 			for (const auto* member : members) {
-				if (yield && member == &a_lead) {
+				if ((yield && member == &a_lead) || HudBarHidden(*member->setting)) {
 					continue;
 				}
 				const auto effect = CallPatch::EffectOf(*member->setting);

@@ -92,7 +92,8 @@ namespace HudParts
 			const auto       down = Flash::Number(label, "scaleY"sv);
 			const Flash::Box field{ left, top, left + Flash::Number(label, "width"sv), top + Flash::Number(label, "height"sv) };
 			if (const auto line = Flash::FirstLine(label)) {
-				return LabelPlace{ field, { left + (line->left * across), top + (line->top * down), left + (line->right * across), top + (line->baseline * down) }, true };
+				return LabelPlace{ field, { left + (line->left * across), top + (line->top * down), left + (line->right * across), top + (line->baseline * down) }, true,
+					line->descent * down };
 			}
 			const auto margin = Flash::FIELD_MARGIN;
 			return LabelPlace{ field, { field.left + (margin * across), field.top + (margin * down), field.right - (margin * across), field.bottom - (margin * down) } };

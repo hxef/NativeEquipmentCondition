@@ -209,8 +209,6 @@ namespace Text
 			{ "Log", LOG_TITLE },
 		};
 
-		constexpr std::string_view HELP = ".help";
-
 		// A part's name in every language, from PartsPlay.cpp or PartsUi.cpp.
 		// Empty for kNone and from kTrace on.
 		std::span<const Line> NameOf(Part a_part)
@@ -274,8 +272,8 @@ namespace Text
 
 	std::string MenuLine(std::string_view a_id)
 	{
-		const auto help = a_id.ends_with(HELP);
-		const auto key = help ? a_id.substr(0, a_id.size() - HELP.size()) : a_id;
+		const auto help = a_id.ends_with(MENU_HELP);
+		const auto key = help ? a_id.substr(0, a_id.size() - MENU_HELP.size()) : a_id;
 		for (const auto rows : { MenuSwitches(), MenuNumbers(), MenuHudLog() }) {
 			for (const auto& row : rows) {
 				if (row.setting->key != key) {

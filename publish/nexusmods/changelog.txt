@@ -1,10 +1,12 @@
-1.4.1
+1.4.3
 * NPC weapons now wear as they fight, shot by shot and blow by blow, without jams.
 * 2 new MCM sliders set NPC wear apart from yours: NPC weapon wear speed (fNpcWearRateMult, 0.33) and NPC armor wear speed (fNpcArmorWearRateMult, 1). 0 stops that wear.
 * Weapon wear speed and Armor wear speed now set only your own gear.
 * The weapons an essential NPC comes with never wear, like their armor, and that now includes leveled ones. Whatever you hand them does.
 * An NPC's weapon worn out to 0 stays in their hands.
 * When another DLL mod handles gun wear, NPC gun wear is left to it too.
+* srm armor also brings back to full a ring, hat or other gear that gives nothing but still holds a condition from an older NEC.
+* NEC.log now opens even when your Documents folder's name has letters outside your Windows language, like Cyrillic on an English Windows.
 
 1.4.0
 * Loading a save no longer rolls a condition for anything.

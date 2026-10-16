@@ -1,5 +1,7 @@
 #include "Condition/Equipped.h"
 
+#include "Condition/ArmorWear/ArmorWear.h"
+
 #include <algorithm>
 #include <span>
 
@@ -19,6 +21,36 @@ namespace Equipped
 			const auto& data = Condition::InstanceDataOf<RE::TESObjectWEAP::InstanceData>(a_stack.extra.get(), a_weapon.weaponData);
 			const auto* effects = data.GetEnchantmentArray();
 			return effects && std::ranges::find(*effects, &a_effect) != effects->end();
+		}
+
+		// Every equipped stack of every piece of armor a_takes picks, see
+		// ArmorPieces, or every stack with a_carried.
+		template <class Takes>
+		std::vector<ArmorPiece> Pieces(RE::Actor* a_actor, Takes a_takes, bool a_carried = false)
+		{
+			std::vector<ArmorPiece> found;
+			auto*                   inv = a_actor ? a_actor->inventoryList : nullptr;
+			if (!inv || RE::PowerArmor::ActorInPowerArmor(*a_actor)) {
+				return found;
+			}
+
+			// A read lock, as WeaponHealth takes.
+			const RE::BSAutoReadLock l(inv->rwLock);
+			inv->ForEachStack(
+				[&a_takes](RE::BGSInventoryItem& a_item) {
+					return a_item.object && a_item.object->Is(RE::ENUM_FORM_ID::kARMO) &&
+						   a_takes(static_cast<const RE::TESObjectARMO&>(*a_item.object));
+				},
+				[&found, a_actor, a_carried](RE::BGSInventoryItem& a_item, RE::BGSInventoryItem::Stack& a_stack) {
+					if (a_carried || a_stack.IsEquipped()) {
+						// The filter has already made sure this is armor.
+						auto* armor = static_cast<RE::TESObjectARMO*>(a_item.object);
+						found.push_back({ armor, Condition::HealthOf(&a_stack), armor->bipedModelData.bipedObjectSlots,
+							Issued(*a_actor, *armor, a_stack.extra.get()), a_stack.count });
+					}
+					return true;  // Continue searching...
+				});
+			return found;
 		}
 	}
 
@@ -121,28 +153,15 @@ namespace Equipped
 
 	std::vector<ArmorPiece> ArmorPieces(RE::Actor* a_actor)
 	{
-		std::vector<ArmorPiece> found;
-		auto*                   inv = a_actor ? a_actor->inventoryList : nullptr;
-		if (!inv || RE::PowerArmor::ActorInPowerArmor(*a_actor)) {
-			return found;
-		}
+		return Pieces(a_actor, Condition::WearsOut);
+	}
 
-		// Every equipped stack of every piece that takes part. A read lock,
-		// as WeaponHealth takes.
-		const RE::BSAutoReadLock l(inv->rwLock);
-		inv->ForEachStack(
-			[](RE::BGSInventoryItem& a_item) {
-				return a_item.object && a_item.object->Is(RE::ENUM_FORM_ID::kARMO) && Condition::WearsOut(*a_item.object);
-			},
-			[&found, a_actor](RE::BGSInventoryItem& a_item, RE::BGSInventoryItem::Stack& a_stack) {
-				if (a_stack.IsEquipped()) {
-					// The filter has already made sure this is armor.
-					auto* armor = static_cast<RE::TESObjectARMO*>(a_item.object);
-					found.push_back({ armor, Condition::HealthOf(&a_stack), armor->bipedModelData.bipedObjectSlots,
-						Issued(*a_actor, *armor, a_stack.extra.get()) });
-				}
-				return true;  // Continue searching...
-			});
+	std::vector<ArmorPiece> LeftoverPieces(RE::Actor* a_actor)
+	{
+		const auto takes = [](const RE::TESObjectARMO& a_armor) { return !Condition::WearsOut(a_armor) && !ArmorWear::IsPowerArmor(a_armor); };
+		auto       found = Pieces(a_actor, takes, true);
+		// -1 is a piece with no health, which stays as it is.
+		std::erase_if(found, [](const ArmorPiece& a_piece) { return a_piece.health < 0.0F; });
 		return found;
 	}
 

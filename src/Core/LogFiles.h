@@ -4,12 +4,20 @@
 
 #include <cstddef>
 #include <filesystem>
+#include <string>
 
 // NEC.log and the 3 bug report logs keep the logs of the 10 game starts
 // before. As a log opens, the file of the start before moves to NEC.1.log,
 // NEC.trace.1.log and so on, so a restart after a crash still has the lines
-// that led to it. The moving is done by the rotating file sink of spdlog, the
-// library CommonLibF4 logs through.
+// that led to it.
+//
+// The files are opened here by a file sink of NEC's own, which moves them
+// along the way the rotating file sink of spdlog, the library CommonLibF4
+// logs through, would. spdlog's file sinks take the path in the Windows code
+// page, so a Documents folder with letters outside it, such as Cyrillic on a
+// Western Windows, would get no log. NEC's sink opens the file by the path
+// as Windows gives it, which holds any letter, and every path NEC.log prints
+// is written in UTF-8.
 //
 // NEC opens NEC.log here and not through F4SE::Init. Its rotation option
 // builds the sink without catching, and the sink throws when an old file
@@ -43,4 +51,11 @@ namespace LogFiles
 	// fallback fails too, for example while another program holds the file
 	// open.
 	[[nodiscard]] spdlog::sink_ptr OpenFile(const std::filesystem::path& a_path, std::size_t a_maxSize);
+
+	// The file a_sink writes to, empty for a sink this file did not open.
+	[[nodiscard]] std::filesystem::path FileOf(const spdlog::sink_ptr& a_sink);
+
+	// a_path in UTF-8, as every log line is written. Never throws, unlike
+	// path::string, which throws on a letter outside the Windows code page.
+	[[nodiscard]] std::string Utf8(const std::filesystem::path& a_path);
 }

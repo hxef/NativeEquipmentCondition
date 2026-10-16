@@ -66,7 +66,7 @@ namespace Equipped
 	// TryWeaponHealth. Nothing while the inventory is busy.
 	std::optional<HeldWeapon> TryHeldWeapon(RE::Actor* a_actor);
 
-	// One piece of armor an actor has on that takes part.
+	// One piece of armor an actor has on or carries.
 	struct ArmorPiece
 	{
 		RE::TESObjectARMO* armor{ nullptr };
@@ -82,12 +82,23 @@ namespace Equipped
 
 		// Whether the piece is the wearer's own from the editor, see Issued.
 		bool issued{ false };
+
+		// How many copies its stack holds.
+		std::uint32_t count{ 1 };
 	};
 
 	// Every piece of armor the actor has on that takes part, in inventory
 	// order. Empty for an actor with none, and for an actor in power armor,
 	// whose pieces are the engine's.
 	std::vector<ArmorPiece> ArmorPieces(RE::Actor* a_actor);
+
+	// Every stack of armor the actor carries, on or not, that takes no part but
+	// still holds a health, which an older NEC wrote before such gear was left
+	// out, in inventory order. One at 0 cannot go back on, so carried ones
+	// count too. Power armor pieces never count, since their health is the
+	// game's own, and an actor in power armor has none. For the console repair,
+	// which takes that health off.
+	std::vector<ArmorPiece> LeftoverPieces(RE::Actor* a_actor);
 
 	// ArmorPieces for a caller outside the engine's own code path, see
 	// TryWeaponHealth. Nothing while the inventory is busy.

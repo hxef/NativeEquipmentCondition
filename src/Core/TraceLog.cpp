@@ -4,8 +4,6 @@
 #include "Core/Settings.h"
 
 #include <spdlog/details/os.h>
-#include <spdlog/sinks/basic_file_sink.h>
-#include <spdlog/sinks/rotating_file_sink.h>
 #include <spdlog/spdlog.h>
 
 #include <algorithm>
@@ -108,8 +106,7 @@ namespace TraceLog
 		}
 
 		// Where NEC.log is being written, asked of the logger LogFiles made
-		// rather than worked out again. The file sink is rotating, or basic
-		// when the earlier starts could not move along, so both are tried.
+		// rather than worked out again.
 		std::filesystem::path MainLogPath()
 		{
 			const auto logger = spdlog::default_logger();
@@ -117,14 +114,9 @@ namespace TraceLog
 				return {};
 			}
 
-			// Neither sink offers filename on a const object. Nothing writes
-			// through the casts.
 			for (const auto& sink : logger->sinks()) {
-				if (auto* basic = dynamic_cast<spdlog::sinks::basic_file_sink_mt*>(sink.get())) {
-					return basic->filename();
-				}
-				if (auto* rotating = dynamic_cast<spdlog::sinks::rotating_file_sink_mt*>(sink.get())) {
-					return rotating->filename();
+				if (auto path = LogFiles::FileOf(sink); !path.empty()) {
+					return path;
 				}
 			}
 
@@ -240,7 +232,7 @@ namespace TraceLog
 				// LogFiles.h.
 				logger = std::make_shared<spdlog::logger>(a_name, LogFiles::OpenFile(a_path, a_maxSize));
 			} catch (const std::exception& e) {
-				REX::WARN("Could not open the bug report log {:s}: {:s}", a_path.string(), e.what());
+				REX::WARN("Could not open the bug report log {:s}: {:s}", LogFiles::Utf8(a_path), e.what());
 				return nullptr;
 			}
 
@@ -252,7 +244,7 @@ namespace TraceLog
 			// Lines arrive already formatted, times, tags and threads included.
 			logger->set_pattern("%v");
 
-			REX::INFO("Bug report log: {:s}", a_path.string());
+			REX::INFO("Bug report log: {:s}", LogFiles::Utf8(a_path));
 			return logger;
 		}
 	}

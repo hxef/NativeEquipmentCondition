@@ -80,6 +80,9 @@ namespace
 		{ &Settings::bConfirmScroll, nullptr, CONFIRM_SCROLL },
 		{ &Settings::bInspectPrice, nullptr, INSPECT_PRICE },
 		{ &Settings::fWearRateMult, nullptr, {}, GUN_WEAR, {}, kMeleeWear },
+		// An NPC's gun wears through the same fire call, so it sits in the
+		// player's block and loses its guns with it.
+		{ &Settings::fNpcWearRateMult, &Settings::fWearRateMult, {}, GUN_WEAR, {}, kMeleeWear },
 		{ &Settings::fDamageFloor, nullptr, DAMAGE },
 		{ &Settings::fArmorFloor, nullptr, ARMOR },
 		{ &Settings::fValueExponent, nullptr, PRICES },

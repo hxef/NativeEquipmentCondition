@@ -24,7 +24,7 @@ namespace WeaponEvents
 
 		CallPatch::Link<void(const RE::BGSObjectInstanceT<RE::TESObjectWEAP>*, RE::TESObjectREFR*, std::uint32_t, RE::TESAmmo*, RE::AlchemyItem*)> g_fire;
 
-		// The player's shot while Fire sends it on its way. Power is what its
+		// A shot that wears while Fire sends it on its way. Power is what its
 		// rounds carry between them, see ShotSink.
 		struct Shot
 		{
@@ -33,11 +33,11 @@ namespace WeaponEvents
 		};
 
 		// Whoever the Fire on this thread is firing for, see Shooter, and the
-		// player's shot it is sending, if any. One per thread.
+		// shot it is sending, if it wears. 1 per thread.
 		thread_local const RE::TESObjectREFR* t_shooter = nullptr;
 		thread_local Shot*                    t_shot = nullptr;
 
-		// Adds up the power of every round the player's shot sends. Fire
+		// Adds up the power of every round a shot that wears sends. Fire
 		// launches the rounds and then raises this event, on its own thread,
 		// before it returns. A round's damage is the gun's times its power, so
 		// the rounds of an ordinary shot add up to 1: a shotgun's pellets
@@ -65,18 +65,22 @@ namespace WeaponEvents
 			}
 		};
 
-		// Wears the player's gun by the shot Fire just sent, at the power its
-		// rounds carried. A shot whose event never came, which another sink can
-		// stop, counts as an ordinary one. The game lists the gun again in the
-		// Pip-Boy by itself, see ItemCards.h.
-		void WearByShot(RE::PlayerCharacter& a_player, RE::TESObjectWEAP& a_weapon, const Shot& a_shot)
+		// Wears the gun by the shot Fire just sent, at the power its rounds
+		// carried. A shot whose event never came, which another sink can stop,
+		// counts as an ordinary one. The game lists the player's gun again in
+		// the Pip-Boy by itself, see ItemCards.h. a_theirs for an NPC's shot.
+		void WearByShot(RE::Actor& a_shooter, RE::TESObjectWEAP& a_weapon, const Shot& a_shot, bool a_theirs)
 		{
 			const auto power = a_shot.sent ? a_shot.power : 1.0F;
 			if (power <= 0.0F) {
-				TraceLog::Line("wear", "the shot left with no power, so no wear");
+				TraceLog::For(a_theirs).Line("wear", "the shot left with no power, so no wear");
 				return;
 			}
-			WeaponWear::Wear(a_player, a_weapon, "fire", power);
+			if (a_theirs) {
+				WeaponWear::WearTheirs(a_shooter, a_weapon, "fire", power);
+			} else {
+				WeaponWear::Wear(a_shooter, a_weapon, "fire", power);
+			}
 		}
 
 		// Stands in for TESObjectWEAP::Fire when the weaponFire animation event
@@ -91,9 +95,10 @@ namespace WeaponEvents
 				return;
 			}
 
-			// The player's gun, when this shot wears it, and the shot's
+			// The gun this shot wears and who holds it, and the shot's
 			// condition for its spread, see Aim.h.
 			RE::TESObjectWEAP*        worn = nullptr;
+			RE::Actor*                wearer = nullptr;
 			std::optional<Aim::Fired> fired;
 
 			// Once per shot for every actor, so the player is picked out.
@@ -128,14 +133,15 @@ namespace WeaponEvents
 						return;
 					}
 					worn = &weapon;
+					wearer = player;
 					fired.emplace(player, weapon, health);
 				}
 			} else if (a_source && object && object->IsWeapon() &&
 				Condition::WearsOut(static_cast<const RE::TESObjectWEAP&>(*object))) {
-				// Somebody else's shot. It wears nothing, but it hits at the
-				// weapon's condition, so it opens a block in the NPC log. A
-				// weapon with no condition is passed over.
-				const auto& weapon = static_cast<const RE::TESObjectWEAP&>(*object);
+				// Somebody else's shot. It hits at the weapon's condition, so
+				// it opens a block in the NPC log. A weapon with no condition
+				// is passed over.
+				auto& weapon = static_cast<RE::TESObjectWEAP&>(*object);
 				TraceLog::Npc::Begin("SHOT"sv, "{:s} with {:s} [{:08X}]", TraceLog::Who{ a_source },
 					RE::TESFullName::GetFullName(weapon), weapon.formID);
 
@@ -150,6 +156,12 @@ namespace WeaponEvents
 					if (health) {
 						fired.emplace(a_source, weapon, *health);
 					}
+				}
+
+				// A gun wears as the player's does, with no jam roll.
+				if (actor && weapon.weaponData.type.get() == RE::WEAPON_TYPE::kGun && WeaponWear::TheirsWear()) {
+					worn = &weapon;
+					wearer = actor;
 				}
 			}
 
@@ -166,8 +178,10 @@ namespace WeaponEvents
 			t_shot = outerShot;
 
 			if (worn) {
-				WearByShot(*player, *worn, shot);
+				WearByShot(*wearer, *worn, shot, wearer != player);
 			}
+
+			WeaponWear::SettleSoon();
 		}
 
 		// Registers the shot sink once. The event source lives as long as the

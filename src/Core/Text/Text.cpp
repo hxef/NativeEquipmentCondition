@@ -279,7 +279,7 @@ namespace Text
 	{
 		const auto help = a_id.ends_with(MENU_HELP);
 		const auto key = help ? a_id.substr(0, a_id.size() - MENU_HELP.size()) : a_id;
-		for (const auto rows : { MenuSwitches(), MenuNumbers(), MenuHudLog() }) {
+		for (const auto rows : { MenuSwitches(), MenuWear(), MenuNumbers(), MenuHudLog() }) {
 			for (const auto& row : rows) {
 				if (row.setting->key != key) {
 					continue;
@@ -312,7 +312,7 @@ namespace Text
 
 	std::string SettingLogName(const Settings::Named& a_setting)
 	{
-		for (const auto rows : { MenuSwitches(), MenuNumbers(), MenuHudLog() }) {
+		for (const auto rows : { MenuSwitches(), MenuWear(), MenuNumbers(), MenuHudLog() }) {
 			for (const auto& row : rows) {
 				if (row.setting == &a_setting) {
 					return std::string{ row.name.empty() ? PartLogName(PartOf(a_setting)) : std::string_view{ row.name.front().text } };

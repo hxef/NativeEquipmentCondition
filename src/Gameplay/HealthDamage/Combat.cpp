@@ -319,9 +319,8 @@ namespace HealthDamage
 				return g_healthLinks[P](a_actor, a_equipIndex);
 			}
 
-			// Every actor's condition reaches combat. Only the player's weapons
-			// wear, see WeaponEvents.h, so an NPC fights at the condition its
-			// weapon spawned in. 0 is a real health, so -1 means there is none.
+			// Every actor's condition reaches combat, see WeaponEvents.h for how
+			// it wears. 0 is a real health, so -1 means there is none.
 			const auto ours = Equipped::WeaponHealth(a_actor);
 			const auto mine = ours >= 0.0F;
 

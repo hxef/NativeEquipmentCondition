@@ -11,12 +11,16 @@ namespace WeaponWear
 	// measure after the first, which logs only what moved.
 	void MeasureReference(bool a_again);
 
+	// fNpcWearRateMult, 0 for anything below it.
+	float NpcMult();
+
 	// How much health one shot or swing costs, from the damage this copy deals,
 	// what it is built of and, for an automatic, how fast it fires. The weapon
 	// and its extra data say what it is built from, the instance data what the
-	// copy in hand does.
+	// copy in hand does. a_theirs for an NPC's copy, at fNpcWearRateMult with
+	// the line in the NPC log.
 	float Rate(const RE::TESObjectWEAP& a_weapon, const RE::TESObjectWEAP::InstanceData& a_instance,
-		const RE::ExtraDataList* a_extra);
+		const RE::ExtraDataList* a_extra, bool a_theirs);
 
 	// Prints every place a weapon keeps a damage number, once per weapon form.
 	// There are 3: physical damage, a single field. Damage types, a list of

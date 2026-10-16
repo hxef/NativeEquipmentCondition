@@ -17,9 +17,9 @@ namespace HealthDamage
 	// multiplies their power by the share of damage the condition leaves, see
 	// Curve.h, so they weaken with wear like the rest.
 	//
-	// Everybody fights at the condition their weapon is in. Only the player's
-	// weapons wear, see WeaponEvents.h, so a raider's rusted pipe gun does
-	// less damage than a new one.
+	// Everybody fights at the condition their weapon is in, so a raider's
+	// rusted pipe gun does less damage than a new one. NPC weapons wear at
+	// fNpcWearRateMult, see WeaponEvents.h.
 	//
 	// Combat.cpp is the blow, Effect.cpp a weapon's object effects, Blast.cpp
 	// an explosion and Card.cpp the item card. Curve.h is the damage line,

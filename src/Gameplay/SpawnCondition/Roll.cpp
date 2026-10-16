@@ -123,8 +123,8 @@ namespace SpawnCondition
 			return std::nullopt;
 		}
 
-		// An essential character's weapons and armor arrive new, and the
-		// armor they are given never wears, see ArmorEvents.h.
+		// An essential character's weapons and armor arrive new, and the ones
+		// from their own record never wear, see Equipped::Issued.
 		if (const auto* essential = Essential(a_list)) {
 			a_stack->extra->SetHealthPerc(Condition::MAX_HEALTH);
 			Report(listed, "for an essential character", "{:<30s} [{:08X}] x{:<3d} starts at {:.4f}, for {:s} [{:08X}], who is essential",

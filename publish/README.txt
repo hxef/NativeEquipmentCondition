@@ -38,16 +38,18 @@ WEAR AND TEAR
 * Every hit that lands wears the armor and clothing on the limb it struck,
   yours and NPCs' alike. Explosions wear every piece. Pieces that cover no
   limb, like a mask or a super mutant's armor, share each hit between them.
-* The armor that companions and other essential NPCs come with never wears on
-  them, since some of it can never be handed to you to repair. Once a piece
-  has passed through your hands, it becomes yours, so it wears like any other
-  piece you own, on you or on them.
+* NPC weapons wear too, shot by shot and blow by blow, by default a third as
+  fast as yours. A weapon worn out to 0 stays in their hands.
+* The weapons and armor that companions and other essential NPCs come with
+  never wear on them, since some of it can never be handed to you to repair.
+  Once an item has passed through your hands, it becomes yours, so it wears
+  like any other item you own, on you or on them.
 * Worn weapons do less damage and worn armor protects less, both down to 66%
   at 0 condition.
 * A broken piece of armor or clothing stays on and keeps its bonuses, like a
   +1 to a stat or a legendary effect, until you take it off.
-* A weapon that breaks is unequipped automatically, and broken gear can't be
-  equipped again until it is repaired.
+* Your weapon is unequipped automatically when it breaks, and broken gear
+  can't be equipped again until it is repaired.
 * Your guns can jam once they drop below 50% condition.
 * Worn guns spread their shots wider and lose damage sooner at range, and
   worn automatic weapons fire slower, each down to 75% at 0 condition.
@@ -76,9 +78,8 @@ LOOT WITH A HISTORY
   Legendaries dropped by enemies still turn up worn.
 * About 1 item in 100 ignores all that: a raider can drop a pristine rifle,
   and a Courser a beaten one.
-* NPC weapons don't lose condition from use, but NPCs still fight at the
-  condition their gear is in: their worn weapons deal less damage, and their
-  worn armor protects them less.
+* NPCs fight at the condition their gear is in: their worn weapons deal less
+  damage, and their worn armor protects them less.
 
 REPAIR AT THE WORKBENCH
 * At the weapon or armor workbench, select a worn item and a REPAIR button
@@ -143,7 +144,8 @@ LITTLE EXTRAS
 MAKE IT YOURS
 * With MCM, NEC's page changes any setting on the spot. Switch off jamming,
   worn loot, trader repairs, the HUD condition bars and more, or tune wear
-  speed, how much gear keeps at 0 condition, prices and repair costs.
+  speed for you and for NPCs, how much gear keeps at 0 condition, prices and
+  repair costs.
 * Without MCM, NEC.ini in Data\F4SE\Plugins explains every setting. Copy a
   line into NEC_custom.ini beside it, under the same section heading, change
   the value and restart the game.

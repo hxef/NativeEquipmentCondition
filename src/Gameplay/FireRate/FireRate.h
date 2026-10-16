@@ -20,10 +20,9 @@ namespace FireRate
 	//
 	// The player's share comes from the condition measured once a frame, see
 	// InHand.h, since the animation asks from wherever it updates. An NPC
-	// fires at its weapon's condition the same way. Its weapon never wears,
-	// so its share is read as it uses the weapon, see NoteNpcWeapon. Combat
-	// AI times a burst in seconds, so a slower gun fires fewer shots per
-	// burst on its own.
+	// fires at its weapon's condition the same way, its share read as it uses
+	// the weapon, see NoteNpcWeapon. Combat AI times a burst in seconds, so a
+	// slower gun fires fewer shots per burst on its own.
 	//
 	// Automatic weapons only, since on anything else the trigger finger sets
 	// the pace. That includes the Ripper and the Mr. Handy Buzz Blade, whose

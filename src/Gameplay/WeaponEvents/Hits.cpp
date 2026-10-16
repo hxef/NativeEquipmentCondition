@@ -61,6 +61,32 @@ namespace WeaponEvents
 			return mult > 0.0F ? mult : 1.0F;
 		}
 
+		// What a blow by hand costs the weapon against one ordinary use. A
+		// bash costs more than a swing, see BASH_WEAR, and a harder blow costs
+		// more again, see AttackMult.
+		float BlowScale(const RE::HitData& a_hit, bool a_bash)
+		{
+			return (a_bash ? BASH_WEAR : 1.0F) * AttackMult(a_hit);
+		}
+
+		// What a blow was struck or fired with. The kBash kind arrives naming
+		// nothing, see IsBash, so the weapon in hand is the one that struck,
+		// read under the inventory read lock. It is kept to that flag alone,
+		// so a blow arriving empty for another reason is passed over.
+		RE::TESForm* StruckWith(const RE::HitData& a_hit, RE::Actor& a_attacker)
+		{
+			auto* used = a_hit.weapon.object;
+			if (!used && ByHand(a_hit) && a_hit.flags.any(RE::HitData::Flag::kBash, RE::HitData::Flag::kTimedBash)) {
+				used = Equipped::Weapon(&a_attacker);
+			}
+			return used;
+		}
+
+		RE::TESObjectWEAP* AsWeapon(RE::TESForm* a_used)
+		{
+			return a_used && a_used->IsWeapon() ? static_cast<RE::TESObjectWEAP*>(a_used) : nullptr;
+		}
+
 		// The flags worth reading on a hit line, in engine order. A melee
 		// weapon bash reads "bash melee", a swing "melee", a power attack
 		// "power melee", a round "shot". A gun bash reads "power melee" too,
@@ -124,23 +150,16 @@ namespace WeaponEvents
 				Marks(a_hit), a_hit.flags.underlying());
 		}
 
-		// Logs a blow an NPC landed, in the NPC log. Only a weapon that wears
-		// out, since those are the only ones whose damage this changes. Every
-		// blow by every NPC comes here, so it checks for a file first.
-		void LogNpcHit(const RE::HitData& a_hit, const RE::Actor& a_attacker)
+		// Logs a blow an NPC landed with a_weapon, in the NPC log. Only a
+		// weapon that wears out, since those are the only ones whose damage
+		// this changes. Every blow by every NPC comes here, so it checks for a
+		// file first.
+		void LogNpcHit(const RE::HitData& a_hit, const RE::Actor& a_attacker, const RE::TESObjectWEAP* a_weapon, bool a_bash)
 		{
-			if (!TraceLog::IsOpen()) {
+			if (!TraceLog::IsOpen() || !a_weapon || !Condition::WearsOut(*a_weapon)) {
 				return;
 			}
-
-			auto* used = a_hit.weapon.object;
-			if (!used || !used->IsWeapon()) {
-				return;
-			}
-			const auto& weapon = static_cast<const RE::TESObjectWEAP&>(*used);
-			if (!Condition::WearsOut(weapon)) {
-				return;
-			}
+			const auto& weapon = *a_weapon;
 
 			const auto          target = a_hit.target.get();
 			const TraceLog::Who who{ &a_attacker };
@@ -148,7 +167,7 @@ namespace WeaponEvents
 			const auto          name = RE::TESFullName::GetFullName(weapon);
 
 			if (ByHand(a_hit)) {
-				TraceLog::Npc::Begin(IsBash(a_hit, weapon) ? "BASH"sv : "MELEE"sv, "{:s} with {:s} [{:08X}] on {:s}",
+				TraceLog::Npc::Begin(a_bash ? "BASH"sv : "MELEE"sv, "{:s} with {:s} [{:08X}] on {:s}",
 					who, name, weapon.formID, whom);
 			}
 
@@ -158,8 +177,8 @@ namespace WeaponEvents
 				Marks(a_hit), a_hit.flags.underlying());
 		}
 
-		// Wears the player's weapon when a blow it struck lands, and logs
-		// everybody else's blows.
+		// Wears a weapon when a blow struck by hand with it lands, and logs
+		// every blow.
 		class HitSink : public RE::BSTEventSink<RE::TESHitEvent>
 		{
 		public:
@@ -171,6 +190,8 @@ namespace WeaponEvents
 
 		RE::BSEventNotifyControl HitSink::ProcessEvent(const RE::TESHitEvent& a_event, RE::BSTEventSource<RE::TESHitEvent>*)
 		{
+			WeaponWear::SettleSoon();
+
 			if (!a_event.usesHitData) {
 				return RE::BSEventNotifyControl::kContinue;
 			}
@@ -181,54 +202,47 @@ namespace WeaponEvents
 				return RE::BSEventNotifyControl::kContinue;
 			}
 
-			// Nobody's weapon wears but the player's, so anybody else's blow is
-			// logged, and a blow with a blade like the Ripper is read for its
-			// pace, see FireRate.h.
+			// The hit names the weapon that caused it, see StruckWith. The game
+			// sends 1 hit event per projectile, so a shotgun blast is 1 per
+			// pellet, which is why guns take their wear per shot in FireHk.
+			const auto byHand = ByHand(hit);
+
+			// Anybody else's blow is logged, and a blow with a blade like the
+			// Ripper is read for its pace, see FireRate.h. A blow by hand
+			// wears the weapon as the player's does, see WearTheirs in
+			// WeaponWear.h. Their weapon is looked up only when the log or
+			// the wear wants it, since a nameless bash reads their inventory.
 			auto* player = RE::PlayerCharacter::GetSingleton();
 			if (aggressor.get() != player) {
-				LogNpcHit(hit, *aggressor);
-				if (ByHand(hit)) {
+				const auto wears = byHand && WeaponWear::TheirsWear();
+				auto*      weapon = wears || TraceLog::IsOpen() ? AsWeapon(StruckWith(hit, *aggressor)) : nullptr;
+				const auto bash = byHand && weapon && IsBash(hit, *weapon);
+				LogNpcHit(hit, *aggressor, weapon, bash);
+				if (byHand) {
 					FireRate::NoteNpcWeapon(*aggressor, hit.weapon);
+				}
+				if (wears && weapon && Condition::WearsOut(*weapon)) {
+					WeaponWear::WearTheirs(*aggressor, *weapon, bash ? "bash" : "melee", BlowScale(hit, bash));
 				}
 				return RE::BSEventNotifyControl::kContinue;
 			}
 
-			const auto byHand = ByHand(hit);
-
-			// The hit names the weapon that caused it. The game sends one hit
-			// event per projectile, so a shotgun blast is one per pellet, which
-			// is why guns take their wear per shot in FireHk. The kBash kind
-			// arrives naming nothing, so the weapon in hand is the one that
-			// struck. Vanilla never hands the player that attack, see IsBash.
-			// It is kept to that flag alone, so a blow arriving empty for
-			// another reason is passed over.
-			auto* usedWeapon = hit.weapon.object;
-			if (!usedWeapon && byHand && hit.flags.any(RE::HitData::Flag::kBash, RE::HitData::Flag::kTimedBash)) {
-				usedWeapon = Equipped::Weapon(player);
-			}
-
 			// Worked out here because the log line names the kind of blow, and
 			// IsBash reads the weapon's type.
-			auto* weapon = usedWeapon && usedWeapon->IsWeapon() ?
-			                   static_cast<RE::TESObjectWEAP*>(usedWeapon) :
-			                   nullptr;
+			auto*      usedWeapon = StruckWith(hit, *player);
+			auto*      weapon = AsWeapon(usedWeapon);
 			const auto bash = byHand && weapon && IsBash(hit, *weapon);
 
 			LogPlayerHit(hit, usedWeapon, byHand, bash);
 
 			// Blows struck by hand only. A gun already wore for the shot in
 			// FireHk. Bashing fires nothing, so it wears here, machete or
-			// rifle.
+			// rifle. Its Pip-Boy card follows by itself, see ItemCards.h.
 			if (!byHand || !weapon) {
 				return RE::BSEventNotifyControl::kContinue;
 			}
-
-			// A bash costs more than a swing, see BASH_WEAR, and a harder blow
-			// costs more again, see AttackMult. Its Pip-Boy card follows by
-			// itself, see ItemCards.h.
-			const auto scale = (bash ? BASH_WEAR : 1.0F) * AttackMult(hit);
 			if (Condition::WearsOut(*weapon)) {
-				WeaponWear::Wear(*player, *weapon, bash ? "bash" : "melee", scale);
+				WeaponWear::Wear(*player, *weapon, bash ? "bash" : "melee", BlowScale(hit, bash));
 			}
 			return RE::BSEventNotifyControl::kContinue;
 		}

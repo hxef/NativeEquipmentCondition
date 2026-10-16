@@ -7,9 +7,8 @@
 namespace SpawnCondition
 {
 	// Whether a stack is going to the player. The player's own are listed one
-	// by one in the trace log and everybody else's counted, since a save
-	// loading hands thousands to the characters and containers around the
-	// player at once.
+	// by one in the trace log and everybody else's counted, since a cell
+	// loading hands dozens to the characters and containers in it at once.
 	[[nodiscard]] bool Players(const RE::BGSInventoryList* a_list);
 
 	// The record that makes the owner of a_list essential, a companion's for

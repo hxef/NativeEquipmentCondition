@@ -32,6 +32,17 @@ namespace Condition
 	// new.
 	inline constexpr float INVALID_HEALTH = -1.0F;
 
+	// A world item made after the install that no holder has rolled yet.
+	// Reads as full. It is the float just under 1.0, one step above
+	// MAX_HEALTH, so only an exact compare tells it apart from an item at full.
+	inline constexpr float UNROLLED = 0x1.fffffep-1F;
+	static_assert(MAX_HEALTH < UNROLLED && UNROLLED < 1.0F);
+
+	[[nodiscard]] constexpr bool IsUnrolled(float a_health)
+	{
+		return a_health == UNROLLED;
+	}
+
 	// The health a_stack carries, or INVALID_HEALTH for a stack carrying none
 	// and for no stack at all, which count as new.
 	float HealthOf(const RE::BGSInventoryItem::Stack* a_stack);

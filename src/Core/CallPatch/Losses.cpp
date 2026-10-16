@@ -111,10 +111,12 @@ namespace CallPatch
 		}
 
 		// Every piece's state, with the places of set a_skip counted as on,
-		// and the pieces of a_alone off only through what they need. Its own
-		// places first, each marking every piece it is, then what it needs,
-		// from the top, since a piece needs only pieces above it.
-		States StatesLocked(std::uint32_t a_skip = 0, std::span<const Piece> a_alone = {})
+		// the pieces of a_alone off only through what they need, and the
+		// pieces of a_forGood off only through a place off for good or what
+		// they need. Its own places first, each marking every piece it is,
+		// then what it needs, from the top, since a piece needs only pieces
+		// above it.
+		States StatesLocked(std::uint32_t a_skip = 0, std::span<const Piece> a_alone = {}, std::span<const Piece> a_forGood = {})
 		{
 			States states{};
 			for (const auto& place : Places()) {
@@ -122,7 +124,7 @@ namespace CallPatch
 					continue;
 				}
 				for (const auto piece : PiecesAt(place.what)) {
-					if (std::ranges::find(a_alone, piece) != a_alone.end()) {
+					if (std::ranges::contains(a_alone, piece) || (!IsOff(place) && std::ranges::contains(a_forGood, piece))) {
 						continue;
 					}
 					auto& state = At(states, piece);
@@ -302,13 +304,13 @@ namespace CallPatch
 		}
 	}
 
-	std::string PiecesOffTail(const Place& a_place)
+	std::string PiecesOffTail(const Place& a_place, bool a_forNow)
 	{
 		// Another place of a piece marked alone takes nothing from this one.
 		const auto         pieces = PiecesAt(a_place.what);
 		std::vector<Piece> alone;
 		std::ranges::copy_if(pieces, std::back_inserter(alone), [](Piece a_piece) { return RowOfPiece(a_piece).alone; });
-		auto states = StatesLocked(a_place.set, alone);
+		auto states = StatesLocked(a_place.set, alone, a_forNow ? pieces : std::span<const Piece>{});
 		if (pieces.empty() || !std::ranges::all_of(pieces, [&](Piece a_piece) { return At(states, a_piece).off; })) {
 			return {};
 		}
@@ -316,6 +318,7 @@ namespace CallPatch
 		const auto  root = ShownIn(state.root, state.cause) ? std::span{ &state.root, 1 } : std::span<const Piece>{};
 		const auto  part = Text::PartPieces(state.cause, root, Text::Out::kLog);
 		return OnlyVersion(state.owners) ? std::format(" NEC's change there does nothing while {:s} is off on game version {:s}, which is not supported.", part, GameVersion()) :
+		       state.waits               ? std::format(" NEC's change there does nothing while {:s} is off for now, left to {:s}.", part, Words(state.owners)) :
 		                                   std::format(" NEC's change there does nothing while {:s} is left to {:s}.", part, Words(state.owners));
 	}
 

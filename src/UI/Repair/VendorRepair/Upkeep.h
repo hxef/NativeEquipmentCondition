@@ -16,10 +16,10 @@
 // REPAIR button works it out, as the first chest restocks.
 //
 // A plain line of a weapon or piece of armor with no object template goes into
-// the chest without passing through AddStack, so it misses the upkeep and is
-// rolled as ordinary loot later, if at all. A chest that restocks outside the
-// barter screen, as its cell first loads or resets, rolls ordinary loot too,
-// which the next due restock replaces.
+// the chest without passing through AddStack, so it rolls right after the fill,
+// in the band too, see RollPlainLines in SpawnCondition.cpp. A chest that
+// restocks outside the barter screen, as its cell first loads or resets, rolls
+// ordinary loot, which the next due restock replaces.
 namespace VendorRepair
 {
 	// Patches the calls that make the trader's side and restock their chests,

@@ -14,7 +14,4 @@ namespace ArmorWear
 	// table is built: before LoadMods, after UnloadMods, and when the armor
 	// mods could not be read.
 	std::optional<bool> GivingModFits(const RE::TESObjectARMO& a_armor);
-
-	// Whether a table is built, see GivingModFits.
-	bool ModsMeasured();
 }

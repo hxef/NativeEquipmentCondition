@@ -209,17 +209,22 @@ namespace Text
 			{ "Log", LOG_TITLE },
 		};
 
-		// A part's name in every language, from PartsPlay.cpp or PartsUi.cpp.
-		// Empty for kNone and from kTrace on.
+		// A part's name in every language, from PartsPlay.cpp, PartsLoot.cpp
+		// or PartsUi.cpp. Empty for kNone and from kTrace on.
 		std::span<const Line> NameOf(Part a_part)
 		{
 			const auto index = static_cast<std::size_t>(a_part);
 			const auto play = PlayParts();
+			const auto loot = LootParts();
 			const auto ui = UiParts();
 			const auto firstPlay = static_cast<std::size_t>(Part::kPerks);
+			const auto firstLoot = static_cast<std::size_t>(Part::kSpawn);
 			const auto firstUi = static_cast<std::size_t>(Part::kCardCnd);
 			if (index >= firstPlay && index < firstPlay + play.size()) {
 				return play[index - firstPlay].name;
+			}
+			if (index >= firstLoot && index < firstLoot + loot.size()) {
+				return loot[index - firstLoot].name;
 			}
 			if (index >= firstUi && index < firstUi + ui.size()) {
 				return ui[index - firstUi].name;

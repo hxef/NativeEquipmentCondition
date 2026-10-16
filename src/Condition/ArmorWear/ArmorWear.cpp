@@ -94,14 +94,6 @@ namespace ArmorWear
 		return "not playable and not a creature's armor";
 	}
 
-	bool Settles(const RE::TESObjectARMO& a_armor)
-	{
-		// A full reset or a failed measure between the 2 questions makes
-		// every slot count, so it settles less. A fresh measure answers from
-		// the fresh table.
-		return ModsMeasured() && !IsPowerArmor(a_armor) && WhyNoCondition(a_armor);
-	}
-
 	bool IsClothing(const RE::TESObjectARMO& a_armor)
 	{
 		// Read from the base record, like Protects: a lining can add a

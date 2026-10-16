@@ -46,4 +46,11 @@ namespace SpawnCondition
 			a_band.repairs > 0 ? std::format("repairs it to {:d}%", a_band.repairs) : "does not repair it",
 			a_band.low * 100.0F, a_band.high * 100.0F);
 	}
+
+	void OpenBlock(const Restock* a_restock)
+	{
+		if (!a_restock) {
+			TraceLog::Group("SPAWN", "weapons and armor entering inventories");
+		}
+	}
 }

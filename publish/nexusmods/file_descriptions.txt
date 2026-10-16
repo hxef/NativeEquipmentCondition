@@ -1,3 +1,8 @@
+1.4.0
+Version 1.4.0 rebuilds Worn loot from the ground up. Every weapon and armor piece gets its condition once, when the game first spawns it. Installed mid playthrough, your gear and older loot stay at 100%, while new loot rolls as usual.
+
+FO4 1.11.240
+
 1.3.2
 Version 1.3.2 lets the HUD CND bar find a free spot on any HUD layout and keeps it whole on screen. Its MCM sliders count from the screen's top left and keep their numbers at any resolution.
 

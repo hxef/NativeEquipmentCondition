@@ -237,6 +237,57 @@ namespace Text
 		};
 
 		// -------------------------------------------------------------------
+		// Worn loot
+		// -------------------------------------------------------------------
+
+		// Worn loot's core part has the setting's own name, so the setting's
+		// sentence names its 3 pieces with these words instead.
+		constexpr Line PHRASE_WORN_LOOT[]{
+			{ "en", "loot in containers and on NPCs" },
+			{ "fr", "le butin des conteneurs et des PNJ" },
+			{ "de", "Beute in Behältern und bei NPCs" },
+			{ "it", "il bottino nei contenitori e sui PNG" },
+			{ "es", "el botín de contenedores y de otros personajes" },
+			{ "esmx", "el botín de contenedores y de otros personajes" },
+			{ "ptbr", "o saque em contêineres e com NPCs" },
+			{ "pl", "łupy w pojemnikach i u NPC" },
+			{ "ru", "трофеи в ящиках и у NPC" },
+			{ "ja", "容器とNPCの戦利品" },
+			{ "zhhant", "容器和其他角色身上的戰利品" },
+			{ "zhhans", "容器和其他角色身上的战利品" },
+		};
+
+		constexpr Line PHRASE_WORLD_LOOT[]{
+			{ "en", "loot lying around" },
+			{ "fr", "le butin qui traîne" },
+			{ "de", "herumliegende Beute" },
+			{ "it", "il bottino sparso" },
+			{ "es", "el botín tirado por ahí" },
+			{ "esmx", "el botín tirado por ahí" },
+			{ "ptbr", "o saque largado por aí" },
+			{ "pl", "łupy leżące na ziemi" },
+			{ "ru", "валяющиеся трофеи" },
+			{ "ja", "落ちている戦利品" },
+			{ "zhhant", "散落的戰利品" },
+			{ "zhhans", "散落的战利品" },
+		};
+
+		constexpr Line PHRASE_MODLESS_LOOT[]{
+			{ "en", "loot with no mod slots" },
+			{ "fr", "le butin sans emplacement de modification" },
+			{ "de", "Beute ohne Mod-Plätze" },
+			{ "it", "il bottino senza slot per modifiche" },
+			{ "es", "el botín sin ranuras de modificación" },
+			{ "esmx", "el botín sin ranuras de modificación" },
+			{ "ptbr", "o saque sem espaços para modificações" },
+			{ "pl", "łupy bez miejsc na modyfikacje" },
+			{ "ru", "трофеи без слотов модификаций" },
+			{ "ja", "改造スロットのない戦利品" },
+			{ "zhhant", "無改造欄位的戰利品" },
+			{ "zhhans", "无改造栏位的战利品" },
+		};
+
+		// -------------------------------------------------------------------
 		// Every phrase
 		// -------------------------------------------------------------------
 
@@ -255,6 +306,9 @@ namespace Text
 			{ Piece::kJamReload, PHRASE_JAM_RELOAD },
 			{ Piece::kTraderRepairs, PHRASE_TRADER_REPAIRS },
 			{ Piece::kMeleeWear, PHRASE_MELEE_WEAR },
+			{ Piece::kWornLoot, PHRASE_WORN_LOOT },
+			{ Piece::kWorldLoot, PHRASE_WORLD_LOOT },
+			{ Piece::kModlessLoot, PHRASE_MODLESS_LOOT },
 		};
 	}
 

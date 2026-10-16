@@ -1,3 +1,10 @@
+1.4.0
+* Loading a save no longer rolls a condition for anything.
+* Installed to a game in progress, NEC keeps your carried and stored gear at 100%, and so does loot spawned before you install or update NEC, or while Worn loot (bSpawnCondition) is off. Nothing to switch in MCM or the ini. Before, every load rolled gear with no condition, so turning Worn loot off for the first load only delayed it: the next load with it on rolled your stored gear, and your carried gear too unless you turned it back on in MCM.
+* A trader's barter menu also lists the weapons and armor lying near them that they own (taking one would be stealing). These now roll once, when the menu first lists them, and you buy them at that condition. Before, buying one rolled it again.
+* A container that holds set items, not random loot, keeps their conditions when you reload a save. Before, a reload could give them new ones.
+* Gear that gives nothing, like the Minuteman Hat or the wedding ring, is now left alone entirely and no longer goes back to full as it did since 1.2.0. If NEC 1.1 or older wore such an item, it keeps its condition, so it sells for less and can't be put on while broken.
+
 1.3.2
 * The HUD CND bar and its word find a free spot by the ammo counter on any HUD layout and never leave the screen.
 * The MCM sliders for the HUD CND bar count from the screen's top left and keep their numbers at any resolution.

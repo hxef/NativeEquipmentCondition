@@ -35,7 +35,8 @@ enum class Part : std::uint8_t
 	kReloadJam,      // Single shot gun jams
 	kSpawn,          // Worn loot
 	kConsoleNew,     // Console items arrive new
-	kOldSaves,       // Old save stacks split up
+	kWorldLoot,      // Loot lying around
+	kModlessLoot,    // Loot with no mod slots
 	kGifts,          // Quest rewards arrive new
 	kCardCnd,        // CND on item cards
 	kCardRate,       // Fire rate shown in menus
@@ -62,8 +63,10 @@ enum class Part : std::uint8_t
 
 inline constexpr std::size_t PART_COUNT = static_cast<std::size_t>(Part::kTotal);
 
-// The 2 name files of Core/Text split the parts here: the Condition and
-// Gameplay rows up to kGifts, the UI rows from kCardCnd to kTips.
+// The 3 name files of Core/Text split the parts here: the Condition and
+// Gameplay rows from kPerks to kReloadJam, the Worn loot rows from kSpawn to
+// kGifts, the UI rows from kCardCnd to kTips.
+static_assert(static_cast<int>(Part::kReloadJam) + 1 == static_cast<int>(Part::kSpawn));
 static_assert(static_cast<int>(Part::kGifts) + 1 == static_cast<int>(Part::kCardCnd));
 static_assert(static_cast<int>(Part::kTips) + 1 == static_cast<int>(Part::kTrace));
 

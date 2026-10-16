@@ -70,9 +70,8 @@ LOOT WITH A HISTORY
 * The condition is a roll, weighted by where the item came from and who
   carried it. A raider's pipe gun has seen better days, while a well equipped
   faction like the Brotherhood or the Gunners keeps its gear in better shape.
-  Gear lying around, and your own gear if you install mid playthrough, lands
-  at around 45 to 70%, while most quest rewards arrive new, and so does
-  everything companions and other essential NPCs start with.
+  Gear lying around lands at around 45 to 70%, while most quest rewards arrive
+  new, and so does everything companions and other essential NPCs start with.
 * Legendary gear you find in chests or buy from traders arrives new.
   Legendaries dropped by enemies still turn up worn.
 * About 1 item in 100 ignores all that: a raider can drop a pristine rifle,
@@ -192,12 +191,11 @@ crash log can only say that NEC was involved, not where. Addictol is on Nexus
 Mods:
   https://www.nexusmods.com/fallout4/mods/84214
 
-Adding it to a playthrough in progress? Weapons and armor with no condition
-yet, yours included, get one as the save loads, rolled the same way. To keep
-what you carry as new, set bSpawnCondition=false under [Features] in
-NEC_custom.ini before you start the game. Once the save has loaded, switch
-Worn loot back on in MCM, not in the ini, and save. Stored gear is still
-rolled.
+Installing it to a playthrough in progress? What you carry and store stays at
+100%. NEC rolls an item when the game first spawns it, so loot spawned before
+you install or update NEC, or while Worn loot (bSpawnCondition) is off, comes
+out at 100% the first time it changes hands. Places you haven't visited yet,
+new loot and trader restocks roll as usual.
 
 UNINSTALLING
 Repair anything broken first, at a workbench, at a trader or, for gear you

@@ -28,6 +28,11 @@ namespace SpawnCondition
 	// Whose stock an item is and the band it rolled in, for the trace log.
 	std::string Stocked(const Restock& a_restock, const StockBand& a_band);
 
+	// Opens the trace log's spawn block. Items arrive in bursts, a whole area
+	// at once, so they share one block. A restock opens a block of its own
+	// with the trader's name instead, see VendorRepair/Upkeep.cpp.
+	void OpenBlock(const Restock* a_restock);
+
 	// A stack for the trace log: a line of its own where it is the player's
 	// or a trader's restock, and otherwise a count by what became of it, with
 	// the line under the quiet loot tag for whoever needs it back, see

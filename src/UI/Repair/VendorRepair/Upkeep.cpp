@@ -31,6 +31,12 @@ namespace VendorRepair
 			{ 2222702, 0x137, "barter investment" },
 		};
 
+		// The barter trade's call runs once the trade has bought every stack,
+		// so the loose items it bought get their mark back there. While it is
+		// not live they keep their roll after a respawn, too small a loss for
+		// NEC.log to name, so Places.cpp files the place under the stock only.
+		constexpr std::size_t TRADE_SITE = 1;
+
 		// The 2 calls to TESObjectREFR::ResetInventory that restock a
 		// trader's chests, both through the function table. The first, in
 		// TESFaction::ResetVendorInventoryIfDue, is the merchant container,
@@ -84,6 +90,9 @@ namespace VendorRepair
 		template <std::size_t I>
 		RE::ObjectRefHandle* BuildHk(RE::TESDataHandler* a_this, RE::ObjectRefHandle* a_out, RE::TESObjectREFR* a_vendor)
 		{
+			if constexpr (I == TRADE_SITE) {
+				SpawnCondition::TradeDone(g_buildLinks[I].Live());
+			}
 			Making     making{ a_vendor && g_buildLinks[I].Live() ? a_vendor->As<RE::Actor>() : nullptr, std::nullopt };
 			const auto outer = std::exchange(t_making, &making);
 			const auto out = g_buildLinks[I](a_this, a_out, a_vendor);

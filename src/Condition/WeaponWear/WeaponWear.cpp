@@ -2,6 +2,7 @@
 
 #include "Condition/Condition.h"
 #include "Condition/Equipped.h"
+#include "Condition/WeaponWear/Copy.h"
 #include "Condition/WeaponWear/Rate.h"
 #include "Core/TraceLog.h"
 
@@ -87,14 +88,17 @@ namespace WeaponWear
 		// Wears down the one stack the engine hands it, and remembers whether
 		// the health changed. The engine has already split the stack if it held
 		// more than one item, see Equipped::WriteEquipped, so the weapon in
-		// hand and the weapon that wears stay the same one.
+		// hand and the weapon that wears stay the same one. keeper is the
+		// essential NPC holding it, or null.
 		class WearStack final :
 			public RE::BGSInventoryItem::StackDataWriteFunctor
 		{
 		public:
-			WearStack(const char* a_source, float a_scale) noexcept :
+			WearStack(const char* a_source, float a_scale, bool a_theirs, const RE::Actor* a_keeper) noexcept :
 				source(a_source),
-				scale(a_scale)
+				scale(a_scale),
+				theirs(a_theirs),
+				keeper(a_keeper)
 			{}
 
 			void WriteDataImpl(RE::TESBoundObject& a_object, RE::BGSInventoryItem::Stack& a_stack) override
@@ -122,7 +126,18 @@ namespace WeaponWear
 					return;
 				}
 
-				LogDamageSources(a_object, instanceData, xInstanceData && xInstanceData->data);
+				// An essential NPC's own weapon never wears, the rule
+				// ArmorEvents.h gives their own armor.
+				if (keeper && Equipped::Issued(*keeper, a_object, a_stack.extra.get())) {
+					TraceLog::Npc::Line("wear", "{:s} [{:08X}] is their own and they are essential, so no wear", name, a_object.formID);
+					return;
+				}
+
+				// Listed once per weapon in the player's log, so an NPC's copy
+				// never takes the player's listing.
+				if (!theirs) {
+					LogDamageSources(a_object, instanceData, xInstanceData && xInstanceData->data);
+				}
 
 				// The stats of the copy in hand, mods included. WearsOut has
 				// already made sure this is a weapon.
@@ -131,8 +146,8 @@ namespace WeaponWear
 
 				// What this weapon costs per use, times how many ordinary uses
 				// this event counts as, see a_scale in WeaponWear.h.
-				const auto amount = Rate(weapon, instance, a_stack.extra.get()) * scale;
-				moved = Condition::Decrease(*a_stack.extra, a_object, amount, source, scale);
+				const auto amount = Rate(weapon, instance, a_stack.extra.get(), theirs) * scale;
+				moved = Condition::Decrease(*a_stack.extra, a_object, amount, source, scale, theirs);
 
 				// The engine's own broken check, run on the health just
 				// written. It is the same check that stops the weapon being
@@ -140,10 +155,12 @@ namespace WeaponWear
 				broke = moved && a_stack.extra->IsItemBroken();
 			}
 
-			const char* source;
-			float       scale;
-			bool        moved{ false };
-			bool        broke{ false };
+			const char*      source;
+			float            scale;
+			bool             theirs;
+			const RE::Actor* keeper;
+			bool             moved{ false };
+			bool             broke{ false };
 		};
 
 		// Takes a weapon just worn to 0 out of the owner's hands. The game
@@ -196,22 +213,29 @@ namespace WeaponWear
 		}
 	}
 
-	bool Wear(RE::TESObjectREFR& a_owner, RE::TESObjectWEAP& a_weapon, const char* a_source, float a_scale)
+	Worn WearCopy(RE::TESObjectREFR& a_owner, RE::TESObjectWEAP& a_weapon, const char* a_source, float a_scale, bool a_theirs,
+		const RE::Actor* a_keeper)
 	{
-		WearStack  wear{ a_source, a_scale };
+		WearStack  wear{ a_source, a_scale, a_theirs, a_keeper };
 		const auto count = Equipped::WriteEquipped(a_owner, a_weapon, wear);
 
 		// A split that leaves the health unchanged merges straight back, so
 		// only a change is worth reporting.
 		if (wear.moved && count > 1) {
-			TraceLog::Line("wear", "worn copy split off a stack of {:d}", count);
+			TraceLog::For(a_theirs).Line("wear", "worn copy split off a stack of {:d}", count);
 		}
+		return { count, wear.moved, wear.broke };
+	}
+
+	bool Wear(RE::TESObjectREFR& a_owner, RE::TESObjectWEAP& a_weapon, const char* a_source, float a_scale)
+	{
+		const auto worn = WearCopy(a_owner, a_weapon, a_source, a_scale, false, nullptr);
 
 		// The inventory lock is released by here, which is what makes this
 		// safe.
-		if (wear.broke) {
+		if (worn.broke) {
 			PutAway(a_owner, a_weapon);
 		}
-		return wear.moved;
+		return worn.moved;
 	}
 }

@@ -2,73 +2,13 @@
 
 #include "Core/Settings.h"
 
-// The names and help lines of the Balance numbers on the MCM page, see
-// MenuLine in Text.h. A help line says what the number does, with a value or 2
-// to picture it.
+// The names and help lines of the Balance numbers on the MCM page after the
+// wear speeds, which are in MenuWear.cpp, see MenuLine in Text.h. A help line
+// says what the number does, with a value or 2 to picture it.
 namespace Text
 {
 	namespace
 	{
-		constexpr Line WEAR_RATE_NAME[]{
-			{ "en", "Weapon wear speed" },
-			{ "fr", "Vitesse d'usure des armes" },
-			{ "de", "Abnutzungstempo von Waffen" },
-			{ "it", "Velocità di usura delle armi" },
-			{ "es", "Velocidad de desgaste de armas" },
-			{ "esmx", "Velocidad de desgaste de armas" },
-			{ "ptbr", "Velocidade de desgaste das armas" },
-			{ "pl", "Szybkość zużycia broni" },
-			{ "ru", "Скорость износа оружия" },
-			{ "ja", "武器の消耗速度" },
-			{ "zhhant", "武器損耗速度" },
-			{ "zhhans", "武器损耗速度" },
-		};
-
-		constexpr Line WEAR_RATE_HELP[]{
-			{ "en", "How fast weapons wear. 1 is normal, 2 is twice as fast and 0 stops wear." },
-			{ "fr", "Vitesse d'usure des armes. 1 est normal, 2 est 2 fois plus rapide et 0 arrête l'usure." },
-			{ "de", "Wie schnell sich Waffen abnutzen. 1 ist normal, 2 doppelt so schnell, 0 stoppt die Abnutzung." },
-			{ "it", "Quanto in fretta si usurano le armi. 1 è normale, 2 è il doppio e 0 ferma l'usura." },
-			{ "es", "Lo rápido que se desgastan las armas. 1 es normal, 2 es el doble de rápido y 0 detiene el desgaste." },
-			{ "esmx", "Qué tan rápido se desgastan las armas. 1 es normal, 2 es el doble de rápido y 0 detiene el desgaste." },
-			{ "ptbr", "Quão rápido as armas se desgastam. 1 é o normal, 2 é o dobro e 0 impede o desgaste." },
-			{ "pl", "Jak szybko zużywa się broń. 1 to normalnie, 2 to 2 razy szybciej, a 0 wyłącza zużycie." },
-			{ "ru", "Как быстро изнашивается оружие. 1 означает обычную скорость, 2 вдвое быстрее, а 0 останавливает износ." },
-			{ "ja", "武器が消耗する速さです。1で通常、2で2倍の速さ、0で消耗しなくなります" },
-			{ "zhhant", "武器損耗的速度。1為正常，2為2倍速度，0則停止損耗。" },
-			{ "zhhans", "武器损耗的速度。1为正常，2为2倍速度，0则停止损耗。" },
-		};
-
-		constexpr Line ARMOR_WEAR_RATE_NAME[]{
-			{ "en", "Armor wear speed" },
-			{ "fr", "Vitesse d'usure des armures" },
-			{ "de", "Abnutzungstempo von Rüstungen" },
-			{ "it", "Velocità di usura delle armature" },
-			{ "es", "Velocidad de desgaste de armaduras" },
-			{ "esmx", "Velocidad de desgaste de armaduras" },
-			{ "ptbr", "Velocidade de desgaste das armaduras" },
-			{ "pl", "Szybkość zużycia pancerzy" },
-			{ "ru", "Скорость износа брони" },
-			{ "ja", "アーマーの消耗速度" },
-			{ "zhhant", "裝甲損耗速度" },
-			{ "zhhans", "装甲损耗速度" },
-		};
-
-		constexpr Line ARMOR_WEAR_RATE_HELP[]{
-			{ "en", "How fast armor wears, on you and on NPCs. 1 is normal, 2 is twice as fast and 0 stops wear." },
-			{ "fr", "Vitesse d'usure des armures, sur vous comme sur les PNJ. 1 est normal, 2 est 2 fois plus rapide et 0 arrête l'usure." },
-			{ "de", "Wie schnell sich Rüstungen abnutzen, bei dir und bei NPCs. 1 ist normal, 2 doppelt so schnell, 0 stoppt die Abnutzung." },
-			{ "it", "Quanto in fretta si usurano le armature, tue e dei PNG. 1 è normale, 2 è il doppio e 0 ferma l'usura." },
-			{ "es", "Lo rápido que se desgastan las armaduras, en ti y en los demás. 1 es normal, 2 es el doble de rápido y 0 detiene el desgaste." },
-			{ "esmx", "Qué tan rápido se desgastan las armaduras, en ti y en los demás. 1 es normal, 2 es el doble de rápido y 0 detiene el desgaste." },
-			{ "ptbr", "Quão rápido as armaduras se desgastam, em você e nos NPCs. 1 é o normal, 2 é o dobro e 0 impede o desgaste." },
-			{ "pl", "Jak szybko zużywają się pancerze, twoje i NPC. 1 to normalnie, 2 to 2 razy szybciej, a 0 wyłącza zużycie." },
-			{ "ru", "Как быстро изнашивается броня, на вас и на NPC. 1 означает обычную скорость, 2 вдвое быстрее, а 0 останавливает износ." },
-			{ "ja", "自分とNPCのアーマーが消耗する速さです。1で通常、2で2倍の速さ、0で消耗しなくなります" },
-			{ "zhhant", "裝甲損耗的速度，包括你和其他角色的裝甲。1為正常，2為2倍速度，0則停止損耗。" },
-			{ "zhhans", "装甲损耗的速度，包括你和其他角色的装甲。1为正常，2为2倍速度，0则停止损耗。" },
-		};
-
 		constexpr Line DAMAGE_FLOOR_NAME[]{
 			{ "en", "Damage at 0 condition" },
 			{ "fr", "Dégâts à l'état 0" },
@@ -373,8 +313,6 @@ namespace Text
 		};
 
 		constexpr MenuRow ROWS[]{
-			{ &Settings::fWearRateMult, WEAR_RATE_NAME, WEAR_RATE_HELP },
-			{ &Settings::fArmorWearRateMult, ARMOR_WEAR_RATE_NAME, ARMOR_WEAR_RATE_HELP },
 			{ &Settings::fDamageFloor, DAMAGE_FLOOR_NAME, DAMAGE_FLOOR_HELP },
 			{ &Settings::fArmorFloor, ARMOR_FLOOR_NAME, ARMOR_FLOOR_HELP },
 			{ &Settings::fValueExponent, VALUE_EXPONENT_NAME, VALUE_EXPONENT_HELP },

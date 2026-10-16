@@ -161,12 +161,19 @@ namespace Settings
 	// Balance. Each tunes a feature and is read where it is used. A floor at
 	// 1 leaves the game's own result, so a feature with a floor has no switch.
 
-	// What every weapon's wear rate is multiplied by, see WeaponWear/Rate.cpp.
+	// What the wear rate of the player's weapons is multiplied by, see
+	// WeaponWear/Rate.cpp.
 	inline Live<float> fWearRateMult{ "Balance", "fWearRateMult", 1.0F };
 
-	// What every piece of armor's wear rate is multiplied by, see
+	// The same for every NPC's weapons, in place of fWearRateMult.
+	inline Live<float> fNpcWearRateMult{ "Balance", "fNpcWearRateMult", 0.33F };
+
+	// What the wear rate of the player's armor is multiplied by, see
 	// ArmorWear/Rate.cpp.
 	inline Live<float> fArmorWearRateMult{ "Balance", "fArmorWearRateMult", 1.0F };
+
+	// The same for every NPC's armor, in place of fArmorWearRateMult.
+	inline Live<float> fNpcArmorWearRateMult{ "Balance", "fNpcArmorWearRateMult", 1.0F };
 
 	// What a weapon at nothing still hits for, as a share of its full damage,
 	// see HealthDamage/Curve.h.
@@ -246,7 +253,7 @@ namespace Settings
 	// setting only takes whole steps.
 	using Number = std::variant<Live<float>*, Live<std::int32_t>*>;
 
-	// The 8 switches under [Features] and the 16 numbers under [Balance] and
+	// The 8 switches under [Features] and the 18 numbers under [Balance] and
 	// [HUD], in NEC.ini's order, for Report and the MCM page.
 	[[nodiscard]] std::span<Live<bool>* const> Switches();
 	[[nodiscard]] std::span<const Number>      Numbers();

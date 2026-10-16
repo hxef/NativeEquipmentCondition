@@ -19,9 +19,8 @@ namespace HealthDamage
 	bool Repeats(std::atomic<std::uint64_t>& a_last, std::initializer_list<float> a_values, std::uint64_t a_scope = 0);
 
 	// The scope an NPC's line is compared in: whose line it is and which block
-	// of the NPC log it falls in. An NPC's weapon never wears, so every shot
-	// reads the same, and each shot opens a block, so comparing inside the
-	// block keeps one line per shot and still collapses a shotgun's pellets
-	// into one. The form ID keeps 2 NPCs with the same gun apart.
+	// of the NPC log it falls in. Each shot opens a block, so comparing inside
+	// the block keeps 1 line per shot and still collapses a shotgun's
+	// pellets into one. The form ID keeps 2 NPCs with the same gun apart.
 	std::uint64_t NpcScope(const RE::TESForm& a_who);
 }

@@ -69,10 +69,11 @@ namespace ArmorWear
 
 	// Wears down the copy of a piece a_owner has on, and that copy alone, see
 	// Equipped::WriteEquipped. a_source names the hit on the trace line, and
-	// a_theirs sends the line to the NPC log. A piece worn to 0 stays on and
-	// the player is told. The game refuses to put a broken piece back on, so
-	// once the player takes it off it has to be repaired before it can be worn
-	// again, see BrokenEquip.h. Returns true when the health changed. Call it
-	// without holding the inventory lock, see ItemCards.h.
+	// a_theirs is for an NPC's piece, at their rate with the line in the NPC
+	// log, see Rate.h. A piece worn to 0 stays on and the player is told. The
+	// game refuses to put a broken piece back on, so once the player takes it
+	// off it has to be repaired before it can be worn again, see BrokenEquip.h.
+	// Returns true when the health changed. Call it without holding the
+	// inventory lock, see ItemCards.h.
 	bool Wear(RE::Actor& a_owner, RE::TESObjectARMO& a_armor, float a_damage, const char* a_source, bool a_theirs);
 }

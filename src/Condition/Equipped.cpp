@@ -20,30 +20,6 @@ namespace Equipped
 			const auto* effects = data.GetEnchantmentArray();
 			return effects && std::ranges::find(*effects, &a_effect) != effects->end();
 		}
-
-		// Whether this copy of a piece is part of the wearer's own outfit from
-		// the editor. The game tags each piece an outfit puts on with that
-		// outfit, and the tag survives saving and follows the piece into any
-		// inventory, so it has to name the wearer's own outfit. A piece from a
-		// line of the record's own inventory has no tag, so its kind is matched
-		// instead. Neither has an owner, and whatever the player hands a
-		// companion has one, the player or whoever it was stolen from, so a
-		// copy handed over never counts.
-		bool Issued(const RE::Actor& a_wearer, const RE::TESObjectARMO& a_armor, const RE::ExtraDataList* a_extra)
-		{
-			const auto* npc = a_wearer.GetNPC();
-			if (!npc || (a_extra && a_extra->HasType(RE::EXTRA_DATA_TYPE::kOwnership))) {
-				return false;
-			}
-
-			if (const auto* stamp = a_extra ? a_extra->GetByType<RE::ExtraOutfitItem>() : nullptr) {
-				const auto mine = [stamp](const RE::BGSOutfit* a_outfit) { return a_outfit && a_outfit->formID == stamp->outfit; };
-				return mine(npc->defOutfit) || mine(npc->sleepOutfit);
-			}
-
-			const std::span lines{ npc->containerObjects, npc->numContainerObjects };
-			return std::ranges::any_of(lines, [&a_armor](const RE::ContainerObject* a_line) { return a_line && a_line->obj == &a_armor; });
-		}
 	}
 
 	float WeaponHealth(RE::Actor* a_actor, const RE::TESForm* a_weapon, const RE::EnchantmentItem* a_effect)
@@ -185,6 +161,33 @@ namespace Equipped
 		auto pieces = ArmorPieces(a_actor);
 		inv->rwLock.unlock_write();
 		return pieces;
+	}
+
+	bool Issued(const RE::Actor& a_holder, const RE::TESBoundObject& a_object, const RE::ExtraDataList* a_extra)
+	{
+		// The game tags each item an outfit puts on with that outfit, and the
+		// tag survives saving and follows the item into any inventory, so it
+		// has to name the holder's own outfit. An item from a plain line of
+		// the record's own inventory has no tag, so its kind is matched
+		// instead. One from a leveled line carries that list's form ID, which
+		// the player's hands take off. None has an owner, and whatever the
+		// player hands a companion has one, the player or whoever it was
+		// stolen from.
+		const auto* npc = a_holder.GetNPC();
+		if (!npc || (a_extra && a_extra->HasType(RE::EXTRA_DATA_TYPE::kOwnership))) {
+			return false;
+		}
+
+		if (const auto* stamp = a_extra ? a_extra->GetByType<RE::ExtraOutfitItem>() : nullptr) {
+			const auto mine = [stamp](const RE::BGSOutfit* a_outfit) { return a_outfit && a_outfit->formID == stamp->outfit; };
+			return mine(npc->defOutfit) || mine(npc->sleepOutfit);
+		}
+
+		const auto*     listed = a_extra ? a_extra->GetByType<RE::ExtraLeveledItem>() : nullptr;
+		const std::span lines{ npc->containerObjects, npc->numContainerObjects };
+		return std::ranges::any_of(lines, [&a_object, listed](const RE::ContainerObject* a_line) {
+			return a_line && a_line->obj && (a_line->obj == &a_object || (listed && a_line->obj->formID == listed->levItem));
+		});
 	}
 
 	bool EquippedStack::CompareData(const RE::BGSInventoryItem::Stack& a_stack)

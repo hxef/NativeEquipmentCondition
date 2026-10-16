@@ -257,8 +257,14 @@ namespace WeaponWear
 		LogEffects("critical effect", weapon->effect);
 	}
 
+	float NpcMult()
+	{
+		const auto mult = Settings::fNpcWearRateMult.GetValue();
+		return mult > 0.0F ? mult : 0.0F;
+	}
+
 	float Rate(const RE::TESObjectWEAP& a_weapon, const RE::TESObjectWEAP::InstanceData& a_instance,
-		const RE::ExtraDataList* a_extra)
+		const RE::ExtraDataList* a_extra, bool a_theirs)
 	{
 		const auto damage = TotalDamage(a_weapon, a_instance);
 		const auto blast = ExplosionDamage(a_weapon, a_instance);
@@ -284,17 +290,22 @@ namespace WeaponWear
 		// weapon can deal in its life depends on what it is built from, and
 		// damage per shot decides how fast that runs out.
 		// fWearRateMult stops at 0, since below it a gun would gain condition
-		// as it fires.
-		const auto mult = Settings::fWearRateMult.GetValue();
-		const auto wear = RATE_AT_REFERENCE * (mult > 0.0F ? mult : 0.0F) *
+		// as it fires. An NPC's weapon takes fNpcWearRateMult instead.
+		const auto own = Settings::fWearRateMult.GetValue();
+		const auto mult = a_theirs ? NpcMult() : (own > 0.0F ? own : 0.0F);
+		const auto wear = RATE_AT_REFERENCE * mult *
 		                  (damage / g_referenceDamage.load()) * (Materials::ReferenceQuality(Condition::Kind::kWeapon) / quality) * pace;
 
-		const auto cut = TraceLog::IsOpen() && pace < 1.0F ? std::format(", cut x{:.4f} for firing {:.2f} a second", pace, rate) : std::string{};
+		// An NPC's line ends with the multiplier it used.
+		auto tail = TraceLog::IsOpen() && pace < 1.0F ? std::format(", cut x{:.4f} for firing {:.2f} a second", pace, rate) : std::string{};
+		if (a_theirs && TraceLog::IsOpen()) {
+			tail += std::format(", NPC rate x{:.2f}", mult);
+		}
 		if (blast > 0.0F) {
-			TraceLog::Line("rate", "{:.0f} damage, {:.0f} of it the blast, at quality {:.1f} costs {:.6f} a shot{:s}",
-				damage, blast, quality, wear, cut);
+			TraceLog::For(a_theirs).Line("rate", "{:.0f} damage, {:.0f} of it the blast, at quality {:.1f} costs {:.6f} a shot{:s}",
+				damage, blast, quality, wear, tail);
 		} else {
-			TraceLog::Line("rate", "{:.0f} damage at quality {:.1f} costs {:.6f} a shot{:s}", damage, quality, wear, cut);
+			TraceLog::For(a_theirs).Line("rate", "{:.0f} damage at quality {:.1f} costs {:.6f} a shot{:s}", damage, quality, wear, tail);
 		}
 		return wear;
 	}

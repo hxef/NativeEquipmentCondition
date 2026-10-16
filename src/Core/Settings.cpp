@@ -50,7 +50,9 @@ namespace Settings
 
 		const Number NUMBERS[]{
 			&fWearRateMult,
+			&fNpcWearRateMult,
 			&fArmorWearRateMult,
+			&fNpcArmorWearRateMult,
 			&fDamageFloor,
 			&fArmorFloor,
 			&fValueExponent,

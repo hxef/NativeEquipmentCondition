@@ -5,6 +5,9 @@
 #include "Core/Settings.h"
 #include "Core/TraceLog.h"
 
+#include <format>
+#include <string>
+
 namespace ArmorWear
 {
 	namespace
@@ -43,12 +46,15 @@ namespace ArmorWear
 		// every upgrade slows either one, since adhesive and fiberglass are
 		// worth more than steel or leather.
 		// fArmorWearRateMult stops at 0, since below it a piece would gain
-		// condition from every blow.
-		const auto mult = Settings::fArmorWearRateMult.GetValue();
-		const auto wear = RATE_AT_REFERENCE * (mult > 0.0F ? mult : 0.0F) *
+		// condition from every blow. An NPC's piece takes
+		// fNpcArmorWearRateMult instead, and its line ends with it.
+		const auto set = (a_theirs ? Settings::fNpcArmorWearRateMult : Settings::fArmorWearRateMult).GetValue();
+		const auto mult = set > 0.0F ? set : 0.0F;
+		const auto wear = RATE_AT_REFERENCE * mult *
 		                  (a_damage / reference) * (Materials::ReferenceQuality(Condition::Kind::kArmor) / quality);
 
-		TraceLog::For(a_theirs).Line("rate", "a blow of {:.0f} on armor at quality {:.1f} costs {:.6f}", a_damage, quality, wear);
+		const auto tail = a_theirs && TraceLog::IsOpen() ? std::format(", NPC rate x{:.2f}", mult) : std::string{};
+		TraceLog::For(a_theirs).Line("rate", "a blow of {:.0f} on armor at quality {:.1f} costs {:.6f}{:s}", a_damage, quality, wear, tail);
 		return wear;
 	}
 }

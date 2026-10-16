@@ -2,20 +2,24 @@
 
 #include "Core/Plugin.h"
 
-// Everything that wears the player's weapon down as it is used. A gun wears
-// once per shot, as the engine's own fire call returns, by the power its rounds
-// left with. So a shotgun's pellets cost 1 shot between them, a tap of a Gauss
-// rifle costs the share of a full charge it was held to, and a Laser Musket
-// costs 1 shot for every crank. A blow struck by hand wears the weapon when it
-// lands, since the hit is the only thing that names the weapon and says how
-// hard the game made it land. A power attack wears harder.
+// Everything that wears a weapon down as it is used, the player's and every
+// NPC's. A gun wears once per shot, as the engine's own fire call returns, by
+// the power its rounds left with. So a shotgun's pellets cost 1 shot between
+// them, a tap of a Gauss rifle costs the share of a full charge it was held
+// to, and a Laser Musket costs 1 shot for every crank. A blow struck by hand
+// wears the weapon when it lands, since the hit is the only thing that names
+// the weapon and says how hard the game made it land. A power attack wears
+// harder.
 //
-// Nobody else's weapon wears. An NPC's shots and blows are logged to the NPC
-// trace log, see TraceLog.h, and read for the pace an automatic weapon keeps,
-// see FireRate.h. Each of the player's shots rolls for a jam before it fires,
-// see Jam.h, which watches the reload itself. Every shot of a gun that wears
-// carries the gun's condition into Fire for its spread, an NPC's only while
-// its inventory is free, see Aim.h.
+// An NPC's weapon wears the same way at fNpcWearRateMult, with no jam, see
+// WearTheirs in WeaponWear.h. A nameless bash reads the weapon in their hands
+// under the inventory read lock, as ArmorEvents reads armor, and the wear
+// itself never waits for their inventory. Their shots and blows go to the NPC
+// trace log, see TraceLog.h, and are read for the pace an automatic weapon
+// keeps, see FireRate.h. Each of the player's shots rolls for a jam before it
+// fires, see Jam.h, which watches the reload itself. Every shot of a gun that
+// wears carries the gun's condition into Fire for its spread, an NPC's only
+// while its inventory is free, see Aim.h.
 //
 // Hits.cpp is the hit sink and what a blow was, and Hits.h what it shares with
 // WeaponEvents.cpp.

@@ -1,3 +1,11 @@
+1.4.1
+* NPC weapons now wear as they fight, shot by shot and blow by blow, without jams.
+* 2 new MCM sliders set NPC wear apart from yours: NPC weapon wear speed (fNpcWearRateMult, 0.33) and NPC armor wear speed (fNpcArmorWearRateMult, 1). 0 stops that wear.
+* Weapon wear speed and Armor wear speed now set only your own gear.
+* The weapons an essential NPC comes with never wear, like their armor, and that now includes leveled ones. Whatever you hand them does.
+* An NPC's weapon worn out to 0 stays in their hands.
+* When another DLL mod handles gun wear, NPC gun wear is left to it too.
+
 1.4.0
 * Loading a save no longer rolls a condition for anything.
 * Installed to a game in progress, NEC keeps your carried and stored gear at 100%, and so does loot spawned before you install or update NEC, or while Worn loot (bSpawnCondition) is off. Nothing to switch in MCM or the ini. Before, every load rolled gear with no condition, so turning Worn loot off for the first load only delayed it: the next load with it on rolled your stored gear, and your carried gear too unless you turned it back on in MCM.

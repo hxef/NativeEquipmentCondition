@@ -69,6 +69,7 @@ namespace
 		FireRate::Unload();
 		InHand::Unload();
 		HudParts::Weapon::Forget();
+		WeaponWear::ForgetOwed();
 	}
 
 	// Set while a game could begin with no save load or new game message,

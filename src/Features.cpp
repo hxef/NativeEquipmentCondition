@@ -72,8 +72,8 @@ namespace
 
 		// Gameplay: hooks that change play.
 
-		// Wear on every shot and every blow of the player's weapon.
-		{ .name = "WeaponEvents", .part = Part::kGunWear, .Install = WeaponEvents::Install, .Load = WeaponEvents::Load },
+		// Wear on every shot and every blow of a weapon, whoever holds it.
+		{ .name = "WeaponEvents", .part = Part::kGunWear, .Install = WeaponEvents::Install, .Load = WeaponEvents::Load, .Unload = WeaponWear::ForgetOwed },
 		// Wear on the armor a blow lands on, whoever wears it.
 		{ .name = "ArmorEvents", .Load = ArmorEvents::Load },
 		// A worn weapon does less damage.

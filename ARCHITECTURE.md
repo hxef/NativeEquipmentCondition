@@ -71,7 +71,8 @@ src/
         Phrases.cpp          what a setting's sentence says in place of a piece's name
       Menu/
         MenuSwitches.cpp     the MCM page's switches: help, and the bug report logs switch's name
-        MenuNumbers.cpp      the MCM page's Balance numbers: names and help
+        MenuWear.cpp         the MCM page's wear speeds, yours and NPCs': names and help
+        MenuNumbers.cpp      the MCM page's other Balance numbers: names and help
         MenuHudLog.cpp       the MCM page's HUD numbers and log level: names and help, and the HUD bar sliders' default
         MenuNotes.cpp        the MCM page's grey lines about parts left to other mods
         MenuPieces.cpp       a part with its pieces in brackets, what still works, and a setting's sentence with pieces off
@@ -88,6 +89,8 @@ src/
     WeaponWear/
       WeaponWear.h/.cpp      which weapons take part, wearing the copy in hand
       Rate.h/.cpp            how fast a weapon wears
+      Copy.h                 wearing the copy in hand, the write the player's wear and an NPC's share
+      Theirs.cpp             an NPC's weapon wear, which never waits for their inventory
     ArmorWear/
       ArmorWear.h/.cpp       which armor takes part, wearing a piece somebody has on
       Mods.h/.cpp            which armor mods add protection, an effect or a bonus, the first row to load
@@ -217,13 +220,13 @@ and one row in `src/Features.cpp`. `src/main.cpp` walks the rows:
    `src/UI/MenuMovies.cpp`.
 
 Outside the 4 steps, `src/main.cpp` drops what play remembers of the last
-game, the gun that jammed, the fire speeds, the weapon in hand and the HUD's
-last reading, when a save loads, a new game begins or the main menu opens. As
-a save loads, a new game begins or a coc from the main menu leaves its loading
-screen, it also measures again what a DLL mod can change after game data
-loads, in an order its comments explain. Once a save has loaded with Worn
-loot on, it sets the weapons and armor the player carries with no condition
-to full.
+game, the gun that jammed, the fire speeds, the weapon in hand, the HUD's last
+reading and the NPC wear still waiting for a busy inventory, when a save
+loads, a new game begins or the main menu opens. As a save loads, a new game
+begins or a coc from the main menu leaves its loading screen, it also
+measures again what a DLL mod can change after game data loads, in an order
+its comments explain. Once a save has loaded with Worn loot on, it sets the
+weapons and armor the player carries with no condition to full.
 
 Every row runs at every step whatever its switch says. Its hooks ask the
 switch on every call and leave the game as it is while it is off. A row whose

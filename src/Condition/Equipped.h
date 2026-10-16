@@ -80,9 +80,7 @@ namespace Equipped
 		// the record, since a mod never moves a piece to another limb.
 		std::uint32_t slots{ 0 };
 
-		// Whether the piece is part of the wearer's own outfit from the editor,
-		// see Issued in Equipped.cpp. A piece handed to them is not, even one
-		// of the same kind.
+		// Whether the piece is the wearer's own from the editor, see Issued.
 		bool issued{ false };
 	};
 
@@ -94,6 +92,12 @@ namespace Equipped
 	// ArmorPieces for a caller outside the engine's own code path, see
 	// TryWeaponHealth. Nothing while the inventory is busy.
 	std::optional<std::vector<ArmorPiece>> TryArmorPieces(RE::Actor* a_actor);
+
+	// Whether this copy of an item is the holder's own from the editor, from
+	// their outfit or a plain or leveled line of their record's inventory. A
+	// copy handed to them never is, even one of the same kind. Read under the
+	// inventory lock.
+	bool Issued(const RE::Actor& a_holder, const RE::TESBoundObject& a_object, const RE::ExtraDataList* a_extra);
 
 	// Picks the equipped stack out of the ones the engine walks, for a writer.
 	// A stack with no extra data list is skipped: the engine's split locks the

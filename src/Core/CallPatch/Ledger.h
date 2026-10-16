@@ -255,9 +255,13 @@ namespace CallPatch
 	// is written. PiecesOffTail ends the line of a place the call still
 	// reaches when its pieces are all off for a cause outside its set, such
 	// as a piece they need, and is empty otherwise. Another place of a piece
-	// marked alone is no such cause, see PieceRow in Core/Pieces.h.
+	// marked alone is no such cause, see PieceRow in Core/Pieces.h. With
+	// a_forNow, as for the recheck's held, lone and runs again lines,
+	// neither is a held set of the same pieces while it only waits, as it
+	// comes back by itself. Every other caller leaves it false, so the
+	// summary shares a part only once no set of it waits.
 	void                      Say(const Pass& a_pass, Lines& a_lines, bool a_install);
-	[[nodiscard]] std::string PiecesOffTail(const Place& a_place);
+	[[nodiscard]] std::string PiecesOffTail(const Place& a_place, bool a_forNow = false);
 
 	// In Owners.cpp. Who has a place, read from what it leads to now, sure to
 	// be a mod when a_changed says it changed since NEC noted it. Then the

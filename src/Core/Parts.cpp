@@ -22,10 +22,13 @@ namespace
 	// call.
 	constexpr Piece JAM[]{ kJamShot };
 	constexpr Piece JAM_SIDE[]{ kJamReload };
-	// The 3 exceptions are cases Worn loot handles on their own, so losing one
-	// takes nothing from the switch.
+	// The 2 side parts roll loot lying in the world and a stock's items with
+	// no mod slots. A lost set costs only what that set did, see its WARN
+	// line. The 2 exceptions are cases Worn loot handles on their own, so
+	// losing one takes nothing from the switch.
 	constexpr Piece WORN_LOOT[]{ kWornLoot };
-	constexpr Piece WORN_LOOT_EXCEPTIONS[]{ kConsoleNew, kOldSaves, kGifts };
+	constexpr Piece WORN_LOOT_SIDE[]{ kWorldLoot, kModlessLoot };
+	constexpr Piece WORN_LOOT_EXCEPTIONS[]{ kConsoleNew, kGifts };
 	// A repair is priced from a worn item's price, which only Worn item
 	// prices gives. Without it a quote still scales, but from the game's own
 	// barter price.
@@ -69,7 +72,7 @@ namespace
 
 	constexpr SettingLink SETTINGS[]{
 		{ &Settings::bJam, nullptr, JAM, JAM_SIDE },
-		{ &Settings::bSpawnCondition, nullptr, WORN_LOOT, {}, WORN_LOOT_EXCEPTIONS },
+		{ &Settings::bSpawnCondition, nullptr, WORN_LOOT, WORN_LOOT_SIDE, WORN_LOOT_EXCEPTIONS },
 		{ &Settings::bVendorRepair, nullptr, TRADER_REPAIRS, TRADER_REPAIRS_SIDE },
 		{ &Settings::bLoadingTips, nullptr, TIPS },
 		{ &Settings::bHudCondition, nullptr, HUD_BARS },

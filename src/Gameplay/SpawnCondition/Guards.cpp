@@ -3,6 +3,7 @@
 #include "Condition/Condition.h"
 #include "Core/CallPatch/CallPatch.h"
 #include "Core/ItemCards.h"
+#include "Core/Settings.h"
 
 #include <array>
 #include <cstdint>
@@ -12,6 +13,10 @@ namespace SpawnCondition
 {
 	namespace
 	{
+		// -------------------------------------------------------------------
+		// Console commands
+		// -------------------------------------------------------------------
+
 		// Whether this thread is part way through a console command. Asking
 		// whether the console is open would be wrong: loading cells keeps
 		// filling raiders and footlockers on other threads while it is open,
@@ -20,26 +25,6 @@ namespace SpawnCondition
 		// tears menus down, which can touch inventories, so the game could
 		// freeze. A flag on the working thread costs one read.
 		thread_local bool g_runningConsoleCommand = false;
-
-		// Sets a flag while alive and clears it however the call ends. A flag
-		// left set would change what every weapon gets for the rest of the
-		// session on that thread.
-		struct Raise
-		{
-			// Restores the old value rather than clearing it, so an inner guard
-			// cannot clear an outer call's flag. Sets nothing when told this
-			// call does not count.
-			explicit Raise(bool& a_flag, bool a_when = true) :
-				flag(a_flag), previous(a_flag) { flag = flag || a_when; }
-			~Raise() { flag = previous; }
-
-			Raise(const Raise&) = delete;
-			Raise& operator=(const Raise&) = delete;
-
-		private:
-			bool&      flag;
-			const bool previous;
-		};
 
 		// The one call to Console::RunQueuedCommands in the game's update loop.
 		// Typing a command only puts a Script in a queue, and this call is what
@@ -53,30 +38,13 @@ namespace SpawnCondition
 
 		void RunConsoleCommandsHk()
 		{
-			const Raise running{ g_runningConsoleCommand, g_consoleLink[0].Live() };
+			const Scoped running{ g_runningConsoleCommand, g_runningConsoleCommand || g_consoleLink[0].Live() };
 			g_consoleLink[0]();
 		}
 
-		// Whether this thread is loading a saved inventory. A save keeps an
-		// inventory as stacks, each added back through AddStack from an item
-		// the loader owns, so nothing else can reach one.
-		thread_local bool g_loadingSavedStack = false;
-
-		// The one call that adds a saved stack, in the function that reads a
-		// BGSInventoryList out of a save. It calls AddItem1, which takes the
-		// write lock and calls AddStack.
-		constexpr CallPatch::CallSite LOAD_SAVED_STACK_SITE[] = {
-			{ 2194186, 0x0CC, "saved stack" },
-		};
-
-		std::array<CallPatch::Link<void(RE::BGSInventoryList*, RE::TESBoundObject*, RE::BGSInventoryItem::Stack*, std::uint32_t*, std::uint32_t*)>, 1> g_savedStackLink;
-
-		void LoadSavedStackHk(RE::BGSInventoryList* a_list, RE::TESBoundObject* a_object, RE::BGSInventoryItem::Stack* a_stack,
-			std::uint32_t* a_oldCount, std::uint32_t* a_newCount)
-		{
-			const Raise loading{ g_loadingSavedStack, g_savedStackLink[0].Live() };
-			g_savedStackLink[0](a_list, a_object, a_stack, a_oldCount, a_newCount);
-		}
+		// -------------------------------------------------------------------
+		// Scripts handing items over, and restocks
+		// -------------------------------------------------------------------
 
 		// Whether this thread is running a script's ObjectReference.AddItem or
 		// RemoveItem. The script only queues a functor, and the game runs it
@@ -129,10 +97,10 @@ namespace SpawnCondition
 			if (!g_scripts.Runs(g_addItemLink)) {
 				return _RunScriptAddItem(a_functor, a_result);
 			}
-			const auto  source = Source(*a_functor);
-			const Raise running{ g_runningScriptTransfer };
-			const Raise fromPlayer{ g_fromPlayer, source.get() == RE::PlayerCharacter::GetSingleton() };
-			const Raise fromCharacter{ g_fromCharacter, Giver(source.get()) };
+			const auto   source = Source(*a_functor);
+			const Scoped running{ g_runningScriptTransfer, true };
+			const Scoped fromPlayer{ g_fromPlayer, g_fromPlayer || source.get() == RE::PlayerCharacter::GetSingleton() };
+			const Scoped fromCharacter{ g_fromCharacter, g_fromCharacter || Giver(source.get()) };
 			return _RunScriptAddItem(a_functor, a_result);
 		}
 
@@ -141,10 +109,10 @@ namespace SpawnCondition
 			if (!g_scripts.Runs(g_removeItemLink)) {
 				return _RunScriptRemoveItem(a_functor, a_result);
 			}
-			const auto  source = a_functor->source.get();
-			const Raise running{ g_runningScriptTransfer };
-			const Raise fromPlayer{ g_fromPlayer, source.get() == RE::PlayerCharacter::GetSingleton() };
-			const Raise fromCharacter{ g_fromCharacter, Giver(source.get()) };
+			const auto   source = a_functor->source.get();
+			const Scoped running{ g_runningScriptTransfer, true };
+			const Scoped fromPlayer{ g_fromPlayer, g_fromPlayer || source.get() == RE::PlayerCharacter::GetSingleton() };
+			const Scoped fromCharacter{ g_fromCharacter, g_fromCharacter || Giver(source.get()) };
 			return _RunScriptRemoveItem(a_functor, a_result);
 		}
 
@@ -152,6 +120,84 @@ namespace SpawnCondition
 		// trader's chest restocks inside the barter screen's own call, on the
 		// thread that runs it.
 		thread_local const Restock* t_restock = nullptr;
+
+		// -------------------------------------------------------------------
+		// What the player carries
+		// -------------------------------------------------------------------
+
+		// Whether the player's stack is the only holder of this extra data
+		// list. A list held twice still counts when the other holder is the
+		// item's own world reference: picking up a persistent reference, a named
+		// quest weapon for example, hands over that reference's own list, and a
+		// load puts the same list back in the stack. The game marked that
+		// reference changed at the pickup, so a write to the list is saved.
+		bool PlayersOwn(const RE::ExtraDataList& a_list)
+		{
+			const auto held = a_list.QRefCount();
+			if (held != 2) {
+				return held == 1;
+			}
+			const auto* handles = a_list.GetByType<RE::ExtraReferenceHandles>();
+			const auto  original = handles ? handles->originalRef.get() : nullptr;
+			return original && original->extraList.get() == &a_list;
+		}
+
+		struct Carried
+		{
+			std::uint32_t kept{ 0 };
+			std::uint32_t shared{ 0 };
+		};
+
+		// The core of KeepCarried and KeepCarriedAfterLoad. A stack still
+		// marked as not rolled counts as having no condition and is stamped
+		// the way a script's gift is, see Roll. A stack whose list another
+		// inventory shares is not the player's alone, so it is only counted,
+		// see PlayersOwn. Takes the inventory lock and waits for it, so the
+		// caller holds no lock of the game's.
+		Carried KeepStacks()
+		{
+			Carried carried;
+			auto*   player = RE::PlayerCharacter::GetSingleton();
+			auto*   inv = player ? player->inventoryList : nullptr;
+			if (!inv) {
+				return carried;
+			}
+
+			const RE::BSAutoWriteLock l(inv->rwLock);
+			inv->ForEachStack(
+				[](RE::BGSInventoryItem& a_item) { return a_item.object && Condition::WearsOut(*a_item.object); },
+				[&carried](RE::BGSInventoryItem&, RE::BGSInventoryItem::Stack& a_stack) {
+					if (!a_stack.extra) {
+						return true;
+					}
+					const auto health = a_stack.extra->GetHealthPerc();
+					if (health >= 0.0F && !Condition::IsUnrolled(health)) {
+						return true;
+					}
+					if (PlayersOwn(*a_stack.extra)) {
+						a_stack.extra->SetHealthPerc(Condition::MAX_HEALTH);
+						carried.kept++;
+					} else {
+						carried.shared++;
+					}
+					return true;
+				});
+			return carried;
+		}
+	}
+
+	bool Loading()
+	{
+		const auto* game = RE::BGSSaveLoadGame::GetSingleton();
+		const auto* thread = RE::TLS::GetSingleton();
+		return (game && game->IsLoading()) || (thread && thread->flags.any(RE::TLS::Flags::kApplyingSave));
+	}
+
+	bool NotRecording()
+	{
+		const auto* game = RE::BGSSaveLoadGame::GetSingleton();
+		const auto* thread = RE::TLS::GetSingleton();
+		return !game || !game->IsRecording() || (thread && thread->flags.any(RE::TLS::Flags::kNoChangeRecording));
 	}
 
 	bool FromConsole()
@@ -198,7 +244,7 @@ namespace SpawnCondition
 
 	bool Private(const RE::BGSInventoryItem::Stack& a_stack)
 	{
-		return a_stack.QRefCount() == 0 || g_loadingSavedStack;
+		return a_stack.QRefCount() == 0;
 	}
 
 	ScopedRestock::ScopedRestock(const Restock& a_restock) :
@@ -218,44 +264,40 @@ namespace SpawnCondition
 		return t_restock && a_list && a_list->owner == t_restock->chest ? t_restock : nullptr;
 	}
 
+	bool CanKeepCarried()
+	{
+		const auto* ui = RE::UI::GetSingleton();
+		const auto* player = RE::PlayerCharacter::GetSingleton();
+		return ui && !ui->GetMenuOpen<RE::MainMenu>() && !ui->GetMenuOpen<RE::LoadingMenu>() && player && player->GetParentCell();
+	}
+
 	void KeepCarried()
 	{
-		// A save loading hands every stack it reads to AddStackHk, and a full
-		// reset is deleting every form, so neither is the time.
-		const auto* main = RE::Main::GetSingleton();
-		const auto* ui = RE::UI::GetSingleton();
-		if ((main && main->resetGame) || (ui && ui->GetMenuOpen<RE::LoadingMenu>())) {
-			return;
-		}
-		auto* player = RE::PlayerCharacter::GetSingleton();
-		auto* inv = player ? player->inventoryList : nullptr;
-		if (!inv) {
-			return;
-		}
-
-		// Stamped the way a script's gift is, see Roll. Only a stack whose
-		// extra data list nothing else holds: one another inventory shares is
-		// not the player's alone, see Private.
-		std::uint32_t kept = 0;
-		{
-			const RE::BSAutoWriteLock l(inv->rwLock);
-			inv->ForEachStack(
-				[](RE::BGSInventoryItem& a_item) { return a_item.object && Condition::WearsOut(*a_item.object); },
-				[&kept](RE::BGSInventoryItem&, RE::BGSInventoryItem::Stack& a_stack) {
-					if (a_stack.extra && a_stack.extra->QRefCount() == 1 && a_stack.extra->GetHealthPerc() < 0.0F) {
-						a_stack.extra->SetHealthPerc(Condition::MAX_HEALTH);
-						kept++;
-					}
-					return true;
-				});
-		}
-
+		const auto carried = KeepStacks();
 		// Outside the lock, see ItemCards.h.
-		if (kept > 0) {
+		if (carried.kept > 0) {
 			ItemCards::Refresh(RE::ENUM_FORM_ID::kWEAP);
 			ItemCards::Refresh(RE::ENUM_FORM_ID::kARMO);
 		}
-		REX::INFO("Worn loot is back on. {:d} stacks you carry that arrived while it was off keep their condition.", kept);
+		REX::INFO("Worn loot is back on. {:d} stacks you carry that arrived while it was off keep their condition.", carried.kept);
+	}
+
+	void KeepCarriedAfterLoad()
+	{
+		// A Worn loot place lost to another mod turns the switch off, so the
+		// switch says whether the rolls run at all. A full reset is deleting
+		// every form, so it is no time to walk an inventory.
+		const auto* main = RE::Main::GetSingleton();
+		if (!Settings::bSpawnCondition.GetValue() || (main && main->resetGame)) {
+			return;
+		}
+		// Runs on the load's own thread before its loading screen closes. The
+		// game holds no lock there, so waiting for the inventory lock is safe.
+		// No item card is refreshed, since the load rebuilds every Pip-Boy list
+		// a moment later.
+		const auto carried = KeepStacks();
+		REX::INFO("After the load, {:d} stacks you carry with no condition are set to full, and {:d} that another inventory shares are left as they are.",
+			carried.kept, carried.shared);
 	}
 
 	void InstallGuards()
@@ -266,14 +308,6 @@ namespace SpawnCondition
 		if (CallPatch::PatchAll(RUN_CONSOLE_COMMANDS_SITE, RE::ID::Console::RunQueuedCommands, consoleHooks, g_consoleLink,
 				"Console commands hand out weapons and armor at full condition", Part::kConsoleNew) == 0) {
 			REX::WARN("Weapons and armor added from the console will be rolled like any other loot.");
-		}
-
-		// If this patch fails, an older save's stacks just keep sharing one
-		// condition, so it is reported the same way.
-		const auto savedHooks = CallPatch::PerSite<std::size(LOAD_SAVED_STACK_SITE)>([]<std::size_t I>() { return &LoadSavedStackHk; });
-		if (CallPatch::PatchAll(LOAD_SAVED_STACK_SITE, RE::ID::BGSInventoryList::AddItem1, savedHooks, g_savedStackLink,
-				"Weapons and armor a save kept in one stack split up as it loads", Part::kOldSaves) == 0) {
-			REX::WARN("Weapons and armor a save from before this mod kept in one stack will share one condition.");
 		}
 
 		// Index 1 is the call operator. Every script AddItem and RemoveItem

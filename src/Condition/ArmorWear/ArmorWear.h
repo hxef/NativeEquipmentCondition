@@ -51,12 +51,6 @@ namespace ArmorWear
 	// set of rags, stays out. Power armor pieces stay out too, see above.
 	const char* WhyNoCondition(const RE::TESObjectARMO& a_armor);
 
-	// Whether a piece should carry no wear: any armor but power armor that
-	// WhyNoCondition rules out, once LoadMods has built its table. Any health
-	// on such a piece is stale, so it goes back to full as it enters an
-	// inventory, see SpawnCondition.cpp.
-	bool Settles(const RE::TESObjectARMO& a_armor);
-
 	// Whether a piece is power armor, by the keyword the game itself finds
 	// every power armor piece by. Every rule that leaves power armor out asks
 	// this, a trader's stock too.

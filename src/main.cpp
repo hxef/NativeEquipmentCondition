@@ -11,6 +11,7 @@
 #include "Gameplay/FireRate/FireRate.h"
 #include "Gameplay/InHand.h"
 #include "Gameplay/Jam.h"
+#include "Gameplay/SpawnCondition/SpawnCondition.h"
 #include "UI/Hud/HudParts/HudParts.h"
 #include "UI/MenuMovies.h"
 #include "UI/Repair/ConsoleRepair.h"
@@ -177,9 +178,9 @@ namespace
 			g_unmeasured = 0;
 			ForgetPlay();
 			// The armor mods, measured again for a DLL mod that changed them
-			// after game data loaded. It runs before the saved items arrive,
-			// since SpawnCondition puts the pieces that give nothing back to
-			// full as they do.
+			// after game data loaded. It runs before the save's items arrive,
+			// since every roll and handover after the load asks which pieces
+			// give nothing.
 			ArmorWear::MeasureModsAgain();
 		}
 
@@ -213,6 +214,11 @@ namespace
 			                   static_cast<bool>(a_msg->data)                       ? "the save has loaded" :
 			                                                                          "the save did not load");
 			ConsoleRepair::Settle();
+			// Here and not in a task, so it is done before the player can
+			// move an item.
+			if (a_msg->type == F4SE::MessagingInterface::kPostLoadGame && static_cast<bool>(a_msg->data)) {
+				SpawnCondition::KeepCarriedAfterLoad();
+			}
 			// The Settings line, with what the recheck left to another mod.
 			Settings::ReportLine();
 			return;
@@ -298,7 +304,7 @@ F4SE_PLUGIN_LOAD(const F4SE::LoadInterface* a_f4se)
 	// that patched calls jump through, since a call can only reach 2 gigabytes
 	// and Windows can load the plugin anywhere. Each hooked call takes its own
 	// stub, 14 bytes, or 8 for a call through a pointer, so NEC can hand each
-	// site on to what it found there, about 1100 bytes in all, so 2048 leaves
+	// site on to what it found there, about 1400 bytes in all, so 2048 leaves
 	// room.
 	F4SE::Init(a_f4se, {
 						  .log = false,

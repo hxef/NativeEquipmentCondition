@@ -1,7 +1,7 @@
 # How the plugin is put together
 
 Native Equipment Condition is one DLL that gives Fallout 4 weapons and armor a
-condition that wears down with use. It patches about 110 places in the
+condition that wears down with use. It patches about 120 places in the
 game's own code, reads what the load order says about weapons, armor, recipes,
 perks and leveled lists, and draws its readouts into the game's own menus. It
 ships no ESP, no scripts and no assets, only the DLL, `NEC.ini` beside it and
@@ -62,7 +62,8 @@ src/
       Trader.cpp             what a trader says about a repair
       Tips.cpp               the loading screen's tips
       Names/
-        PartsPlay.cpp        the names of the parts that change play
+        PartsPlay.cpp        the names of the parts that change play, up to Single shot gun jams
+        PartsLoot.cpp        the names of the Worn loot parts, from Worn loot to Quest rewards arrive new
         PartsUi.cpp          the names of the parts drawn in menus
         PiecesPlay.cpp       the names of the pieces of the parts that change play, from Perk repair discount text to Damage shown in menus
         PiecesUi.cpp         the names of the pieces of the parts drawn in menus
@@ -127,11 +128,14 @@ src/
       Blast.cpp              an explosion: its damage and its object effect
       Card.cpp               the item card's damage
     SpawnCondition/
-      SpawnCondition.h/.cpp  the roll at the door of every inventory, and armor NEC does not wear put back to full
+      SpawnCondition.h/.cpp  the roll at the door of every inventory
       Band.h/.cpp            the roll, either side of an item's middle or in a trader's band
-      Guards.h/.cpp          what marks a console command, a save, a script's gift, a restock and what the player carries
+      Guards.h/.cpp          what marks a save being applied, a game recording no change, a console command, a script's gift and a restock, the folder's scope, and what the player carries
+      Handover.h/.cpp        an item changing hands, a trader's loose item and SpawnDupe's copies
       Owners.h/.cpp          who a stack goes to, and which of them get it at full condition
+      Roll.h/.cpp            a stack's first condition, and splitting a stack that arrived several at once
       Trace.h/.cpp           what the trace log is told about a stack
+      World.h/.cpp           loot lying in the world, marked when the game makes it and rolled by its first holder
     WeaponEvents/
       WeaponEvents.h/.cpp    the fire call and the shot sink
       Hits.h/.cpp            the hit sink, and what a blow was
@@ -217,7 +221,9 @@ game, the gun that jammed, the fire speeds, the weapon in hand and the HUD's
 last reading, when a save loads, a new game begins or the main menu opens. As
 a save loads, a new game begins or a coc from the main menu leaves its loading
 screen, it also measures again what a DLL mod can change after game data
-loads, in an order its comments explain.
+loads, in an order its comments explain. Once a save has loaded with Worn
+loot on, it sets the weapons and armor the player carries with no condition
+to full.
 
 Every row runs at every step whatever its switch says. Its hooks ask the
 switch on every call and leave the game as it is while it is off. A row whose

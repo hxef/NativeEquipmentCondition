@@ -196,8 +196,8 @@ namespace Mcm
 
 		if (value != before) {
 			QueueFollowUps(*on);
-			// What arrived while Worn loot was off has no condition, and the
-			// next save load would roll it as loot.
+			// What arrived while Worn loot was off has no condition, so it
+			// goes to full now and not only at the next load.
 			if (on == &Settings::bSpawnCondition && value) {
 				Queue(FollowUp::kCarried);
 			}

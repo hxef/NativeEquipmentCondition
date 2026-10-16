@@ -70,6 +70,7 @@ namespace Text
 	};
 
 	[[nodiscard]] std::span<const PartRow> PlayParts();
+	[[nodiscard]] std::span<const PartRow> LootParts();
 	[[nodiscard]] std::span<const PartRow> UiParts();
 
 	// Whether a_rows hold 1 row a part, from a_first to a_last in the enum's

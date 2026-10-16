@@ -52,10 +52,10 @@ namespace TraceLog
 
 	// Tags switched off. Each floods the log once its code works: 1 equip
 	// rebuilds the card and the price of every weapon carried, the combat
-	// health line is repeated by the damage line under it, and a save loading
-	// hands thousands of stacks to the characters and containers around the
-	// player, which the spawn block counts instead. Take a tag out while
-	// working on its code.
+	// health line is repeated by the damage line under it, and each stack a
+	// cell loading hands its characters and containers is a loot line, which
+	// the spawn block counts instead. Take a tag out while working on its
+	// code.
 	inline constexpr std::string_view QUIET[]{ "card", "price", "health", "loot" };
 
 	// Tags whose lines go to the UI file. Split by tag and not by source file,

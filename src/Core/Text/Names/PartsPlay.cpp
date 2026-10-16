@@ -2,7 +2,8 @@
 
 #include "Core/Parts.h"
 
-// The names of the parts of the Condition and Gameplay rows, see Core/Parts.h.
+// The names of the parts of the Condition and Gameplay rows up to Single shot
+// gun jams, see Core/Parts.h. The Worn loot parts are in PartsLoot.cpp.
 namespace Text
 {
 	namespace
@@ -289,71 +290,6 @@ namespace Text
 			{ "zhhans", "单发枪支卡弹" },
 		};
 
-		constexpr Line PART_SPAWN[]{
-			{ "en", "Worn loot" },
-			{ "fr", "Butin usé" },
-			{ "de", "Abgenutzte Beute" },
-			{ "it", "Bottino usurato" },
-			{ "es", "Botín desgastado" },
-			{ "esmx", "Botín desgastado" },
-			{ "ptbr", "Saque desgastado" },
-			{ "pl", "Zużyte łupy" },
-			{ "ru", "Изношенные трофеи" },
-			{ "ja", "消耗した戦利品" },
-			{ "zhhant", "戰利品損耗" },
-			{ "zhhans", "战利品损耗" },
-		};
-
-		// Weapons and armor the console adds arrive at full condition.
-		constexpr Line PART_CONSOLE_NEW[]{
-			{ "en", "Console items arrive new" },
-			{ "fr", "Objets neufs via la console" },
-			{ "de", "Konsolengegenstände sind neu" },
-			{ "it", "Oggetti da console intatti" },
-			{ "es", "Objetos de consola como nuevos" },
-			{ "esmx", "Objetos de consola como nuevos" },
-			{ "ptbr", "Itens do console chegam novos" },
-			{ "pl", "Przedmioty z konsoli są nowe" },
-			{ "ru", "Предметы из консоли без износа" },
-			{ "ja", "コンソールで出したアイテムは新品" },
-			{ "zhhant", "主控台物品為全新" },
-			{ "zhhans", "控制台物品为全新" },
-		};
-
-		// A stack a save from before NEC kept together splits up, so each
-		// item has its own condition.
-		constexpr Line PART_OLD_SAVES[]{
-			{ "en", "Old save stacks split up" },
-			{ "fr", "Séparation des piles d'anciennes sauvegardes" },
-			{ "de", "Stapel alter Spielstände aufteilen" },
-			{ "it", "Pile divise nei vecchi salvataggi" },
-			{ "es", "Desapilar objetos de partidas antiguas" },
-			{ "esmx", "Desapilar objetos de partidas antiguas" },
-			{ "ptbr", "Pilhas de jogos salvos antigos se dividem" },
-			{ "pl", "Podział stosów ze starych zapisów" },
-			{ "ru", "Разделение стопок из старых сохранений" },
-			{ "ja", "古いセーブのスタック分割" },
-			{ "zhhant", "舊存檔堆疊拆分" },
-			{ "zhhans", "旧存档堆叠拆分" },
-		};
-
-		// Quest rewards and gifts a script hands the player arrive at full
-		// condition.
-		constexpr Line PART_GIFTS[]{
-			{ "en", "Quest rewards arrive new" },
-			{ "fr", "Récompenses de quête neuves" },
-			{ "de", "Questbelohnungen sind neu" },
-			{ "it", "Ricompense delle missioni intatte" },
-			{ "es", "Recompensas de misión como nuevas" },
-			{ "esmx", "Recompensas de misión como nuevas" },
-			{ "ptbr", "Recompensas de missão chegam novas" },
-			{ "pl", "Nagrody za zadania są nowe" },
-			{ "ru", "Награды за задания без износа" },
-			{ "ja", "クエスト報酬は新品" },
-			{ "zhhant", "任務獎勵為全新" },
-			{ "zhhans", "任务奖励为全新" },
-		};
-
 		constexpr PartRow PARTS[]{
 			{ Part::kPerks, PART_PERKS },
 			{ Part::kGunWear, PART_GUN_WEAR },
@@ -373,13 +309,9 @@ namespace Text
 			{ Part::kRange, PART_RANGE },
 			{ Part::kJam, PART_JAM },
 			{ Part::kReloadJam, PART_RELOAD_JAM },
-			{ Part::kSpawn, PART_SPAWN },
-			{ Part::kConsoleNew, PART_CONSOLE_NEW },
-			{ Part::kOldSaves, PART_OLD_SAVES },
-			{ Part::kGifts, PART_GIFTS },
 		};
 
-		static_assert(PartsInOrder(PARTS, Part::kPerks, Part::kGifts));
+		static_assert(PartsInOrder(PARTS, Part::kPerks, Part::kReloadJam));
 	}
 
 	std::span<const PartRow> PlayParts()

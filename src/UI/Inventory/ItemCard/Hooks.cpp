@@ -170,7 +170,7 @@ namespace ItemCard
 			const auto percent = Condition::Percent(*a_item, a_stack);
 			if (percent) {
 				// The extra data list, to match against the one the spawn roll
-				// wrote to, see SpawnCondition.cpp.
+				// wrote to, see SpawnCondition/Roll.cpp.
 				auto* const extra = a_stack->extra.get();
 				const auto* legendary = extra ? extra->GetLegendaryMod() : nullptr;
 				TraceLog::Line("menu", "Pip-Boy lists {:s} [{:08X}] x{:d} at {:.0f}% from extra data {:p}, {:s}",

@@ -133,7 +133,7 @@ namespace Mcm
 					}
 				}
 			}
-			if (Take(FollowUp::kCarried)) {
+			if (Take(FollowUp::kCarried) && SpawnCondition::CanKeepCarried()) {
 				SpawnCondition::KeepCarried();
 			}
 		}

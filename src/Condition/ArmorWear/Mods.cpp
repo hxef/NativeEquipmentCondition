@@ -269,7 +269,14 @@ namespace ArmorWear
 
 		void WarnUnread()
 		{
-			REX::WARN("No armor mod adds protection, an effect or a bonus, so the armor mods could not be read. Every piece with a slot for a mod wears, and no piece is put back to full.");
+			REX::WARN("No armor mod adds protection, an effect or a bonus, so the armor mods could not be read. Every piece with a slot for a mod wears.");
+		}
+
+		// Whether a table is built, see GivingModFits.
+		bool ModsMeasured()
+		{
+			const std::shared_lock l{ g_lock };
+			return g_slots.has_value();
 		}
 	}
 
@@ -345,11 +352,5 @@ namespace ArmorWear
 			}
 		}
 		return false;
-	}
-
-	bool ModsMeasured()
-	{
-		const std::shared_lock l{ g_lock };
-		return g_slots.has_value();
 	}
 }

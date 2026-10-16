@@ -309,7 +309,7 @@ namespace CallPatch
 			// before its row's main place still reads the switch that place
 			// turns off.
 			for (const auto* place : held) {
-				const auto off = PiecesOffTail(*place);
+				const auto off = PiecesOffTail(*place, true);
 				// A place that comes back gets its part's "off for now" line
 				// from Say too. A trace only place takes nothing off.
 				if (!IsOff(*place) && !SwitchLeft(*place) && off.empty() && place->use != Use::kTraceOnly) {
@@ -323,7 +323,7 @@ namespace CallPatch
 					                                      ChangedLine(*place, " If the call still reaches NEC, NEC's change there comes back the next time it is used."sv, TraceTail(*place)) });
 			}
 			for (const auto* place : lone) {
-				const auto off = PiecesOffTail(*place);
+				const auto off = PiecesOffTail(*place, true);
 				// A place no mod takes anything from, see Part::kTrace and the
 				// parts after it, loses nothing while the call still reaches
 				// NEC, so its line is an INFO.
@@ -341,7 +341,7 @@ namespace CallPatch
 			for (auto& place : Places()) {
 				if (HeldSet(place.set) && place.share == Share::kShared && RunOf(place.set) == Run::kLive) {
 					place.share = Share::kProven;
-					if (!SwitchLeft(place) && PiecesOffTail(place).empty()) {
+					if (!SwitchLeft(place) && PiecesOffTail(place, true).empty()) {
 						lines.push_back({ REX::ELogLevel::Info,
 							std::format("{:s}: NEC's change at {:s} runs again.", NameOf(place), place.what) });
 					}

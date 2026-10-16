@@ -86,7 +86,8 @@ namespace Condition
 
 	namespace
 	{
-		// Writes the health, clamped, and returns what was written.
+		// Writes the health, clamped, and returns what was written. The clamp
+		// stops at MAX_HEALTH, so this never writes UNROLLED.
 		float SetHealth(RE::ExtraDataList& a_extra, float a_health)
 		{
 			if (a_health < MIN_HEALTH) {
@@ -112,7 +113,9 @@ namespace Condition
 		// Nothing comes off at a wear speed of 0 or for an amount too small to
 		// change the number. A write would still give an item never touched a
 		// health of its own, which the engine keeps apart from its stack. The
-		// same test turns away a NaN or a negative amount.
+		// same test turns away a NaN or a negative amount. An UNROLLED item
+		// used at a wear speed of 0 stays UNROLLED and still reads as full in
+		// Percent and Share.
 		if (!(curHealth - a_amount < curHealth)) {
 			return false;
 		}

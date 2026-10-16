@@ -75,10 +75,11 @@ enum class Piece : std::uint8_t
 	// Jamming, Single shot gun jams
 	kJamShot,
 	kJamReload,
-	// Worn loot and its 3 exceptions
+	// Worn loot, its 2 exceptions and its 2 side parts
 	kWornLoot,
 	kConsoleNew,
-	kOldSaves,
+	kWorldLoot,
+	kModlessLoot,
 	kGifts,
 	// CND on item cards
 	kCndContainers,

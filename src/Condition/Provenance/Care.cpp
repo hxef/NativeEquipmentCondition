@@ -252,7 +252,7 @@ namespace Provenance
 		// A unique or protected character gets a boost, since someone the game
 		// treats as special has their gear looked after. An ordinary raider is
 		// neither and a raider boss is. An essential character's gear arrives
-		// new instead, see SpawnCondition.cpp.
+		// new instead, see SpawnCondition/Roll.cpp.
 		using Flag = RE::ACTOR_BASE_DATA::Flag;
 		if (a_npc.actorData.actorBaseFlags.any(Flag::kUnique, Flag::kProtected)) {
 			care = care == UNMEASURED ? NAMED_CARE : std::lerp(care, 1.0F, NAMED_LIFT);

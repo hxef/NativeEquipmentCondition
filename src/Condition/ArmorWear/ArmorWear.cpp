@@ -19,11 +19,15 @@ namespace ArmorWear
 	void Load()
 	{
 		const auto blows = BlowsToBreak();
+		const auto own = Settings::fArmorWearRateMult.GetValue();
+		const auto theirs = Settings::fNpcArmorWearRateMult.GetValue();
 		if (blows > 0.0F) {
 			REX::INFO("Your armor wears from the blows that land on it, about {:.0f} blows of an ordinary weapon from new to broken. A piece at 0 stays on until it is taken off, and goes back on only once repaired.",
 				blows);
+		} else if (theirs > 0.0F) {
+			REX::INFO("Your armor never wears, since fArmorWearRateMult is {:g}. NPC armor still wears, at fNpcArmorWearRateMult {:g}.", own, theirs);
 		} else {
-			REX::INFO("Your armor never wears, since fArmorWearRateMult is {:g}.", Settings::fArmorWearRateMult.GetValue());
+			REX::INFO("No armor wears, since fArmorWearRateMult is {:g} and fNpcArmorWearRateMult is {:g}.", own, theirs);
 		}
 	}
 

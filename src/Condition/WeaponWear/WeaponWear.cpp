@@ -41,9 +41,9 @@ namespace WeaponWear
 
 		const auto message = BreakMessage();
 		if (message.empty()) {
-			REX::WARN("sWeaponBreak is missing, so a weapon worn out will be put away without a word.");
+			REX::WARN("sWeaponBreak is missing, so your weapon is put away without a word once it wears out. An NPC's stays in their hands.");
 		} else {
-			REX::INFO("A weapon worn out is put away, and the game says \"{:s}\".", message);
+			REX::INFO("Your weapon is put away once it wears out, and the game says \"{:s}\". An NPC's stays in their hands.", message);
 		}
 	}
 

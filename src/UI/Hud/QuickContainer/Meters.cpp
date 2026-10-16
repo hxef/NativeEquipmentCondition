@@ -141,15 +141,18 @@ namespace QuickContainer
 			// Showing and hiding a meter
 			// -----------------------------------------------------------------
 
-			void Show(Value& a_meter, Drawn& a_drawn, double a_x)
+			// True when the meter moved or came into view.
+			bool Show(Value& a_meter, Drawn& a_drawn, double a_x)
 			{
-				if (a_drawn.x != a_x || !a_drawn.visible) {
-					a_meter.SetMember("x"sv, Value(a_x));
-					a_meter.SetMember("y"sv, Value(METER_CENTER_Y));
-					a_meter.SetMember("visible"sv, Value(true));
-					a_drawn.x = a_x;
-					a_drawn.visible = true;
+				if (a_drawn.x == a_x && a_drawn.visible) {
+					return false;
 				}
+				a_meter.SetMember("x"sv, Value(a_x));
+				a_meter.SetMember("y"sv, Value(METER_CENTER_Y));
+				a_meter.SetMember("visible"sv, Value(true));
+				a_drawn.x = a_x;
+				a_drawn.visible = true;
+				return true;
 			}
 
 			void Hide(Value& a_meter, Drawn& a_drawn)
@@ -291,7 +294,9 @@ namespace QuickContainer
 				}
 
 				// Whole pixels keep the one pixel frame sharp.
-				Show(meter, last, std::round(*nameEnd + icons + METER_GAP));
+				if (Show(meter, last, std::round(*nameEnd + icons + METER_GAP))) {
+					TraceLog::Line("menu", "Quick container row {:d} CND meter at {:.0f}, after icons {:.0f} wide from the name's end at {:.1f}", a_index, last.x, icons, *nameEnd);
+				}
 			}
 
 			std::array<Drawn, MAX_ROWS> drawn{};

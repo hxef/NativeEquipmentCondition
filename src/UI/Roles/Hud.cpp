@@ -281,8 +281,9 @@ namespace Roles::Hud
 		constexpr double AGAINST = 4.0;
 
 		// Where a text field's first line starts and ends, in its parent's
-		// units. Nothing for a clip that is no text field, or that shows no
-		// text unless a_empty. It reads the line itself, since Flash::FirstLine
+		// units and without the margin, as TextEnd in Hud.h says. Nothing for
+		// a clip that is no text field, or that shows no text unless a_empty.
+		// It reads the line itself, since Flash::FirstLine adds the margin and
 		// drops a line with no height, which an empty name may have.
 		struct Span
 		{

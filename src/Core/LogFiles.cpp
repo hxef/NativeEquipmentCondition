@@ -2,16 +2,21 @@
 
 #include "Core/Settings.h"
 
+#include <REX/CONVERT.h>
 #include <REX/W32/OLE32.h>
 #include <REX/W32/SHELL32.h>
-#include <spdlog/sinks/basic_file_sink.h>
+#include <share.h>
+#include <spdlog/details/os.h>
+#include <spdlog/sinks/base_sink.h>
 #include <spdlog/sinks/msvc_sink.h>
-#include <spdlog/sinks/rotating_file_sink.h>
 #include <spdlog/spdlog.h>
 
+#include <cerrno>
+#include <cstdio>
 #include <exception>
 #include <format>
 #include <memory>
+#include <mutex>
 #include <string>
 #include <string_view>
 #include <system_error>
@@ -33,26 +38,191 @@ namespace LogFiles
 		constexpr const char* MAIN_LOGGER = "global";
 		constexpr const char* MAIN_PATTERN = "[%T.%e] [%=5t] [%L] %v";
 
+		// -------------------------------------------------------------------
+		// The file sink
+		// -------------------------------------------------------------------
+
+		// 1 log file, see the top of LogFiles.h for why NEC has its own. It
+		// throws where spdlog's rotating file sink throws. The base class
+		// locks around every line, since several game threads write through
+		// it.
+		class FileSink final : public spdlog::sinks::base_sink<std::mutex>
+		{
+		public:
+			// Moves the start before along as it opens, unless the file is
+			// empty. A file that grows past a_maxSize moves along again.
+			FileSink(std::filesystem::path a_path, std::size_t a_maxSize) :
+				path(std::move(a_path)),
+				maxSize(a_maxSize)
+			{
+				Reopen(false);
+				size = spdlog::details::os::filesize(file.get());
+				if (size > 0) {
+					MoveAlong();
+				}
+			}
+
+			// Opens the file empty and never moves it along, as spdlog's
+			// basic file sink does.
+			explicit FileSink(std::filesystem::path a_path) :
+				path(std::move(a_path))
+			{
+				Reopen(true);
+			}
+
+			// Set once as it opens, so reading it needs no lock.
+			[[nodiscard]] const std::filesystem::path& Path() const noexcept { return path; }
+
+		protected:
+			void sink_it_(const spdlog::details::log_msg& a_msg) override
+			{
+				// No file after a move that failed to reopen it.
+				if (!file) {
+					return;
+				}
+
+				spdlog::memory_buf_t line;
+				formatter_->format(a_msg, line);
+				auto newSize = size + line.size();
+				// The real size is asked only past the limit, since asking
+				// costs. An empty file stays, so a full disk does not move
+				// files along on every line.
+				if (maxSize > 0 && newSize > maxSize) {
+					flush_();
+					if (spdlog::details::os::filesize(file.get()) > 0) {
+						MoveAlong();
+						newSize = line.size();
+					}
+				}
+				if (std::fwrite(line.data(), 1, line.size(), file.get()) != line.size()) {
+					spdlog::throw_spdlog_ex(std::format("Failed writing to file {:s}", Utf8(path)), errno);
+				}
+				size = newSize;
+			}
+
+			void flush_() override
+			{
+				if (file && std::fflush(file.get()) != 0) {
+					spdlog::throw_spdlog_ex(std::format("Failed flush to file {:s}", Utf8(path)), errno);
+				}
+			}
+
+		private:
+			// Closes the file with the sink, also when a constructor throws.
+			struct CloseFile
+			{
+				void operator()(std::FILE* a_file) const noexcept { std::fclose(a_file); }
+			};
+
+			// Opens the file to add to it, emptied first when a_empty. 5
+			// tries 10 ms apart, as spdlog makes, for a file another program
+			// holds for a moment.
+			void Reopen(bool a_empty)
+			{
+				file.reset();
+				for (int tries = 0; tries < 5; ++tries) {
+					if (tries > 0) {
+						spdlog::details::os::sleep_for_millis(10);
+					}
+					std::error_code error;
+					std::filesystem::create_directories(path.parent_path(), error);
+					if (a_empty) {
+						auto* emptied = ::_wfsopen(path.c_str(), L"wb", _SH_DENYNO);
+						if (!emptied) {
+							continue;
+						}
+						std::fclose(emptied);
+					}
+					file.reset(::_wfsopen(path.c_str(), L"ab", _SH_DENYNO));
+					if (file) {
+						return;
+					}
+				}
+				spdlog::throw_spdlog_ex(std::format("Failed opening file {:s} for writing", Utf8(path)), errno);
+			}
+
+			// NEC.log, NEC.1.log and so on, by the number of starts back.
+			[[nodiscard]] std::filesystem::path Numbered(std::size_t a_back) const
+			{
+				if (a_back == 0) {
+					return path;
+				}
+				auto numbered = path;
+				numbered.replace_extension(std::format(L".{:d}", a_back) + path.extension().native());
+				return numbered;
+			}
+
+			// Replaces a_to with a_from.
+			[[nodiscard]] static bool Move(const std::filesystem::path& a_from, const std::filesystem::path& a_to) noexcept
+			{
+				::_wremove(a_to.c_str());
+				return ::_wrename(a_from.c_str(), a_to.c_str()) == 0;
+			}
+
+			// Each file moves 1 number up and the oldest is dropped, then an
+			// empty file starts. When a move fails the file is emptied anyway,
+			// so it cannot grow past its limit, and this throws.
+			void MoveAlong()
+			{
+				file.reset();
+				std::string failed;
+				int         why{ 0 };
+				for (auto back = KEPT_STARTS; back > 0; --back) {
+					const auto from = Numbered(back - 1);
+					std::error_code error;
+					if (!std::filesystem::exists(from, error)) {
+						continue;
+					}
+					const auto to = Numbered(back);
+					if (Move(from, to)) {
+						continue;
+					}
+					// Windows can refuse a rename for a moment, for example
+					// while an antivirus reads the file.
+					spdlog::details::os::sleep_for_millis(100);
+					if (!Move(from, to)) {
+						// Read before the reopen below can change it.
+						why = errno;
+						failed = std::format("Failed renaming {:s} to {:s}", Utf8(from), Utf8(to));
+						break;
+					}
+				}
+				Reopen(true);
+				size = 0;
+				if (!failed.empty()) {
+					spdlog::throw_spdlog_ex(failed, why);
+				}
+			}
+
+			const std::filesystem::path           path;
+			const std::size_t                     maxSize{ 0 };
+			std::unique_ptr<std::FILE, CloseFile> file;
+			std::size_t                           size{ 0 };
+		};
+
+		// -------------------------------------------------------------------
+		// Opening a log
+		// -------------------------------------------------------------------
+
 		// A file sink, and the WARN to write once the log is open, empty when
 		// the start before moved along.
 		struct Opened
 		{
 			spdlog::sink_ptr sink;
-			std::string warning;
+			std::string      warning;
 		};
 
 		// The file sink for a_path. The start before moves along as it opens,
-		// and an empty file stays where it is. When a move fails, spdlog has
+		// and an empty file stays where it is. When a move fails, the sink has
 		// already emptied the file, and a plain sink opens it empty.
 		Opened Open(const std::filesystem::path& a_path, std::size_t a_maxSize)
 		{
-			// mt: the sink locks, since several game threads write through it.
-			const auto name = a_path.string();
+			const auto name = Utf8(a_path);
 			try {
-				return { std::make_shared<spdlog::sinks::rotating_file_sink_mt>(name, a_maxSize, KEPT_STARTS, true), {} };
+				return { std::make_shared<FileSink>(a_path, a_maxSize), {} };
 			} catch (const std::exception& e) {
 				try {
-					return { std::make_shared<spdlog::sinks::basic_file_sink_mt>(name, true),
+					return { std::make_shared<FileSink>(a_path),
 						std::format("Could not move {:s} along to keep it, so the last start's lines are lost and it starts empty: {:s}", name, e.what()) };
 				} catch (const std::exception&) {
 					// A read only file cannot be opened but can be renamed,
@@ -65,8 +235,8 @@ namespace LogFiles
 					if (error) {
 						throw;
 					}
-					return { std::make_shared<spdlog::sinks::rotating_file_sink_mt>(name, a_maxSize, KEPT_STARTS, true),
-						std::format("Could not write to {:s}, so it moved to {:s} and an empty one starts: {:s}", name, aside.string(), e.what()) };
+					return { std::make_shared<FileSink>(a_path, a_maxSize),
+						std::format("Could not write to {:s}, so it moved to {:s} and an empty one starts: {:s}", name, Utf8(aside), e.what()) };
 				}
 			}
 		}
@@ -96,7 +266,7 @@ namespace LogFiles
 			// Windows gives Documents with backslashes and the folders after it
 			// join with forward slashes. make_preferred turns all of them into
 			// backslashes, so every path NEC.log prints reads the same,
-			// including the ones in bug report logs and spdlog's reasons.
+			// including the ones in bug report logs and the sink's reasons.
 			path.make_preferred();
 			return path;
 		}
@@ -130,7 +300,7 @@ namespace LogFiles
 
 			REX::INFO("{} v{}", F4SE::GetPluginName(), F4SE::GetPluginVersion());
 			if (!noFile.empty()) {
-				const auto where = path.empty() ? std::string{ MAIN_FILE } : path.string();
+				const auto where = path.empty() ? std::string{ MAIN_FILE } : Utf8(path);
 				REX::WARN("Could not open {:s}, so this game start writes no log file: {:s}", where, noFile);
 			} else if (!file.warning.empty()) {
 				REX::WARN("{:s}", file.warning);
@@ -148,5 +318,20 @@ namespace LogFiles
 			REX::WARN("{:s}", file.warning);
 		}
 		return std::move(file.sink);
+	}
+
+	std::filesystem::path FileOf(const spdlog::sink_ptr& a_sink)
+	{
+		const auto* file = dynamic_cast<const FileSink*>(a_sink.get());
+		return file ? file->Path() : std::filesystem::path{};
+	}
+
+	std::string Utf8(const std::filesystem::path& a_path)
+	{
+		// Stays empty for an empty path, the only case where the conversion
+		// fails.
+		std::string text;
+		REX::UTF16_TO_UTF8(a_path.native(), text);
+		return text;
 	}
 }

@@ -22,7 +22,7 @@ namespace ConsoleRepair
 {
 	namespace
 	{
-		// The word that turns the command on the armor the player wears.
+		// The word that turns the command on armor.
 		constexpr std::string_view ARMOR = "armor"sv;
 
 		// Room for a word as the console hands it over. A line of console
@@ -88,14 +88,38 @@ namespace ConsoleRepair
 			return out;
 		}
 
-		// One item the command sets, with the health it had.
+		// One item the command sets, with the health it had and the copies in
+		// its stack. why is the reason a piece from Equipped::LeftoverPieces
+		// takes no part, and null for one that wears.
 		struct Target
 		{
 			RE::TESBoundObject* object{ nullptr };
 			float               before{ Condition::INVALID_HEALTH };
+			const char*         why{ nullptr };
+			std::uint32_t       count{ 1 };
 		};
 
-		// The weapon in hand, or every piece of armor worn that takes part.
+		// Picks a stack of the item that holds a health, worn or carried. Each
+		// clear takes it off one copy, so the copies of a stack are cleared
+		// one by one, in any order.
+		class HoldsHealth final :
+			public RE::BGSInventoryItem::StackDataCompareFunctor
+		{
+		public:
+			bool CompareData(const RE::BGSInventoryItem::Stack& a_stack) override
+			{
+				if (Condition::HealthOf(&a_stack) < 0.0F) {
+					return false;
+				}
+				count = a_stack.count;
+				return true;
+			}
+
+			std::uint32_t count{ 0 };
+		};
+
+		// The weapon in hand, or every piece of armor worn that takes part and
+		// then every carried piece that kept a health it no longer should.
 		[[nodiscard]] std::vector<Target> Targets(RE::PlayerCharacter* a_player, bool a_armor)
 		{
 			std::vector<Target> out;
@@ -105,10 +129,59 @@ namespace ConsoleRepair
 						out.push_back({ piece.armor, piece.health });
 					}
 				}
+				for (const auto& piece : Equipped::LeftoverPieces(a_player)) {
+					if (piece.armor) {
+						out.push_back({ piece.armor, piece.health, Condition::WhyNoCondition(*piece.armor), piece.count });
+					}
+				}
 			} else if (auto* weapon = Equipped::Weapon(a_player)) {
 				out.push_back({ weapon, Equipped::WeaponHealth(a_player, weapon) });
 			}
 			return out;
+		}
+
+		// Sets the equipped copy of a target that wears to a_level percent. A
+		// stack with no extra data list is skipped, see Equipped::EquippedStack.
+		void Set(RE::PlayerCharacter& a_player, RE::ConsoleLog* a_console, const Target& a_target, std::uint32_t a_level)
+		{
+			const auto              name = RE::TESFullName::GetFullName(*a_target.object);
+			Equipped::EquippedStack find;
+			Restore::Write(a_player, *a_target.object, find, a_level);
+			if (find.count == 0) {
+				TraceLog::Line("wear", "{:s} [{:08X}] is equipped with no reading to write to", name, a_target.object->formID);
+				if (a_console) {
+					a_console->Log("{:s} has no reading to write to.", name);
+				}
+				return;
+			}
+
+			TraceLog::Line("wear", "{:s} [{:08X}] {:.6f} -> {:.6f} from the console", name, a_target.object->formID, a_target.before,
+				Condition::FromPercent(a_level));
+			if (a_console) {
+				a_console->Log("{:s} is at {:d}% condition.", name, a_level);
+			}
+		}
+
+		// Takes the health off every copy in a leftover target's stack.
+		void Clear(RE::PlayerCharacter& a_player, RE::ConsoleLog* a_console, const Target& a_target)
+		{
+			std::uint32_t cleared = 0;
+			for (; cleared < a_target.count; ++cleared) {
+				HoldsHealth find;
+				Restore::Clear(a_player, *a_target.object, find);
+				if (find.count == 0) {
+					break;
+				}
+			}
+			if (cleared == 0) {
+				return;
+			}
+
+			const auto name = RE::TESFullName::GetFullName(*a_target.object);
+			TraceLog::Line("wear", "{:s} [{:08X}] {:.6f} -> none from the console, {:s}", name, a_target.object->formID, a_target.before, a_target.why);
+			if (a_console) {
+				a_console->Log("{:s} does not wear, so its old condition is cleared.", name);
+			}
 		}
 
 		// The command's own function before NEC, null for none, and whether
@@ -172,24 +245,12 @@ namespace ConsoleRepair
 
 			// The pieces were read under the inventory lock and are written
 			// once it is released, one at a time, since each write takes the
-			// lock itself. A stack with no extra data list is skipped, see
-			// Equipped::EquippedStack.
-			const auto health = Condition::FromPercent(asked->level);
+			// lock itself.
 			for (const auto& target : targets) {
-				const auto             name = RE::TESFullName::GetFullName(*target.object);
-				Equipped::EquippedStack find;
-				Restore::Write(*player, *target.object, find, asked->level);
-				if (find.count == 0) {
-					TraceLog::Line("wear", "{:s} [{:08X}] is equipped with no reading to write to", name, target.object->formID);
-					if (console) {
-						console->Log("{:s} has no reading to write to.", name);
-					}
-					continue;
-				}
-
-				TraceLog::Line("wear", "{:s} [{:08X}] {:.6f} -> {:.6f} from the console", name, target.object->formID, target.before, health);
-				if (console) {
-					console->Log("{:s} is at {:d}% condition.", name, asked->level);
+				if (target.why) {
+					Clear(*player, console, target);
+				} else {
+					Set(*player, console, target, asked->level);
 				}
 			}
 

@@ -222,7 +222,7 @@ namespace WeaponEvents
 					FireRate::NoteNpcWeapon(*aggressor, hit.weapon);
 				}
 				if (wears && weapon && Condition::WearsOut(*weapon)) {
-					WeaponWear::WearTheirs(*aggressor, *weapon, bash ? "bash" : "melee", BlowScale(hit, bash));
+					WeaponWear::WearTheirs(*aggressor, *weapon, bash ? WeaponWear::BASH : "melee", BlowScale(hit, bash));
 				}
 				return RE::BSEventNotifyControl::kContinue;
 			}
@@ -242,7 +242,7 @@ namespace WeaponEvents
 				return RE::BSEventNotifyControl::kContinue;
 			}
 			if (Condition::WearsOut(*weapon)) {
-				WeaponWear::Wear(*player, *weapon, bash ? "bash" : "melee", BlowScale(hit, bash));
+				WeaponWear::Wear(*player, *weapon, bash ? WeaponWear::BASH : "melee", BlowScale(hit, bash));
 			}
 			return RE::BSEventNotifyControl::kContinue;
 		}

@@ -23,6 +23,10 @@
 // with 1 in 500, the next with 1 in 499, and the last for certain.
 // ChancePerShot in Jam.cpp does the same for chances below 1.
 //
+// fWeaponPenaltyStart below half moves the jams down with the other
+// penalties: the 5 steps below half are squeezed in below the start, so a gun
+// jams only below it and the table keeps its shape.
+//
 // Guns that fire once per reload, the Fat Man, the Flare Gun, the Syringer and
 // the Laser Musket, jam as the reload finishes instead, so a jam costs one
 // reload and never the shot. The reload after a jammed one always loads.

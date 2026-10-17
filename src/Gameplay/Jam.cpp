@@ -9,6 +9,7 @@
 #include <algorithm>
 #include <array>
 #include <atomic>
+#include <cmath>
 #include <format>
 #include <random>
 #include <string>
@@ -33,6 +34,43 @@ namespace Jam
 		// Atomic, since animation events arrive on more than one thread.
 		std::atomic<const RE::TESObjectWEAP*> g_retryLoads{ nullptr };
 
+		// Vanilla's chances are 0 from half condition up.
+		constexpr float HALF = 0.5F;
+
+		// Where jams can start: half condition, or fWeaponPenaltyStart when
+		// that is lower.
+		float JamStart()
+		{
+			return std::min(HALF, Condition::Start(Condition::Kind::kWeapon));
+		}
+
+		// The condition the table is read at, see Jam.h: 0 to the start reads
+		// as 0 to half, and the start to full as half to full. The 1st division
+		// runs only for a health below the start, so the start is above 0
+		// there. The 2nd runs only for a start below half, so 1 - start is
+		// never 0.
+		float TableHealth(float a_health)
+		{
+			const auto start = JamStart();
+			if (start >= HALF) {
+				return a_health;
+			}
+			const auto read = a_health < start ? a_health * (HALF / start) : HALF + ((a_health - start) * ((1.0F - HALF) / (1.0F - start)));
+
+			// Rounded to 6 places, since float error can read a gun right on a
+			// step's edge, 0.06 at a start of 0.3, as 0.0999999 and so 1 step
+			// worse.
+			return std::round(read * 1e6F) / 1e6F;
+		}
+
+		// What the trace lines add when the table is read at another
+		// condition than the gun's.
+		std::string ReadAs(float a_health, float a_read)
+		{
+			return TraceLog::IsOpen() && a_read != a_health ? std::format(", read as {:.3f}", a_read) : std::string{};
+		}
+
+		// a_health is the condition the table is read at, see TableHealth.
 		float ChancePerMagazine(float a_health)
 		{
 			// Worst first, so a gun at 45% reads the 5th.
@@ -184,15 +222,16 @@ namespace Jam
 
 			// The magazine is 1 round, so the magazine's chance is this
 			// reload's.
-			const auto perMagazine = ChancePerMagazine(health);
+			const auto read = TableHealth(health);
+			const auto perMagazine = ChancePerMagazine(read);
 			if (perMagazine <= 0.0F) {
-				TraceLog::Line("jam", "clear, no chance at condition {:.3f}", health);
+				TraceLog::Line("jam", "clear, no chance at condition {:.3f}{:s}", health, ReadAs(health, read));
 				return;
 			}
 			const bool jammed = RollChance(perMagazine);
 
-			TraceLog::Line("jam", "{:s} at {:.2f}% on the reload, condition {:.3f}",
-				jammed ? "JAMMED" : "clear", perMagazine * 100.0, health);
+			TraceLog::Line("jam", "{:s} at {:.2f}% on the reload, condition {:.3f}{:s}",
+				jammed ? "JAMMED" : "clear", perMagazine * 100.0, health, ReadAs(health, read));
 			if (jammed) {
 				g_retryLoads = &weapon;
 				JamGun(a_player, RE::BGSEquipIndex{ a_equipIndex }, stats);
@@ -275,6 +314,12 @@ namespace Jam
 		}
 
 		REX::INFO("Worn guns can jam. The message reads \"{:s}\".", g_message);
+
+		// A line only for a start that moves the jams.
+		const auto start = JamStart();
+		if (start < HALF) {
+			REX::INFO("Guns jam only below {:.2f} condition, by fWeaponPenaltyStart, on the game's chances squeezed into that span.", start);
+		}
 	}
 
 	bool Roll(RE::PlayerCharacter& a_player, const RE::BGSObjectInstanceT<RE::TESObjectWEAP>& a_weapon, std::uint32_t a_equipIndex,
@@ -317,9 +362,10 @@ namespace Jam
 
 		// A roll that cannot jam is still logged, or a gun in good condition
 		// would look like one the roll never reached.
-		const auto perMagazine = ChancePerMagazine(a_health);
+		const auto read = TableHealth(a_health);
+		const auto perMagazine = ChancePerMagazine(read);
 		if (perMagazine <= 0.0F) {
-			TraceLog::Line("jam", "clear, no chance at condition {:.3f}", a_health);
+			TraceLog::Line("jam", "clear, no chance at condition {:.3f}{:s}", a_health, ReadAs(a_health, read));
 			return false;
 		}
 		const auto capacity = static_cast<std::uint32_t>(stats.ammoCapacity);
@@ -328,8 +374,8 @@ namespace Jam
 
 		// Every roll goes to the trace log, so the chance can be watched
 		// climbing as a magazine empties.
-		TraceLog::Line("jam", "{:s} at {:.2f}% with {:d} of {:d} loaded, {:.2f} a magazine at condition {:.3f}",
-			jammed ? "JAMMED" : "clear", perShot * 100.0, loaded, capacity, perMagazine, a_health);
+		TraceLog::Line("jam", "{:s} at {:.2f}% with {:d} of {:d} loaded, {:.2f} a magazine at condition {:.3f}{:s}",
+			jammed ? "JAMMED" : "clear", perShot * 100.0, loaded, capacity, perMagazine, a_health, ReadAs(a_health, read));
 		if (jammed) {
 			JamGun(a_player, index, stats);
 		}

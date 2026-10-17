@@ -90,11 +90,18 @@ namespace Condition
 	// nearly broken item reads 1 on all of them.
 	double WholePercent(float a_health);
 
-	// The share of a full stat an item keeps at a_health: a straight line from
-	// a_floor at 0 up to 1 at full. A health below 0, meaning none was ever
-	// written, and one at MAX_HEALTH or above both count as new. At a floor of
-	// 0.66 a gun at 0.5 keeps 0.83.
-	float Share(float a_health, float a_floor);
+	// Where wear starts to cost an item of a_kind, fWeaponPenaltyStart or
+	// fArmorPenaltyStart, kept between 0 and 1. A value that is not a number
+	// counts as 1.
+	float Start(Kind a_kind);
+
+	// The share of a full stat an item of a_kind keeps at a_health. At its
+	// start and above it keeps all of it, and below it the share runs in a
+	// straight line down to a_floor at 0. A health below 0, meaning none was
+	// ever written, and one at MAX_HEALTH or above both count as new. At a
+	// floor of 0.66 and a start of 1 a gun at 0.5 keeps 0.83, and at a start
+	// of 0.5 a gun at 0.25 keeps the same.
+	float Share(float a_health, float a_floor, Kind a_kind);
 
 	// The health to write for a whole percent. 100 becomes MAX_HEALTH, just
 	// under 1, since the engine deletes a health set to exactly 1, and an item

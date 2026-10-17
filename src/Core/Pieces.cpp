@@ -125,6 +125,7 @@ namespace
 		{ kSrm, Part::kSrm, Shown::kPart },
 		{ kTips, Part::kTips, Shown::kPart },
 		{ kMeleeWear, Part::kNone, Shown::kHidden },
+		{ kMotorWear, Part::kNone, Shown::kHidden },
 	};
 
 	// 1 row a piece, in the enum's order.
@@ -158,7 +159,8 @@ namespace
 	static_assert(NeedsAbove());
 
 	// Every part has 1 piece shown by the part's name, or 2 or more with
-	// names of their own. Only kNone and kMeleeWear belong to no part.
+	// names of their own. Only kNone and the wear no mod can take belong to
+	// no part.
 	consteval bool PartsShown()
 	{
 		for (auto i = static_cast<std::size_t>(Part::kPerks); i < static_cast<std::size_t>(Part::kTrace); i++) {
@@ -175,7 +177,7 @@ namespace
 			}
 		}
 		return std::ranges::all_of(PIECES, [](const PieceRow& a_row) {
-			return (a_row.part == Part::kNone) == (a_row.piece == kNone || a_row.piece == kMeleeWear) && a_row.part < Part::kTrace;
+			return (a_row.part == Part::kNone) == (a_row.piece == kNone || Untakeable(a_row.piece)) && a_row.part < Part::kTrace;
 		});
 	}
 	static_assert(PartsShown());

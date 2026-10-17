@@ -51,10 +51,13 @@ namespace Settings
 		const Number NUMBERS[]{
 			&fWearRateMult,
 			&fNpcWearRateMult,
+			&fAutoWearRateMult,
 			&fArmorWearRateMult,
 			&fNpcArmorWearRateMult,
 			&fDamageFloor,
+			&fWeaponPenaltyStart,
 			&fArmorFloor,
+			&fArmorPenaltyStart,
 			&fValueExponent,
 			&fFireRateFloor,
 			&fCritMeterFloor,

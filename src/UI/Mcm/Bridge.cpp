@@ -45,8 +45,11 @@ namespace Mcm
 
 		constexpr Owes OWES[]{
 			{ &Settings::fDamageFloor, FollowUp::kCards },
+			{ &Settings::fWeaponPenaltyStart, FollowUp::kCards },
 			{ &Settings::fArmorFloor, FollowUp::kCards },
 			{ &Settings::fArmorFloor, FollowUp::kResistances },
+			{ &Settings::fArmorPenaltyStart, FollowUp::kCards },
+			{ &Settings::fArmorPenaltyStart, FollowUp::kResistances },
 			{ &Settings::fValueExponent, FollowUp::kCards },
 			{ &Settings::fFireRateFloor, FollowUp::kCards },
 			{ &Settings::fAccuracyFloor, FollowUp::kCards },

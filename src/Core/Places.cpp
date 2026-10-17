@@ -207,7 +207,7 @@ namespace
 	{
 		for (std::size_t i = 0; i < std::size(PLACES); i++) {
 			const auto& pieces = PLACES[i].pieces;
-			if (std::ranges::count(pieces, kMeleeWear) != 0 || (pieces[0] == kNone && pieces[1] != kNone) ||
+			if (std::ranges::any_of(pieces, Untakeable) || (pieces[0] == kNone && pieces[1] != kNone) ||
 				(pieces[1] != kNone && pieces[1] == pieces[0])) {
 				return false;
 			}

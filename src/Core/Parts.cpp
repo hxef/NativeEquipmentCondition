@@ -3,8 +3,10 @@
 #include "Core/Pieces.h"
 
 #include <algorithm>
+#include <array>
 #include <cstddef>
 #include <iterator>
+#include <span>
 
 // What each setting works through. The MCM page reads it to say which
 // settings do nothing, or which of their pieces are off, while another mod
@@ -64,6 +66,26 @@ namespace
 		kAccuracyCardsPipboy, kAccuracySort };
 	constexpr Piece RANGE[]{ kRange };
 	constexpr Piece RANGE_SIDE[]{ kRangeCardsContainers, kRangeCardsWorkbench, kRangeCardsCooking, kRangeCardsPipboy };
+
+	// Every piece of Lists, in their order.
+	template <const auto&... Lists>
+	consteval auto Joined()
+	{
+		std::array<Piece, (std::size(Lists) + ...)> joined{};
+		std::size_t                                 i = 0;
+		for (const auto list : { std::span<const Piece>{ Lists }... }) {
+			for (const auto piece : list) {
+				joined[i++] = piece;
+			}
+		}
+		return joined;
+	}
+
+	// The weapon start moves every weapon penalty's line, so it does
+	// nothing only once all of them are off.
+	constexpr auto WEAPON_PENALTIES = Joined<DAMAGE, FIRE_RATE, CRIT_METER, ACCURACY, RANGE, JAM>();
+	constexpr auto WEAPON_PENALTIES_SIDE = Joined<FIRE_RATE_SIDE, ACCURACY_SIDE, RANGE_SIDE, JAM_SIDE>();
+
 	constexpr Piece BENCH[]{ kBench };
 	// The perk pages tell of a discount on a bench repair, and the bench's
 	// lists show what it repairs, so the line of each part shows in this
@@ -83,8 +105,14 @@ namespace
 		// An NPC's gun wears through the same fire call, so it sits in the
 		// player's block and loses its guns with it.
 		{ &Settings::fNpcWearRateMult, &Settings::fWearRateMult, {}, GUN_WEAR, {}, kMeleeWear },
+		// An automatic's shots wear through the same fire call. A motor
+		// blade's cuts wear through the hit event, so this row still sets
+		// those.
+		{ &Settings::fAutoWearRateMult, &Settings::fWearRateMult, {}, GUN_WEAR, {}, kMotorWear },
 		{ &Settings::fDamageFloor, nullptr, DAMAGE },
+		{ &Settings::fWeaponPenaltyStart, &Settings::fDamageFloor, WEAPON_PENALTIES, WEAPON_PENALTIES_SIDE },
 		{ &Settings::fArmorFloor, nullptr, ARMOR },
+		{ &Settings::fArmorPenaltyStart, &Settings::fArmorFloor, ARMOR },
 		{ &Settings::fValueExponent, nullptr, PRICES },
 		{ &Settings::fFireRateFloor, nullptr, FIRE_RATE, FIRE_RATE_SIDE },
 		{ &Settings::fCritMeterFloor, nullptr, CRIT_METER },
@@ -111,7 +139,7 @@ namespace
 			}
 			for (const auto list : { link.core, link.side, link.exceptions }) {
 				for (const auto piece : list) {
-					if (piece == kNone || piece == kMeleeWear) {
+					if (piece == kNone || Untakeable(piece)) {
 						return false;
 					}
 					for (const auto other : { link.core, link.side, link.exceptions }) {

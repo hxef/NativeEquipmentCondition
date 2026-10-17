@@ -54,6 +54,12 @@ namespace WeaponWear
 			return *middle;
 		}
 
+		// Whether this copy fires automatic, mods included.
+		bool IsAutomatic(const RE::TESObjectWEAP::InstanceData& a_instance)
+		{
+			return a_instance.flags.any(RE::WEAPON_FLAGS::kAutomatic);
+		}
+
 		// How many times a second an automatic weapon fires with these stats,
 		// mods included. The Ripper and the buzz blade carry the game's
 		// Automatic flag too, and the game counts 5 swings to each of their
@@ -63,7 +69,7 @@ namespace WeaponWear
 		// climb as a gun wears.
 		float AutoRate(const RE::TESObjectWEAP& a_weapon, const RE::TESObjectWEAP::InstanceData& a_instance)
 		{
-			if (!a_instance.flags.any(RE::WEAPON_FLAGS::kAutomatic)) {
+			if (!IsAutomatic(a_instance)) {
 				return 0.0F;
 			}
 			const auto rate = RE::TESObjectWEAP::GetRateOfFire(a_weapon, &a_instance);
@@ -262,8 +268,14 @@ namespace WeaponWear
 		return std::max(0.0F, Settings::fNpcWearRateMult.GetValue());
 	}
 
+	float AutoMult()
+	{
+		const auto mult = Settings::fAutoWearRateMult.GetValue();
+		return mult < 1.0F ? std::max(mult, 0.0F) : 1.0F;
+	}
+
 	float Rate(const RE::TESObjectWEAP& a_weapon, const RE::TESObjectWEAP::InstanceData& a_instance,
-		const RE::ExtraDataList* a_extra, bool a_theirs)
+		const RE::ExtraDataList* a_extra, bool a_theirs, bool a_bash)
 	{
 		const auto damage = TotalDamage(a_weapon, a_instance);
 		const auto blast = ExplosionDamage(a_weapon, a_instance);
@@ -281,6 +293,12 @@ namespace WeaponWear
 		const auto ordinaryRate = g_referenceAutoRate.load();
 		const auto pace = ordinaryRate > 0.0F && rate > ordinaryRate ? ordinaryRate / rate : 1.0F;
 
+		// fAutoWearRateMult on top for an automatic's shots and a motor
+		// blade's cuts, by this copy's flag, so a gun modded to fire
+		// automatic counts. A bash wears as any weapon's does.
+		const auto automatic = !a_bash && IsAutomatic(a_instance);
+		const auto autoMult = automatic ? AutoMult() : 1.0F;
+
 		// Harder hitting wears faster, better built wears slower. A pipe gun is
 		// steel and hits for little, a plasma rifle is nuclear material and
 		// hits hard, and both land near the middle. A pipe rifle rechambered to
@@ -292,10 +310,13 @@ namespace WeaponWear
 		// as it fires. An NPC's weapon takes fNpcWearRateMult instead.
 		const auto mult = std::max(0.0F, (a_theirs ? Settings::fNpcWearRateMult : Settings::fWearRateMult).GetValue());
 		const auto wear = RATE_AT_REFERENCE * mult *
-		                  (damage / g_referenceDamage.load()) * (Materials::ReferenceQuality(Condition::Kind::kWeapon) / quality) * pace;
+		                  (damage / g_referenceDamage.load()) * (Materials::ReferenceQuality(Condition::Kind::kWeapon) / quality) * pace * autoMult;
 
 		// An NPC's line ends with the multiplier it used.
 		auto tail = TraceLog::IsOpen() && pace < 1.0F ? std::format(", cut x{:.4f} for firing {:.2f} a second", pace, rate) : std::string{};
+		if (TraceLog::IsOpen() && autoMult != 1.0F) {
+			tail += std::format(", automatic x{:.2f}", autoMult);
+		}
 		if (a_theirs && TraceLog::IsOpen()) {
 			tail += std::format(", NPC rate x{:.2f}", mult);
 		}

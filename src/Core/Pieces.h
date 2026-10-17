@@ -124,12 +124,21 @@ enum class Piece : std::uint8_t
 	kInspectPrice,
 	kSrm,
 	kTips,
-	// Wear from melee hits and bashes, which no mod can take
+	// Wear from melee hits and bashes, and from a motor blade's cuts, which
+	// no mod can take
 	kMeleeWear,
+	kMotorWear,
 	kTotal,
 };
 
 inline constexpr std::size_t PIECE_COUNT = static_cast<std::size_t>(Piece::kTotal);
+
+// Whether a_piece is wear no mod can take. Those belong to no part and are
+// only ever what a setting always changes, see SettingLink.
+[[nodiscard]] constexpr bool Untakeable(Piece a_piece)
+{
+	return a_piece == Piece::kMeleeWear || a_piece == Piece::kMotorWear;
+}
 
 // How the page names a piece.
 enum class Shown : std::uint8_t

@@ -38,7 +38,7 @@ namespace Aim
 
 		float Share(float a_health)
 		{
-			return Condition::Share(a_health, Floor());
+			return Condition::Share(a_health, Floor(), Condition::Kind::kWeapon);
 		}
 
 		// Whether wear shortens range at all.

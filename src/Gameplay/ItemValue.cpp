@@ -54,8 +54,9 @@ namespace ItemValue
 
 		// The Fallout 3 and New Vegas price curve. No floor, unlike the damage
 		// curve: a weapon has to stay worth firing at 0 condition, it does not
-		// have to stay worth money. The engine rounds a price under 1 cap up to
-		// 1 on its own.
+		// have to stay worth money. No start either, so the price falls from
+		// full whatever fWeaponPenaltyStart and fArmorPenaltyStart say. The
+		// engine rounds a price under 1 cap up to 1 on its own.
 		float ValueMult(float a_health)
 		{
 			// The same health values Condition::Share treats as new, for the

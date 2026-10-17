@@ -1,5 +1,5 @@
-1.4.5
-Version 1.4.5 makes NPC weapons wear as they fight, a third as fast as yours by default, with 2 new MCM sliders. Repairs no longer ask for another mod's version of a vanilla component in place of the vanilla one.
+1.4.6
+Version 1.4.6 makes NPC weapons wear as they fight, a third as fast as yours by default. 5 new MCM sliders set NPC wear, automatic weapon wear and where weapon and armor penalties start.
 
 FO4 1.11.240
 

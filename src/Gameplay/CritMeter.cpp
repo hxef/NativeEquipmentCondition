@@ -23,14 +23,14 @@ namespace CritMeter
 		constexpr CallPatch::CallSite CHANCE_SITE{ 2236866, 0x1B9, "crit chance" };
 		constexpr CallPatch::CallSite ROLL_SITE{ 2236866, 0x22A, "crit roll" };
 
-		// A straight line from fCritMeterFloor at nothing to 1 at full, the
-		// shape of HealthDamage/Curve.h. Lower than the damage and fire rate
-		// floors, since a critical is a reward and not something a fight turns
-		// on. fCritMeterFloor keeps no clamp for a hand edit, as the MCM slider
-		// stops at 0 and 1.
+		// A straight line from fCritMeterFloor at nothing to 1 at
+		// fWeaponPenaltyStart, the shape of HealthDamage/Curve.h. Lower than
+		// the damage and fire rate floors, since a critical is a reward and not
+		// something a fight turns on. fCritMeterFloor keeps no clamp for a hand
+		// edit, as the MCM slider stops at 0 and 1.
 		float ChargeMult(float a_health)
 		{
-			return Condition::Share(a_health, Settings::fCritMeterFloor.GetValue());
+			return Condition::Share(a_health, Settings::fCritMeterFloor.GetValue(), Condition::Kind::kWeapon);
 		}
 
 		// Whether wear changes criticals at all. At 1 a worn weapon keeps the

@@ -44,18 +44,18 @@ WEAR AND TEAR
   never wear on them, since some of it can never be handed to you to repair.
   Once an item has passed through your hands, it becomes yours, so it wears
   like any other item you own, on you or on them.
-* Worn weapons do less damage and worn armor protects less, both down to 66%
-  at 0 condition.
-* A broken piece of armor or clothing stays on and keeps its bonuses, like a
-  +1 to a stat or a legendary effect, until you take it off.
-* Your weapon is unequipped automatically when it breaks, and broken gear
-  can't be equipped again until it is repaired.
-* Your guns can jam once they drop below 50% condition.
-* Worn guns spread their shots wider and lose damage sooner at range, and
-  worn automatic weapons fire slower, each down to 75% at 0 condition.
+* Worn weapons do less damage and worn armor protects less, yours and NPCs'
+  alike, both down to 66% at 0 condition.
+* Worn guns spread their shots wider and lose damage sooner at range, and worn
+  automatic weapons fire slower, each down to 75% at 0 condition.
 * A worn weapon fills the VATS critical meter slower, down to 50% of its rate
   at 0 condition, like in Fallout 3, where worn weapons landed fewer critical
   hits.
+* Your weapon is unequipped automatically when it breaks, and broken gear
+  can't be equipped again until it is repaired.
+* A broken piece of armor or clothing stays on and keeps its bonuses, like a
+  +1 to a stat or a legendary effect, until you take it off.
+* Your guns can jam once they drop below 50% condition.
 * Price drops faster than condition, on the Fallout 3 and New Vegas curve: an
   item at half condition is worth 35% of its full price, whether you buy it or
   sell it.
@@ -78,28 +78,26 @@ LOOT WITH A HISTORY
   Legendaries dropped by enemies still turn up worn.
 * About 1 item in 100 ignores all that: a raider can drop a pristine rifle,
   and a Courser a beaten one.
-* NPCs fight at the condition their gear is in: their worn weapons deal less
-  damage, and their worn armor protects them less.
 
 REPAIR AT THE WORKBENCH
 * At the weapon or armor workbench, select a worn item and a REPAIR button
   takes RENAME's place until it is back at full. Press it, choose how far to
-  repair it in steps of 10%, and pay in the components it is built from.
-  Gear that scraps into nothing, like Grognak's Axe, costs what gear of its
-  kind most often scraps into, and wears at the same rate. Short of
-  components, you get the power armor station's list of what the repair
-  takes, with the ones you lack faded.
+  repair it in steps of 10%, and pay in the components it is built from. Gear
+  that scraps into nothing, like Grognak's Axe, costs what gear of its kind
+  most often scraps into, and wears at the same rate. Short of components, you
+  get the power armor station's list of what the repair takes, with the ones
+  you lack faded.
 * Barely worn gear, above 95%, gets a MEND button instead, which fixes it on
   the spot for free. The 95% is the Free mend above setting: 100 makes every
   repair cost components, and 0 mends everything but broken gear for free.
-* With Workbench repair cost at 0, every repair is free and done on the spot,
-  broken gear included.
 * Crafting perks like Gun Nut, Science!, Blacksmith and Armorer make repairs
   take fewer components, down to half at the top rank. The perk behind most of
   an item's components sets the discount, and each rank's description says how
   much. The perks count too when a skill mod like Classic NV Skill System
   grants them from your skills.
 * A repair earns the same XP as crafting a mod from those components.
+* With Workbench repair cost at 0, every repair is free and done on the spot,
+  broken gear included.
 
 REPAIR AT A TRADER
 * Out of spare components? Gun shops, armorers and clothiers repair their kind
@@ -128,6 +126,19 @@ SEE IT AT A GLANCE
   apparel figure, and condition meters on the quick container rows.
 * Broken items fade out in the Pip-Boy lists.
 
+MAKE IT YOURS
+* With MCM, NEC's page changes any setting on the spot. Switch off jamming,
+  worn loot, trader repairs, the HUD condition bars and more, or tune wear
+  speed for you, for NPCs and for automatic weapons, where wear starts to cost
+  performance, how much gear keeps at 0 condition, prices and repair costs.
+* Without MCM, NEC.ini in Data\F4SE\Plugins explains every setting. Copy a
+  line into NEC_custom.ini beside it, under the same section heading, change
+  the value and restart the game.
+* Either way your changes go in NEC_custom.ini, and NEC.ini stays as it ships.
+  The mod comes without a NEC_custom.ini, so an update never wipes your
+  settings. With Mod Organizer 2, keep NEC_custom.ini in its own mod or in
+  overwrite.
+
 LITTLE EXTRAS
 * 6 loading screen tips on wear, repairs, broken gear, jams and loot, in
   the game's own style and as likely to show as any ordinary loading
@@ -143,36 +154,23 @@ LITTLE EXTRAS
   It also takes the condition off any ring, hat or other gear you carry that
   gives nothing, so it reads as full again.
 
-MAKE IT YOURS
-* With MCM, NEC's page changes any setting on the spot. Switch off jamming,
-  worn loot, trader repairs, the HUD condition bars and more, or tune wear
-  speed for you and for NPCs, how much gear keeps at 0 condition, prices and
-  repair costs.
-* Without MCM, NEC.ini in Data\F4SE\Plugins explains every setting. Copy a
-  line into NEC_custom.ini beside it, under the same section heading, change
-  the value and restart the game.
-* Either way your changes go in NEC_custom.ini, and NEC.ini stays as it ships.
-  The mod comes without a NEC_custom.ini, so an update never wipes your
-  settings. With Mod Organizer 2, keep NEC_custom.ini in its own mod or in
-  overwrite.
-
 COMPATIBILITY
 * No ESP, so it takes no plugin slot.
-* The plugin's own text comes in every language the game ships in. The rest is
-  the game's own words. Every language but English was translated by AI, not
-  by a person, so some lines may read a little off.
-* Both vanilla fixes under Little extras can be switched off, for a load order
-  where another mod already fixes them.
-* Works with UI replacers like FallUI and DEF_UI. The HUD CND bar finds a
-  free spot by the ammo counter on any HUD layout and stays on screen at any
-  resolution. A part NEC can't find is skipped and named in NEC.log or the
-  bug report logs, while wear, damage and prices work as ever.
+* Works with UI replacers like FallUI and DEF_UI. The HUD CND bar finds a free
+  spot by the ammo counter on any HUD layout and stays on screen at any
+  resolution. A part NEC can't find is skipped and named in NEC.log or the bug
+  report logs, while wear, damage and prices work as ever.
 * NEC works alongside other DLL mods that change the same things. When one
   takes over one of NEC's features, NEC lets it, and NEC's MCM page and
   NEC.log name that mod and what is off.
+* The plugin's own text comes in every language the game ships in. The rest is
+  the game's own words. Every language but English was translated by AI, not
+  by a person, so some lines may read a little off.
 * A DLL mod that changes item stats as the game starts, like RobCo Patcher,
   does not make gear wear too fast or too slow, since NEC reads the stats
   again at every save load and new game.
+* Both vanilla fixes under Little extras can be switched off, for a load order
+  where another mod already fixes them.
 
 REQUIREMENTS
 * Fallout 4 1.11.240

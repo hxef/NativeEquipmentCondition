@@ -2,6 +2,7 @@
 
 #include "Condition/ArmorWear/ArmorWear.h"
 #include "Condition/WeaponWear/WeaponWear.h"
+#include "Core/Settings.h"
 #include "Core/TraceLog.h"
 
 #include <algorithm>
@@ -63,7 +64,13 @@ namespace Condition
 		return a_health > MIN_HEALTH ? std::max(percent, 1.0) : percent;
 	}
 
-	float Share(float a_health, float a_floor)
+	float Start(Kind a_kind)
+	{
+		const auto start = (a_kind == Kind::kArmor ? Settings::fArmorPenaltyStart : Settings::fWeaponPenaltyStart).GetValue();
+		return start < 1.0F ? std::max(start, 0.0F) : 1.0F;
+	}
+
+	float Share(float a_health, float a_floor, Kind a_kind)
 	{
 		// -1 is an item with no health extra data, which counts as new. 0 and
 		// up is a real health, 0 being broken. EquippedHealthHk in
@@ -71,7 +78,18 @@ namespace Condition
 		if (a_health < 0.0F || a_health >= MAX_HEALTH) {
 			return 1.0F;
 		}
-		return a_floor + ((1.0F - a_floor) * a_health);
+
+		// A broken item is at its floor whatever the start, so at a start of
+		// 0 an item keeps all of it until it breaks. The line only runs for a
+		// start above 0, so it never divides by 0.
+		const auto start = Start(a_kind);
+		if (a_health <= MIN_HEALTH) {
+			return a_floor;
+		}
+		if (a_health >= start) {
+			return 1.0F;
+		}
+		return a_floor + ((1.0F - a_floor) * (a_health / start));
 	}
 
 	float FromPercent(std::uint32_t a_percent)

@@ -9,13 +9,13 @@
 // AimModel::GetMinMaxCone for its cone once, through ApplyConeOfFire inside
 // the engine's Fire. InstallAccuracy hooks that call and widens both cones by
 // 1 over the gun's share, a straight line from fAccuracyFloor at 0 to 1 at
-// full, so at 0.75 a cone is a third wider. Sneaking, sights, crippled arms,
-// barrels and the cone perks are already inside the game's answer. No cone
-// grows past the game's own caps, read from the loaded game, and a cone of 0
-// or less, an NPC aiming true, stays as it is. The shot's condition comes
-// from WeaponEvents' fire call, see Fired, so a shot the game fires without
-// that call, a fire queued as a task or a throw, keeps the game's spread, and
-// so does an NPC's shot while its inventory is busy.
+// fWeaponPenaltyStart, so at 0.75 a cone is a third wider. Sneaking, sights,
+// crippled arms, barrels and the cone perks are already inside the game's
+// answer. No cone grows past the game's own caps, read from the loaded game,
+// and a cone of 0 or less, an NPC aiming true, stays as it is. The shot's
+// condition comes from WeaponEvents' fire call, see Fired, so a shot the game
+// fires without that call, a fire queued as a task or a throw, keeps the
+// game's spread, and so does an NPC's shot while its inventory is busy.
 //
 // The crosshair asks the same function for its min and max and for its size
 // right now, and both calls widen by the share measured once a frame, see
@@ -28,9 +28,9 @@
 // falls in a straight line to the gun's out of range share at its max range.
 // Both ranges are multiplied by what the range perks answer, and InstallRange
 // multiplies that answer by the gun's share, a straight line from fRangeFloor
-// at 0 to 1 at full, so both ranges come in. Up close nothing changes. A
-// melee blow and an explosion have no such falloff. VATS reads the max range
-// straight off the gun and keeps it.
+// at 0 to 1 at fWeaponPenaltyStart, so both ranges come in. Up close nothing
+// changes. A melee blow and an explosion have no such falloff. VATS reads the
+// max range straight off the gun and keeps it.
 //
 // The item cards show accuracy and range at the same shares, and a container's
 // sort uses the same accuracy, see AccuracyShare, RangeShare and

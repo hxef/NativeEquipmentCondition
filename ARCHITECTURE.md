@@ -85,6 +85,7 @@ src/
       Materials.h/.cpp       what an item is built from, the recipe index and the ordinary make
       Index.h                the index, for this folder
       Bill.cpp               the bill of parts and the order it is charged in
+      Components.cpp         which component prices a form, a junk item by its own Components list
     Repair.h/.cpp            what a worn item owes
     WeaponWear/
       WeaponWear.h/.cpp      which weapons take part, wearing the copy in hand

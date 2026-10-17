@@ -14,13 +14,6 @@ namespace Materials
 {
 	namespace
 	{
-		// Which component prices a form. A mod's recipe asks for the component
-		// itself, steel. A scrap recipe asks for the scrap item instead,
-		// c_Steel_scrap, a separate form with a caps price and no worth. Both
-		// map to the component here. The component is kept, not its worth, so
-		// the worth is read fresh each time.
-		std::unordered_map<const RE::TESForm*, const RE::BGSComponent*> g_pricedBy;
-
 		// Which recipe builds what: mods, and the weapons and wearables with a
 		// scrap recipe of their own. The recipe is kept, not what it asks for,
 		// so the components are read fresh. Filled by Load and emptied by
@@ -165,21 +158,6 @@ namespace Materials
 			return std::clamp(a_quality, LOWEST_QUALITY * std::min(scale, 1.0F), HIGHEST_QUALITY * std::max(scale, 1.0F));
 		}
 
-		// Whether a recipe asks for any component. A line for a finished item
-		// or for nothing at all does not count, as in the bill.
-		bool AsksForParts(const RE::BGSConstructibleObject& a_recipe)
-		{
-			if (!a_recipe.requiredItems) {
-				return false;
-			}
-			for (const auto& required : *a_recipe.requiredItems) {
-				if (PricedBy(required.first) && required.second.i != 0) {
-					return true;
-				}
-			}
-			return false;
-		}
-
 		// Whether a recipe that asks for a component builds a_form.
 		bool BuiltPriced(const RE::TESForm* a_form)
 		{
@@ -226,30 +204,6 @@ namespace Materials
 			const auto& armor = static_cast<const RE::TESObjectARMO&>(a_object);
 			return ArmorWear::IsClothing(armor) ? g_borrowedClothing : g_borrowedArmor;
 		}
-
-		// What a recipe asks for, for the log: "2 Cloth", or "nothing" for no
-		// recipe at all.
-		std::string Spell(const RE::BGSConstructibleObject* a_recipe)
-		{
-			std::string out;
-			if (a_recipe && a_recipe->requiredItems) {
-				for (const auto& required : *a_recipe->requiredItems) {
-					const auto* component = PricedBy(required.first);
-					if (!component || required.second.i == 0) {
-						continue;
-					}
-					out += std::format("{:s}{:d} {:s}", out.empty() ? "" : " and ", required.second.i,
-						RE::TESFullName::GetFullName(*component));
-				}
-			}
-			return out.empty() ? std::string{ "nothing" } : out;
-		}
-	}
-
-	const RE::BGSComponent* PricedBy(const RE::TESForm* a_form)
-	{
-		const auto found = a_form ? g_pricedBy.find(a_form) : g_pricedBy.end();
-		return found == g_pricedBy.end() ? nullptr : found->second;
 	}
 
 	void ForEachRecipe(const RE::TESBoundObject& a_object, const RE::ExtraDataList* a_extra,
@@ -332,7 +286,7 @@ namespace Materials
 
 	void Unload()
 	{
-		g_pricedBy.clear();
+		UnloadComponents();
 		g_recipes.clear();
 		g_borrowedClothing = nullptr;
 		g_borrowedArmor = nullptr;
@@ -348,17 +302,7 @@ namespace Materials
 			return;
 		}
 
-		// Both forms of every component, see g_pricedBy. One priced at nothing
-		// is indexed too, since its worth is read later.
-		for (const auto* component : g_dataHandler->GetFormArray<RE::BGSComponent>()) {
-			if (!component) {
-				continue;
-			}
-			g_pricedBy.insert_or_assign(component, component);
-			if (component->scrapItem) {
-				g_pricedBy.insert_or_assign(component->scrapItem, component);
-			}
-		}
+		const auto spellings = LoadComponents();
 
 		const auto remember = [](const RE::TESForm* a_built, const RE::BGSConstructibleObject& a_recipe) {
 			if (a_built && WorthIndexing(*a_built)) {
@@ -411,7 +355,7 @@ namespace Materials
 		}
 
 		REX::INFO("Found {:d} component spellings and what {:d} items and mods are built from. An ordinary weapon is worth {:.1f} a unit and an ordinary piece of armor {:.1f}. Clothing with no scrap recipe of its own borrows {:s}, armor {:s}, and a weapon with nothing priced {:s}, which {:d} of this load order's weapons do.",
-			g_pricedBy.size(), g_recipes.size(), weapons, armor, Spell(g_borrowedClothing), Spell(g_borrowedArmor), Spell(g_borrowedWeapon), borrowing);
+			spellings, g_recipes.size(), weapons, armor, Spell(g_borrowedClothing), Spell(g_borrowedArmor), Spell(g_borrowedWeapon), borrowing);
 	}
 
 	float Quality(const RE::TESBoundObject& a_object, const RE::ExtraDataList* a_extra)

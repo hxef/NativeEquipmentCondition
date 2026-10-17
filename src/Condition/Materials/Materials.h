@@ -19,18 +19,17 @@
 // That is how the engine works out what an item scraps into, in
 // ExamineMenu::BuildWeaponScrappingArray: the recipe of every enabled mod, plus
 // the item's own scrap recipe where it has one. Vanilla gives scrap recipes to
-// weapons with few mods, knives and the super sledge into steel, pool cues into
-// wood, and to most wearables, a suit into 2 cloth, a helmet into 2 steel, a
-// leather chest piece into 2 leather. A combat rifle has none and needs none,
-// since its mods cover the whole gun. A wearable with none, which is every
-// piece of Nuka-World's raider armor, half the vault suits and Maxson's
-// battlecoat, borrows the recipe the load order gives most often to pieces of
-// its kind, clothing or armor, see ArmorWear::IsClothing: 2 cloth for clothing
-// and 2 steel for armor in vanilla. So it is priced and wears like similar
-// pieces, where the game itself would scrap it into nothing. A weapon whose own
-// recipe and mods ask for nothing, Grognak's Axe for one, borrows the recipe
-// weapons have most often, 2 steel in vanilla, and so is priced and wears like
-// them too.
+// most weapons, knives, the super sledge and the combat rifle into steel, a
+// laser gun into plastic, pool cues into wood, and to most wearables, a suit
+// into 2 cloth, a helmet into 2 steel, a leather chest piece into 2 leather. A
+// wearable with none, which is every piece of Nuka-World's raider armor, half
+// the vault suits and Maxson's battlecoat, borrows the recipe the load order
+// gives most often to pieces of its kind, clothing or armor, see
+// ArmorWear::IsClothing: 2 cloth for clothing and 2 steel for armor in vanilla.
+// So it is priced and wears like similar pieces, where the game itself would
+// scrap it into nothing. A weapon whose own recipe and mods ask for nothing,
+// Grognak's Axe for one, borrows the recipe weapons have most often, 2 steel in
+// vanilla, and so is priced and wears like them too.
 //
 // None of these numbers are written in the code. Components, their worth and
 // the recipes are read from the load order, so another plugin repricing steel

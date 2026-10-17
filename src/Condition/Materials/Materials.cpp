@@ -319,12 +319,17 @@ namespace Materials
 			// A recipe names the item it builds or a form list of items. The
 			// list is how weapons and wearables get a scrap recipe at all: a
 			// few recipes each name a list, so every knife scraps into the same
-			// 2 steel and every suit into the same 2 cloth.
+			// 2 steel and every suit into the same 2 cloth. A recipe naming a
+			// weapon or a wearable itself crafts it, and the bench never scraps
+			// by it, see ExamineMenu::BuildWeaponScrappingArray, so a recipe
+			// naming a form alone counts only for a mod. In vanilla those
+			// crafting recipes are for power armor, grenades and mines, which
+			// NEC never wears, and 1 hat a list recipe already prices.
 			if (built->Is(RE::ENUM_FORM_ID::kFLST)) {
 				for (const auto* listed : static_cast<const RE::BGSListForm*>(built)->arrayOfForms) {
 					remember(listed, *recipe);
 				}
-			} else {
+			} else if (built->Is(RE::ENUM_FORM_ID::kOMOD)) {
 				remember(built, *recipe);
 			}
 		}

@@ -6,8 +6,8 @@
 
 #include <algorithm>
 #include <cmath>
-#include <cstdint>
 #include <optional>
+#include <span>
 
 namespace Provenance
 {
@@ -32,95 +32,27 @@ namespace Provenance
 		// What a character is given
 		// -------------------------------------------------------------------
 
-		// How deep a chain of templates is followed. Vanilla rarely goes past
-		// 2, so this only stops a plugin whose templates point round in a
-		// circle.
-		constexpr std::size_t TEMPLATES = 8;
-
-		// The outfit a character is given. The engine reads defOutfit straight
-		// from the record, so a record holding one is the whole answer. Leveled
-		// raiders and gunners are records with little of their own that take
-		// their gear from a template, and it is unclear whether the engine has
-		// copied the template's outfit down by the time a weapon arrives, so
-		// the chain is followed when the record says it takes its inventory
-		// from a template. A character using a template for stats alone, with
-		// an empty outfit, wears nothing.
-		const RE::BGSOutfit* OutfitOf(const RE::TESNPC& a_npc)
-		{
-			using Flag = RE::ACTOR_BASE_DATA::Flag;
-			using Use = RE::ACTOR_BASE_DATA::TEMPLATE_USE_FLAG;
-
-			const RE::TESNPC* npc = &a_npc;
-			for (std::size_t hop = 0; npc && hop < TEMPLATES; ++hop) {
-				if (npc->defOutfit) {
-					return npc->defOutfit;
-				}
-
-				if (!npc->actorData.actorBaseFlags.any(Flag::kUsesTemplate) ||
-					!npc->actorData.templateUseFlags.any(Use::kInventory)) {
-					return nullptr;
-				}
-
-				// A template can be a leveled character, a list to resolve and
-				// not a record to read, so the chain stops there.
-				const auto* next = npc->baseTemplateForm;
-				npc = next && next->Is(RE::ENUM_FORM_ID::kNPC_) ?
-				          static_cast<const RE::TESNPC*>(next) :
-				          nullptr;
-			}
-			return nullptr;
-		}
-
-		// The record a character's own inventory is written on. Works like
-		// OutfitOf: a leveled raider carries nothing of its own.
-		const RE::TESNPC* CarriedBy(const RE::TESNPC& a_npc)
-		{
-			using Flag = RE::ACTOR_BASE_DATA::Flag;
-			using Use = RE::ACTOR_BASE_DATA::TEMPLATE_USE_FLAG;
-
-			const RE::TESNPC* npc = &a_npc;
-			for (std::size_t hop = 0; npc && hop < TEMPLATES; ++hop) {
-				if (npc->numContainerObjects > 0) {
-					return npc;
-				}
-
-				if (!npc->actorData.actorBaseFlags.any(Flag::kUsesTemplate) ||
-					!npc->actorData.templateUseFlags.any(Use::kInventory)) {
-					return nullptr;
-				}
-
-				const auto* next = npc->baseTemplateForm;
-				npc = next && next->Is(RE::ENUM_FORM_ID::kNPC_) ?
-				          static_cast<const RE::TESNPC*>(next) :
-				          nullptr;
-			}
-			return nullptr;
-		}
-
 		// Whether this character spawns in power armor. That comes from neither
 		// the outfit nor the inventory, but from a furniture reference the
-		// character stands inside, with no rating to add up.
+		// character stands inside, with no rating to add up. The game copies a
+		// template's power armor onto the record as it loads.
 		bool InPowerArmor(const RE::TESNPC& a_npc)
 		{
-			if (a_npc.powerArmorFurn) {
-				return true;
-			}
-
-			const auto* carried = CarriedBy(a_npc);
-			return carried && carried->powerArmorFurn;
+			return a_npc.powerArmorFurn != nullptr;
 		}
 
 		// How much armor one character is given, outfit and own inventory
 		// together. A raider's armor and a gunner's gear are not outfit items
-		// but leveled lists in the inventory, beside the gun. Returns nothing
-		// when any part could not be worked out, so nobody is ranked on part of
-		// their gear. Only reads: every list was measured at Load, so the spawn
-		// hook can call this on any thread.
+		// but leveled lists in the inventory, beside the gun. Only the record
+		// itself is read, see Issued in Equipped.cpp for why a template needs no
+		// walk. Returns nothing when any part could not be worked out, so nobody
+		// is ranked on part of their gear. Only reads: every list was measured
+		// at Load, so the spawn hook can call this on any thread.
 		std::optional<float> ArmorIssued(const RE::TESNPC& a_npc)
 		{
 			float armor = 0.0F;
 
-			if (const auto* outfit = OutfitOf(a_npc)) {
+			if (const auto* outfit = a_npc.defOutfit) {
 				for (const auto* piece : outfit->outfitItems) {
 					if (!piece) {
 						continue;
@@ -134,9 +66,7 @@ namespace Provenance
 				}
 			}
 
-			const auto* carried = CarriedBy(a_npc);
-			for (std::uint32_t i = 0; carried && i < carried->numContainerObjects; ++i) {
-				const auto* entry = carried->containerObjects[i];
+			for (const auto* entry : std::span{ a_npc.containerObjects, a_npc.numContainerObjects }) {
 				if (!entry || !entry->obj) {
 					continue;
 				}
@@ -239,10 +169,9 @@ namespace Provenance
 
 		// Otherwise the engine created them while the game ran. A raider or a
 		// gunner is rolled from a leveled character list into a new record with
-		// a form ID starting FF, and its template pointer points at that list,
-		// not at a record. But the copy has its outfit and inventory filled in,
-		// so it is measured on the spot from what Load worked out and lands on
-		// the same scale.
+		// a form ID starting FF. The copy has its outfit and inventory filled
+		// in, so it is measured on the spot from what Load worked out and lands
+		// on the same scale.
 		} else if (InPowerArmor(a_npc)) {
 			care = 1.0F;
 		} else if (const auto armor = ArmorIssued(a_npc)) {

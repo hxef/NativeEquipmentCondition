@@ -39,9 +39,9 @@
 // wear rate.
 namespace Materials
 {
-	// Reads every recipe in the load order and remembers which builds each
-	// mod, weapon and wearable, and what an item with nothing of its own
-	// borrows. Runs every time game data has loaded.
+	// Reads every recipe in the load order and remembers the recipe of each
+	// mod and the scrap recipe of each weapon and wearable, and what an item
+	// with nothing of its own borrows. Runs every time game data has loaded.
 	void Load();
 
 	// Forgets everything Load found.
@@ -55,8 +55,9 @@ namespace Materials
 
 	// The worth of 1 unit of an average component for an item of a_kind, the
 	// median of the recipes of that kind, so an overhaul repricing everything
-	// moves the median with it. For weapons those are the recipes that build a
-	// weapon or a weapon mod, 19 in vanilla, since a gun's mods are the gun.
+	// moves the median with it. For weapons those are the scrap recipes of
+	// weapons and the recipes of weapon mods, 19 in vanilla, since a gun's mods
+	// are the gun.
 	// For armor they are the scrap recipes of the pieces alone, 4 in vanilla,
 	// since a piece's own recipe is the piece and its mods are upgrades on top:
 	// a plain piece wears at the ordinary rate and an upgraded one lasts

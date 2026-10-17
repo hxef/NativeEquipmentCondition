@@ -1,3 +1,8 @@
+1.4.7
+* Repairs and wear no longer go by a recipe that crafts the item itself, which another mod like Crafting Mastery 2 can add. Gear with no scrap recipe costs and wears like other gear of its kind.
+* The help lines of Automatic weapon wear speed, Weapon penalties below and Armor penalties below are shorter, so they fit the MCM page in most languages.
+* With another DLL mod taking over some weapon penalties, the MCM page names each one once.
+
 1.4.6
 * NPC weapons now wear as they fight, shot by shot and blow by blow, without jams. One worn out to 0 stays in their hands.
 * 2 new MCM sliders set NPC wear apart from yours: NPC weapon wear speed (fNpcWearRateMult, 0.33) and NPC armor wear speed (fNpcArmorWearRateMult, 1). 0 stops that wear. Weapon wear speed and Armor wear speed now set only your own gear.

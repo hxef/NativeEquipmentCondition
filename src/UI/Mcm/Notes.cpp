@@ -177,13 +177,15 @@ namespace Mcm
 		// A block's note: the line of a switch left to another mod, which
 		// stands in for the hidden switch, the lines of each part with pieces
 		// off that a setting of the block works through, then what that
-		// leaves of each setting still on the page. A setting's line leaves
-		// out the pieces a part line above names as off, and goes when none
-		// is left, so no piece is named twice.
+		// leaves of each setting still on the page. A part another block's
+		// lead works through, and this one's does not, is left to that block's
+		// note, as the weapon start works through every weapon penalty. A
+		// setting's line leaves out the pieces either note names as off, and
+		// goes when none is left, so no piece is named twice on the page.
 		std::vector<std::string> BlockLines(const SettingLink& a_lead)
 		{
 			std::vector<std::string> lines;
-			std::vector<Piece>       named;  // the pieces the part lines name as off
+			std::vector<Piece>       named;  // pieces a part line names when off
 
 			const auto add = [&](const CallPatch::Loss& a_loss) {
 				std::ranges::move(Text::PartLines(a_loss), std::back_inserter(lines));
@@ -198,15 +200,20 @@ namespace Mcm
 			}
 
 			const auto              members = Members(a_lead);
-			std::bitset<PART_COUNT> linked;
-			for (const auto* member : members) {
-				for (const auto list : { member->core, member->side, member->exceptions }) {
-					for (const auto piece : list) {
-						linked.set(static_cast<std::size_t>(RowOfPiece(piece).part));
-					}
+			auto                    linked = PartsOf(a_lead);
+			std::bitset<PART_COUNT> elsewhere;
+			for (const auto& link : SettingLinks()) {
+				if (!link.under && &link != &a_lead) {
+					elsewhere |= PartsOf(link) & ~linked;
 				}
 			}
-			linked.reset(static_cast<std::size_t>(Part::kNone));
+			for (const auto* member : members) {
+				linked |= PartsOf(*member) & ~elsewhere;
+				for (const auto list : { member->core, member->side }) {
+					std::ranges::copy_if(list, std::back_inserter(named),
+						[&](Piece a_piece) { return elsewhere.test(static_cast<std::size_t>(RowOfPiece(a_piece).part)); });
+				}
+			}
 			if (yield) {
 				linked.reset(static_cast<std::size_t>(yield->part));
 			}

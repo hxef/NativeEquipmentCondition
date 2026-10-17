@@ -184,3 +184,15 @@ const SettingLink* LinkOf(const Settings::Named& a_setting)
 	const auto it = std::ranges::find(SETTINGS, &a_setting, &SettingLink::setting);
 	return it != std::end(SETTINGS) ? &*it : nullptr;
 }
+
+std::bitset<PART_COUNT> PartsOf(const SettingLink& a_link)
+{
+	std::bitset<PART_COUNT> parts;
+	for (const auto list : { a_link.core, a_link.side, a_link.exceptions }) {
+		for (const auto piece : list) {
+			parts.set(static_cast<std::size_t>(RowOfPiece(piece).part));
+		}
+	}
+	parts.reset(static_cast<std::size_t>(Part::kNone));
+	return parts;
+}

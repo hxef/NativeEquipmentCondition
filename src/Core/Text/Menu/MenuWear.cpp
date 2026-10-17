@@ -85,18 +85,18 @@ namespace Text
 		};
 
 		constexpr Line AUTO_WEAR_RATE_HELP[]{
-			{ "en", "How fast automatic weapons wear as they fire or cut, on top of the weapon wear speeds above. 1 is normal, 0.5 is half as fast and 0 stops wear." },
-			{ "fr", "Vitesse d'usure des armes automatiques au tir ou à la coupe, en plus des vitesses d'usure des armes ci-dessus. 1 est normal, 0.5 est 2 fois plus lent et 0 arrête l'usure." },
-			{ "de", "Wie schnell sich Automatikwaffen beim Schießen oder Schneiden abnutzen, zusätzlich zu den Waffentempos oben. 1 ist normal, 0.5 halb so schnell, 0 stoppt die Abnutzung." },
-			{ "it", "Quanto in fretta si usurano le armi automatiche sparando o tagliando, oltre alle velocità delle armi qui sopra. 1 è normale, 0.5 è la metà e 0 ferma l'usura." },
-			{ "es", "Lo rápido que se desgastan las armas automáticas al disparar o cortar, además de las velocidades de armas de arriba. 1 es normal, 0.5 es la mitad y 0 detiene el desgaste." },
-			{ "esmx", "Qué tan rápido se desgastan las armas automáticas al disparar o cortar, además de las velocidades de armas de arriba. 1 es normal, 0.5 es la mitad y 0 detiene el desgaste." },
-			{ "ptbr", "Quão rápido as armas automáticas se desgastam ao disparar ou cortar, além das velocidades das armas acima. 1 é o normal, 0.5 é a metade e 0 impede o desgaste." },
-			{ "pl", "Jak szybko zużywa się broń automatyczna przy strzelaniu lub cięciu, na dodatek do szybkości broni powyżej. 1 to normalnie, 0.5 to 2 razy wolniej, a 0 wyłącza zużycie." },
-			{ "ru", "Скорость износа автоматического оружия от стрельбы и резки, поверх скоростей выше. 1 обычная, 0.5 вдвое медленнее, 0 без износа." },
-			{ "ja", "オートマチック武器が射撃や切断で消耗する速さで、上の武器の消耗速度に掛け合わされます。1で通常、0.5で半分の速さ、0で消耗しなくなります" },
-			{ "zhhant", "自動武器射擊或切割時損耗的速度，疊加在上方的武器損耗速度之上。1為正常，0.5為一半速度，0則停止損耗。" },
-			{ "zhhans", "自动武器射击或切割时损耗的速度，叠加在上方的武器损耗速度之上。1为正常，0.5为一半速度，0则停止损耗。" },
+			{ "en", "Multiplies the speeds above as automatic weapons fire or cut. 1 is normal, 0.5 is half, 0 stops wear." },
+			{ "fr", "Multiplie les vitesses ci-dessus au tir ou à la coupe. 1 est normal, 0.5 la moitié et 0 arrête l'usure." },
+			{ "de", "Multipliziert die Tempos oben beim Schießen oder Schneiden. 1 ist normal, 0.5 halbiert, 0 stoppt sie." },
+			{ "it", "Moltiplica le velocità sopra sparando o tagliando. 1 è normale, 0.5 è la metà e 0 ferma l'usura." },
+			{ "es", "Multiplica las velocidades de arriba al disparar o cortar. 1 es normal, 0.5 la mitad y 0 detiene el desgaste." },
+			{ "esmx", "Multiplica las velocidades de arriba al disparar o cortar. 1 es normal, 0.5 la mitad y 0 detiene el desgaste." },
+			{ "ptbr", "Multiplica as velocidades acima ao disparar ou cortar. 1 é o normal, 0.5 é a metade e 0 impede o desgaste." },
+			{ "pl", "Mnoży szybkości powyżej przy strzelaniu lub cięciu. 1 to normalnie, 0.5 to połowa, a 0 wyłącza zużycie." },
+			{ "ru", "Умножает скорости выше при стрельбе и резке. 1 обычная, 0.5 вдвое ниже, 0 без износа." },
+			{ "ja", "射撃や切断時、上の消耗速度に掛けます。1で通常、0.5で半分、0で消耗しなくなります" },
+			{ "zhhant", "射擊或切割時，乘以上方的損耗速度。1為正常，0.5為一半速度，0則停止損耗。" },
+			{ "zhhans", "射击或切割时，乘以上方的损耗速度。1为正常，0.5为一半速度，0则停止损耗。" },
 		};
 
 		constexpr Line ARMOR_WEAR_RATE_NAME[]{

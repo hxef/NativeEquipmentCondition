@@ -2,6 +2,7 @@
 
 #include "Core/Settings.h"
 
+#include <bitset>
 #include <cstddef>
 #include <cstdint>
 #include <span>
@@ -95,3 +96,6 @@ struct SettingLink
 
 // a_setting's row, or nullptr for one that works through no part.
 [[nodiscard]] const SettingLink* LinkOf(const Settings::Named& a_setting);
+
+// The parts a_link works through, by its core, side and exception pieces.
+[[nodiscard]] std::bitset<PART_COUNT> PartsOf(const SettingLink& a_link);

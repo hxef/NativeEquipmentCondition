@@ -165,8 +165,8 @@ namespace Text
 	// effect on gun wear from firing for now. Still changes melee wear.", and
 	// "Repair prices follow the item's barter price for now." while Worn item
 	// prices is off. Empty while it works in full or is idle. a_named are
-	// pieces a part line right above names as off, which the page leaves out,
-	// with no sentence when none is left.
+	// pieces a part line on the page names as off, in this note or another
+	// block's, which the page leaves out, with no sentence when none is left.
 	[[nodiscard]] std::vector<std::string> SettingLines(const SettingLink& a_link, const CallPatch::Effect& a_effect,
 		Out a_out = Out::kPage, std::span<const Piece> a_named = {});
 

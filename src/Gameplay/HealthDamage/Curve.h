@@ -24,6 +24,6 @@ namespace HealthDamage
 
 	inline float DamageMult(float a_health)
 	{
-		return Condition::Share(a_health, DamageFloor());
+		return Condition::Share(a_health, DamageFloor(), Condition::Kind::kWeapon);
 	}
 }

@@ -12,11 +12,11 @@ namespace FireRate
 	// loops at the gun's speed, so an automatic receiver or the Rapid legendary
 	// makes it faster. Install hooks the one call the animation reads an
 	// actor's weapon speed through and returns a share of it, a straight line
-	// from fFireRateFloor at 0 to 1 at full. 2 more places get the same share:
-	// the countdown between 2 presses of the trigger, and the automatic weapon
-	// sound, which picks the loop nearest to the rate. The menus show and
-	// compare the rate at the same share, see RateShare. Combat AI and VATS
-	// keep the gun's own numbers.
+	// from fFireRateFloor at 0 to 1 at fWeaponPenaltyStart. 2 more places get
+	// the same share: the countdown between 2 presses of the trigger, and the
+	// automatic weapon sound, which picks the loop nearest to the rate. The
+	// menus show and compare the rate at the same share, see RateShare. Combat
+	// AI and VATS keep the gun's own numbers.
 	//
 	// The player's share comes from the condition measured once a frame, see
 	// InHand.h, since the animation asks from wherever it updates. An NPC

@@ -32,6 +32,16 @@ namespace ArmorWear
 		} else {
 			REX::INFO("NPC armor never wears, since fNpcArmorWearRateMult is {:g}.", theirs);
 		}
+
+		// Said only when fArmorPenaltyStart is below full.
+		const auto start = Condition::Start(Condition::Kind::kArmor);
+		if (start <= 0.0F) {
+			REX::INFO("A piece of armor, yours or an NPC's, protects as new until it breaks, since fArmorPenaltyStart is {:g}, and a broken one at fArmorFloor. Its price still falls from full.",
+				Settings::fArmorPenaltyStart.GetValue());
+		} else if (start < 1.0F) {
+			REX::INFO("A piece of armor, yours or an NPC's, protects as new down to {:.2f} condition, by fArmorPenaltyStart, and below it its protection runs down to fArmorFloor at 0. Its price still falls from full.",
+				start);
+		}
 	}
 
 	// -------------------------------------------------------------------

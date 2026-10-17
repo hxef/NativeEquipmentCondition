@@ -63,7 +63,7 @@ namespace FireRate
 		// of HealthDamage/Curve.h.
 		float Share(float a_health)
 		{
-			return Condition::Share(a_health, Floor());
+			return Condition::Share(a_health, Floor(), Condition::Kind::kWeapon);
 		}
 
 		// Whether fFireRateFloor slows a worn weapon.
@@ -110,7 +110,7 @@ namespace FireRate
 				return;
 			}
 
-			// No entry means full rate, so a weapon at full condition takes the
+			// No entry means full rate, so a weapon at its full rate takes the
 			// entry out.
 			const Reading now{ a_weapon.formID, Share(*a_health) };
 			auto          before = 1.0F;

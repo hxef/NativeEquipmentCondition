@@ -209,7 +209,7 @@ namespace ArmorRating
 
 	float Share(float a_health)
 	{
-		return Condition::Share(a_health, Floor());
+		return Condition::Share(a_health, Floor(), Condition::Kind::kArmor);
 	}
 
 	void Refresh(RE::Actor& a_actor)

@@ -168,6 +168,10 @@ namespace Settings
 	// The same for every NPC's weapons, in place of fWearRateMult.
 	inline Live<float> fNpcWearRateMult{ "Balance", "fNpcWearRateMult", 0.33F };
 
+	// What the wear an automatic weapon takes as it fires or cuts is
+	// multiplied by, on top of either of those, see WeaponWear/Rate.cpp.
+	inline Live<float> fAutoWearRateMult{ "Balance", "fAutoWearRateMult", 1.0F };
+
 	// What the wear rate of the player's armor is multiplied by, see
 	// ArmorWear/Rate.cpp.
 	inline Live<float> fArmorWearRateMult{ "Balance", "fArmorWearRateMult", 1.0F };
@@ -179,9 +183,18 @@ namespace Settings
 	// see HealthDamage/Curve.h.
 	inline Live<float> fDamageFloor{ "Balance", "fDamageFloor", 0.66F };
 
+	// The condition where wear starts to cost a weapon its damage, fire rate,
+	// criticals, accuracy and range, see Condition::Share, and where its jams
+	// can start, see Jam.h.
+	inline Live<float> fWeaponPenaltyStart{ "Balance", "fWeaponPenaltyStart", 1.0F };
+
 	// What a piece of armor at nothing still protects for, as a share of its
 	// full resistances, see ArmorRating.h.
 	inline Live<float> fArmorFloor{ "Balance", "fArmorFloor", 0.66F };
+
+	// The condition where wear starts to cost a piece of armor its
+	// protection, see Condition::Share.
+	inline Live<float> fArmorPenaltyStart{ "Balance", "fArmorPenaltyStart", 1.0F };
 
 	// What a worn item is worth, as its condition raised to this power, see
 	// ItemValue.cpp.
@@ -253,7 +266,7 @@ namespace Settings
 	// setting only takes whole steps.
 	using Number = std::variant<Live<float>*, Live<std::int32_t>*>;
 
-	// The 8 switches under [Features] and the 18 numbers under [Balance] and
+	// The 8 switches under [Features] and the 21 numbers under [Balance] and
 	// [HUD], in NEC.ini's order, for Report and the MCM page.
 	[[nodiscard]] std::span<Live<bool>* const> Switches();
 	[[nodiscard]] std::span<const Number>      Numbers();

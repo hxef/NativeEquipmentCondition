@@ -9,9 +9,10 @@
 // settings keep at 0. The damage type values, energy, radiation and the rest,
 // are added up once per change of clothes and written into the actor values.
 // Install hooks both sums and scales each piece by its condition, a straight
-// line from fArmorFloor at 0 to 1 at full, the same line as the damage. The
-// item cards and the Pip-Boy's paper doll add a piece up in a third place, and
-// Install scales that one too, so the menus show the worn numbers.
+// line from fArmorFloor at 0 to 1 at fArmorPenaltyStart, the shape of the
+// damage line. The item cards and the Pip-Boy's paper doll add a piece up in a
+// third place, and Install scales that one too, so the menus show the worn
+// numbers.
 //
 // The rating is patched at the calls to the visitor: the visitor adds what a
 // piece is worth to its total, and the hook scales what it added, which keeps

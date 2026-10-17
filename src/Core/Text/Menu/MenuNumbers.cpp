@@ -39,6 +39,36 @@ namespace Text
 			{ "zhhans", "武器在状况为0时保留多少伤害。设为1时，损耗不会降低伤害。" },
 		};
 
+		constexpr Line WEAPON_START_NAME[]{
+			{ "en", "Weapon penalties below" },
+			{ "fr", "Malus des armes en dessous de" },
+			{ "de", "Abzüge bei Waffen unter" },
+			{ "it", "Penalità delle armi sotto" },
+			{ "es", "Penalización de armas por debajo de" },
+			{ "esmx", "Penalización de armas por debajo de" },
+			{ "ptbr", "Penalidades das armas abaixo de" },
+			{ "pl", "Kary dla broni poniżej" },
+			{ "ru", "Штрафы оружия ниже" },
+			{ "ja", "武器のペナルティが始まる状態" },
+			{ "zhhant", "武器懲罰開始的狀況" },
+			{ "zhhans", "武器惩罚开始的状况" },
+		};
+
+		constexpr Line WEAPON_START_HELP[]{
+			{ "en", "Below this condition, wear lowers a weapon's damage, fire rate, criticals, accuracy and range. At 0.5, a weapon works as new down to half condition." },
+			{ "fr", "Sous cet état, l'usure réduit les dégâts, la cadence de tir, les critiques, la précision et la portée d'une arme. À 0.5, une arme reste comme neuve jusqu'à la moitié de son état." },
+			{ "de", "Unter diesem Zustand senkt die Abnutzung Schaden, Feuerrate, kritische Treffer, Präzision und Reichweite einer Waffe. Bei 0.5 wirkt eine Waffe bis zum halben Zustand wie neu." },
+			{ "it", "Sotto queste condizioni, l'usura riduce danni, cadenza di fuoco, critici, precisione e portata di un'arma. A 0.5, un'arma funziona come nuova fino a metà condizioni." },
+			{ "es", "Por debajo de este estado, el desgaste reduce el daño, la cadencia, los críticos, la precisión y el alcance de un arma. Con 0.5, funciona como nueva hasta la mitad de su estado." },
+			{ "esmx", "Por debajo de este estado, el desgaste reduce el daño, la cadencia, los críticos, la precisión y el alcance de un arma. Con 0.5, funciona como nueva hasta la mitad de su estado." },
+			{ "ptbr", "Abaixo desta condição, o desgaste reduz o dano, a cadência, os críticos, a precisão e o alcance de uma arma. Com 0.5, ela funciona como nova até metade da condição." },
+			{ "pl", "Poniżej tego stanu zużycie obniża obrażenia, szybkostrzelność, trafienia krytyczne, celność i zasięg broni. Przy 0.5 broń działa jak nowa aż do połowy stanu." },
+			{ "ru", "Ниже этого состояния износ снижает урон, скорострельность, критические атаки, меткость и дальность. При 0.5 оружие как новое до половины состояния." },
+			{ "ja", "この状態を下回ると、消耗で武器のダメージ、発射速度、クリティカル、精度、射程が下がります。0.5では状態が半分になるまで新品同様に使えます" },
+			{ "zhhant", "低於此狀況時，損耗會降低武器的傷害、射速、爆擊、準度與射程。設為0.5時，武器在狀況降到一半前都如同全新。" },
+			{ "zhhans", "低于此状况时，损耗会降低武器的伤害、射速、爆击、准度与射程。设为0.5时，武器在状况降到一半前都如同全新。" },
+		};
+
 		constexpr Line ARMOR_FLOOR_NAME[]{
 			{ "en", "Protection at 0 condition" },
 			{ "fr", "Protection à l'état 0" },
@@ -67,6 +97,36 @@ namespace Text
 			{ "ja", "状態0のアーマーに残る防御力の割合です。1にすると、消耗しても防御力は下がりません" },
 			{ "zhhant", "裝甲在狀況為0時保留多少防護。設為1時，損耗不會降低防護。" },
 			{ "zhhans", "装甲在状况为0时保留多少防护。设为1时，损耗不会降低防护。" },
+		};
+
+		constexpr Line ARMOR_START_NAME[]{
+			{ "en", "Armor penalties below" },
+			{ "fr", "Malus des armures en dessous de" },
+			{ "de", "Abzüge bei Rüstung unter" },
+			{ "it", "Penalità delle armature sotto" },
+			{ "es", "Penalización de armaduras por debajo de" },
+			{ "esmx", "Penalización de armaduras por debajo de" },
+			{ "ptbr", "Penalidades das armaduras abaixo de" },
+			{ "pl", "Kary dla pancerza poniżej" },
+			{ "ru", "Штрафы брони ниже" },
+			{ "ja", "アーマーのペナルティが始まる状態" },
+			{ "zhhant", "裝甲懲罰開始的狀況" },
+			{ "zhhans", "装甲惩罚开始的状况" },
+		};
+
+		constexpr Line ARMOR_START_HELP[]{
+			{ "en", "Below this condition, wear lowers how much armor protects. At 0.5, armor protects as new down to half condition." },
+			{ "fr", "Sous cet état, l'usure réduit la protection d'une armure. À 0.5, une armure protège comme neuve jusqu'à la moitié de son état." },
+			{ "de", "Unter diesem Zustand senkt die Abnutzung den Schutz einer Rüstung. Bei 0.5 schützt eine Rüstung bis zum halben Zustand wie neu." },
+			{ "it", "Sotto queste condizioni, l'usura riduce la protezione di un'armatura. A 0.5, un'armatura protegge come nuova fino a metà condizioni." },
+			{ "es", "Por debajo de este estado, el desgaste reduce la protección de una armadura. Con 0.5, una armadura protege como nueva hasta la mitad de su estado." },
+			{ "esmx", "Por debajo de este estado, el desgaste reduce la protección de una armadura. Con 0.5, una armadura protege como nueva hasta la mitad de su estado." },
+			{ "ptbr", "Abaixo desta condição, o desgaste reduz a proteção de uma armadura. Com 0.5, uma armadura protege como nova até metade da condição." },
+			{ "pl", "Poniżej tego stanu zużycie obniża ochronę pancerza. Przy 0.5 pancerz chroni jak nowy aż do połowy stanu." },
+			{ "ru", "Ниже этого состояния износ снижает защиту брони. При 0.5 броня защищает как новая до половины состояния." },
+			{ "ja", "この状態を下回ると、消耗でアーマーの防御力が下がります。0.5では状態が半分になるまで新品同様に守ります" },
+			{ "zhhant", "低於此狀況時，損耗會降低裝甲的防護。設為0.5時，裝甲在狀況降到一半前都如同全新。" },
+			{ "zhhans", "低于此状况时，损耗会降低装甲的防护。设为0.5时，装甲在状况降到一半前都如同全新。" },
 		};
 
 		constexpr Line VALUE_EXPONENT_NAME[]{
@@ -314,7 +374,9 @@ namespace Text
 
 		constexpr MenuRow ROWS[]{
 			{ &Settings::fDamageFloor, DAMAGE_FLOOR_NAME, DAMAGE_FLOOR_HELP },
+			{ &Settings::fWeaponPenaltyStart, WEAPON_START_NAME, WEAPON_START_HELP },
 			{ &Settings::fArmorFloor, ARMOR_FLOOR_NAME, ARMOR_FLOOR_HELP },
+			{ &Settings::fArmorPenaltyStart, ARMOR_START_NAME, ARMOR_START_HELP },
 			{ &Settings::fValueExponent, VALUE_EXPONENT_NAME, VALUE_EXPONENT_HELP },
 			{ &Settings::fFireRateFloor, FIRE_RATE_FLOOR_NAME, FIRE_RATE_FLOOR_HELP },
 			{ &Settings::fCritMeterFloor, CRIT_METER_FLOOR_NAME, CRIT_METER_FLOOR_HELP },

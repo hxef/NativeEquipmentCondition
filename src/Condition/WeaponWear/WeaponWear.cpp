@@ -53,6 +53,26 @@ namespace WeaponWear
 		} else {
 			REX::INFO("NPC weapons never wear, since fNpcWearRateMult is {:g}.", theirs);
 		}
+
+		// A line only for an automatic speed that changes something.
+		const auto automatic = AutoMult();
+		if (automatic <= 0.0F) {
+			REX::INFO("Automatic weapons, yours and NPCs', never wear as they fire or cut, since fAutoWearRateMult is {:g}. A bash still wears them.",
+				Settings::fAutoWearRateMult.GetValue());
+		} else if (automatic < 1.0F) {
+			REX::INFO("Automatic weapons, yours and NPCs', wear {:g} times as fast as they fire or cut, by fAutoWearRateMult. A bash wears as any other weapon's does.",
+				automatic);
+		}
+
+		// A line only for a start below full, see Condition::Share.
+		const auto start = Condition::Start(Condition::Kind::kWeapon);
+		if (start <= 0.0F) {
+			REX::INFO("A weapon, yours or an NPC's, performs as new until it breaks, since fWeaponPenaltyStart is {:g}, and a broken one at its floors. Its price still falls from full.",
+				Settings::fWeaponPenaltyStart.GetValue());
+		} else if (start < 1.0F) {
+			REX::INFO("A weapon, yours or an NPC's, performs as new down to {:.2f} condition, by fWeaponPenaltyStart, and below it each penalty runs down to its floor at 0. Its price still falls from full.",
+				start);
+		}
 	}
 
 	void MeasureAgain()
@@ -181,7 +201,8 @@ namespace WeaponWear
 
 				// What this weapon costs per use, times how many ordinary uses
 				// this event counts as, see a_scale in WeaponWear.h.
-				const auto amount = Rate(weapon, instance, a_stack.extra.get(), theirs) * scale;
+				const bool bash = std::string_view{ source } == BASH;
+				const auto amount = Rate(weapon, instance, a_stack.extra.get(), theirs, bash) * scale;
 				moved = Condition::Decrease(*a_stack.extra, a_object, amount, source, scale, theirs);
 
 				// The engine's own broken check, run on the health just

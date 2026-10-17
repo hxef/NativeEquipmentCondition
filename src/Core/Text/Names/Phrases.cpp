@@ -6,7 +6,9 @@
 
 // What a setting's sentence says in place of a piece's name, after "no
 // effect on" and after "Still changes" or "Still works for", see
-// SettingLines in Menu/MenuPieces.cpp.
+// SettingLines in Menu/MenuPieces.cpp. A phrase names what its piece
+// changes, such as the fire rate of NPC guns and not the guns alone, since
+// Weapon penalties below names many pieces in 1 sentence.
 namespace Text
 {
 	namespace
@@ -31,33 +33,33 @@ namespace Text
 		};
 
 		constexpr Line PHRASE_FIRE_RATE[]{
-			{ "en", "your guns and blades" },
-			{ "fr", "vos armes à feu et vos lames" },
-			{ "de", "deine Schusswaffen und Klingen" },
-			{ "it", "le tue armi da fuoco e lame" },
-			{ "es", "tus armas de fuego y armas blancas" },
-			{ "esmx", "tus armas de fuego y armas blancas" },
-			{ "ptbr", "suas armas de fogo e lâminas" },
-			{ "pl", "twoja broń palna i ostrza" },
-			{ "ru", "ваше стрелковое оружие и клинки" },
-			{ "ja", "自分の銃と刃物" },
-			{ "zhhant", "你的槍枝和刀刃" },
-			{ "zhhans", "你的枪支和刀刃" },
+			{ "en", "the fire rate of your guns and blades" },
+			{ "fr", "la cadence de vos armes à feu et de vos lames" },
+			{ "de", "die Feuerrate deiner Schusswaffen und Klingen" },
+			{ "it", "la cadenza delle tue armi da fuoco e lame" },
+			{ "es", "la cadencia de tus armas de fuego y armas blancas" },
+			{ "esmx", "la cadencia de tus armas de fuego y armas blancas" },
+			{ "ptbr", "a cadência das suas armas de fogo e lâminas" },
+			{ "pl", "szybkostrzelność twojej broni palnej i ostrzy" },
+			{ "ru", "скорострельность вашего стрелкового оружия и клинков" },
+			{ "ja", "自分の銃と刃物の発射速度" },
+			{ "zhhant", "你的槍枝和刀刃的射速" },
+			{ "zhhans", "你的枪支和刀刃的射速" },
 		};
 
 		constexpr Line PHRASE_NPC_GUNS[]{
-			{ "en", "NPC guns" },
-			{ "fr", "les armes à feu des PNJ" },
-			{ "de", "NPC-Schusswaffen" },
-			{ "it", "le armi da fuoco dei PNG" },
-			{ "es", "las armas de fuego de otros personajes" },
-			{ "esmx", "las armas de fuego de otros personajes" },
-			{ "ptbr", "as armas de fogo dos NPCs" },
-			{ "pl", "broń palna NPC" },
-			{ "ru", "стрелковое оружие NPC" },
-			{ "ja", "NPCの銃" },
-			{ "zhhant", "其他角色的槍枝" },
-			{ "zhhans", "其他角色的枪支" },
+			{ "en", "the fire rate of NPC guns" },
+			{ "fr", "la cadence des armes à feu des PNJ" },
+			{ "de", "die Feuerrate von NPC-Schusswaffen" },
+			{ "it", "la cadenza delle armi da fuoco dei PNG" },
+			{ "es", "la cadencia de las armas de fuego de otros personajes" },
+			{ "esmx", "la cadencia de las armas de fuego de otros personajes" },
+			{ "ptbr", "a cadência das armas de fogo dos NPCs" },
+			{ "pl", "szybkostrzelność broni palnej NPC" },
+			{ "ru", "скорострельность стрелкового оружия NPC" },
+			{ "ja", "NPCの銃の発射速度" },
+			{ "zhhant", "其他角色槍枝的射速" },
+			{ "zhhans", "其他角色枪支的射速" },
 		};
 
 		constexpr Line PHRASE_FIRE_SOUND[]{
@@ -171,33 +173,33 @@ namespace Text
 
 		// Every gun but those that fire once per reload.
 		constexpr Line PHRASE_JAM_SHOT[]{
-			{ "en", "all other guns" },
-			{ "fr", "toutes les autres armes à feu" },
-			{ "de", "alle anderen Schusswaffen" },
-			{ "it", "tutte le altre armi da fuoco" },
-			{ "es", "todas las demás armas de fuego" },
-			{ "esmx", "todas las demás armas de fuego" },
-			{ "ptbr", "todas as outras armas de fogo" },
-			{ "pl", "cała pozostała broń palna" },
-			{ "ru", "все остальное стрелковое оружие" },
-			{ "ja", "ほかのすべての銃" },
-			{ "zhhant", "其他所有槍枝" },
-			{ "zhhans", "其他所有枪支" },
+			{ "en", "jams of all other guns" },
+			{ "fr", "l'enrayage de toutes les autres armes à feu" },
+			{ "de", "Ladehemmungen aller anderen Schusswaffen" },
+			{ "it", "gli inceppamenti di tutte le altre armi da fuoco" },
+			{ "es", "los encasquillamientos de todas las demás armas de fuego" },
+			{ "esmx", "los encasquillamientos de todas las demás armas de fuego" },
+			{ "ptbr", "o emperramento de todas as outras armas de fogo" },
+			{ "pl", "zacięcia całej pozostałej broni palnej" },
+			{ "ru", "заклинивание всего остального стрелкового оружия" },
+			{ "ja", "ほかのすべての銃の弾詰まり" },
+			{ "zhhant", "其他所有槍枝的卡彈" },
+			{ "zhhans", "其他所有枪支的卡弹" },
 		};
 
 		constexpr Line PHRASE_JAM_RELOAD[]{
-			{ "en", "single shot guns" },
-			{ "fr", "les armes monocoup" },
-			{ "de", "Einzelschusswaffen" },
-			{ "it", "le armi a colpo singolo" },
-			{ "es", "las armas de un solo disparo" },
-			{ "esmx", "las armas de un solo disparo" },
-			{ "ptbr", "as armas de tiro único" },
-			{ "pl", "broń jednostrzałowa" },
-			{ "ru", "однозарядное оружие" },
-			{ "ja", "単発銃" },
-			{ "zhhant", "單發槍枝" },
-			{ "zhhans", "单发枪支" },
+			{ "en", "jams of single shot guns" },
+			{ "fr", "l'enrayage des armes monocoup" },
+			{ "de", "Ladehemmungen von Einzelschusswaffen" },
+			{ "it", "gli inceppamenti delle armi a colpo singolo" },
+			{ "es", "los encasquillamientos de las armas de un solo disparo" },
+			{ "esmx", "los encasquillamientos de las armas de un solo disparo" },
+			{ "ptbr", "o emperramento das armas de tiro único" },
+			{ "pl", "zacięcia broni jednostrzałowej" },
+			{ "ru", "заклинивание однозарядного оружия" },
+			{ "ja", "単発銃の弾詰まり" },
+			{ "zhhant", "單發槍枝的卡彈" },
+			{ "zhhans", "单发枪支的卡弹" },
 		};
 
 		// -------------------------------------------------------------------
@@ -234,6 +236,23 @@ namespace Text
 			{ "ja", "近接攻撃による消耗" },
 			{ "zhhant", "近戰損耗" },
 			{ "zhhans", "近战损耗" },
+		};
+
+		// A motor blade's cuts, such as the Ripper's, which wear it whatever
+		// another mod takes.
+		constexpr Line PHRASE_MOTOR_WEAR[]{
+			{ "en", "motor blade wear" },
+			{ "fr", "l'usure des lames à moteur" },
+			{ "de", "Abnutzung von Motorklingen" },
+			{ "it", "l'usura delle lame a motore" },
+			{ "es", "el desgaste de armas blancas con motor" },
+			{ "esmx", "el desgaste de armas blancas con motor" },
+			{ "ptbr", "o desgaste das lâminas motorizadas" },
+			{ "pl", "zużycie ostrzy z silnikiem" },
+			{ "ru", "износ клинков с мотором" },
+			{ "ja", "モーター付き刃物の消耗" },
+			{ "zhhant", "電動刀刃的損耗" },
+			{ "zhhans", "电动刀刃的损耗" },
 		};
 
 		// -------------------------------------------------------------------
@@ -306,6 +325,7 @@ namespace Text
 			{ Piece::kJamReload, PHRASE_JAM_RELOAD },
 			{ Piece::kTraderRepairs, PHRASE_TRADER_REPAIRS },
 			{ Piece::kMeleeWear, PHRASE_MELEE_WEAR },
+			{ Piece::kMotorWear, PHRASE_MOTOR_WEAR },
 			{ Piece::kWornLoot, PHRASE_WORN_LOOT },
 			{ Piece::kWorldLoot, PHRASE_WORLD_LOOT },
 			{ Piece::kModlessLoot, PHRASE_MODLESS_LOOT },

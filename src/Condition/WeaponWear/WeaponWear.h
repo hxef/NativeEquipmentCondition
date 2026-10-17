@@ -42,6 +42,9 @@ namespace WeaponWear
 	// without holding the inventory lock, see ItemCards.h.
 	bool Wear(RE::TESObjectREFR& a_owner, RE::TESObjectWEAP& a_weapon, const char* a_source, float a_scale = 1.0F);
 
+	// The a_source of a bash, which fAutoWearRateMult leaves alone.
+	inline constexpr const char* BASH = "bash";
+
 	// Whether NPC weapons wear at all, false at an fNpcWearRateMult of 0 or
 	// below, so the hooks pass their shots and blows by.
 	bool TheirsWear();

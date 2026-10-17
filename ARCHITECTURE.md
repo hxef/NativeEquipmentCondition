@@ -71,7 +71,7 @@ src/
         Phrases.cpp          what a setting's sentence says in place of a piece's name
       Menu/
         MenuSwitches.cpp     the MCM page's switches: help, and the bug report logs switch's name
-        MenuWear.cpp         the MCM page's wear speeds, yours and NPCs': names and help
+        MenuWear.cpp         the MCM page's wear speeds, yours, NPCs' and automatic weapons': names and help
         MenuNumbers.cpp      the MCM page's other Balance numbers: names and help
         MenuHudLog.cpp       the MCM page's HUD numbers and log level: names and help, and the HUD bar sliders' default
         MenuNotes.cpp        the MCM page's grey lines about parts left to other mods
@@ -79,7 +79,7 @@ src/
     TraceLog.h/.cpp          the trace logs, for lines that arrive in floods
 
   Condition/
-    Condition.h/.cpp         the reading, its bounds, what takes part, the write
+    Condition.h/.cpp         the reading, its bounds, the share a stat keeps, what takes part, the write
     Equipped.h/.cpp          what an actor holds and has on, and writing to the copy in use
     Materials/
       Materials.h/.cpp       what an item is built from, the recipe index and the ordinary make
@@ -244,11 +244,11 @@ every place back as the game runs and never writes game code after it
 installs, see `src/Core/CallPatch/CallPatch.h`.
 
 Weapons and armor are the 2 kinds of item that wear. Each kind is a folder
-under `src/Condition/`, one case in `Condition::WhyNoCondition`, a reader in
-`src/Condition/Equipped.h`, and its own Gameplay features, each a row in
-`src/Features.cpp`. The item cards, the Pip-Boy, the quick container and the
-price read `Condition::Percent` and `Condition::WearsOut`, the CND bars round
-with `Condition::WholePercent`, and none of them ask what kind of item it is.
-The repairs and the roll at the door ask it only where weapons and armor part
-ways, and a sentence that has to name the kind asks `Condition::KindOf`.
-Another kind would be the same again.
+under `src/Condition/`, one case in `Condition::WhyNoCondition`, a start in
+`Condition::Start`, a reader in `src/Condition/Equipped.h`, and its own
+Gameplay features, each a row in `src/Features.cpp`. The item cards, the
+Pip-Boy, the quick container and the price read `Condition::Percent` and
+`Condition::WearsOut`, the CND bars round with `Condition::WholePercent`, and
+none of them ask what kind of item it is. The repairs and the roll at the door
+ask it only where weapons and armor part ways, and a sentence that has to name
+the kind asks `Condition::KindOf`. Another kind would be the same again.

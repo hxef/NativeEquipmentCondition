@@ -5,6 +5,7 @@
 #include "Core/Settings.h"
 #include "Core/TraceLog.h"
 
+#include <algorithm>
 #include <format>
 #include <string>
 
@@ -48,8 +49,7 @@ namespace ArmorWear
 		// fArmorWearRateMult stops at 0, since below it a piece would gain
 		// condition from every blow. An NPC's piece takes
 		// fNpcArmorWearRateMult instead, and its line ends with it.
-		const auto set = (a_theirs ? Settings::fNpcArmorWearRateMult : Settings::fArmorWearRateMult).GetValue();
-		const auto mult = set > 0.0F ? set : 0.0F;
+		const auto mult = std::max(0.0F, (a_theirs ? Settings::fNpcArmorWearRateMult : Settings::fArmorWearRateMult).GetValue());
 		const auto wear = RATE_AT_REFERENCE * mult *
 		                  (a_damage / reference) * (Materials::ReferenceQuality(Condition::Kind::kArmor) / quality);
 

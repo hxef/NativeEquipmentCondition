@@ -34,7 +34,9 @@ namespace Equipped
 
 	// The weapon the actor holds, or nothing when none takes part. Used by the
 	// one bash path that names no weapon (WeaponEvents/Hits.cpp), the console
-	// repair and TryHeldWeapon.
+	// repair and TryHeldWeapon. The bash path reads an NPC with it as well,
+	// under the read lock on the hit's own thread, as ArmorEvents reads the
+	// target.
 	// WearsOut keeps grenades and mines out, so a rifle wins over the grenades
 	// carried beside it.
 	RE::TESObjectWEAP* Weapon(RE::Actor* a_actor);
@@ -66,7 +68,7 @@ namespace Equipped
 	// TryWeaponHealth. Nothing while the inventory is busy.
 	std::optional<HeldWeapon> TryHeldWeapon(RE::Actor* a_actor);
 
-	// One piece of armor an actor has on or carries.
+	// A piece of armor an actor has on or carries.
 	struct ArmorPiece
 	{
 		RE::TESObjectARMO* armor{ nullptr };
@@ -95,9 +97,9 @@ namespace Equipped
 	// Every stack of armor the actor carries, on or not, that takes no part but
 	// still holds a health, which an older NEC wrote before such gear was left
 	// out, in inventory order. One at 0 cannot go back on, so carried ones
-	// count too. Power armor pieces never count, since their health is the
-	// game's own, and an actor in power armor has none. For the console repair,
-	// which takes that health off.
+	// count too, also while the actor is in power armor. Power armor pieces
+	// never count, since their health is the game's own. For the console
+	// repair, which takes that health off.
 	std::vector<ArmorPiece> LeftoverPieces(RE::Actor* a_actor);
 
 	// ArmorPieces for a caller outside the engine's own code path, see
@@ -105,9 +107,9 @@ namespace Equipped
 	std::optional<std::vector<ArmorPiece>> TryArmorPieces(RE::Actor* a_actor);
 
 	// Whether this copy of an item is the holder's own from the editor, from
-	// their outfit or a plain or leveled line of their record's inventory. A
-	// copy handed to them never is, even one of the same kind. Read under the
-	// inventory lock.
+	// their outfit or a plain or leveled line of their record's inventory, a
+	// template's lines included. A copy handed to them never is, even one of
+	// the same kind. Read under the inventory lock.
 	bool Issued(const RE::Actor& a_holder, const RE::TESBoundObject& a_object, const RE::ExtraDataList* a_extra);
 
 	// Picks the equipped stack out of the ones the engine walks, for a writer.
@@ -130,7 +132,8 @@ namespace Equipped
 	// the entry, asks a_find which stack, splits off one copy with the equipped
 	// flags when the stack holds more, hands the copy to a_write, merges what
 	// became identical and tells the game the inventory changed, all under the
-	// inventory lock, which is released when this returns.
+	// inventory lock the engine takes as a reader. A caller may already hold
+	// it as a writer, see Copy.h.
 	void WriteStack(RE::TESObjectREFR& a_owner, RE::TESBoundObject& a_object,
 		RE::BGSInventoryItem::StackDataCompareFunctor& a_find, RE::BGSInventoryItem::StackDataWriteFunctor& a_write);
 

@@ -140,8 +140,8 @@ LITTLE EXTRAS
 * A console command for testing: "srm" brings the weapon in hand back to
   full, and "srm 25" sets it to 25%, any number from 0 to 100. Add armor, as
   in "srm armor" or "srm 25 armor", for every piece you have on that wears.
-  It also brings a ring, hat or other gear that gives nothing back to full if
-  it still holds a condition.
+  It also takes the condition off any ring, hat or other gear you carry that
+  gives nothing, so it reads as full again.
 
 MAKE IT YOURS
 * With MCM, NEC's page changes any setting on the spot. Switch off jamming,

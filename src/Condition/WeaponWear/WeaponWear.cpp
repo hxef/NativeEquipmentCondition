@@ -4,6 +4,7 @@
 #include "Condition/Equipped.h"
 #include "Condition/WeaponWear/Copy.h"
 #include "Condition/WeaponWear/Rate.h"
+#include "Core/Settings.h"
 #include "Core/TraceLog.h"
 
 #include <cstdint>
@@ -45,6 +46,13 @@ namespace WeaponWear
 		} else {
 			REX::INFO("Your weapon is put away once it wears out, and the game says \"{:s}\". An NPC's stays in their hands.", message);
 		}
+
+		const auto theirs = Settings::fNpcWearRateMult.GetValue();
+		if (TheirsWear()) {
+			REX::INFO("NPC weapons wear at fNpcWearRateMult {:g}.", theirs);
+		} else {
+			REX::INFO("NPC weapons never wear, since fNpcWearRateMult is {:g}.", theirs);
+		}
 	}
 
 	void MeasureAgain()
@@ -85,20 +93,47 @@ namespace WeaponWear
 			return const_cast<RE::TESObjectWEAP::Data*>(&weapon.weaponData);
 		}
 
+		// Picks the equipped stack as Equipped::EquippedStack does, and asks
+		// there whether it is the keeper's own, see Equipped::Issued. The copy
+		// the engine splits off a stack of 2 or more need not carry every
+		// entry Issued reads, so the stack they hold is asked before the split.
+		class KeptStack final :
+			public RE::BGSInventoryItem::StackDataCompareFunctor
+		{
+		public:
+			KeptStack(const RE::Actor* a_keeper, const RE::TESBoundObject& a_object) noexcept :
+				keeper(a_keeper),
+				object(&a_object)
+			{}
+
+			bool CompareData(const RE::BGSInventoryItem::Stack& a_stack) override
+			{
+				if (!equipped.CompareData(a_stack)) {
+					return false;
+				}
+				kept = keeper && Equipped::Issued(*keeper, *object, a_stack.extra.get());
+				return true;
+			}
+
+			Equipped::EquippedStack   equipped;
+			const RE::Actor*          keeper;
+			const RE::TESBoundObject* object;
+			bool                      kept{ false };
+		};
+
 		// Wears down the one stack the engine hands it, and remembers whether
 		// the health changed. The engine has already split the stack if it held
-		// more than one item, see Equipped::WriteEquipped, so the weapon in
-		// hand and the weapon that wears stay the same one. keeper is the
-		// essential NPC holding it, or null.
+		// more than one item, see Equipped::WriteStack, so the weapon in
+		// hand and the weapon that wears stay the same one.
 		class WearStack final :
 			public RE::BGSInventoryItem::StackDataWriteFunctor
 		{
 		public:
-			WearStack(const char* a_source, float a_scale, bool a_theirs, const RE::Actor* a_keeper) noexcept :
+			WearStack(const char* a_source, float a_scale, bool a_theirs, const KeptStack& a_find) noexcept :
 				source(a_source),
 				scale(a_scale),
 				theirs(a_theirs),
-				keeper(a_keeper)
+				find(&a_find)
 			{}
 
 			void WriteDataImpl(RE::TESBoundObject& a_object, RE::BGSInventoryItem::Stack& a_stack) override
@@ -128,7 +163,7 @@ namespace WeaponWear
 
 				// An essential NPC's own weapon never wears, the rule
 				// ArmorEvents.h gives their own armor.
-				if (keeper && Equipped::Issued(*keeper, a_object, a_stack.extra.get())) {
+				if (find->kept) {
 					TraceLog::Npc::Line("wear", "{:s} [{:08X}] is their own and they are essential, so no wear", name, a_object.formID);
 					return;
 				}
@@ -158,7 +193,7 @@ namespace WeaponWear
 			const char*      source;
 			float            scale;
 			bool             theirs;
-			const RE::Actor* keeper;
+			const KeptStack* find;
 			bool             moved{ false };
 			bool             broke{ false };
 		};
@@ -199,9 +234,9 @@ namespace WeaponWear
 				equipment->UnequipObject(holder, &instance, 1, nullptr, Equipped::ANY_STACK,
 					false, false, true, false, nullptr);
 
-				// Only the player is told, since only the player sees the
-				// message in the corner of the screen. The setting's text ends
-				// in a 0 byte, so data() is safe to pass on.
+				// The message is for the player, whose weapon alone comes
+				// here, see Wear. The setting's text ends in a 0 byte, so
+				// data() is safe to pass on.
 				const auto message = BreakMessage();
 				if (holder == RE::PlayerCharacter::GetSingleton() && !message.empty()) {
 					RE::SendHUDMessage::ShowHUDMessage(message.data(), nullptr, true, false);
@@ -216,8 +251,10 @@ namespace WeaponWear
 	Worn WearCopy(RE::TESObjectREFR& a_owner, RE::TESObjectWEAP& a_weapon, const char* a_source, float a_scale, bool a_theirs,
 		const RE::Actor* a_keeper)
 	{
-		WearStack  wear{ a_source, a_scale, a_theirs, a_keeper };
-		const auto count = Equipped::WriteEquipped(a_owner, a_weapon, wear);
+		KeptStack find{ a_keeper, a_weapon };
+		WearStack wear{ a_source, a_scale, a_theirs, find };
+		Equipped::WriteStack(a_owner, a_weapon, find, wear);
+		const auto count = find.equipped.count;
 
 		// A split that leaves the health unchanged merges straight back, so
 		// only a change is worth reporting.

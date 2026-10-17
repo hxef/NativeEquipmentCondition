@@ -34,10 +34,12 @@ namespace LogFiles
 
 	// A log this big moves along within 1 game start, a guard against a
 	// runaway log. Measured over a 32 minute start with the bug report logs
-	// on: NEC.log 28 KB, NEC.npc.trace.log 2 KB, NEC.trace.log 167 KB and
-	// NEC.ui.trace.log 304 KB.
+	// on: NEC.log 28 KB, NEC.trace.log 167 KB and NEC.ui.trace.log 304 KB.
+	// NEC.npc.trace.log takes about 0.8 KB for each NPC shot or blow that
+	// wears, so a big fight writes a few MB. A move runs while the line is
+	// written, sometimes inside an NPC's inventory write, so it should be rare.
 	inline constexpr std::size_t MAIN_SIZE = 2 * MB;
-	inline constexpr std::size_t NPC_TRACE_SIZE = 2 * MB;
+	inline constexpr std::size_t NPC_TRACE_SIZE = 10 * MB;
 	inline constexpr std::size_t GAME_TRACE_SIZE = 10 * MB;
 	inline constexpr std::size_t UI_TRACE_SIZE = 10 * MB;
 

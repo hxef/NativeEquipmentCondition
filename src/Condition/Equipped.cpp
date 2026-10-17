@@ -24,13 +24,13 @@ namespace Equipped
 		}
 
 		// Every equipped stack of every piece of armor a_takes picks, see
-		// ArmorPieces, or every stack with a_carried.
+		// ArmorPieces, or every stack with a_carried, in power armor too.
 		template <class Takes>
 		std::vector<ArmorPiece> Pieces(RE::Actor* a_actor, Takes a_takes, bool a_carried = false)
 		{
 			std::vector<ArmorPiece> found;
 			auto*                   inv = a_actor ? a_actor->inventoryList : nullptr;
-			if (!inv || RE::PowerArmor::ActorInPowerArmor(*a_actor)) {
+			if (!inv || (!a_carried && RE::PowerArmor::ActorInPowerArmor(*a_actor))) {
 				return found;
 			}
 
@@ -189,9 +189,14 @@ namespace Equipped
 		// has to name the holder's own outfit. An item from a plain line of
 		// the record's own inventory has no tag, so its kind is matched
 		// instead. One from a leveled line carries that list's form ID, which
-		// the player's hands take off. None has an owner, and whatever the
-		// player hands a companion has one, the player or whoever it was
-		// stolen from.
+		// the game takes off once the player gets the item. None has an
+		// owner, and whatever the player hands a companion has one, the
+		// player or whoever it was stolen from.
+		//
+		// A character who takes their inventory from a template needs no walk
+		// here. The game copies the template's lines and outfits onto the
+		// record at load, and onto the copy it makes of a leveled character
+		// as it spawns, and fills the inventory from that record.
 		const auto* npc = a_holder.GetNPC();
 		if (!npc || (a_extra && a_extra->HasType(RE::EXTRA_DATA_TYPE::kOwnership))) {
 			return false;

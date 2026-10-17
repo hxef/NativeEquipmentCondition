@@ -259,8 +259,7 @@ namespace WeaponWear
 
 	float NpcMult()
 	{
-		const auto mult = Settings::fNpcWearRateMult.GetValue();
-		return mult > 0.0F ? mult : 0.0F;
+		return std::max(0.0F, Settings::fNpcWearRateMult.GetValue());
 	}
 
 	float Rate(const RE::TESObjectWEAP& a_weapon, const RE::TESObjectWEAP::InstanceData& a_instance,
@@ -291,8 +290,7 @@ namespace WeaponWear
 		// damage per shot decides how fast that runs out.
 		// fWearRateMult stops at 0, since below it a gun would gain condition
 		// as it fires. An NPC's weapon takes fNpcWearRateMult instead.
-		const auto own = Settings::fWearRateMult.GetValue();
-		const auto mult = a_theirs ? NpcMult() : (own > 0.0F ? own : 0.0F);
+		const auto mult = std::max(0.0F, (a_theirs ? Settings::fNpcWearRateMult : Settings::fWearRateMult).GetValue());
 		const auto wear = RATE_AT_REFERENCE * mult *
 		                  (damage / g_referenceDamage.load()) * (Materials::ReferenceQuality(Condition::Kind::kWeapon) / quality) * pace;
 

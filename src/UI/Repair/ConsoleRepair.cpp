@@ -88,7 +88,7 @@ namespace ConsoleRepair
 			return out;
 		}
 
-		// One item the command sets, with the health it had and the copies in
+		// An item the command sets, with the health it had and the copies in
 		// its stack. why is the reason a piece from Equipped::LeftoverPieces
 		// takes no part, and null for one that wears.
 		struct Target
@@ -111,11 +111,12 @@ namespace ConsoleRepair
 				if (Condition::HealthOf(&a_stack) < 0.0F) {
 					return false;
 				}
-				count = a_stack.count;
+				found = true;
 				return true;
 			}
 
-			std::uint32_t count{ 0 };
+			// Whether a stack was picked.
+			bool found{ false };
 		};
 
 		// The weapon in hand, or every piece of armor worn that takes part and
@@ -169,7 +170,7 @@ namespace ConsoleRepair
 			for (; cleared < a_target.count; ++cleared) {
 				HoldsHealth find;
 				Restore::Clear(a_player, *a_target.object, find);
-				if (find.count == 0) {
+				if (!find.found) {
 					break;
 				}
 			}

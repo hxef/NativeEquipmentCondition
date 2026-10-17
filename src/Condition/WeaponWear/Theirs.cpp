@@ -91,19 +91,19 @@ namespace WeaponWear
 
 		// Wears the copy now, or says the inventory is busy. a_late is the
 		// header of a block for a wear that waited, opened once the lock is
-		// taken. It is worded before, so the holder's name is not looked up
-		// under the lock.
+		// taken or when they have no inventory. It is worded before, so the
+		// holder's name is not looked up under the lock.
 		Tried TryWear(RE::Actor& a_owner, RE::TESObjectWEAP& a_weapon, const char* a_source, float a_scale, std::string_view a_late)
 		{
 			auto* inv = a_owner.inventoryList;
-			if (!inv) {
-				return Tried::kNotHeld;
-			}
-			if (!inv->rwLock.try_lock_write()) {
+			if (inv && !inv->rwLock.try_lock_write()) {
 				return Tried::kBusy;
 			}
 			if (!a_late.empty()) {
 				TraceLog::Npc::Begin("LATE", "{:s}", a_late);
+			}
+			if (!inv) {
+				return Tried::kNotHeld;
 			}
 			const auto* keeper = a_owner.boolFlags.all(RE::Actor::BOOL_FLAGS::kEssential) ? &a_owner : nullptr;
 			const auto  worn = WearCopy(a_owner, a_weapon, a_source, a_scale, true, keeper);
@@ -140,8 +140,8 @@ namespace WeaponWear
 			if (++a_owed.tries < MOST_TRIES) {
 				return false;
 			}
-			REX::WARN("The inventory of {:s} [{:08X}] stayed busy through {:d} tries, so the {:s} wear on {:s} [{:08X}] is dropped.",
-				owner->GetDisplayFullName(), owner->formID, a_owed.tries, a_owed.source, name, a_owed.weapon->formID);
+			REX::WARN("The inventory of {:s} stayed busy through {:d} tries, so the wear ({:s}) on {:s} [{:08X}] is dropped.",
+				TraceLog::Who{ owner }, a_owed.tries, a_owed.source, name, a_owed.weapon->formID);
 			return true;
 		}
 
@@ -199,7 +199,7 @@ namespace WeaponWear
 			TraceLog::Npc::Line("wear", "their inventory is busy, so the wear waits for a later try");
 			const auto             handle = a_owner.GetHandle();
 			const std::scoped_lock l{ g_owedLock };
-			Owe({ handle, a_owner.formID, &a_weapon, a_source, a_scale, 1 });
+			Owe({ .owner = handle, .ownerID = a_owner.formID, .weapon = &a_weapon, .source = a_source, .scale = a_scale, .tries = 1 });
 		}
 		SettleSoon();
 	}

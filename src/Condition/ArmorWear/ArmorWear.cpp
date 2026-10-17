@@ -24,10 +24,13 @@ namespace ArmorWear
 		if (blows > 0.0F) {
 			REX::INFO("Your armor wears from the blows that land on it, about {:.0f} blows of an ordinary weapon from new to broken. A piece at 0 stays on until it is taken off, and goes back on only once repaired.",
 				blows);
-		} else if (theirs > 0.0F) {
-			REX::INFO("Your armor never wears, since fArmorWearRateMult is {:g}. NPC armor still wears, at fNpcArmorWearRateMult {:g}.", own, theirs);
 		} else {
-			REX::INFO("No armor wears, since fArmorWearRateMult is {:g} and fNpcArmorWearRateMult is {:g}.", own, theirs);
+			REX::INFO("Your armor never wears, since fArmorWearRateMult is {:g}.", own);
+		}
+		if (theirs > 0.0F) {
+			REX::INFO("NPC armor wears at fNpcArmorWearRateMult {:g}.", theirs);
+		} else {
+			REX::INFO("NPC armor never wears, since fNpcArmorWearRateMult is {:g}.", theirs);
 		}
 	}
 

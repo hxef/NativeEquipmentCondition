@@ -43,6 +43,8 @@ namespace WeaponEvents
 		// the rounds of an ordinary shot add up to 1: a shotgun's pellets
 		// share it out, a Gauss rifle's round carries the share of a full
 		// charge it was held to, and a Laser Musket's round 1 for every crank.
+		// Only the shooter's own event counts, so a weapon another DLL mod
+		// fires from inside that Fire never adds to the shot.
 		class ShotSink : public RE::BSTEventSink<RE::WeaponFiredEvent>
 		{
 		public:
@@ -51,7 +53,7 @@ namespace WeaponEvents
 		private:
 			RE::BSEventNotifyControl ProcessEvent(const RE::WeaponFiredEvent& a_event, RE::BSTEventSource<RE::WeaponFiredEvent>*) override
 			{
-				if (!t_shot || !a_event.projectiles) {
+				if (!t_shot || !a_event.projectiles || a_event.source.get() != t_shooter) {
 					return RE::BSEventNotifyControl::kContinue;
 				}
 

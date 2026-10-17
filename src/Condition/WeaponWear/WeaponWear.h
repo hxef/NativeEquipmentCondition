@@ -34,7 +34,7 @@ namespace WeaponWear
 	const char* WhyNoCondition(const RE::TESObjectWEAP& a_weapon);
 
 	// Wears down the player's equipped copy of a weapon, and that copy alone,
-	// see Equipped::WriteEquipped.
+	// see Equipped::WriteStack.
 	//
 	// a_scale multiplies what this one event costs: above 1 for a bash and a
 	// power attack, and for a shot the power its rounds carried, below 1 for a
@@ -50,7 +50,7 @@ namespace WeaponWear
 	// log. It never waits for their inventory: while it is busy the wear
 	// waits and is tried again at the next shot or blow of anybody, see
 	// Theirs.cpp. It is dropped only when they are gone or no longer hold the
-	// weapon, after 100 busy tries, or when the game ends with a save load, a
+	// weapon, after many busy tries, or when the game ends with a save load, a
 	// new game, the main menu or a full reset. An essential NPC's own weapon
 	// from the editor keeps its condition, see Equipped::Issued, and a weapon
 	// worn to 0 stays in their hands: the game only refuses to equip it again.

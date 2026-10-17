@@ -38,6 +38,15 @@ namespace LogFiles
 		constexpr const char* MAIN_LOGGER = "global";
 		constexpr const char* MAIN_PATTERN = "[%T.%e] [%=5t] [%L] %v";
 
+		// Tries to open a file and the wait between them, as spdlog makes, for
+		// a file another program holds for a moment.
+		constexpr int          OPEN_TRIES = 5;
+		constexpr unsigned int OPEN_WAIT_MS = 10;
+
+		// The wait before a refused rename is tried again. Windows can refuse
+		// one for a moment, for example while an antivirus reads the file.
+		constexpr unsigned int RENAME_WAIT_MS = 100;
+
 		// -------------------------------------------------------------------
 		// The file sink
 		// -------------------------------------------------------------------
@@ -114,15 +123,14 @@ namespace LogFiles
 				void operator()(std::FILE* a_file) const noexcept { std::fclose(a_file); }
 			};
 
-			// Opens the file to add to it, emptied first when a_empty. 5
-			// tries 10 ms apart, as spdlog makes, for a file another program
-			// holds for a moment.
+			// Opens the file to add to it, emptied first when a_empty, see
+			// OPEN_TRIES.
 			void Reopen(bool a_empty)
 			{
 				file.reset();
-				for (int tries = 0; tries < 5; ++tries) {
+				for (int tries = 0; tries < OPEN_TRIES; ++tries) {
 					if (tries > 0) {
-						spdlog::details::os::sleep_for_millis(10);
+						spdlog::details::os::sleep_for_millis(OPEN_WAIT_MS);
 					}
 					std::error_code error;
 					std::filesystem::create_directories(path.parent_path(), error);
@@ -177,9 +185,7 @@ namespace LogFiles
 					if (Move(from, to)) {
 						continue;
 					}
-					// Windows can refuse a rename for a moment, for example
-					// while an antivirus reads the file.
-					spdlog::details::os::sleep_for_millis(100);
+					spdlog::details::os::sleep_for_millis(RENAME_WAIT_MS);
 					if (!Move(from, to)) {
 						// Read before the reopen below can change it.
 						why = errno;

@@ -20,7 +20,7 @@ namespace WeaponWear
 	// a_theirs for an NPC's copy, see WearTheirs there, and a_keeper the
 	// essential NPC holding it, or null. The engine's walk inside takes the
 	// inventory lock as a reader, so a caller may hold it as a writer, as
-	// TryWear in Theirs.cpp does. Call PutAway only once the lock is let go.
+	// TryWear in Theirs.cpp does.
 	Worn WearCopy(RE::TESObjectREFR& a_owner, RE::TESObjectWEAP& a_weapon, const char* a_source, float a_scale, bool a_theirs,
 		const RE::Actor* a_keeper);
 }

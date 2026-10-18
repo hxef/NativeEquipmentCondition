@@ -17,6 +17,6 @@ namespace Pipboy
 
 	// Notes whether the item this Pip-Boy entry stands for has worn out, by its
 	// number, since a flag of our own would never reach the menu. ItemCard
-	// calls this while the game builds the entry, worn out or not.
-	void MarkBroken(const RE::PipboyObject& a_entry, bool a_broken);
+	// calls this while the game builds the entry for a_stack, worn out or not.
+	void MarkBroken(const RE::PipboyObject& a_entry, const RE::BGSInventoryItem::Stack* a_stack, bool a_broken);
 }

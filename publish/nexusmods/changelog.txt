@@ -1,7 +1,8 @@
-1.4.8
+1.4.9
 * Repairs and wear no longer go by a recipe that crafts the item itself, which another mod like Crafting Mastery 2 can add. Gear with no scrap recipe costs and wears like other gear of its kind.
 * Weapons and armor the game or another mod adds to a scrap list while you play, like Automatron's Tesla rifle, now cost and wear by that list's recipe.
-* With another DLL mod taking over some of NEC's work, the MCM page names each part once.
+* In a long session, broken items no longer lose their fade in the Pip-Boy lists.
+* The MCM page no longer names a part another DLL mod took over twice.
 * MCM help lines are shorter, so they fit the page.
 
 1.4.6

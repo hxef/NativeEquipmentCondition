@@ -7,10 +7,11 @@
 #include <array>
 #include <cstdint>
 #include <limits>
+#include <map>
 #include <mutex>
 #include <string>
 #include <string_view>
-#include <unordered_set>
+#include <unordered_map>
 
 namespace Pipboy
 {
@@ -37,20 +38,38 @@ namespace Pipboy
 		constexpr std::uint32_t NO_ROW = std::numeric_limits<std::uint32_t>::max();
 
 		// How many worn out items are worth remembering. The Pip-Boy numbers
-		// every value it makes and never reuses a number, so each rebuild
-		// leaves the last one's numbers behind. Past this the whole list is
-		// cleared and the next rebuild fills it again.
+		// every value it makes and never reuses a number. A stack listed again
+		// gives up its old number, but a stack that is gone leaves its number
+		// behind. Past this the oldest numbers are dropped.
 		constexpr std::size_t MAX_REMEMBERED = 4096;
 
-		// The numbers of the items that have worn out. Written on the Pip-Boy's
-		// rebuild thread and read on the menu's, so both go through the lock.
-		std::mutex                        g_wornLock;
-		std::unordered_set<std::uint32_t> g_worn;
+		// The numbers of the items that have worn out, each with the address
+		// of the stack it was listed for (0 for none), and each worn out
+		// stack's current number. An address is only a key and is never read
+		// through. Written on the Pip-Boy's rebuild thread and read on the
+		// menu's, so all of it goes through the lock.
+		std::mutex                                        g_wornLock;
+		std::map<std::uint32_t, std::uintptr_t>           g_worn;
+		std::unordered_map<std::uintptr_t, std::uint32_t> g_listed;
 
 		[[nodiscard]] bool IsWorn(std::uint32_t a_node)
 		{
 			const std::scoped_lock lock{ g_wornLock };
 			return g_worn.contains(a_node);
+		}
+
+		// Drops a number, and its stack's key when the key still points to it.
+		// The caller holds the lock.
+		void Forget(std::uint32_t a_node)
+		{
+			const auto worn = g_worn.find(a_node);
+			if (worn == g_worn.end()) {
+				return;
+			}
+			if (const auto listed = g_listed.find(worn->second); listed != g_listed.end() && listed->second == a_node) {
+				g_listed.erase(listed);
+			}
+			g_worn.erase(worn);
 		}
 
 		// A member as a whole number, whichever number type it is kept in, or
@@ -227,22 +246,32 @@ namespace Pipboy
 		FrameListener g_frameListener;
 	}
 
-	void MarkBroken(const RE::PipboyObject& a_entry, bool a_broken)
+	void MarkBroken(const RE::PipboyObject& a_entry, const RE::BGSInventoryItem::Stack* a_stack, bool a_broken)
 	{
 		const std::scoped_lock lock{ g_wornLock };
 
+		// A listing first drops every old row of the item, so the number the
+		// stack had before is shown nowhere now.
+		const auto stack = reinterpret_cast<std::uintptr_t>(a_stack);
+		if (const auto listed = g_listed.find(stack); listed != g_listed.end()) {
+			Forget(listed->second);
+		}
+		Forget(a_entry.m_id);
+
 		if (!a_broken) {
-			g_worn.erase(a_entry.m_id);
 			return;
 		}
 
-		// Numbers from earlier rebuilds are never asked about again, so past a
-		// generous limit the whole list is cleared and the next rebuild fills
-		// it in.
-		if (g_worn.size() >= MAX_REMEMBERED) {
-			g_worn.clear();
+		g_worn.emplace(a_entry.m_id, stack);
+		if (stack != 0) {
+			g_listed[stack] = a_entry.m_id;
 		}
-		g_worn.insert(a_entry.m_id);
+
+		// The numbers only grow, so the smallest belong to the oldest
+		// listings.
+		if (g_worn.size() > MAX_REMEMBERED) {
+			Forget(g_worn.begin()->first);
+		}
 	}
 
 	void OnMovieLoaded(Scaleform::GFx::Movie& a_movie, std::string_view a_file)

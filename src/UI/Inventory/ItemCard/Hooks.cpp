@@ -131,7 +131,7 @@ namespace ItemCard
 			// Pipboy::MarkBroken keeps the number of a worn out one to fade its
 			// name. It runs either way, since a repaired item needs its number
 			// forgotten.
-			Pipboy::MarkBroken(*a_data, a_stack && a_stack->extra && a_stack->extra->IsItemBroken());
+			Pipboy::MarkBroken(*a_data, a_stack, a_stack && a_stack->extra && a_stack->extra->IsItemBroken());
 
 			// The call above created this array from scratch, so its order is
 			// still free to change.

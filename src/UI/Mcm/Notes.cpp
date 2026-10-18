@@ -11,7 +11,6 @@
 #include <bitset>
 #include <cstddef>
 #include <format>
-#include <functional>
 #include <iterator>
 #include <optional>
 #include <span>
@@ -25,9 +24,10 @@
 // <key>:Free for its row and <key>:Note for its note, a number 1, <key>:Note,
 // and the list 1, parts:Note. MCM has 30 a page and 27 are used, 1 by the HUD
 // bar sliders, see HudBar.cpp. Each note is worked out from SettingLinks and
-// CallPatch's losses, so a setting needs no code of its own here. MCM asks
-// once a pause menu visit, after NEC's recheck as the menu opens. NEC.log
-// keeps every line the page leaves out.
+// CallPatch's losses, so a setting needs no code of its own here. A piece left
+// to a mod is named once: in the note of a block that works through it, else
+// in the list at the top. MCM asks once a pause menu visit, after NEC's
+// recheck as the menu opens. NEC.log keeps every line the page leaves out.
 namespace Mcm
 {
 	namespace
@@ -47,96 +47,7 @@ namespace Mcm
 		constexpr std::size_t MOST_OWNER_LINES = 8;
 
 		// -------------------------------------------------------------------
-		// The cap on a grey row
-		// -------------------------------------------------------------------
-
-		// MCM's list is 450 px tall, and with NEC's page in None mode, see
-		// Layout.cpp, a row taller than that never shows: at most 18
-		// lines of 24.8 px, or 21 lines of Japanese or Chinese at 21 px. The
-		// cap keeps 1 line under each, so 17 and 20. A line is counted as so
-		// many characters a line, by language. Checked on about 10000 of NEC's
-		// rows against the widths of the game's fonts, that count was never
-		// below the lines a row wraps to.
-		struct Fit
-		{
-			std::string_view code;
-			std::size_t      perLine;
-			std::size_t      budget;
-		};
-
-		constexpr Fit FITS[]{
-			{ "en", 62, 17 },
-			{ "fr", 64, 17 },
-			{ "de", 58, 17 },
-			{ "it", 66, 17 },
-			{ "es", 62, 17 },
-			{ "esmx", 62, 17 },
-			{ "ptbr", 62, 17 },
-			{ "pl", 60, 17 },
-			{ "ru", 54, 17 },
-			{ "ja", 27, 20 },
-			{ "zhhant", 26, 20 },
-			{ "zhhans", 26, 20 },
-		};
-
-		// The player's language's row, or English's.
-		const Fit& FitNow()
-		{
-			const auto language = Text::Language();
-			const auto it = std::ranges::find(FITS, language, &Fit::code);
-			return it != std::end(FITS) ? *it : FITS[0];
-		}
-
-		// The lines a_line takes, from its characters before html escaping.
-		// A character of 2 to 4 bytes counts once, so Cyrillic and Chinese
-		// count right.
-		std::size_t LinesOf(std::string_view a_line, const Fit& a_fit)
-		{
-			const auto characters = static_cast<std::size_t>(
-				std::ranges::count_if(a_line, [](char a_byte) { return (static_cast<unsigned char>(a_byte) & 0xC0) != 0x80; }));
-			return std::max<std::size_t>(1, (characters + a_fit.perLine - 1) / a_fit.perLine);
-		}
-
-		// Builds line a_line again in a_room lines or fewer, or nothing where
-		// it has no such form.
-		using Shorter = std::function<std::optional<std::string>(std::size_t a_line, std::size_t a_room)>;
-
-		// a_lines whole while they fit. Else the lines from the first while
-		// they fit in all but 1 line, the first that does not fit in its
-		// a_shorter form where it has one that fits, always the first line,
-		// then the line saying NEC.log names the rest.
-		std::vector<std::string> Capped(std::vector<std::string> a_lines, const Shorter& a_shorter = {})
-		{
-			const auto& fit = FitNow();
-			std::size_t used = 0;
-			for (const auto& line : a_lines) {
-				used += LinesOf(line, fit);
-			}
-			if (used <= fit.budget) {
-				return a_lines;
-			}
-			std::vector<std::string> kept;
-			used = 0;
-			for (std::size_t i = 0; i < a_lines.size(); i++) {
-				const auto lines = LinesOf(a_lines[i], fit);
-				if (used + lines < fit.budget) {
-					used += lines;
-					kept.push_back(std::move(a_lines[i]));
-					continue;
-				}
-				if (auto shorter = a_shorter ? a_shorter(i, fit.budget - 1 - used) : std::nullopt) {
-					kept.push_back(std::move(*shorter));
-				} else if (kept.empty()) {
-					kept.push_back(std::move(a_lines[i]));
-				}
-				break;
-			}
-			kept.push_back(Text::MenuNoteRest());
-			return kept;
-		}
-
-		// -------------------------------------------------------------------
-		// The rows
+		// The block notes
 		// -------------------------------------------------------------------
 
 		// One of the feature switches by its key, bJam.
@@ -174,21 +85,71 @@ namespace Mcm
 			return members;
 		}
 
+		// A piece a grey line names as left to an owner.
+		struct Left
+		{
+			Piece            piece;
+			CallPatch::Owner owner;
+
+			bool operator==(const Left&) const = default;
+		};
+
+		// What the line of a_cause names, as Text::PartLines words it: its
+		// pieces with each mod among the owners, or with this game version
+		// where no mod is, and with the mods the pieces of the part it waits
+		// on, as "since Gun wear from firing is left to" names them.
+		std::vector<Left> NamesOf(const CallPatch::Loss& a_loss, const CallPatch::Cause& a_cause)
+		{
+			const bool mods = std::ranges::any_of(a_cause.owners, &CallPatch::Owner::IsMod);
+			auto       pieces = a_cause.pieces;
+			if (mods && a_cause.part != a_loss.part) {
+				std::ranges::copy(a_cause.taken, std::back_inserter(pieces));
+			}
+			std::vector<Left> names;
+			for (const auto& owner : a_cause.owners) {
+				if (mods && !owner.IsMod()) {
+					continue;
+				}
+				for (const auto piece : pieces) {
+					names.push_back(Left{ piece, owner });
+				}
+			}
+			return names;
+		}
+
+		// A block's note and what its part lines name, of the lines it shows.
+		struct Block
+		{
+			std::vector<std::string> lines;
+			std::vector<Left>        left;
+		};
+
 		// A block's note: the line of a switch left to another mod, which
 		// stands in for the hidden switch, the lines of each part with pieces
 		// off that a setting of the block works through, then what that
 		// leaves of each setting still on the page. A part another block's
 		// lead works through, and this one's does not, is left to that block's
-		// note, as the weapon start works through every weapon penalty. A
-		// setting's line leaves out the pieces either note names as off, and
-		// goes when none is left, so no piece is named twice on the page.
-		std::vector<std::string> BlockLines(const SettingLink& a_lead)
+		// note, as the weapon start works through every weapon penalty. So is
+		// a part another lead has among its core pieces and this one does
+		// not, as Price drop when worn names Worn item prices and Trader
+		// repairs does not. A setting's line leaves out the pieces either note
+		// names as off, and goes when none is left, so no piece is named twice
+		// on the page.
+		Block BlockOf(const SettingLink& a_lead)
 		{
-			std::vector<std::string> lines;
-			std::vector<Piece>       named;  // pieces a part line names when off
+			std::vector<std::string>       lines;
+			std::vector<std::vector<Left>> says;   // what the part lines name, first in lines
+			std::vector<Piece>             named;  // pieces a part line names when off
 
 			const auto add = [&](const CallPatch::Loss& a_loss) {
-				std::ranges::move(Text::PartLines(a_loss), std::back_inserter(lines));
+				auto partLines = Text::PartLines(a_loss);
+				// PartLines gives 1 line a cause. Should that change, a line
+				// names nothing, so the top list keeps every piece.
+				const bool perCause = partLines.size() == a_loss.causes.size();
+				for (std::size_t i = 0; i < partLines.size(); i++) {
+					says.push_back(perCause ? NamesOf(a_loss, a_loss.causes[i]) : std::vector<Left>{});
+				}
+				std::ranges::move(partLines, std::back_inserter(lines));
 				for (const auto& cause : a_loss.causes) {
 					std::ranges::copy(cause.pieces, std::back_inserter(named));
 				}
@@ -202,11 +163,13 @@ namespace Mcm
 			const auto              members = Members(a_lead);
 			auto                    linked = PartsOf(a_lead);
 			std::bitset<PART_COUNT> elsewhere;
+			const auto              core = CoreParts(a_lead);
 			for (const auto& link : SettingLinks()) {
 				if (!link.under && &link != &a_lead) {
-					elsewhere |= PartsOf(link) & ~linked;
+					elsewhere |= (PartsOf(link) & ~linked) | (CoreParts(link) & linked & ~core);
 				}
 			}
+			linked &= ~elsewhere;
 			for (const auto* member : members) {
 				linked |= PartsOf(*member) & ~elsewhere;
 				for (const auto list : { member->core, member->side }) {
@@ -250,16 +213,43 @@ namespace Mcm
 			if (!none.empty()) {
 				lines.push_back(Text::MenuNoEffect(none));
 			}
-			return Capped(std::move(lines));
+			auto  kept = Capped(std::move(lines));
+			Block block{ std::move(kept.lines), {} };
+			for (std::size_t i = 0; i < std::min(kept.whole, says.size()); i++) {
+				std::ranges::move(says[i], std::back_inserter(block.left));
+			}
+			return block;
+		}
+
+		// -------------------------------------------------------------------
+		// The list at the top
+		// -------------------------------------------------------------------
+
+		// Every piece a block's note names as left to an owner. config.json
+		// gives every block lead a note.
+		std::vector<Left> InBlocks()
+		{
+			std::vector<Left> left;
+			for (const auto& link : SettingLinks()) {
+				if (!link.under) {
+					std::ranges::move(BlockOf(link).left, std::back_inserter(left));
+				}
+			}
+			return left;
 		}
 
 		// The list at the top: its first line while a mod has a part, then
-		// each mod with the parts it took, a part with some pieces taken naming
-		// them, in the order of CallPatch::Before. With only this game
-		// version, its own line says why.
+		// each mod with the parts it took that no block's note names, a part
+		// with some pieces taken naming them, in the order of
+		// CallPatch::Before. With only this game version, its own line says
+		// why. Empty when the notes name every piece.
 		std::vector<std::string> TopLines()
 		{
 			const auto losses = CallPatch::Losses();
+			if (losses.empty()) {
+				return {};
+			}
+			const auto inBlocks = InBlocks();
 
 			struct Taken
 			{
@@ -274,7 +264,8 @@ namespace Mcm
 			};
 
 			// A piece off only because a piece of another part is taken is no
-			// mod's, and its part's line says what it waits on.
+			// mod's, and its part's line says what it waits on. A piece a
+			// block's note names with this mod is left to that note.
 			std::vector<Holder> holders;
 			for (const auto& loss : losses) {
 				for (const auto& cause : loss.causes) {
@@ -282,6 +273,13 @@ namespace Mcm
 						continue;
 					}
 					for (const auto& owner : cause.owners) {
+						std::vector<Piece> pieces;
+						std::ranges::copy_if(cause.pieces, std::back_inserter(pieces), [&](Piece a_piece) {
+							return std::ranges::find(inBlocks, Left{ a_piece, owner }) == inBlocks.end();
+						});
+						if (pieces.empty()) {
+							continue;
+						}
 						auto it = std::ranges::find(holders, owner, &Holder::owner);
 						if (it == holders.end()) {
 							holders.push_back(Holder{ owner, {} });
@@ -290,7 +288,7 @@ namespace Mcm
 						if (it->parts.empty() || it->parts.back().part != loss.part) {
 							it->parts.push_back(Taken{ loss.part, {} });
 						}
-						std::ranges::copy(cause.pieces, std::back_inserter(it->parts.back().pieces));
+						std::ranges::move(pieces, std::back_inserter(it->parts.back().pieces));
 					}
 				}
 			}
@@ -322,16 +320,17 @@ namespace Mcm
 			// Too tall for the page, an owner's line is cut back to as many of
 			// its parts as fit, and the more line goes, as the rest line says
 			// it.
-			return Capped(std::move(lines), [&](std::size_t a_line, std::size_t a_room) -> std::optional<std::string> {
+			auto kept = Capped(std::move(lines), [&](std::size_t a_line, std::size_t a_room) -> std::optional<std::string> {
 				const auto owner = a_line - first;
 				for (auto count = a_line >= first && owner < shown ? parts[owner].size() : 0; count > 1; count--) {
 					auto shorter = Text::MenuTopOwner(holders[owner].owner, std::span{ parts[owner] }.first(count - 1));
-					if (LinesOf(shorter, FitNow()) <= a_room) {
+					if (LinesOf(shorter) <= a_room) {
 						return shorter;
 					}
 				}
 				return std::nullopt;
 			});
+			return std::move(kept.lines);
 		}
 
 		// Whether parts are off and no mod has any of them, only this game
@@ -376,7 +375,7 @@ namespace Mcm
 			return !TopLines().empty();
 		}
 		const auto* lead = LeadFor(key);
-		return lead ? std::optional{ !BlockLines(*lead).empty() } : std::nullopt;
+		return lead ? std::optional{ !BlockOf(*lead).lines.empty() } : std::nullopt;
 	}
 
 	// MCM asks for every line as it builds the page and shows a note only
@@ -395,6 +394,6 @@ namespace Mcm
 			return Grey(TopLines());
 		}
 		const auto* lead = LeadFor(key);
-		return lead ? std::optional{ Grey(BlockLines(*lead)) } : std::nullopt;
+		return lead ? std::optional{ Grey(BlockOf(*lead).lines) } : std::nullopt;
 	}
 }

@@ -44,7 +44,10 @@ namespace Workbench
 
 		// Its own scrap recipe, or the recipe it borrows, plus the recipe
 		// behind every mod, see Materials.h, so the bill reads as a smaller
-		// copy of the item.
+		// copy of the item. The scrap lists are read first, so an item a
+		// script added to one since the last loading screen is priced as the
+		// bench would scrap it.
+		Materials::ReadScrapLists();
 		const auto bill = Materials::BillOfLines(*a_selection.object, a_selection.extra);
 		out.built = Materials::BillOfParts(bill);
 		out.standing = CraftingPerks::Of(*a_selection.object, a_selection.extra, bill);

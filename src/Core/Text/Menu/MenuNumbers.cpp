@@ -64,7 +64,7 @@ namespace Text
 			{ "ptbr", "Abaixo desta condição, o desgaste enfraquece a arma. Com 0.5, ela fica como nova até metade da condição." },
 			{ "pl", "Poniżej tego stanu zużycie osłabia broń. Przy 0.5 broń działa jak nowa aż do połowy stanu." },
 			{ "ru", "Ниже этого состояния износ ослабляет оружие. При 0.5 оружие как новое до половины состояния." },
-			{ "ja", "この状態を下回ると、消耗で武器の性能が下がります。0.5では半分の状態まで新品同様です" },
+			{ "ja", "この状態を下回ると、消耗で性能が下がります。0.5では半分の状態まで新品同様です" },
 			{ "zhhant", "低於此狀況時，損耗會降低武器的性能。設為0.5時，武器在狀況降到一半前都如同全新。" },
 			{ "zhhans", "低于此状况时，损耗会降低武器的性能。设为0.5时，武器在状况降到一半前都如同全新。" },
 		};
@@ -115,15 +115,15 @@ namespace Text
 		};
 
 		constexpr Line ARMOR_START_HELP[]{
-			{ "en", "Below this condition, wear lowers how much armor protects. At 0.5, armor protects as new down to half condition." },
-			{ "fr", "Sous cet état, l'usure réduit la protection. À 0.5, une armure protège comme neuve jusqu'à la moitié de son état." },
-			{ "de", "Unter diesem Zustand senkt Abnutzung den Schutz. Bei 0.5 schützt eine Rüstung bis zum halben Zustand wie neu." },
-			{ "it", "Sotto queste condizioni, l'usura riduce la protezione. A 0.5, un'armatura protegge come nuova fino a metà condizioni." },
-			{ "es", "Bajo este estado, el desgaste reduce la protección. Con 0.5, la armadura protege como nueva hasta la mitad de su estado." },
-			{ "esmx", "Bajo este estado, el desgaste reduce la protección. Con 0.5, la armadura protege como nueva hasta la mitad de su estado." },
-			{ "ptbr", "Abaixo desta condição, o desgaste reduz a proteção. Com 0.5, a armadura protege como nova até metade da condição." },
+			{ "en", "Below this condition, wear lowers armor protection. At 0.5, armor protects as new down to half condition." },
+			{ "fr", "Sous cet état, l'usure affaiblit l'armure. À 0.5, elle protège comme neuve jusqu'à la moitié de son état." },
+			{ "de", "Unter diesem Zustand senkt Abnutzung den Schutz. Bei 0.5 bleibt er bis zum halben Zustand voll." },
+			{ "it", "Sotto queste condizioni, l'usura indebolisce l'armatura. A 0.5, protegge come nuova fino a metà condizioni." },
+			{ "es", "Bajo este estado, el desgaste debilita la armadura. Con 0.5, es como nueva hasta la mitad de su estado." },
+			{ "esmx", "Bajo este estado, el desgaste debilita la armadura. Con 0.5, es como nueva hasta la mitad de su estado." },
+			{ "ptbr", "Abaixo desta condição, o desgaste enfraquece a armadura. Com 0.5, fica como nova até meia condição." },
 			{ "pl", "Poniżej tego stanu zużycie obniża ochronę pancerza. Przy 0.5 pancerz chroni jak nowy aż do połowy stanu." },
-			{ "ru", "Ниже этого состояния износ снижает защиту брони. При 0.5 броня защищает как новая до половины состояния." },
+			{ "ru", "Ниже этого состояния износ ослабляет броню. При 0.5 броня как новая до половины состояния." },
 			{ "ja", "この状態を下回ると、消耗で防御力が下がります。0.5では半分の状態まで新品同様です" },
 			{ "zhhant", "低於此狀況時，損耗會降低裝甲的防護。設為0.5時，裝甲在狀況降到一半前都如同全新。" },
 			{ "zhhans", "低于此状况时，损耗会降低装甲的防护。设为0.5时，装甲在状况降到一半前都如同全新。" },
@@ -147,17 +147,17 @@ namespace Text
 		// 35% is what half condition sells for at 1.5, of the full price.
 		constexpr Line VALUE_EXPONENT_HELP[]{
 			{ "en", "How fast worn items lose value. At 1.5, an item at half condition is worth 35%. 0 keeps the full price." },
-			{ "fr", "Vitesse de perte de valeur des objets usés. À 1.5, un objet à moitié usé vaut 35\u00A0% de son prix. 0 garde le prix plein." },
-			{ "de", "Wie schnell Abgenutztes an Wert verliert. Bei 1.5 ist ein halb abgenutzter Gegenstand 35\u00A0% wert. Bei 0 bleibt der volle Preis." },
-			{ "it", "Quanto in fretta l'usura abbassa il valore. A 1.5, un oggetto a metà condizioni vale il 35%. 0 mantiene il prezzo pieno." },
-			{ "es", "Lo rápido que pierden valor los objetos desgastados. Con 1.5, a mitad de estado valen el 35%. 0 mantiene el precio completo." },
-			{ "esmx", "Qué tan rápido pierden valor los objetos desgastados. Con 1.5, a mitad de estado valen el 35%. 0 mantiene el precio completo." },
-			{ "ptbr", "Quão rápido itens desgastados perdem valor. Com 1.5, um item com metade da condição vale 35%. 0 mantém o preço total." },
-			{ "pl", "Jak szybko zużyte przedmioty tracą wartość. Przy 1.5 przedmiot zużyty w połowie jest wart 35%. 0 zachowuje pełną cenę." },
-			{ "ru", "Как быстро дешевеют изношенные предметы. При 1.5 предмет, изношенный наполовину, стоит 35% цены. 0 сохраняет полную цену." },
-			{ "ja", "消耗したアイテムが価値を失う速さです。1.5では状態が半分のアイテムは本来の価格の35%になり、0では値下がりしません" },
-			{ "zhhant", "損耗物品失去價值的速度。設為1.5時，狀況一半的物品價值為原價的35%。設為0則保持原價。" },
-			{ "zhhans", "损耗物品失去价值的速度。设为1.5时，状况一半的物品价值为原价的35%。设为0则保持原价。" },
+			{ "fr", "Vitesse de perte de valeur des objets usés. À 1.5, un objet à moitié usé vaut 35\u00A0%. 0 garde le prix plein." },
+			{ "de", "Wie schnell Abgenutztes an Wert verliert. Bei 1.5 ist halb Abgenutztes 35\u00A0% wert, bei 0 bleibt der Preis." },
+			{ "it", "Quanto in fretta l'usura abbassa il valore. A 1.5, a metà condizioni vale il 35%. 0 mantiene il prezzo pieno." },
+			{ "es", "Lo rápido que se deprecia lo desgastado. Con 1.5, a mitad de estado vale el 35%. 0 mantiene el precio." },
+			{ "esmx", "Qué tan rápido se deprecia lo desgastado. Con 1.5, a mitad de estado vale el 35%. 0 mantiene el precio." },
+			{ "ptbr", "Quão rápido itens desgastados perdem valor. Com 1.5, a meia condição valem 35%. 0 mantém o preço." },
+			{ "pl", "Jak szybko zużyte przedmioty tracą wartość. Przy 1.5 zużyte w połowie są warte 35%. 0 zachowuje cenę." },
+			{ "ru", "Как быстро дешевеют изношенные предметы. При 1.5 полуизношенный стоит 35%. 0 сохраняет цену." },
+			{ "ja", "消耗したアイテムの値下がりの速さです。1.5では状態半分で35%、0で下がりません" },
+			{ "zhhant", "損耗物品失去價值的速度。設為1.5時，狀況一半的物品值原價35%。設為0則保持原價。" },
+			{ "zhhans", "损耗物品失去价值的速度。设为1.5时，状况一半的物品值原价35%。设为0则保持原价。" },
 		};
 
 		constexpr Line FIRE_RATE_FLOOR_NAME[]{
@@ -185,7 +185,7 @@ namespace Text
 			{ "ptbr", "Quanta cadência de tiro uma arma automática mantém com condição 0. Com 1, o desgaste nunca a reduz." },
 			{ "pl", "Jak szybko broń automatyczna strzela jeszcze w stanie 0. Przy 1 zużycie nigdy jej nie spowalnia." },
 			{ "ru", "Как быстро еще стреляет автоматическое оружие в состоянии 0. При 1 износ его не замедляет." },
-			{ "ja", "状態0のフルオートの武器に残る発射速度の割合です。1にすると、消耗しても遅くなりません" },
+			{ "ja", "状態0のフルオート武器に残る発射速度の割合です。1で消耗しても遅くなりません" },
 			{ "zhhant", "自動武器在狀況為0時仍保有多少射速。設為1時，損耗不會降低射速。" },
 			{ "zhhans", "自动武器在状况为0时仍保有多少射速。设为1时，损耗不会降低射速。" },
 		};
@@ -206,18 +206,18 @@ namespace Text
 		};
 
 		constexpr Line CRIT_METER_FLOOR_HELP[]{
-			{ "en", "How many criticals a weapon keeps at 0 condition, for your meter and for NPCs. At 1, wear never lowers them." },
-			{ "fr", "Part des critiques qu'une arme garde à l'état 0, pour votre jauge et pour les PNJ. À 1, l'usure ne les réduit jamais." },
-			{ "de", "Wie viele kritische Treffer eine Waffe bei Zustand 0 behält, für deinen Krit-Balken und für NPCs. Bei 1 bleiben alle." },
+			{ "en", "How many criticals a weapon keeps at 0 condition, for your meter and NPCs. At 1, wear never lowers them." },
+			{ "fr", "Part des critiques qu'une arme garde à l'état 0, pour vous et les PNJ. À 1, l'usure ne les réduit jamais." },
+			{ "de", "Kritische Treffer, die eine Waffe bei Zustand 0 behält, für deinen Balken und NPCs. Bei 1 bleiben alle." },
 			{ "it", "Quanti critici conserva un'arma a condizioni 0, per la tua barra e per i PNG. A 1, l'usura non li riduce mai." },
-			{ "es", "Cuántos críticos conserva un arma con estado 0, para ti y para los demás. Con 1, el desgaste nunca los reduce." },
-			{ "esmx", "Cuántos críticos conserva un arma con estado 0, para ti y para los demás. Con 1, el desgaste nunca los reduce." },
-			{ "ptbr", "Quantos críticos uma arma mantém com condição 0, na sua barra e para NPCs. Com 1, o desgaste nunca os reduz." },
-			{ "pl", "Ile trafień krytycznych zachowuje broń w stanie 0, w twoim wskaźniku i u NPC. Przy 1 zużycie nigdy ich nie obniża." },
-			{ "ru", "Сколько критических атак сохраняет оружие в состоянии 0, для вашей шкалы КРИТ и для NPC. При 1 износ их не снижает." },
-			{ "ja", "状態0の武器に残るクリティカルの割合で、自分のメーターとNPCの両方に適用されます。1にすると、消耗しても減りません" },
-			{ "zhhant", "武器在狀況為0時保留多少爆擊，對你的爆擊條和其他角色都適用。設為1時，損耗不會減少爆擊。" },
-			{ "zhhans", "武器在状况为0时保留多少爆击，对你的爆击条和其他角色都适用。设为1时，损耗不会减少爆击。" },
+			{ "es", "Cuántos críticos conserva un arma con estado 0, para ti y los demás. Con 1, el desgaste no los reduce." },
+			{ "esmx", "Cuántos críticos conserva un arma con estado 0, para ti y los demás. Con 1, el desgaste no los reduce." },
+			{ "ptbr", "Quantos críticos a arma mantém com condição 0, para você e NPCs. Com 1, o desgaste não os reduz." },
+			{ "pl", "Ile trafień krytycznych zachowuje broń w stanie 0, u ciebie i u NPC. Przy 1 zużycie ich nie obniża." },
+			{ "ru", "Доля критических атак при состоянии 0, у вас и у NPC. При 1 износ их не снижает." },
+			{ "ja", "状態0の武器に残るクリティカルの割合で、自分とNPCに適用。1で消耗しても減りません" },
+			{ "zhhant", "武器在狀況為0時保留多少爆擊，對你和其他角色都適用。設為1時，損耗不會減少爆擊。" },
+			{ "zhhans", "武器在状况为0时保留多少爆击，对你和其他角色都适用。设为1时，损耗不会减少爆击。" },
 		};
 
 		constexpr Line ACCURACY_FLOOR_NAME[]{
@@ -237,17 +237,17 @@ namespace Text
 
 		constexpr Line ACCURACY_FLOOR_HELP[]{
 			{ "en", "How accurate a gun still is at 0 condition. At 0.75, its shots spread a third wider. At 1, wear never lowers it." },
-			{ "fr", "La précision qu'une arme à feu garde à l'état 0. À 0.75, ses tirs se dispersent d'un tiers de plus. À 1, l'usure ne la réduit jamais." },
-			{ "de", "Wie präzise eine Schusswaffe bei Zustand 0 noch ist. Bei 0.75 streuen ihre Schüsse um ein Drittel weiter. Bei 1 senkt die Abnutzung sie nie." },
-			{ "it", "Quanta precisione conserva un'arma da fuoco a condizioni 0. A 0.75, i colpi si disperdono un terzo in più. A 1, l'usura non la riduce mai." },
-			{ "es", "Cuánta precisión conserva un arma de fuego con estado 0. Con 0.75, sus disparos se dispersan un tercio más. Con 1, el desgaste nunca la reduce." },
-			{ "esmx", "Cuánta precisión conserva un arma de fuego con estado 0. Con 0.75, sus disparos se dispersan un tercio más. Con 1, el desgaste nunca la reduce." },
-			{ "ptbr", "Quanta precisão uma arma de fogo mantém com condição 0. Com 0.75, os disparos se espalham um terço a mais. Com 1, o desgaste nunca a reduz." },
-			{ "pl", "Jak celna jest jeszcze broń palna w stanie 0. Przy 0.75 jej rozrzut rośnie o jedną trzecią. Przy 1 zużycie nigdy nie obniża celności." },
-			{ "ru", "Насколько метким остается стрелковое оружие в состоянии 0. При 0.75 разброс выстрелов на треть шире. При 1 износ не снижает меткость." },
-			{ "ja", "状態0の銃に残る精度の割合です。0.75では弾のばらつきが3分の1広がります。1にすると、消耗しても下がりません" },
-			{ "zhhant", "槍枝在狀況為0時仍保有多少準度。設為0.75時，射擊散布會擴大三分之一。設為1時，損耗不會降低準度。" },
-			{ "zhhans", "枪支在状况为0时仍保有多少准度。设为0.75时，射击散布会扩大三分之一。设为1时，损耗不会降低准度。" },
+			{ "fr", "Précision d'une arme à feu à l'état 0. À 0.75, les tirs s'écartent d'un tiers de plus. À 1, aucune perte." },
+			{ "de", "Präzision einer Schusswaffe bei Zustand 0. Bei 0.75 streut sie ein Drittel weiter, bei 1 wie neu." },
+			{ "it", "Precisione di un'arma da fuoco a condizioni 0. A 0.75, la rosa si allarga di un terzo. A 1, nessun calo." },
+			{ "es", "Precisión de un arma de fuego con estado 0. Con 0.75, se dispersa un tercio más. Con 1, no baja." },
+			{ "esmx", "Precisión de un arma de fuego con estado 0. Con 0.75, se dispersa un tercio más. Con 1, no baja." },
+			{ "ptbr", "Precisão de uma arma de fogo com condição 0. Com 0.75, espalha um terço a mais. Com 1, não cai." },
+			{ "pl", "Celność broni palnej w stanie 0. Przy 0.75 rozrzut rośnie o jedną trzecią. Przy 1 zużycie jej nie obniża." },
+			{ "ru", "Меткость оружия в состоянии 0. При 0.75 разброс на треть шире. При 1 износ ее не снижает." },
+			{ "ja", "状態0の銃に残る精度の割合です。0.75でばらつきが3分の1広がり、1で下がりません" },
+			{ "zhhant", "槍枝在狀況為0時保有多少準度。設為0.75時散布擴大三分之一，設為1時不會降低。" },
+			{ "zhhans", "枪支在状况为0时保有多少准度。设为0.75时散布扩大三分之一，设为1时不会降低。" },
 		};
 
 		constexpr Line RANGE_FLOOR_NAME[]{
@@ -266,18 +266,18 @@ namespace Text
 		};
 
 		constexpr Line RANGE_FLOOR_HELP[]{
-			{ "en", "How far a gun still carries its damage at 0 condition. At 0, a broken gun hits as if from afar at any distance. At 1, wear never shortens it." },
-			{ "fr", "Jusqu'où une arme à feu garde ses dégâts à l'état 0. À 0, une arme cassée frappe comme de loin à toute distance. À 1, l'usure ne la réduit jamais." },
-			{ "de", "Wie weit eine Schusswaffe bei Zustand 0 noch vollen Schaden trägt. Bei 0 trifft eine kaputte Waffe auf jede Distanz wie aus der Ferne. Bei 1 verkürzt die Abnutzung sie nie." },
-			{ "it", "Fin dove un'arma da fuoco conserva i suoi danni a condizioni 0. A 0, un'arma rotta colpisce come da lontano a ogni distanza. A 1, l'usura non la riduce mai." },
-			{ "es", "Hasta dónde conserva su daño un arma de fuego con estado 0. Con 0, un arma rota golpea como desde lejos a cualquier distancia. Con 1, el desgaste nunca lo reduce." },
-			{ "esmx", "Hasta dónde conserva su daño un arma de fuego con estado 0. Con 0, un arma rota golpea como desde lejos a cualquier distancia. Con 1, el desgaste nunca lo reduce." },
-			{ "ptbr", "Até onde uma arma de fogo mantém seu dano com condição 0. Com 0, uma arma quebrada acerta como de longe a qualquer distância. Com 1, o desgaste nunca o reduz." },
-			{ "pl", "Jak daleko broń palna w stanie 0 zachowuje obrażenia. Przy 0 zepsuta broń trafia jak z daleka na każdym dystansie. Przy 1 zużycie nigdy nie skraca zasięgu." },
-			{ "ru", "Как далеко стрелковое оружие в состоянии 0 сохраняет урон. При 0 сломанное оружие бьет как издалека на любой дистанции. При 1 износ не сокращает дальность." },
-			{ "ja", "状態0の銃がダメージを保つ距離の割合です。0では壊れた銃はどの距離でも遠くから撃ったようなダメージになります。1にすると、消耗しても短くなりません" },
-			{ "zhhant", "槍枝在狀況為0時仍能維持傷害的距離比例。設為0時，損壞的槍枝在任何距離都像遠距離射擊。設為1時，損耗不會縮短射程。" },
-			{ "zhhans", "枪支在状况为0时仍能保持伤害的距离比例。设为0时，损坏的枪支在任何距离都像远距离射击。设为1时，损耗不会缩短射程。" },
+			{ "en", "How far a gun keeps its damage at 0 condition. At 0, it hits as if from afar. At 1, wear never shortens it." },
+			{ "fr", "Portée des dégâts d'une arme à feu à l'état 0. À 0, elle frappe comme de loin. À 1, l'usure ne la réduit pas." },
+			{ "de", "Wie weit eine Schusswaffe bei Zustand 0 Schaden trägt. Bei 0 trifft sie wie aus der Ferne, bei 1 wie neu." },
+			{ "it", "Fin dove un'arma da fuoco tiene i danni a condizioni 0. A 0 colpisce come da lontano, a 1 come nuova." },
+			{ "es", "Alcance del daño de un arma de fuego con estado 0. Con 0, golpea como desde lejos. Con 1, no baja." },
+			{ "esmx", "Alcance del daño de un arma de fuego con estado 0. Con 0, golpea como desde lejos. Con 1, no baja." },
+			{ "ptbr", "Até onde uma arma de fogo mantém o dano com condição 0. Com 0, acerta como de longe. Com 1, não cai." },
+			{ "pl", "Jak daleko broń palna w stanie 0 zachowuje obrażenia. Przy 0 trafia jak z daleka, przy 1 jak nowa." },
+			{ "ru", "Как далеко оружие в состоянии 0 сохраняет урон. При 0 бьет как издалека, при 1 как новое." },
+			{ "ja", "状態0の銃がダメージを保つ距離の割合です。0では常に遠距離扱い、1で短くなりません" },
+			{ "zhhant", "槍枝在狀況為0時維持傷害的距離比例。設為0時都像遠距離射擊，設為1時不縮短。" },
+			{ "zhhans", "枪支在状况为0时保持伤害的距离比例。设为0时都像远距离射击，设为1时不缩短。" },
 		};
 
 		constexpr Line BENCH_COST_NAME[]{
@@ -296,16 +296,16 @@ namespace Text
 		};
 
 		constexpr Line BENCH_COST_HELP[]{
-			{ "en", "How many components a workbench repair takes. 0.5 halves the cost, 2 doubles it and 0 makes every repair free." },
-			{ "fr", "Le nombre de composants que demande une réparation à l'établi. 0.5 divise le coût par 2, 2 le double et 0 rend toute réparation gratuite." },
-			{ "de", "Wie viele Komponenten eine Reparatur an der Werkbank braucht. 0.5 halbiert die Kosten, 2 verdoppelt sie, 0 macht jede Reparatur kostenlos." },
-			{ "it", "Quanti componenti richiede una riparazione al banco da lavoro. 0.5 dimezza il costo, 2 lo raddoppia e 0 rende gratis ogni riparazione." },
-			{ "es", "Cuántos componentes necesita una reparación en el banco de trabajo. 0.5 reduce el coste a la mitad, 2 lo duplica y 0 hace gratis toda reparación." },
-			{ "esmx", "Cuántos componentes necesita una reparación en el banco de trabajo. 0.5 reduce el costo a la mitad, 2 lo duplica y 0 hace gratis toda reparación." },
-			{ "ptbr", "Quantos componentes um conserto na bancada exige. 0.5 corta o custo pela metade, 2 o dobra e 0 deixa todo conserto grátis." },
-			{ "pl", "Ilu komponentów wymaga naprawa w pracowni. 0.5 zmniejsza koszt o połowę, 2 go podwaja, a 0 sprawia, że każda naprawa jest darmowa." },
-			{ "ru", "Сколько компонентов нужно для ремонта на верстаке. 0.5 вдвое снижает стоимость, 2 удваивает ее, а 0 делает любой ремонт бесплатным." },
-			{ "ja", "作業台での修理に必要な部品の量です。0.5で半分、2で2倍、0ですべての修理が無料になります" },
+			{ "en", "How many components a workbench repair takes. 0.5 halves the cost, 2 doubles it, 0 makes it free." },
+			{ "fr", "Composants qu'exige une réparation à l'établi. 0.5 divise le coût par 2, 2 le double et 0 la rend gratuite." },
+			{ "de", "Komponenten je Werkbank-Reparatur. 0.5 halbiert die Kosten, 2 verdoppelt sie, 0 macht sie kostenlos." },
+			{ "it", "Componenti richiesti da una riparazione al banco. 0.5 dimezza il costo, 2 lo raddoppia e 0 la rende gratis." },
+			{ "es", "Componentes por reparación en el banco. 0.5 reduce el coste a la mitad, 2 lo duplica y 0 la hace gratis." },
+			{ "esmx", "Componentes por reparación en el banco. 0.5 reduce el costo a la mitad, 2 lo duplica y 0 la hace gratis." },
+			{ "ptbr", "Componentes por conserto na bancada. 0.5 corta o custo pela metade, 2 o dobra e 0 deixa grátis." },
+			{ "pl", "Komponenty na naprawę w pracowni. 0.5 to połowa kosztu, 2 to podwójny, a 0 to darmowa naprawa." },
+			{ "ru", "Компоненты для ремонта на верстаке. 0.5 вдвое дешевле, 2 вдвое дороже, а 0 бесплатно." },
+			{ "ja", "作業台の修理に必要な部品の量です。0.5で半分、2で2倍、0で無料になります" },
 			{ "zhhant", "在工作台修理所需的元件數量。0.5會使花費減半，2則加倍，0則讓所有修理免費。" },
 			{ "zhhans", "在工作台修理所需的元件数量。0.5会使花费减半，2则加倍，0则让所有修理免费。" },
 		};
@@ -328,18 +328,18 @@ namespace Text
 		// MEND is the bench's button for a free repair, in the words of
 		// MEND_BUTTON in Repair.cpp.
 		constexpr Line FREE_MEND_HELP[]{
-			{ "en", "Above this condition, MEND at a workbench puts an item right for free. 100 turns that off and 0 mends everything but a broken item." },
-			{ "fr", "Au-dessus de cet état, ENTRETENIR à l'établi remet un objet en état gratuitement. 100 désactive cela et 0 entretient tout sauf un objet cassé." },
-			{ "de", "Über diesem Zustand bessert AUSBESSERN an der Werkbank einen Gegenstand kostenlos aus. 100 schaltet das ab, 0 bessert alles außer Kaputtem aus." },
-			{ "it", "Sopra queste condizioni, AGGIUSTA al banco da lavoro sistema un oggetto gratis. 100 lo disattiva e 0 aggiusta tutto tranne un oggetto rotto." },
-			{ "es", "Por encima de este estado, RETOCAR en el banco de trabajo arregla un objeto gratis. 100 lo desactiva y 0 retoca todo salvo un objeto roto." },
-			{ "esmx", "Por encima de este estado, RETOCAR en el banco de trabajo arregla un objeto gratis. 100 lo desactiva y 0 retoca todo salvo un objeto roto." },
-			{ "ptbr", "Acima desta condição, RETOCAR na bancada conserta um item de graça. 100 desativa isso e 0 retoca tudo menos um item quebrado." },
-			{ "pl", "Powyżej tego stanu POPRAW w pracowni naprawia przedmiot za darmo. 100 to wyłącza, a 0 poprawia wszystko poza zepsutym przedmiotem." },
-			{ "ru", "Выше этого состояния ПОДПРАВИТЬ на верстаке чинит предмет бесплатно. 100 отключает это, а 0 подправляет все, кроме сломанного предмета." },
-			{ "ja", "この状態より上のアイテムは、作業台の手入れで無料で直せます。100で無料の手入れはなくなり、0で壊れたもの以外はすべて手入れできます" },
-			{ "zhhant", "狀況高於此值時，在工作台修補物品不需任何花費。設為100則不再免費修補，設為0則除了損壞的物品外都能修補。" },
-			{ "zhhans", "状况高于此值时，在工作台修补物品不需任何花费。设为100则不再免费修补，设为0则除了损坏的物品外都能修补。" },
+			{ "en", "Above this condition, MEND at a workbench is free. 100 turns it off, 0 mends all but broken items." },
+			{ "fr", "Au-dessus de cet état, ENTRETENIR à l'établi est gratuit. 100 désactive, 0 entretient tout sauf le cassé." },
+			{ "de", "Über diesem Zustand ist AUSBESSERN an der Werkbank gratis. 100: aus, 0: alles außer Kaputtem." },
+			{ "it", "Sopra queste condizioni, AGGIUSTA al banco è gratis. 100 lo disattiva e 0 aggiusta tutto tranne il rotto." },
+			{ "es", "Sobre este estado, RETOCAR en el banco es gratis. 100 lo desactiva y 0 retoca todo salvo lo roto." },
+			{ "esmx", "Sobre este estado, RETOCAR en el banco es gratis. 100 lo desactiva y 0 retoca todo salvo lo roto." },
+			{ "ptbr", "Acima desta condição, RETOCAR na bancada é grátis. 100 desativa e 0 retoca tudo menos o quebrado." },
+			{ "pl", "Powyżej tego stanu POPRAW jest darmowe. 100 to wyłącza, a 0 poprawia wszystko poza zepsutym." },
+			{ "ru", "Выше этого состояния ПОДПРАВИТЬ бесплатно. 100 отключает, при 0 все, кроме сломанного." },
+			{ "ja", "この状態より上は作業台の手入れが無料です。100で無効、0で壊れた物以外が対象です" },
+			{ "zhhant", "狀況高於此值時，在工作台修補免費。設為100則取消，設為0則損壞物品以外皆可修補。" },
+			{ "zhhans", "状况高于此值时，在工作台修补免费。设为100则取消，设为0则损坏物品以外皆可修补。" },
 		};
 
 		constexpr Line TRADER_PRICE_NAME[]{

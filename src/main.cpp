@@ -81,8 +81,11 @@ namespace
 	// The main menu opening drops the last game's readings too, since a coc
 	// from there starts a game with no load or new game message. A loading
 	// screen that opened after the main menu measures the load order again
-	// when it closes, unless a save load or new game came first. Queued,
-	// since the game sends this while it works on its menus.
+	// when it closes, unless a save load or new game came first. Every
+	// loading screen reads the scrap lists again as it closes, so wear
+	// follows an item a quest script added during play before the next bench
+	// visit, see Materials::ReadScrapLists. Queued, since the game sends this
+	// while it works on its menus.
 	class MainMenuSink : public RE::BSTEventSink<RE::MenuOpenCloseEvent>
 	{
 	public:
@@ -111,9 +114,14 @@ namespace
 						REX::INFO("A loading screen closed with no save load or new game since the main menu opened, as after a coc from there, so NEC measures the load order again.");
 						TraceLog::Mark("COC", "a loading screen closed with no save load or new game since the main menu opened");
 						ArmorWear::MeasureModsAgain();
+						Materials::ReadScrapLists();
 						Materials::MeasureAgain();
 						WeaponWear::MeasureAgain();
 					});
+				}
+			} else if (!a_event.opening && a_event.menuName == RE::LoadingMenu::MENU_NAME) {
+				if (const auto* tasks = F4SE::GetTaskInterface()) {
+					tasks->AddTask([] { Materials::ReadScrapLists(); });
 				}
 			}
 			return RE::BSEventNotifyControl::kContinue;
@@ -204,9 +212,11 @@ namespace
 				REX::INFO("The save {:s}.", loaded ? "has loaded" : "did not load");
 				TraceLog::Mark("LOADED", "the save {:s}", loaded ? "has loaded" : "did not load");
 			}
-			// The ordinary weapon and armor, measured again for a mod that
-			// changed them after game data loaded. 1 walk of every weapon and
-			// recipe, behind the loading screen.
+			// The scrap lists as this game left them, since the save keeps a
+			// script's adds. The ordinary weapon and armor, measured again for
+			// a mod that changed them after game data loaded. 1 walk of every
+			// weapon and recipe, behind the loading screen.
+			Materials::ReadScrapLists();
 			Materials::MeasureAgain();
 			WeaponWear::MeasureAgain();
 			// Every patch is read back before the save plays, see

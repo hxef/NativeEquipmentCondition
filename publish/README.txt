@@ -215,7 +215,7 @@ items at different conditions stay in separate stacks in your inventory.
 
 FOUND A BUG?
 If a feature seems to do nothing, another DLL mod may have taken it over.
-Load a save, then look at the top of NEC's MCM page. It names that mod.
+Load a save, then look at NEC's MCM page. It names that mod.
 
 For anything else, share NEC's logs:
 1. Turn on the full logs:

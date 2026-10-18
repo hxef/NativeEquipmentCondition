@@ -1,7 +1,8 @@
-1.4.7
+1.4.8
 * Repairs and wear no longer go by a recipe that crafts the item itself, which another mod like Crafting Mastery 2 can add. Gear with no scrap recipe costs and wears like other gear of its kind.
-* The help lines of Automatic weapon wear speed, Weapon penalties below and Armor penalties below are shorter, so they fit the MCM page in most languages.
-* With another DLL mod taking over some weapon penalties, the MCM page names each one once.
+* Weapons and armor the game or another mod adds to a scrap list while you play, like Automatron's Tesla rifle, now cost and wear by that list's recipe.
+* With another DLL mod taking over some of NEC's work, the MCM page names each part once.
+* MCM help lines are shorter, so they fit the page.
 
 1.4.6
 * NPC weapons now wear as they fight, shot by shot and blow by blow, without jams. One worn out to 0 stays in their hands.

@@ -82,10 +82,11 @@ src/
     Condition.h/.cpp         the reading, its bounds, the share a stat keeps, what takes part, the write
     Equipped.h/.cpp          what an actor holds and has on, and writing to the copy in use
     Materials/
-      Materials.h/.cpp       what an item is built from, the recipe index and the ordinary make
+      Materials.h/.cpp       what an item is built from, the mod recipe index and the ordinary make
       Index.h                the index, for this folder
       Bill.cpp               the bill of parts and the order it is charged in
       Components.cpp         which component prices a form, a junk item by its own Components list
+      Scrap.cpp              the scrap recipes the bench reads and the lists they name, read at Load and again where a script can add to one
     Repair.h/.cpp            what a worn item owes
     WeaponWear/
       WeaponWear.h/.cpp      which weapons take part, wearing the copy in hand
@@ -160,7 +161,8 @@ src/
     Mcm/
       Mcm.h/.cpp             the settings page in the Mod Configuration Menu
       Bridge.h/.cpp          the page's answers: values, changes and words
-      Notes.cpp              the page's grey rows: the list at the top and each block's note
+      Notes.cpp              the page's grey rows: each block's note, and the list at the top of the parts no note names
+      Fit.cpp                how tall a grey row may be, and a row cut to fit
       Layout.cpp             MCM's list in None mode while NEC's page shows, and the HUD bar sliders' live ends
       HudBar.cpp             the HUD bar sliders: the bar's place in HUD units from the screen's top left, with the screen as their range
     Hud/
@@ -226,8 +228,10 @@ reading and the NPC wear still waiting for a busy inventory, when a save
 loads, a new game begins or the main menu opens. As a save loads, a new game
 begins or a coc from the main menu leaves its loading screen, it also
 measures again what a DLL mod can change after game data loads, in an order
-its comments explain. Once a save has loaded with Worn loot on, it sets the
-weapons and armor the player carries with no condition to full.
+its comments explain. Every loading screen reads the scrap lists again as it
+closes, for an item a script added to one. Once a save has loaded with Worn
+loot on, it sets the weapons and armor the player carries with no condition
+to full.
 
 Every row runs at every step whatever its switch says. Its hooks ask the
 switch on every call and leave the game as it is while it is off. A row whose

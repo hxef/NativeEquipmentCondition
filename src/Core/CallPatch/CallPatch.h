@@ -198,13 +198,14 @@ namespace CallPatch
 	// of, or one hooked over NEC. dll is a file name or empty. sure says it is
 	// a mod: the game is 1.11.240, or the place leads outside Fallout4.exe, or
 	// it changed since NEC wrote it or found it taken. Not sure means the game
-	// version is not supported.
+	// version is not supported. IsMod says whether a line names it.
 	struct Owner
 	{
 		std::string dll;
 		bool        sure = false;
 
-		bool operator==(const Owner&) const = default;
+		[[nodiscard]] bool IsMod() const { return sure || !dll.empty(); }
+		bool               operator==(const Owner&) const = default;
 	};
 
 	// The order owners are listed in: named DLLs by name, then another mod,

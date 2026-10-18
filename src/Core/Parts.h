@@ -99,3 +99,6 @@ struct SettingLink
 
 // The parts a_link works through, by its core, side and exception pieces.
 [[nodiscard]] std::bitset<PART_COUNT> PartsOf(const SettingLink& a_link);
+
+// The parts of a_link's core pieces alone.
+[[nodiscard]] std::bitset<PART_COUNT> CoreParts(const SettingLink& a_link);

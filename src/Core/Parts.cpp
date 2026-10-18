@@ -196,3 +196,12 @@ std::bitset<PART_COUNT> PartsOf(const SettingLink& a_link)
 	parts.reset(static_cast<std::size_t>(Part::kNone));
 	return parts;
 }
+
+std::bitset<PART_COUNT> CoreParts(const SettingLink& a_link)
+{
+	std::bitset<PART_COUNT> parts;
+	for (const auto piece : a_link.core) {
+		parts.set(static_cast<std::size_t>(RowOfPiece(piece).part));
+	}
+	return parts;
+}

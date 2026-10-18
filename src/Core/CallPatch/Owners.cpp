@@ -203,10 +203,13 @@ namespace CallPatch
 		std::vector<std::string> names;
 		bool                     unnamed = false;
 		for (const auto& owner : a_owners) {
-			if (!owner.dll.empty()) {
-				names.push_back(owner.dll);
+			if (!owner.IsMod()) {
+				continue;
+			}
+			if (owner.dll.empty()) {
+				unnamed = true;
 			} else {
-				unnamed = unnamed || owner.sure;
+				names.push_back(owner.dll);
 			}
 		}
 		if (unnamed) {

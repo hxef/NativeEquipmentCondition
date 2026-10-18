@@ -30,18 +30,18 @@ namespace Text
 		};
 
 		constexpr Line HUD_BAR_X_HELP[]{
-			{ "en", "Where the bar by the ammo counter and its CND word start, counted from the left edge of the screen. A number keeps its place at any resolution." },
-			{ "fr", "Où commencent la barre du compteur de munitions et son mot, en comptant depuis le bord gauche de l'écran. Un nombre garde sa place à toute résolution." },
-			{ "de", "Wo der Balken an der Munitionsanzeige samt Wort beginnt, gezählt vom linken Bildrand. Ein Wert bleibt bei jeder Auflösung an derselben Stelle." },
-			{ "it", "Dove iniziano la barra accanto alle munizioni e la sua parola, contando dal bordo sinistro dello schermo. Un valore resta nello stesso punto a ogni risoluzione." },
-			{ "es", "Dónde empiezan la barra junto a la munición y su palabra, contando desde el borde izquierdo de la pantalla. Un valor conserva su lugar en cualquier resolución." },
-			{ "esmx", "Dónde empiezan la barra junto a la munición y su palabra, contando desde el borde izquierdo de la pantalla. Un valor conserva su lugar en cualquier resolución." },
-			{ "ptbr", "Onde começam a barra junto ao contador de munição e sua palavra, contando a partir da borda esquerda da tela. Um valor mantém o lugar em qualquer resolução." },
-			{ "pl", "Gdzie zaczyna się pasek przy liczniku amunicji wraz z napisem, licząc od lewej krawędzi ekranu. Wartość zostaje na swoim miejscu w każdej rozdzielczości." },
-			{ "ru", "Где начинается полоса у счетчика патронов вместе с надписью, считая от левого края экрана. Значение сохраняет свое место при любом разрешении." },
-			{ "ja", "弾薬カウンターのバーと文字の開始位置で、画面の左端から数えます。どの解像度でも同じ数値なら同じ位置です" },
-			{ "zhhant", "彈藥計數旁的狀況條與文字的起點，從螢幕左緣算起。同一數值在任何解析度下都在同一位置。" },
-			{ "zhhans", "弹药计数旁的状况条与文字的起点，从屏幕左边缘算起。同一数值在任何分辨率下都在同一位置。" },
+			{ "en", "Where the ammo counter's bar and CND word start, from the left. Same at any resolution." },
+			{ "fr", "Où commencent la barre des munitions et son mot, depuis la gauche, à toute résolution." },
+			{ "de", "Wo Balken und Wort an der Munitionsanzeige beginnen, von links, bei jeder Auflösung." },
+			{ "it", "Dove iniziano barra e parola accanto alle munizioni, da sinistra, a ogni risoluzione." },
+			{ "es", "Dónde empiezan la barra y la palabra CON, desde la izquierda, en toda resolución." },
+			{ "esmx", "Dónde empiezan la barra y la palabra CON, desde la izquierda, en toda resolución." },
+			{ "ptbr", "Onde começam a barra da munição e sua palavra, da esquerda, em qualquer resolução." },
+			{ "pl", "Gdzie zaczyna się pasek przy amunicji z napisem, od lewej, w każdej rozdzielczości." },
+			{ "ru", "Начало полосы с надписью у патронов, слева, при любом разрешении." },
+			{ "ja", "弾薬のバーと文字の左端からの位置で、解像度によらず同じです" },
+			{ "zhhant", "彈藥計數旁狀況條與文字的起點，從左緣算起，任何解析度皆同。" },
+			{ "zhhans", "弹药计数旁状况条与文字的起点，从左边缘算起，任何分辨率皆同。" },
 		};
 
 		constexpr Line HUD_BAR_Y_NAME[]{
@@ -60,18 +60,18 @@ namespace Text
 		};
 
 		constexpr Line HUD_BAR_Y_HELP[]{
-			{ "en", "Where the bar by the ammo counter and its CND word start, counted from the top edge of the screen. A number keeps its place at any resolution." },
-			{ "fr", "Où commencent la barre du compteur de munitions et son mot, en comptant depuis le bord supérieur de l'écran. Un nombre garde sa place à toute résolution." },
-			{ "de", "Wo der Balken an der Munitionsanzeige samt Wort beginnt, gezählt vom oberen Bildrand. Ein Wert bleibt bei jeder Auflösung an derselben Stelle." },
-			{ "it", "Dove iniziano la barra accanto alle munizioni e la sua parola, contando dal bordo superiore dello schermo. Un valore resta nello stesso punto a ogni risoluzione." },
-			{ "es", "Dónde empiezan la barra junto a la munición y su palabra, contando desde el borde superior de la pantalla. Un valor conserva su lugar en cualquier resolución." },
-			{ "esmx", "Dónde empiezan la barra junto a la munición y su palabra, contando desde el borde superior de la pantalla. Un valor conserva su lugar en cualquier resolución." },
-			{ "ptbr", "Onde começam a barra junto ao contador de munição e sua palavra, contando a partir da borda superior da tela. Um valor mantém o lugar em qualquer resolução." },
-			{ "pl", "Gdzie zaczyna się pasek przy liczniku amunicji wraz z napisem, licząc od górnej krawędzi ekranu. Wartość zostaje na swoim miejscu w każdej rozdzielczości." },
-			{ "ru", "Где начинается полоса у счетчика патронов вместе с надписью, считая от верхнего края экрана. Значение сохраняет свое место при любом разрешении." },
-			{ "ja", "弾薬カウンターのバーと文字の開始位置で、画面の上端から数えます。どの解像度でも同じ数値なら同じ位置です" },
-			{ "zhhant", "彈藥計數旁的狀況條與文字的起點，從螢幕上緣算起。同一數值在任何解析度下都在同一位置。" },
-			{ "zhhans", "弹药计数旁的状况条与文字的起点，从屏幕上边缘算起。同一数值在任何分辨率下都在同一位置。" },
+			{ "en", "Where the ammo counter's bar and CND word start, from the top. Same at any resolution." },
+			{ "fr", "Où commencent la barre des munitions et son mot, depuis le haut, à toute résolution." },
+			{ "de", "Wo Balken und Wort an der Munitionsanzeige beginnen, von oben, bei jeder Auflösung." },
+			{ "it", "Dove iniziano barra e parola accanto alle munizioni, dall'alto, a ogni risoluzione." },
+			{ "es", "Dónde empiezan la barra y la palabra CON, desde arriba, en toda resolución." },
+			{ "esmx", "Dónde empiezan la barra y la palabra CON, desde arriba, en toda resolución." },
+			{ "ptbr", "Onde começam a barra da munição e sua palavra, do topo, em qualquer resolução." },
+			{ "pl", "Gdzie zaczyna się pasek przy amunicji z napisem, od góry, w każdej rozdzielczości." },
+			{ "ru", "Начало полосы с надписью у патронов, сверху, при любом разрешении." },
+			{ "ja", "弾薬のバーと文字の上端からの位置で、解像度によらず同じです" },
+			{ "zhhant", "彈藥計數旁狀況條與文字的起點，從上緣算起，任何解析度皆同。" },
+			{ "zhhans", "弹药计数旁状况条与文字的起点，从上边缘算起，任何分辨率皆同。" },
 		};
 
 		constexpr Line HUD_BAR_DEFAULT[]{
@@ -106,15 +106,15 @@ namespace Text
 
 		constexpr Line POWER_ARMOR_BAR_X_HELP[]{
 			{ "en", "Moves the bar in power armor: right above 0, left below 0. Past the edge of the screen it hides." },
-			{ "fr", "Déplace la barre en armure assistée\u00A0: à droite au-dessus de 0, à gauche en dessous. Hors de l'écran, elle disparaît." },
-			{ "de", "Schiebt den Balken in der Powerrüstung: über 0 nach rechts, unter 0 nach links. Über den Bildrand hinaus verschwindet er." },
-			{ "it", "Sposta la barra nell'armatura atomica: a destra sopra 0, a sinistra sotto 0. Oltre il bordo dello schermo si nasconde." },
-			{ "es", "Mueve la barra en la servoarmadura: positivo a la derecha, negativo a la izquierda. Si sale de la pantalla, se oculta." },
-			{ "esmx", "Mueve la barra en la servoarmadura: positivo a la derecha, negativo a la izquierda. Si sale de la pantalla, se oculta." },
-			{ "ptbr", "Move a barra na Armadura Potente: acima de 0 à direita, abaixo de 0 à esquerda. Além da borda da tela, ela some." },
-			{ "pl", "Przesuwa pasek w pancerzu wspomaganym: powyżej 0 w prawo, poniżej 0 w lewo. Za krawędzią ekranu pasek znika." },
+			{ "fr", "Déplace la barre en armure assistée\u00A0: à droite au-dessus de 0, à gauche en dessous. Hors écran, cachée." },
+			{ "de", "Powerrüstungs-Balken: über 0 nach rechts, unter 0 nach links. Außerhalb des Bilds verschwindet er." },
+			{ "it", "Sposta la barra nell'armatura atomica: a destra sopra 0, a sinistra sotto 0. Fuori schermo si nasconde." },
+			{ "es", "Barra en la servoarmadura: positivo a la derecha, negativo a la izquierda. Fuera de la pantalla se oculta." },
+			{ "esmx", "Barra en la servoarmadura: positivo a la derecha, negativo a la izquierda. Fuera de la pantalla se oculta." },
+			{ "ptbr", "Move a barra na Armadura Potente: acima de 0 à direita, abaixo de 0 à esquerda. Fora da tela, ela some." },
+			{ "pl", "Przesuwa pasek w pancerzu wspomaganym: powyżej 0 w prawo, poniżej 0 w lewo. Poza ekranem znika." },
 			{ "ru", "Сдвигает полосу в силовой броне: выше 0 вправо, ниже 0 влево. За краем экрана полоса скрывается." },
-			{ "ja", "パワーアーマー着用時のバーを、プラスで右へ、マイナスで左へ動かします。画面の端を越えると隠れます" },
+			{ "ja", "パワーアーマーのバーをプラスで右、マイナスで左へ動かします。画面外で隠れます" },
 			{ "zhhant", "移動動力裝甲中的狀況條：大於0向右，小於0向左。超出螢幕邊緣時會隱藏。" },
 			{ "zhhans", "移动动力装甲中的状况条：大于0向右，小于0向左。超出屏幕边缘时会隐藏。" },
 		};
@@ -136,15 +136,15 @@ namespace Text
 
 		constexpr Line POWER_ARMOR_BAR_Y_HELP[]{
 			{ "en", "Moves the bar in power armor: up above 0, down below 0. Past the edge of the screen it hides." },
-			{ "fr", "Déplace la barre en armure assistée\u00A0: en haut au-dessus de 0, en bas en dessous. Hors de l'écran, elle disparaît." },
-			{ "de", "Schiebt den Balken in der Powerrüstung: über 0 nach oben, unter 0 nach unten. Über den Bildrand hinaus verschwindet er." },
-			{ "it", "Sposta la barra nell'armatura atomica: in alto sopra 0, in basso sotto 0. Oltre il bordo dello schermo si nasconde." },
-			{ "es", "Mueve la barra en la servoarmadura: positivo hacia arriba, negativo hacia abajo. Si sale de la pantalla, se oculta." },
-			{ "esmx", "Mueve la barra en la servoarmadura: positivo hacia arriba, negativo hacia abajo. Si sale de la pantalla, se oculta." },
+			{ "fr", "Déplace la barre en armure assistée\u00A0: en haut au-dessus de 0, en bas en dessous. Hors écran, cachée." },
+			{ "de", "Powerrüstungs-Balken: über 0 nach oben, unter 0 nach unten. Außerhalb des Bilds verschwindet er." },
+			{ "it", "Sposta la barra nell'armatura atomica: in alto sopra 0, in basso sotto 0. Fuori schermo si nasconde." },
+			{ "es", "Barra en la servoarmadura: positivo hacia arriba, negativo hacia abajo. Fuera de la pantalla se oculta." },
+			{ "esmx", "Barra en la servoarmadura: positivo hacia arriba, negativo hacia abajo. Fuera de la pantalla se oculta." },
 			{ "ptbr", "Move a barra na Armadura Potente: acima de 0 sobe, abaixo de 0 desce. Além da borda da tela, ela some." },
-			{ "pl", "Przesuwa pasek w pancerzu wspomaganym: powyżej 0 w górę, poniżej 0 w dół. Za krawędzią ekranu pasek znika." },
+			{ "pl", "Przesuwa pasek w pancerzu wspomaganym: powyżej 0 w górę, poniżej 0 w dół. Poza ekranem znika." },
 			{ "ru", "Сдвигает полосу в силовой броне: выше 0 вверх, ниже 0 вниз. За краем экрана полоса скрывается." },
-			{ "ja", "パワーアーマー着用時のバーを、プラスで上へ、マイナスで下へ動かします。画面の端を越えると隠れます" },
+			{ "ja", "パワーアーマーのバーをプラスで上、マイナスで下へ動かします。画面外で隠れます" },
 			{ "zhhant", "移動動力裝甲中的狀況條：大於0向上，小於0向下。超出螢幕邊緣時會隱藏。" },
 			{ "zhhans", "移动动力装甲中的状况条：大于0向上，小于0向下。超出屏幕边缘时会隐藏。" },
 		};
@@ -168,17 +168,17 @@ namespace Text
 		// a word NEC.ini takes.
 		constexpr Line LOG_LEVEL_HELP[]{
 			{ "en", "How much NEC.log writes, in Documents\\My Games\\Fallout4\\F4SE. Pick debug when you report a bug." },
-			{ "fr", "Le niveau de détail de NEC.log, dans Documents\\My Games\\Fallout4\\F4SE. Choisissez debug pour signaler un bug." },
-			{ "de", "Wie viel NEC.log schreibt, in Documents\\My Games\\Fallout4\\F4SE. Wähle debug, wenn du einen Fehler meldest." },
+			{ "fr", "Détail de NEC.log, dans Documents\\My Games\\Fallout4\\F4SE. Choisissez debug pour signaler un bug." },
+			{ "de", "Wie viel NEC.log schreibt, in Documents\\My Games\\Fallout4\\F4SE. Wähle debug für Fehlerberichte." },
 			{ "it", "Quanto scrive NEC.log, in Documents\\My Games\\Fallout4\\F4SE. Scegli debug quando segnali un bug." },
 			{ "es", "Cuánto escribe NEC.log, en Documents\\My Games\\Fallout4\\F4SE. Elige debug al informar de un error." },
 			{ "esmx", "Cuánto escribe NEC.log, en Documents\\My Games\\Fallout4\\F4SE. Elige debug al reportar un error." },
 			{ "ptbr", "Quanto o NEC.log grava, em Documents\\My Games\\Fallout4\\F4SE. Escolha debug ao relatar um bug." },
 			{ "pl", "Ile zapisuje NEC.log, w Documents\\My Games\\Fallout4\\F4SE. Przy zgłaszaniu błędu wybierz debug." },
 			{ "ru", "Сколько пишет NEC.log в Documents\\My Games\\Fallout4\\F4SE. Для отчета об ошибке выберите debug." },
-			{ "ja", "NEC.log(Documents\\My Games\\Fallout4\\F4SE)に書き込む量です。バグを報告するときはdebugを選んでください" },
-			{ "zhhant", "NEC.log（位於Documents\\My Games\\Fallout4\\F4SE）寫入的詳細程度。回報錯誤時請選擇debug。" },
-			{ "zhhans", "NEC.log（位于Documents\\My Games\\Fallout4\\F4SE）写入的详细程度。报告错误时请选择debug。" },
+			{ "ja", "NEC.log(Documents\\My Games\\Fallout4\\F4SE)の詳細度です。バグ報告はdebugで" },
+			{ "zhhant", "NEC.log（位於Documents\\My Games\\Fallout4\\F4SE）的詳細程度。回報錯誤時請選debug。" },
+			{ "zhhans", "NEC.log（位于Documents\\My Games\\Fallout4\\F4SE）的详细程度。报告错误时请选debug。" },
 		};
 
 		constexpr MenuRow ROWS[]{

@@ -14,20 +14,12 @@ namespace Materials
 {
 	namespace
 	{
-		// Which recipe builds what: mods, and the weapons and wearables with a
-		// scrap recipe of their own. The recipe is kept, not what it asks for,
-		// so the components are read fresh. Filled by Load and emptied by
-		// Unload while nothing reads it, so no lock. A form built by 2 recipes
-		// keeps the first, as the engine's own search does.
-		std::unordered_map<const RE::TESForm*, const RE::BGSConstructibleObject*> g_recipes;
-
-		// The scrap recipe a wearable with none of its own borrows, one for
-		// clothing and one for armor, and the one a weapon with nothing priced
-		// borrows, see Materials.h. Empty in a load order with no scrap recipe
-		// for that kind at all.
-		const RE::BGSConstructibleObject* g_borrowedClothing = nullptr;
-		const RE::BGSConstructibleObject* g_borrowedArmor = nullptr;
-		const RE::BGSConstructibleObject* g_borrowedWeapon = nullptr;
+		// Which recipe builds each mod. The recipe is kept, not what it asks
+		// for, so the components are read fresh. Filled by Load and emptied by
+		// Unload while nothing reads it, so no lock. A mod built by 2 recipes
+		// keeps the first, as the engine's own search does. Weapons and
+		// wearables get their scrap recipe from Scrap.cpp.
+		std::unordered_map<const RE::TESForm*, const RE::BGSConstructibleObject*> g_mods;
 
 		// Vanilla's own medians, see ReferenceQuality in Materials.h, used
 		// until Load has measured this load order, and the base the limits
@@ -82,20 +74,6 @@ namespace Materials
 			return parts;
 		}
 
-		// What a recipe can build that matters here: mods, and weapons or
-		// wearables with a scrap recipe of their own.
-		bool WorthIndexing(const RE::TESForm& a_form)
-		{
-			switch (a_form.GetFormType()) {
-				case RE::ENUM_FORM_ID::kOMOD:
-				case RE::ENUM_FORM_ID::kWEAP:
-				case RE::ENUM_FORM_ID::kARMO:
-					return true;
-				default:
-					return false;
-			}
-		}
-
 		// Which median a recipe counts toward, see ReferenceQuality in
 		// Materials.h: weapons and weapon mods toward the weapon's, wearables
 		// toward armor's, and nothing for a wearable's mods or a robot's.
@@ -138,15 +116,20 @@ namespace Materials
 		{
 			std::vector<float> weapons;
 			std::vector<float> armor;
-			for (const auto& [built, recipe] : g_recipes) {
-				const auto kind = CountsToward(*built);
-				const auto parts = PartsOf(*recipe);
-				if (!kind || parts.units == 0) {
-					continue;
+			const auto         add = [&weapons, &armor](const auto& a_recipes) {
+				for (const auto& [built, recipe] : a_recipes) {
+					const auto kind = CountsToward(*built);
+					const auto parts = PartsOf(*recipe);
+					if (!kind || parts.units == 0) {
+						continue;
+					}
+					(*kind == Condition::Kind::kArmor ? armor : weapons)
+						.push_back(static_cast<float>(parts.worth) / static_cast<float>(parts.units));
 				}
-				(*kind == Condition::Kind::kArmor ? armor : weapons)
-					.push_back(static_cast<float>(parts.worth) / static_cast<float>(parts.units));
-			}
+			};
+			add(g_mods);
+			// The lists as Load read them, see ReadScrapLists.
+			add(Scrapped().recipes);
 			return { Middle(weapons, DEFAULT_WEAPON_QUALITY), Middle(armor, DEFAULT_ARMOR_QUALITY) };
 		}
 
@@ -158,51 +141,25 @@ namespace Materials
 			return std::clamp(a_quality, LOWEST_QUALITY * std::min(scale, 1.0F), HIGHEST_QUALITY * std::max(scale, 1.0F));
 		}
 
-		// Whether a recipe that asks for a component builds a_form.
-		bool BuiltPriced(const RE::TESForm* a_form)
+		// Whether a recipe that asks for a component builds a_form: a mod's
+		// recipe, or a weapon's scrap recipe.
+		bool BuiltPriced(const RE::TESForm* a_form, const Scrapping& a_scrapping)
 		{
-			const auto found = a_form ? g_recipes.find(a_form) : g_recipes.end();
-			return found != g_recipes.end() && AsksForParts(*found->second);
-		}
-
-		// The recipe most items of a kind scrap into, over every item that
-		// takes part, has a scrap recipe of its own and a_ofKind keeps. Ties
-		// go to the lower form ID, so the answer is the same on every load.
-		template <class Item>
-		const RE::BGSConstructibleObject* MostBorrowed(bool (*a_ofKind)(const Item&))
-		{
-			std::unordered_map<const RE::BGSConstructibleObject*, std::uint32_t> items;
-			for (const auto* item : g_dataHandler->GetFormArray<Item>()) {
-				if (!item || !Condition::WearsOut(*item) || !a_ofKind(*item)) {
-					continue;
-				}
-				const auto own = g_recipes.find(item);
-				if (own != g_recipes.end()) {
-					items[own->second]++;
-				}
-			}
-
-			const RE::BGSConstructibleObject* most = nullptr;
-			std::uint32_t                     count = 0;
-			for (const auto& [recipe, uses] : items) {
-				if (uses > count || (uses == count && most && recipe->formID < most->formID)) {
-					most = recipe;
-					count = uses;
-				}
-			}
-			return most;
+			const auto& recipes = a_form && a_form->Is(RE::ENUM_FORM_ID::kOMOD) ? g_mods : a_scrapping.recipes;
+			const auto  found = a_form ? recipes.find(a_form) : recipes.end();
+			return found != recipes.end() && AsksForParts(*found->second);
 		}
 
 		// The recipe a wearable with none of its own borrows, or nothing for a
 		// kind the load order has no scrap recipe for. Nothing for a weapon,
 		// which borrows only once its mods are known, see ForEachRecipe.
-		const RE::BGSConstructibleObject* Borrowed(const RE::TESBoundObject& a_object)
+		const RE::BGSConstructibleObject* Borrowed(const RE::TESBoundObject& a_object, const Scrapping& a_scrapping)
 		{
 			if (!a_object.Is(RE::ENUM_FORM_ID::kARMO)) {
 				return nullptr;
 			}
 			const auto& armor = static_cast<const RE::TESObjectARMO&>(a_object);
-			return ArmorWear::IsClothing(armor) ? g_borrowedClothing : g_borrowedArmor;
+			return ArmorWear::IsClothing(armor) ? a_scrapping.borrowedClothing : a_scrapping.borrowedArmor;
 		}
 	}
 
@@ -217,10 +174,12 @@ namespace Materials
 			a_each(a_recipe);
 		};
 
-		const auto own = g_recipes.find(&a_object);
-		if (own != g_recipes.end()) {
-			each(*own->second);
-		} else if (const auto* borrowed = Borrowed(a_object)) {
+		// The item's own scrap recipe from the last reading of the lists, see
+		// ReadScrapLists.
+		const auto& scrapping = Scrapped();
+		if (const auto* own = OwnRecipe(a_object)) {
+			each(*own);
+		} else if (const auto* borrowed = Borrowed(a_object, scrapping)) {
 			each(*borrowed);
 		}
 
@@ -245,8 +204,8 @@ namespace Materials
 				if (mod && mod == legendary) {
 					continue;
 				}
-				const auto  found = mod ? g_recipes.find(mod) : g_recipes.end();
-				if (found != g_recipes.end()) {
+				const auto  found = mod ? g_mods.find(mod) : g_mods.end();
+				if (found != g_mods.end()) {
 					each(*found->second);
 				}
 			}
@@ -254,8 +213,8 @@ namespace Materials
 
 		// A weapon borrows last, once its own recipe and its mods asked for
 		// nothing.
-		if (!priced && a_object.IsWeapon() && g_borrowedWeapon) {
-			a_each(*g_borrowedWeapon);
+		if (!priced && a_object.IsWeapon() && scrapping.borrowedWeapon) {
+			a_each(*scrapping.borrowedWeapon);
 		}
 	}
 
@@ -287,10 +246,8 @@ namespace Materials
 	void Unload()
 	{
 		UnloadComponents();
-		g_recipes.clear();
-		g_borrowedClothing = nullptr;
-		g_borrowedArmor = nullptr;
-		g_borrowedWeapon = nullptr;
+		UnloadScrapLists();
+		g_mods.clear();
 		g_weaponQuality = DEFAULT_WEAPON_QUALITY;
 		g_armorQuality = DEFAULT_ARMOR_QUALITY;
 	}
@@ -305,54 +262,47 @@ namespace Materials
 		const auto spellings = LoadComponents();
 
 		const auto remember = [](const RE::TESForm* a_built, const RE::BGSConstructibleObject& a_recipe) {
-			if (a_built && WorthIndexing(*a_built)) {
-				g_recipes.emplace(a_built, &a_recipe);
+			if (a_built && a_built->Is(RE::ENUM_FORM_ID::kOMOD)) {
+				g_mods.emplace(a_built, &a_recipe);
 			}
 		};
 
+		// A mod is built by the first recipe naming it or a form list holding
+		// it, as the engine searches in
+		// BGSConstructibleObject::FindRecipeForCreatedForm. A recipe naming a
+		// weapon or a wearable itself crafts it and counts for nothing here.
 		for (auto* recipe : g_dataHandler->GetFormArray<RE::BGSConstructibleObject>()) {
 			const auto* built = recipe ? recipe->createdItem : nullptr;
 			if (!built) {
 				continue;
 			}
-
-			// A recipe names the item it builds or a form list of items. The
-			// list is how weapons and wearables get a scrap recipe at all: a
-			// few recipes each name a list, so every knife scraps into the same
-			// 2 steel and every suit into the same 2 cloth. A recipe naming a
-			// weapon or a wearable itself crafts it, and the bench never scraps
-			// by it, see ExamineMenu::BuildWeaponScrappingArray, so a recipe
-			// naming a form alone counts only for a mod. In vanilla those
-			// crafting recipes are for power armor, grenades and mines, which
-			// NEC never wears, and 1 hat a list recipe already prices.
 			if (built->Is(RE::ENUM_FORM_ID::kFLST)) {
 				for (const auto* listed : static_cast<const RE::BGSListForm*>(built)->arrayOfForms) {
 					remember(listed, *recipe);
 				}
-			} else if (built->Is(RE::ENUM_FORM_ID::kOMOD)) {
+			} else {
 				remember(built, *recipe);
 			}
 		}
 
+		const auto  lists = LoadScrapLists();
+		const auto& scrapping = Scrapped();
+
 		const auto [weapons, armor] = Medians();
 		g_weaponQuality = weapons;
 		g_armorQuality = armor;
-
-		g_borrowedClothing = MostBorrowed<RE::TESObjectARMO>([](const RE::TESObjectARMO& a_armor) { return ArmorWear::IsClothing(a_armor); });
-		g_borrowedArmor = MostBorrowed<RE::TESObjectARMO>([](const RE::TESObjectARMO& a_armor) { return !ArmorWear::IsClothing(a_armor); });
-		g_borrowedWeapon = MostBorrowed<RE::TESObjectWEAP>([](const RE::TESObjectWEAP&) { return true; });
 
 		// The weapons that borrow, for the log: no priced recipe of their own
 		// and no mod with a priced recipe in any of the mod sets their object
 		// template can give them. Buffer 0 of each set lists its mods.
 		std::size_t borrowing = 0;
 		for (const auto* weapon : g_dataHandler->GetFormArray<RE::TESObjectWEAP>()) {
-			if (!weapon || !Condition::WearsOut(*weapon) || BuiltPriced(weapon)) {
+			if (!weapon || !Condition::WearsOut(*weapon) || BuiltPriced(weapon, scrapping)) {
 				continue;
 			}
-			const auto priced = std::ranges::any_of(weapon->objectTemplate.items, [](const RE::BGSMod::Template::Item* a_item) {
+			const auto priced = std::ranges::any_of(weapon->objectTemplate.items, [&scrapping](const RE::BGSMod::Template::Item* a_item) {
 				return a_item && std::ranges::any_of(a_item->GetBuffer<RE::BGSMod::Attachment::Instance>(0),
-									 [](const RE::BGSMod::Attachment::Instance& a_mod) { return BuiltPriced(a_mod.mod); });
+									 [&scrapping](const RE::BGSMod::Attachment::Instance& a_mod) { return BuiltPriced(a_mod.mod, scrapping); });
 			});
 			if (!priced) {
 				borrowing++;
@@ -360,7 +310,9 @@ namespace Materials
 		}
 
 		REX::INFO("Found {:d} component spellings and what {:d} items and mods are built from. An ordinary weapon is worth {:.1f} a unit and an ordinary piece of armor {:.1f}. Clothing with no scrap recipe of its own borrows {:s}, armor {:s}, and a weapon with nothing priced {:s}, which {:d} of this load order's weapons do.",
-			spellings, g_recipes.size(), weapons, armor, Spell(g_borrowedClothing), Spell(g_borrowedArmor), Spell(g_borrowedWeapon), borrowing);
+			spellings, g_mods.size() + scrapping.recipes.size(), weapons, armor, Spell(scrapping.borrowedClothing), Spell(scrapping.borrowedArmor),
+			Spell(scrapping.borrowedWeapon), borrowing);
+		REX::INFO("Found {:d} scrap recipes the way the workbench finds them.", lists);
 	}
 
 	float Quality(const RE::TESBoundObject& a_object, const RE::ExtraDataList* a_extra)

@@ -1,5 +1,5 @@
-1.4.7
-Version 1.4.7 fixes repair costs and wear with another mod like Crafting Mastery 2, which adds crafting recipes. 3 MCM help lines are shorter, so they fit the page in most languages.
+1.4.8
+Version 1.4.8 fixes repair costs and wear with another mod like Crafting Mastery 2, which adds crafting recipes. MCM help lines are shorter, so they fit the page, and the page names once each part another DLL mod took over.
 
 FO4 1.11.240
 

@@ -5,11 +5,13 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <functional>
 #include <optional>
 #include <string>
 #include <string_view>
+#include <vector>
 
-// What the 5 files of the folder share. Private to this folder.
+// What the 6 files of the folder share. Private to this folder.
 namespace Mcm
 {
 	using Params = Scaleform::GFx::FunctionHandler::Params;
@@ -38,6 +40,21 @@ namespace Mcm
 	// or parts.help for Note. Nothing for any other id.
 	[[nodiscard]] std::optional<bool>        Shows(std::string_view a_id);
 	[[nodiscard]] std::optional<std::string> Note(std::string_view a_id);
+
+	// How tall a grey row may be, in Fit.cpp: LinesOf, the lines a_line takes
+	// on the page in the player's language, and Capped, a_lines cut to fit.
+	// a_shorter builds line a_line again in a_room lines or fewer, or nothing
+	// where it has no such form.
+	using Shorter = std::function<std::optional<std::string>(std::size_t a_line, std::size_t a_room)>;
+
+	struct Kept
+	{
+		std::vector<std::string> lines;
+		std::size_t              whole = 0;  // how many of the first lines are kept as they were
+	};
+
+	[[nodiscard]] std::size_t LinesOf(std::string_view a_line);
+	[[nodiscard]] Kept        Capped(std::vector<std::string> a_lines, const Shorter& a_shorter = {});
 
 	// Notes a change from the page that NEC_custom.ini does not have yet, in
 	// Mcm.cpp. a_before is kept from the first change still owed, so a dragged

@@ -29,6 +29,33 @@ namespace Materials
 	// Forgets what LoadComponents found.
 	void UnloadComponents();
 
+	// Which recipe each weapon and wearable scraps by.
+	using Recipes = std::unordered_map<const RE::TESForm*, const RE::BGSConstructibleObject*>;
+
+	// The scrap recipes as Load read the lists, and what an item with none
+	// borrows, see Materials.h.
+	struct Scrapping
+	{
+		Recipes                           recipes;
+		const RE::BGSConstructibleObject* borrowedClothing{ nullptr };
+		const RE::BGSConstructibleObject* borrowedArmor{ nullptr };
+		const RE::BGSConstructibleObject* borrowedWeapon{ nullptr };
+	};
+
+	// What LoadScrapLists found, empty before it.
+	[[nodiscard]] const Scrapping& Scrapped();
+
+	// The scrap recipe of a_form as Load or ReadScrapLists last read the
+	// lists, or nothing. Safe on any thread.
+	[[nodiscard]] const RE::BGSConstructibleObject* OwnRecipe(const RE::TESForm& a_form);
+
+	// Finds the scrap recipes the way the bench does, reads their lists and
+	// returns how many recipes that is. Part of Load, after LoadComponents.
+	[[nodiscard]] std::size_t LoadScrapLists();
+
+	// Forgets what LoadScrapLists found.
+	void UnloadScrapLists();
+
 	// The recipes an item is built from: its own scrap recipe, or the borrowed
 	// one for a wearable without, then the recipe behind every enabled mod, the
 	// same 2 in the same order as the engine's scrapping code. Mods no recipe

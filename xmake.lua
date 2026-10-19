@@ -9,7 +9,7 @@ end
 
 -- set project constants
 set_project("NativeEquipmentCondition")
-set_version("1.4.9")
+set_version("1.5.0")
 set_license("GPL-3.0")
 set_languages("c++23")
 set_warnings("allextra")
@@ -22,8 +22,8 @@ add_rules("plugin.vsxmake.autoupdate")
 set_config("commonlib_ini", true)
 
 -- Copies the plugin into a folder after every build, for example a Mod
--- Organizer 2 mod, into F4SE/Plugins and MCM/Config/NEC. Off unless set, and
--- remembered once configured:
+-- Organizer 2 mod, into F4SE/Plugins, F4SE/Plugins/NEC/Translations and
+-- MCM/Config/NEC. Off unless set, and remembered once configured:
 --
 --     xmake f --deploy_dir="C:/MO2/mods/Native Equipment Condition"
 --
@@ -49,16 +49,28 @@ target("NEC")
     add_includedirs("src")
     set_pcxxheader("src/pch.h")
 
-    -- The files in src/Core/Text hold strings in every language the game is
-    -- sold in, so the sources are UTF-8. Without this MSVC reads them in the
-    -- machine's code page and the accented letters come out wrong.
+    -- The sources are UTF-8, and so is the English compiled in from en.ini.
+    -- Without this MSVC reads them in the machine's code page and any letter
+    -- past ASCII comes out wrong.
     add_cxflags("/utf-8", { tools = { "cl", "clang_cl" } })
 
-    -- NEC.ini ships beside the DLL, and the MCM page's config.json in the
-    -- folder MCM reads, both kept in publish with the rest of what the archive
-    -- carries. NEC_custom.ini is the player's own, and NEC writes a key there
-    -- only when the MCM page changes it.
+    -- Core/Text/Keys.h is written into the build folder first, see
+    -- xmake/texts.lua.
+    on_config(function (target)
+        target:add("includedirs", target:autogendir())
+    end)
+    before_build(function (target)
+        import("texts", { rootdir = path.join(os.projectdir(), "xmake") })
+        texts.build(target:autogendir())
+    end)
+
+    -- NEC.ini ships beside the DLL, the language files in NEC/Translations
+    -- beside it, and the MCM page's config.json in the folder MCM reads, all
+    -- kept in publish with the rest of what the archive carries.
+    -- NEC_custom.ini is the player's own, and NEC writes a key there only when
+    -- the MCM page changes it.
     add_installfiles("publish/NEC.ini", { prefixdir = "F4SE/Plugins" })
+    add_installfiles("publish/Translations/*.ini", { prefixdir = "F4SE/Plugins/NEC/Translations" })
     add_installfiles("publish/MCM/Config/NEC/config.json", { prefixdir = "MCM/Config/NEC" })
 
     after_build(function (target)
@@ -75,6 +87,9 @@ target("NEC")
             { path.join(publish, "NEC.ini"), plugins },
             { path.join(publish, "MCM", "Config", "NEC", "config.json"), mcm },
         }
+        for _, file in ipairs(os.files(path.join(publish, "Translations", "*.ini"))) do
+            table.insert(files, { file, path.join(plugins, "NEC", "Translations") })
+        end
         for _, entry in ipairs(files) do
             local file, into = entry[1], entry[2]
             if file and os.isfile(file) then
@@ -91,9 +106,11 @@ target("NEC")
 
 -- Builds the plugin and packs build/NativeEquipmentCondition-<version>.zip, for
 -- any site. The archive holds F4SE/Plugins with NEC.dll, NEC.pdb and NEC.ini,
--- MCM/Config/NEC with the MCM page's config.json, and README.txt at the root,
--- so Mod Organizer 2 installs it as it is. The PDB lets a player's crash log
--- name the file and line in NEC.dll.
+-- F4SE/Plugins/NEC/Translations with the 12 language files, MCM/Config/NEC
+-- with the MCM page's config.json, and README.txt at the root, so Mod
+-- Organizer 2 installs it as it is. The PDB lets a player's crash log name the
+-- file and line in NEC.dll. It stops before building on any fault of a
+-- language file, which a plain build only warns about.
 --
 -- With --nexus it packs build/nexusmods/NativeEquipmentCondition-<version>.zip
 -- instead, without README.txt, since Nexus Mods shows the readme in a section
@@ -163,6 +180,9 @@ task("release")
             end
         end
 
+        import("texts", { rootdir = path.join(os.projectdir(), "xmake") })
+        texts.check()
+
         task.run("build", { target = "NEC" })
 
         local stage = path.join(config.builddir(), "release")
@@ -175,6 +195,8 @@ task("release")
         os.cp(target:targetfile(), plugins)
         os.cp(target:symbolfile(), plugins)
         os.cp(path.join(os.projectdir(), "publish", "NEC.ini"), plugins)
+        os.mkdir(path.join(plugins, "NEC", "Translations"))
+        os.cp(path.join(os.projectdir(), "publish", "Translations", "*.ini"), path.join(plugins, "NEC", "Translations"))
         os.cp(path.join(os.projectdir(), "publish", "MCM", "Config", "NEC", "config.json"), mcm)
         local packed = { "F4SE", "MCM" }
         local into = config.builddir()

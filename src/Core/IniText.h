@@ -15,9 +15,20 @@
 // line ends the section before it.
 //
 // It uses the standard library alone, so it builds and can be tested outside
-// the game.
+// the game. The language files' reader, Text/Translations.cpp, trims and
+// matches names with it too.
 namespace IniText
 {
+	// a_text without the spaces and tabs at either end.
+	[[nodiscard]] std::string_view Trimmed(std::string_view a_text);
+
+	// a_char in lower case, A to Z only.
+	[[nodiscard]] char Lower(char a_char);
+
+	// Whether 2 names match in any case, A to Z only, as the reader matches
+	// them.
+	[[nodiscard]] bool SameName(std::string_view a_lhs, std::string_view a_rhs);
+
 	// a_text with a_key=a_value under [a_section]. Every line of that key in
 	// the section is rewritten. With none, the line goes after the section's
 	// last key, and with no such section, the section goes at the end.

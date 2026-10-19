@@ -14,8 +14,7 @@ namespace WeaponWear
 	// fNpcWearRateMult, 0 for anything below it.
 	float NpcMult();
 
-	// fAutoWearRateMult, kept between 0 and 1. It only slows automatics down,
-	// since the weapon wear speeds already speed every weapon up.
+	// fAutoWearRateMult, kept between 0 and 10.
 	float AutoMult();
 
 	// How much health one shot or swing costs, from the damage this copy deals,

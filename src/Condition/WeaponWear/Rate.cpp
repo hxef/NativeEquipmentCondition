@@ -42,6 +42,9 @@ namespace WeaponWear
 		// order has none, which leaves every weapon's wear as it is.
 		std::atomic<float> g_referenceAutoRate{ 0.0F };
 
+		// The most fAutoWearRateMult counts for, as the MCM slider allows.
+		constexpr float MAX_AUTO_MULT = 10.0F;
+
 		// The middle value, the higher of the 2 in the middle for an even
 		// count. 0 for none.
 		float Median(std::vector<float>& a_values)
@@ -270,8 +273,7 @@ namespace WeaponWear
 
 	float AutoMult()
 	{
-		const auto mult = Settings::fAutoWearRateMult.GetValue();
-		return mult < 1.0F ? std::max(mult, 0.0F) : 1.0F;
+		return std::min(std::max(0.0F, Settings::fAutoWearRateMult.GetValue()), MAX_AUTO_MULT);
 	}
 
 	float Rate(const RE::TESObjectWEAP& a_weapon, const RE::TESObjectWEAP::InstanceData& a_instance,

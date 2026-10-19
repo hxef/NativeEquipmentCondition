@@ -1,3 +1,9 @@
+1.5.0
+* Every language is a text file in Data\F4SE\Plugins\NEC\Translations, so anyone can fix a line or add a language.
+* With the game set to Chinese, NEC now shows Traditional Chinese, not English. For Simplified Chinese, copy zhhans.ini over cn.ini.
+* Automatic weapon wear speed (fAutoWearRateMult) now goes up to 10, so automatic weapons can wear faster too.
+* A line a language file gets wrong shows in English, and NEC.log names it.
+
 1.4.9
 * Repairs and wear no longer go by a recipe that crafts the item itself, which another mod like Crafting Mastery 2 can add. Gear with no scrap recipe costs and wears like other gear of its kind.
 * Weapons and armor the game or another mod adds to a scrap list while you play, like Automatron's Tesla rifle, now cost and wear by that list's recipe.

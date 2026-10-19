@@ -25,7 +25,7 @@
     { "id": "fAutoWearRateMult:Balance", "type": "slider",
       "text": "NEC|fAutoWearRateMult", "textFromFormName": true,
       "help": "NEC|fAutoWearRateMult.help", "helpFromFormName": true,
-      "valueOptions": { "min": 0, "max": 1, "step": 0.01, "sourceType": "ModSettingFloat" } },
+      "valueOptions": { "min": 0, "max": 10, "step": 0.01, "sourceType": "ModSettingFloat" } },
     { "id": "fArmorWearRateMult:Balance", "type": "slider",
       "text": "NEC|fArmorWearRateMult", "textFromFormName": true,
       "help": "NEC|fArmorWearRateMult.help", "helpFromFormName": true,

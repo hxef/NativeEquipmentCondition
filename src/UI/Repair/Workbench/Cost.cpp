@@ -2,6 +2,7 @@
 
 #include "Condition/Repair.h"
 #include "Core/Settings.h"
+#include "Core/TraceLog.h"
 
 #include <algorithm>
 #include <format>
@@ -48,6 +49,7 @@ namespace Workbench
 		// script added to one since the last loading screen is priced as the
 		// bench would scrap it.
 		Materials::ReadScrapLists();
+		TraceLog::Line("menu", "Workbench read the scrap lists to price {:s}", a_selection.Name());
 		const auto bill = Materials::BillOfLines(*a_selection.object, a_selection.extra);
 		out.built = Materials::BillOfParts(bill);
 		out.standing = CraftingPerks::Of(*a_selection.object, a_selection.extra, bill);

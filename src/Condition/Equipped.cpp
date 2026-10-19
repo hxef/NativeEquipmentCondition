@@ -216,11 +216,25 @@ namespace Equipped
 
 	bool EquippedStack::CompareData(const RE::BGSInventoryItem::Stack& a_stack)
 	{
-		if (!a_stack.IsEquipped() || !a_stack.extra) {
+		if (count != 0 || !a_stack.IsEquipped() || !a_stack.extra) {
 			return false;
 		}
 		count = a_stack.count;
 		return true;
+	}
+
+	void WearStack::WriteDataImpl(RE::TESBoundObject& a_object, RE::BGSInventoryItem::Stack& a_stack)
+	{
+		if (!a_stack.extra) {
+			return;
+		}
+
+		moved = Condition::Decrease(*a_stack.extra, a_object, amount, source, scale, theirs);
+
+		// The engine's own broken check, run on the health just written. It
+		// is the same check that stops the item going back on, see MIN_HEALTH
+		// in Condition.h.
+		broke = moved && a_stack.extra->IsItemBroken();
 	}
 
 	void WriteStack(RE::TESObjectREFR& a_owner, RE::TESBoundObject& a_object,
@@ -230,13 +244,5 @@ namespace Equipped
 		// and the item written stay the same one.
 		a_write.transferEquippedToSplitStack = true;
 		a_owner.FindAndWriteStackDataForInventoryItem(&a_object, a_find, a_write);
-	}
-
-	std::uint32_t WriteEquipped(RE::TESObjectREFR& a_owner, RE::TESBoundObject& a_object,
-		RE::BGSInventoryItem::StackDataWriteFunctor& a_write)
-	{
-		EquippedStack equipped;
-		WriteStack(a_owner, a_object, equipped, a_write);
-		return equipped.count;
 	}
 }

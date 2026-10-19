@@ -32,9 +32,6 @@ namespace Workbench
 	// Patches the workbench menu's function table, each place by itself.
 	void Install();
 
-	// Logs the language the bench speaks, once the game has read it.
-	void Load();
-
 	// Forgets what the last bench listed and the word its button read, and
 	// adds the listener that fades the equipped items and keeps that word to
 	// the bench movie. Ignores every other movie.

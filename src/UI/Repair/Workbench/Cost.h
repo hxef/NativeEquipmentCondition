@@ -46,6 +46,9 @@ namespace Workbench
 		float                                multiple{ WRECK_MULTIPLE };
 	};
 
+	// Reads the scrap lists as they stand, then prices the item. Run once per
+	// repair, at the REPAIR press, and the rest of the repair takes its
+	// result.
 	[[nodiscard]] Priced PriceOf(const Selection& a_selection);
 
 	// The components one repair takes, from one condition to another: the part

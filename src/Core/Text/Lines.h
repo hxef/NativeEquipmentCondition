@@ -10,35 +10,54 @@
 #include <cstddef>
 #include <cstdint>
 #include <format>
+#include <optional>
 #include <span>
 #include <string>
 #include <string_view>
 
-// One sentence in every language, and picking the player's. Private to this
+// 1 sentence by its key, and picking the player's language. Private to this
 // folder and its Menu and Names folders.
 namespace Text
 {
-	// One sentence in one language. code is what sLanguage says. The first
-	// row, English, is the fallback. A table holds the languages the game is
-	// sold in, plus Simplified Chinese, which the executable names.
-	struct Line
+	// 1 line of the language files, by its place in en.ini.
+	struct Key
 	{
-		std::string_view code;
-		const char*      text;
+		std::uint16_t index;
 	};
 
+	// A line's key as en.ini names it, and its English.
+	struct EnglishLine
+	{
+		std::string_view name;
+		const char*      text;
+	};
+}
+
+// 1 Key per line of publish/Translations/en.ini, named as there, and ENGLISH,
+// every line's English in en.ini's order. The build writes it into the build
+// folder from en.ini, see xmake/texts.lua.
+#include "Core/Text/Keys.h"
+
+namespace Text
+{
 	// Full condition, as a whole percent.
 	inline constexpr std::uint32_t FULL = 100;
 
-	// The row in the player's language, or the English one.
-	[[nodiscard]] const char* Pick(std::span<const Line> a_lines);
+	// The line in the player's language, or the English one. It lasts as long
+	// as the game, so a caller may keep it. See Translations.cpp.
+	[[nodiscard]] const char* Pick(Key a_key);
 
-	// That row with a_args filled into its {0} {1} slots. The arguments are
-	// taken by reference because std::make_format_args wants lvalues.
+	// The line in English, for NEC.log, which never reads a language file.
+	[[nodiscard]] constexpr const char* InEnglish(Key a_key) { return ENGLISH[a_key.index].text; }
+
+	// That line with a_args filled into its {0} {1} slots. The arguments are
+	// taken by reference because std::make_format_args wants lvalues. A
+	// language file's line has the English slots or is not used, so this
+	// never throws.
 	template <class... T>
-	[[nodiscard]] std::string Say(std::span<const Line> a_lines, const T&... a_args)
+	[[nodiscard]] std::string Say(Key a_key, const T&... a_args)
 	{
-		return std::vformat(Pick(a_lines), std::make_format_args(a_args...));
+		return std::vformat(Pick(a_key), std::make_format_args(a_args...));
 	}
 
 	// One option of the MCM page: the setting it changes, its name and the
@@ -50,8 +69,8 @@ namespace Text
 	struct MenuRow
 	{
 		const Settings::Named* setting;
-		std::span<const Line>  name;
-		std::span<const Line>  help;
+		std::optional<Key>     name;
+		Key                    help;
 	};
 
 	// The 8 switches and bTraceLogs, in MenuSwitches.cpp, the 5 wear speeds,
@@ -67,8 +86,8 @@ namespace Text
 	// name has no comma, since it goes into lists.
 	struct PartRow
 	{
-		Part                  part;
-		std::span<const Line> name;
+		Part part;
+		Key  name;
 	};
 
 	[[nodiscard]] std::span<const PartRow> PlayParts();
@@ -90,13 +109,13 @@ namespace Text
 
 	// One piece's name, or the phrase a setting's sentence uses for it, see
 	// Core/Pieces.h. The phrases are in Phrases.cpp. Pieces that share a name
-	// share its table. A name stands alone in brackets after its part's name,
+	// share its key. A name stands alone in brackets after its part's name,
 	// "Worn weapon damage (energy gun damage)", and in a list after
 	// "Still works:", so it has no comma and needs no capital.
 	struct PieceWords
 	{
-		Piece                 piece;
-		std::span<const Line> words;
+		Piece piece;
+		Key   words;
 	};
 
 	[[nodiscard]] std::span<const PieceWords> PlayPieces();
@@ -104,13 +123,13 @@ namespace Text
 	[[nodiscard]] std::span<const PieceWords> UiPieces();
 	[[nodiscard]] std::span<const PieceWords> PiecePhrases();
 
-	// The row a_out reads: the player's, or the English one, see Out.
-	[[nodiscard]] const char* PickFor(std::span<const Line> a_lines, Out a_out);
+	// The line a_out reads: the player's, or the English one, see Out.
+	[[nodiscard]] const char* PickFor(Key a_key, Out a_out);
 
 	template <class... T>
-	[[nodiscard]] std::string SayFor(Out a_out, std::span<const Line> a_lines, const T&... a_args)
+	[[nodiscard]] std::string SayFor(Out a_out, Key a_key, const T&... a_args)
 	{
-		return std::vformat(PickFor(a_lines, a_out), std::make_format_args(a_args...));
+		return std::vformat(PickFor(a_key, a_out), std::make_format_args(a_args...));
 	}
 
 	// "A, B, C", in MenuNotes.cpp. Then in MenuPieces.cpp "Still works: A.",

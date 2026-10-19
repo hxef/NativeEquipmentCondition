@@ -68,7 +68,7 @@ namespace ArmorWear
 	bool IsClothing(const RE::TESObjectARMO& a_armor);
 
 	// Wears down the copy of a piece a_owner has on, and that copy alone, see
-	// Equipped::WriteEquipped. a_source names the hit on the trace line, and
+	// Equipped::WriteStack. a_source names the hit on the trace line, and
 	// a_theirs is for an NPC's piece, at their rate with the line in the NPC
 	// log, see Rate.h. A piece worn to 0 stays on and the player is told. The
 	// game refuses to put a broken piece back on, so once the player takes it

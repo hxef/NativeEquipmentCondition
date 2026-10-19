@@ -1,3 +1,8 @@
+1.5.0
+Version 1.5.0 moves NEC's texts into 1 file per language, so anyone can fix a line or add a language. With the game set to Chinese, NEC now speaks Traditional Chinese instead of English. Automatic weapon wear speed now goes up to 10.
+
+FO4 1.11.240
+
 1.4.9
 Version 1.4.9 fixes repair costs and wear with another mod like Crafting Mastery 2, which adds crafting recipes. MCM help lines are shorter, so they fit the page, and in long sessions broken items keep their fade in the Pip-Boy lists.
 

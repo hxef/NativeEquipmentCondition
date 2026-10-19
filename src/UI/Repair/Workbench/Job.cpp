@@ -97,7 +97,7 @@ namespace Workbench
 		return job;
 	}
 
-	void AskWhichLevel(const Selection& a_selection, const std::vector<std::uint32_t>& a_offered)
+	void AskWhichLevel(const Selection& a_selection, const Priced& a_priced, const std::vector<std::uint32_t>& a_offered)
 	{
 		if (a_offered.empty()) {
 			return;
@@ -107,7 +107,7 @@ namespace Workbench
 		// items need fewer components, so the line above the question names the
 		// perk and the share it takes off. PriceOf applies it to the price.
 		// Left off where no rank is held.
-		const auto standing = PriceOf(a_selection).standing;
+		const auto& standing = a_priced.standing;
 		const auto off = CraftingPerks::Discount(standing.rank, standing.ranks);
 		const auto over = standing.perk && off > 0 ?
 		                      Text::RepairDiscount(standing.Name(), standing.rank, off) :
@@ -130,14 +130,14 @@ namespace Workbench
 		// The bench is looked up again when the answer comes, in case the
 		// player walked away in between.
 		RepairPrompt::Ask(over, a_selection.Name(), a_selection.percent, std::move(buttons),
-			[offered = a_offered](std::size_t a_index) {
+			[offered = a_offered, priced = a_priced](std::size_t a_index) {
 				TraceLog::Line("menu", "Workbench repair set to {:d}%", offered[a_index]);
-				Begin(OpenBench(), offered[a_index]);
+				Begin(OpenBench(), offered[a_index], priced);
 			},
 			[] { TraceLog::Line("menu", "Workbench repair called off"); });
 	}
 
-	void Begin(RE::ExamineMenu* a_menu, std::uint32_t a_level)
+	void Begin(RE::ExamineMenu* a_menu, std::uint32_t a_level, const Priced& a_priced)
 	{
 		if (!Repairs()) {
 			TraceLog::Line("menu", "Workbench dropped the repair, repairs are off");
@@ -150,23 +150,22 @@ namespace Workbench
 			return;
 		}
 
-		const auto priced = PriceOf(selection);
-		const auto bill = CostOf(priced, selection.percent, a_level);
+		const auto bill = CostOf(a_priced, selection.percent, a_level);
 
 		TraceLog::Line("menu", "Workbench reads {:s} as built from {:s}",
-			selection.Name(), Spell(priced.built));
+			selection.Name(), Spell(a_priced.built));
 
 		// Who is doing the work and what their perk takes off, before the
 		// price.
-		if (priced.standing.perk) {
+		if (a_priced.standing.perk) {
 			TraceLog::Line("menu",
 				"Workbench puts {:s} to {:s}{:s}, the player is {:d} of {:d} ranks in, so a wreck costs {:.2f} rather than {:.2f}",
-				selection.Name(), priced.standing.Name(),
-				priced.standing.fromKind ? " by its kind" : "", priced.standing.rank,
-				priced.standing.ranks, priced.multiple, Scaled(WRECK_MULTIPLE));
+				selection.Name(), a_priced.standing.Name(),
+				a_priced.standing.fromKind ? " by its kind" : "", a_priced.standing.rank,
+				a_priced.standing.ranks, a_priced.multiple, Scaled(WRECK_MULTIPLE));
 		} else {
 			TraceLog::Line("menu", "Workbench found no crafting perk for {:s}, so a wreck costs the whole {:.2f}",
-				selection.Name(), priced.multiple);
+				selection.Name(), a_priced.multiple);
 		}
 
 		// How many component units count for each perk, only where the trace
@@ -192,7 +191,7 @@ namespace Workbench
 		TraceLog::Line("menu",
 			"Workbench priced {:s} from {:d}% to {:d}% at {:s}, {:.2f} of what it is built from",
 			selection.Name(), selection.percent, a_level, Spell(bill),
-			Debt(selection.percent, priced.multiple) - Debt(a_level, priced.multiple));
+			Debt(selection.percent, a_priced.multiple) - Debt(a_level, a_priced.multiple));
 
 		// A repair the bench cannot pay for shows what it lacks, see Missing.h.
 		if (ShowMissing(a_menu, job)) {

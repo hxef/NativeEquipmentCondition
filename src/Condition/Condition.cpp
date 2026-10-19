@@ -116,25 +116,44 @@ namespace Condition
 			a_extra.SetHealthPerc(a_health);
 			return a_health;
 		}
+
+		// The health a wear starts from. -1 is an item this has never touched.
+		// Subtracting from that would clamp the first hit to 0 and the item
+		// would arrive broken.
+		float Before(float a_health)
+		{
+			return a_health < 0.0F ? MAX_HEALTH : a_health;
+		}
+
+		// Whether taking a_amount off a_before changes it. Nothing comes off at
+		// a wear speed of 0 or for an amount too small to change the number. A
+		// write would still give an item never touched a health of its own,
+		// which the engine keeps apart from its stack. The same test turns away
+		// a NaN or a negative amount. An UNROLLED item used at a wear speed of
+		// 0 stays UNROLLED and still reads as full in Percent and Share. An item
+		// at 0 stays at 0, since the write stops there.
+		bool Changes(float a_before, float a_amount)
+		{
+			return a_before > MIN_HEALTH && a_before - a_amount < a_before;
+		}
+	}
+
+	bool Lowers(float a_health, const RE::TESBoundObject& a_object, float a_amount, const char* a_source, bool a_theirs)
+	{
+		const auto before = Before(a_health);
+		if (Changes(before, a_amount)) {
+			return true;
+		}
+		TraceLog::For(a_theirs).Line("wear", "{:s} [{:08X}] at {:.6f} loses nothing from {:s}, so it is not written",
+			RE::TESFullName::GetFullName(a_object), a_object.formID, before, a_source);
+		return false;
 	}
 
 	bool Decrease(RE::ExtraDataList& a_extra, const RE::TESBoundObject& a_object, float a_amount, const char* a_source, float a_scale,
 		bool a_theirs)
 	{
-		// -1 is an item this has never touched. Subtracting from that would
-		// clamp the first hit to 0 and the item would arrive broken.
-		auto curHealth = a_extra.GetHealthPerc();
-		if (curHealth < 0.0F) {
-			curHealth = MAX_HEALTH;
-		}
-
-		// Nothing comes off at a wear speed of 0 or for an amount too small to
-		// change the number. A write would still give an item never touched a
-		// health of its own, which the engine keeps apart from its stack. The
-		// same test turns away a NaN or a negative amount. An UNROLLED item
-		// used at a wear speed of 0 stays UNROLLED and still reads as full in
-		// Percent and Share.
-		if (!(curHealth - a_amount < curHealth)) {
+		const auto curHealth = Before(a_extra.GetHealthPerc());
+		if (!Changes(curHealth, a_amount)) {
 			return false;
 		}
 
@@ -144,9 +163,6 @@ namespace Condition
 		const auto scale = a_scale != 1.0F ? std::format(" at x{:.2f}", a_scale) : std::string{};
 		TraceLog::For(a_theirs).Line("wear", "{:s} [{:08X}] {:.6f} -> {:.6f} (-{:.6f}) from {:s}{:s}",
 			RE::TESFullName::GetFullName(a_object), a_object.formID, curHealth, newHealth, a_amount, a_source, scale);
-
-		// Only a change of health counts, so an item already at 0 sets nothing
-		// off again on every shot or hit.
 		return newHealth != curHealth;
 	}
 }

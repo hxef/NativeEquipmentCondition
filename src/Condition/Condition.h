@@ -108,6 +108,14 @@ namespace Condition
 	// with no health counts as never touched.
 	float FromPercent(std::uint32_t a_percent);
 
+	// Whether Decrease would change a_health, what HealthOf reads off a stack,
+	// by taking a_amount off, see Changes in Condition.cpp. The game lists the
+	// player's item in the Pip-Boy again after every write, even one that
+	// changes nothing, so a wear asks this before it picks a stack and picks
+	// none for a no. The trace line then says so, naming a_object and a_source
+	// as Decrease does. Runs under the inventory lock.
+	bool Lowers(float a_health, const RE::TESBoundObject& a_object, float a_amount, const char* a_source, bool a_theirs);
+
 	// Takes a_amount off the health in a_extra, kept between MIN_HEALTH and
 	// MAX_HEALTH. a_object and a_source name the item and the event on the
 	// trace line, gun fire or a melee hit, and a_scale is how many ordinary

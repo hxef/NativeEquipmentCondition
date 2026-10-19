@@ -17,7 +17,8 @@
 // keeps 1 line under each, so 17 and 20. A line is counted as so many
 // characters a line, by language. Checked on about 10000 of NEC's rows
 // against the widths of the game's fonts, that count was never below the
-// lines a row wraps to.
+// lines a row wraps to. A language file's [Layout] sets both for its
+// language, and NEC holds them to 10 to 100 characters and 5 to 20 lines.
 namespace Mcm
 {
 	namespace
@@ -40,16 +41,16 @@ namespace Mcm
 			{ "pl", 60, 17 },
 			{ "ru", 54, 17 },
 			{ "ja", 27, 20 },
-			{ "zhhant", 26, 20 },
-			{ "zhhans", 26, 20 },
+			{ "cn", 26, 20 },
 		};
 
-		// The player's language's row, or English's.
-		const Fit& FitNow()
+		// The player's language file's [Layout], else its row, else English's.
+		Fit FitNow()
 		{
-			const auto language = Text::Language();
-			const auto it = std::ranges::find(FITS, language, &Fit::code);
-			return it != std::end(FITS) ? *it : FITS[0];
+			const auto language = Text::LayoutNow();
+			const auto it = std::ranges::find(FITS, language.code, &Fit::code);
+			const auto& row = it != std::end(FITS) ? *it : FITS[0];
+			return { language.code, language.lineWidth ? language.lineWidth : row.perLine, language.rowLines ? language.rowLines : row.budget };
 		}
 
 		// The lines a_line takes, from its characters before html escaping.
@@ -74,7 +75,7 @@ namespace Mcm
 	// saying NEC.log names the rest.
 	Kept Capped(std::vector<std::string> a_lines, const Shorter& a_shorter)
 	{
-		const auto& fit = FitNow();
+		const auto fit = FitNow();
 		std::size_t used = 0;
 		for (const auto& line : a_lines) {
 			used += LinesOf(line, fit);

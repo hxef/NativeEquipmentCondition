@@ -140,7 +140,7 @@ namespace Workbench
 			}
 
 			if (offered.size() != 1) {
-				AskWhichLevel(selection, offered);
+				AskWhichLevel(selection, priced, offered);
 				return;
 			}
 
@@ -148,7 +148,7 @@ namespace Workbench
 			const auto  level = offered.front();
 			TraceLog::Line("menu", "Workbench had only {:d}% worth offering, so it did not ask", level);
 			if (tasks) {
-				tasks->AddTask([level] { Begin(OpenBench(), level); });
+				tasks->AddTask([level, priced] { Begin(OpenBench(), level, priced); });
 			}
 		}
 
@@ -256,7 +256,7 @@ namespace Workbench
 	}
 
 	// -------------------------------------------------------------------
-	// Install, Load and the bench movie
+	// Install and the bench movie
 	// -------------------------------------------------------------------
 
 	void Install()
@@ -320,11 +320,6 @@ namespace Workbench
 	bool Repairs()
 	{
 		return g_switchLink.Live() && g_canRepairLink.Live() && g_repairLink.Live();
-	}
-
-	void Load()
-	{
-		REX::INFO("The workbench speaks {:s}", Text::Language());
 	}
 
 	void OnMovieLoaded(Scaleform::GFx::Movie& a_movie, std::string_view a_file)

@@ -115,16 +115,45 @@ namespace Equipped
 	// Picks the equipped stack out of the ones the engine walks, for a writer.
 	// A stack with no extra data list is skipped: the engine's split locks the
 	// list it copies from without checking there is one, and would crash. Such
-	// a stack has no health to write to anyway.
+	// a stack has no health to write to anyway. Only the first equipped stack
+	// counts, so a writer that turns it down picks none, even where one of the
+	// game's own splits left the equipped flags on 2 stacks.
 	class EquippedStack final :
 		public RE::BGSInventoryItem::StackDataCompareFunctor
 	{
 	public:
 		bool CompareData(const RE::BGSInventoryItem::Stack& a_stack) override;
 
-		// How many items the stack held when picked, before the engine splits
-		// it, and 0 while nothing was picked.
+		// How many items the first equipped stack held, before the engine
+		// splits it, and 0 until one is seen.
 		std::uint32_t count{ 0 };
+	};
+
+	// Wears down the 1 stack the engine hands it by amount, and remembers
+	// whether the health moved and whether that broke the item. The writer's
+	// compare functor sets amount on the stack it picks, and picks none when
+	// nothing comes off, see Condition::Lowers. A split hands this a copy of
+	// that stack's list, so the amount holds for the copy too. The engine has
+	// already split the stack if it held more than 1 item, see WriteStack, so
+	// the item in use and the item that wears stay the same one.
+	class WearStack final :
+		public RE::BGSInventoryItem::StackDataWriteFunctor
+	{
+	public:
+		WearStack(const char* a_source, float a_scale, bool a_theirs) noexcept :
+			source(a_source),
+			scale(a_scale),
+			theirs(a_theirs)
+		{}
+
+		void WriteDataImpl(RE::TESBoundObject& a_object, RE::BGSInventoryItem::Stack& a_stack) override;
+
+		const char* source;
+		float       scale;
+		bool        theirs;
+		float       amount{ 0.0F };
+		bool        moved{ false };
+		bool        broke{ false };
 	};
 
 	// Runs a_write on the one stack of a_object in a_owner's inventory that
@@ -133,12 +162,8 @@ namespace Equipped
 	// flags when the stack holds more, hands the copy to a_write, merges what
 	// became identical and tells the game the inventory changed, all under the
 	// inventory lock the engine takes as a reader. A caller may already hold
-	// it as a writer, see Copy.h.
+	// it as a writer, see Copy.h. When a_find picks no stack, nothing is
+	// written and the game is told nothing.
 	void WriteStack(RE::TESObjectREFR& a_owner, RE::TESBoundObject& a_object,
 		RE::BGSInventoryItem::StackDataCompareFunctor& a_find, RE::BGSInventoryItem::StackDataWriteFunctor& a_write);
-
-	// WriteStack on the equipped copy. Returns how many items its stack held, 0
-	// when none of a_object was equipped.
-	std::uint32_t WriteEquipped(RE::TESObjectREFR& a_owner, RE::TESBoundObject& a_object,
-		RE::BGSInventoryItem::StackDataWriteFunctor& a_write);
 }

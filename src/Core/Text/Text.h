@@ -14,23 +14,31 @@
 #include <vector>
 
 // The sentences the plugin puts on the screen itself. Most of what it draws is
-// a $KEY the game translates. The rest has no key, so it lives here in every
-// language the game is sold in, picked by sLanguage in Fallout4.ini and falling
-// back to English.
+// a $KEY the game translates. The rest has no key, so NEC brings its own: 1
+// file per language in F4SE/Plugins/NEC/Translations, picked by sLanguage in
+// Fallout4.ini, with the English compiled in for any line a file lacks, see
+// Translations.cpp.
 //
-// A new sentence is one table in Repair.cpp, for the repair question and the
-// bench, in Trader.cpp, for what a trader says, in Tips.cpp, for the loading
-// screen, or in Text.cpp, for the rest, and one function here. A sentence that
-// names the kind of item takes a bool, or a Trade where a trader tells
-// clothing from armor, since Core cannot ask Condition which kind it is. An
-// option of the MCM page is a row in MenuSwitches.cpp, MenuWear.cpp,
+// A new sentence is 1 line in each of the 12 files of publish/Translations,
+// with its note in en.ini, and 1 function in Repair.cpp, for the repair
+// question and the bench, in Trader.cpp, for what a trader says, in Tips.cpp,
+// for the loading screen, or in Text.cpp, for the rest, declared here. A
+// sentence that names the kind of item takes a bool, or a Trade where a trader
+// tells clothing from armor, since Core cannot ask Condition which kind it is.
+// An option of the MCM page is a row in MenuSwitches.cpp, MenuWear.cpp,
 // MenuNumbers.cpp or MenuHudLog.cpp, which MenuLine finds, with no function of
-// its own. A part's name is a table in PartsPlay.cpp, PartsLoot.cpp or
+// its own. A part's name is a row in PartsPlay.cpp, PartsLoot.cpp or
 // PartsUi.cpp, a piece's in PiecesPlay.cpp, PiecesArmor.cpp or PiecesUi.cpp,
-// and its phrase in Phrases.cpp. A grey line of the MCM page is a table in
+// and its phrase in Phrases.cpp. A grey line of the MCM page is said in
 // MenuNotes.cpp, or in MenuPieces.cpp where it names pieces.
 namespace Text
 {
+	// Lets NEC read the language files, once game data is ready, and reads
+	// the player's now, so NEC.log names it as the game starts. Before this
+	// every line is English. A later change of sLanguage reads that
+	// language's file the first time a line is needed.
+	void Load();
+
 	// What a trader deals in, named in what a trader says. A trader repairs
 	// each kind as far as their stock of it allows, see VendorRepair/Stock.h.
 	enum class Trade
@@ -138,7 +146,7 @@ namespace Text
 
 	// Who reads a line: the player on the MCM page, in their language, or
 	// NEC.log, in English with every piece named. PartLogName and the English
-	// rows never ask the game's language, so they are safe during install and
+	// lines never ask the game's language, so they are safe during install and
 	// under a lock.
 	enum class Out
 	{
@@ -195,7 +203,15 @@ namespace Text
 	// "A, B and C" in the player's language, or in English for NEC.log.
 	[[nodiscard]] std::string List(std::span<const std::string> a_items, Out a_out = Out::kPage);
 
-	// What sLanguage says, lowercased, for the log. The game reads it from
-	// Fallout4.ini only after the plugin loads, so a Load asks, not an Install.
-	[[nodiscard]] std::string Language();
+	// The language the player's lines are in: sLanguage lowercased, "en"
+	// before Load, and the LineWidth and RowLines its file's [Layout] sets, 0
+	// where it sets none. See UI/Mcm/Fit.cpp.
+	struct Layout
+	{
+		std::string_view code;
+		std::size_t      lineWidth = 0;
+		std::size_t      rowLines = 0;
+	};
+
+	[[nodiscard]] Layout LayoutNow();
 }

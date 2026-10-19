@@ -8,6 +8,33 @@
 
 namespace IniText
 {
+	std::string_view Trimmed(std::string_view a_text)
+	{
+		const auto first = a_text.find_first_not_of(" \t");
+		if (first == std::string_view::npos) {
+			return {};
+		}
+		return a_text.substr(first, a_text.find_last_not_of(" \t") - first + 1);
+	}
+
+	char Lower(char a_char)
+	{
+		return a_char >= 'A' && a_char <= 'Z' ? static_cast<char>(a_char - 'A' + 'a') : a_char;
+	}
+
+	bool SameName(std::string_view a_lhs, std::string_view a_rhs)
+	{
+		if (a_lhs.size() != a_rhs.size()) {
+			return false;
+		}
+		for (std::size_t i = 0; i < a_lhs.size(); i++) {
+			if (Lower(a_lhs[i]) != Lower(a_rhs[i])) {
+				return false;
+			}
+		}
+		return true;
+	}
+
 	namespace
 	{
 		// A UTF-8 byte order mark, which the reader skips.
@@ -35,32 +62,6 @@ namespace IniText
 				start = end + size;
 			}
 			return lines;
-		}
-
-		std::string_view Trimmed(std::string_view a_text)
-		{
-			const auto first = a_text.find_first_not_of(" \t");
-			if (first == std::string_view::npos) {
-				return {};
-			}
-			return a_text.substr(first, a_text.find_last_not_of(" \t") - first + 1);
-		}
-
-		// Names match in any case, A to Z only, as the reader matches them.
-		bool SameName(std::string_view a_lhs, std::string_view a_rhs)
-		{
-			const auto lower = [](char a_char) {
-				return a_char >= 'A' && a_char <= 'Z' ? static_cast<char>(a_char - 'A' + 'a') : a_char;
-			};
-			if (a_lhs.size() != a_rhs.size()) {
-				return false;
-			}
-			for (std::size_t i = 0; i < a_lhs.size(); i++) {
-				if (lower(a_lhs[i]) != lower(a_rhs[i])) {
-					return false;
-				}
-			}
-			return true;
 		}
 
 		// What the reader makes of one line: a section header, a key, a [

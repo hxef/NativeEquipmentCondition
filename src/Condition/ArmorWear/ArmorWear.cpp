@@ -125,43 +125,31 @@ namespace ArmorWear
 
 	namespace
 	{
-		// Wears down the one stack the engine hands it, and remembers whether
-		// the health moved and whether that finished the piece. The engine has
-		// already split the stack if it held more than one piece, see
-		// Equipped::WriteEquipped, so the piece worn and the piece that wears
-		// stay the same one.
-		class WearStack final :
-			public RE::BGSInventoryItem::StackDataWriteFunctor
+		// Picks the equipped stack and works out there what the blow takes off
+		// it, for Equipped::WearStack.
+		class FindStack final :
+			public RE::BGSInventoryItem::StackDataCompareFunctor
 		{
 		public:
-			WearStack(float a_damage, const char* a_source, bool a_theirs) noexcept :
+			FindStack(const RE::TESObjectARMO& a_armor, float a_damage, const char* a_source, bool a_theirs) noexcept :
+				armor(&a_armor),
 				damage(a_damage),
-				source(a_source),
-				theirs(a_theirs)
+				wear(a_source, 1.0F, a_theirs)
 			{}
 
-			void WriteDataImpl(RE::TESBoundObject& a_object, RE::BGSInventoryItem::Stack& a_stack) override
+			bool CompareData(const RE::BGSInventoryItem::Stack& a_stack) override
 			{
-				if (!a_stack.extra) {
-					return;
+				if (!equipped.CompareData(a_stack)) {
+					return false;
 				}
-
-				// WearsOut has already made sure this is armor.
-				const auto& armor = static_cast<const RE::TESObjectARMO&>(a_object);
-				const auto  amount = Rate(armor, a_stack.extra.get(), damage, theirs);
-				moved = Condition::Decrease(*a_stack.extra, a_object, amount, source, 1.0F, theirs);
-
-				// The engine's own broken check, run on the health just
-				// written. It is the same check that stops the piece going back
-				// on, see MIN_HEALTH in Condition.h.
-				broke = moved && a_stack.extra->IsItemBroken();
+				wear.amount = Rate(*armor, a_stack.extra.get(), damage, wear.theirs);
+				return Condition::Lowers(Condition::HealthOf(&a_stack), *armor, wear.amount, wear.source, wear.theirs);
 			}
 
-			float       damage;
-			const char* source;
-			bool        theirs;
-			bool        moved{ false };
-			bool        broke{ false };
+			Equipped::EquippedStack  equipped;
+			const RE::TESObjectARMO* armor;
+			float                    damage;
+			Equipped::WearStack      wear;
 		};
 
 		// What happens to a piece worn to 0. It stays on, as a broken piece did
@@ -194,8 +182,10 @@ namespace ArmorWear
 
 	bool Wear(RE::Actor& a_owner, RE::TESObjectARMO& a_armor, float a_damage, const char* a_source, bool a_theirs)
 	{
-		WearStack  wear{ a_damage, a_source, a_theirs };
-		const auto count = Equipped::WriteEquipped(a_owner, a_armor, wear);
+		FindStack find{ a_armor, a_damage, a_source, a_theirs };
+		auto&     wear = find.wear;
+		Equipped::WriteStack(a_owner, a_armor, find, wear);
+		const auto count = find.equipped.count;
 
 		// A split that leaves the health unchanged merges straight back, so
 		// only a change is worth reporting.

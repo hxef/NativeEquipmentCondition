@@ -3,6 +3,7 @@
 #include "Core/Plugin.h"
 
 #include "UI/Repair/Workbench/Bench.h"
+#include "UI/Repair/Workbench/Cost.h"
 
 #include <cstdint>
 #include <vector>
@@ -38,12 +39,13 @@ namespace Workbench
 	[[nodiscard]] Job& InHand();
 
 	// Asks how far to repair the item, naming the perk above the question where
-	// the player holds a rank. The answer goes to Begin a moment later.
-	void AskWhichLevel(const Selection& a_selection, const std::vector<std::uint32_t>& a_offered);
+	// the player holds a rank. The answer goes to Begin a moment later, with
+	// a_priced, what PriceOf read at the REPAIR press.
+	void AskWhichLevel(const Selection& a_selection, const Priced& a_priced, const std::vector<std::uint32_t>& a_offered);
 
-	// Prices the repair and puts up its confirmation, or the box of what the
-	// bench lacks. Yes on the confirmation comes back to Finish.
-	void Begin(RE::ExamineMenu* a_menu, std::uint32_t a_level);
+	// Prices the repair from a_priced and puts up its confirmation, or the box
+	// of what the bench lacks. Yes on the confirmation comes back to Finish.
+	void Begin(RE::ExamineMenu* a_menu, std::uint32_t a_level, const Priced& a_priced);
 
 	// Writes the chosen condition onto the stack the bench shows, pays
 	// experience, spends the components and brings the bench up to date. A free

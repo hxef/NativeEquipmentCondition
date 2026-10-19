@@ -280,6 +280,9 @@ namespace
 			}
 		}
 
+		// The language file first, so the perk lines and the bench's MEND are
+		// built in the player's language. The game has read sLanguage by now.
+		Text::Load();
 		for (const auto& feature : features) {
 			if (feature.Load) {
 				feature.Load();

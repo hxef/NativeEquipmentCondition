@@ -128,7 +128,7 @@ namespace
 		{ .name = "MessageBox", .OnMovieLoaded = MessageBox::OnMovieLoaded },
 		// Repairing a worn weapon or piece of armor at its workbench, for
 		// components.
-		{ .name = "Workbench", .part = Part::kBench, .Install = Workbench::Install, .Load = Workbench::Load, .OnMovieLoaded = Workbench::OnMovieLoaded },
+		{ .name = "Workbench", .part = Part::kBench, .Install = Workbench::Install, .OnMovieLoaded = Workbench::OnMovieLoaded },
 		// A long component list in a workbench's confirmation box shows more
 		// rows and scrolls with the mouse wheel and the keys.
 		{ .name = "ConfirmScroll", .on = &Settings::bConfirmScroll, .part = Part::kScroll, .Install = ConfirmScroll::Install },

@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <cstddef>
 #include <initializer_list>
+#include <optional>
 #include <span>
 #include <string>
 #include <string_view>
@@ -23,140 +24,10 @@ namespace Text
 		// says the rest still works. NEC.log names every one.
 		constexpr std::size_t MOST_NAMED = 3;
 
-		// A part with the pieces of it that are off: "CND on item cards
-		// (containers and traders)".
-		constexpr Line PART_PIECES[]{
-			{ "en", "{0} ({1})" },
-			{ "fr", "{0} ({1})" },
-			{ "de", "{0} ({1})" },
-			{ "it", "{0} ({1})" },
-			{ "es", "{0} ({1})" },
-			{ "esmx", "{0} ({1})" },
-			{ "ptbr", "{0} ({1})" },
-			{ "pl", "{0} ({1})" },
-			{ "ru", "{0} ({1})" },
-			{ "ja", "{0}({1})" },
-			{ "zhhant", "{0}（{1}）" },
-			{ "zhhans", "{0}（{1}）" },
-		};
-
-		// After a part's line, what of the part still works.
-		constexpr Line STILL_WORKS[]{
-			{ "en", "Still works: {0}." },
-			{ "fr", "Fonctionne encore\u00A0: {0}." },
-			{ "de", "Funktioniert weiterhin: {0}." },
-			{ "it", "Funziona ancora: {0}." },
-			{ "es", "Sigue funcionando: {0}." },
-			{ "esmx", "Sigue funcionando: {0}." },
-			{ "ptbr", "Ainda funciona: {0}." },
-			{ "pl", "Nadal działa: {0}." },
-			{ "ru", "Продолжает работать: {0}." },
-			{ "ja", "引き続き有効: {0}" },
-			{ "zhhant", "仍可使用：{0}。" },
-			{ "zhhans", "仍可使用：{0}。" },
-		};
-
-		constexpr Line REST_WORKS[]{
-			{ "en", "The rest still works." },
-			{ "fr", "Le reste fonctionne encore." },
-			{ "de", "Der Rest funktioniert weiterhin." },
-			{ "it", "Il resto funziona ancora." },
-			{ "es", "El resto sigue funcionando." },
-			{ "esmx", "El resto sigue funcionando." },
-			{ "ptbr", "O resto ainda funciona." },
-			{ "pl", "Reszta nadal działa." },
-			{ "ru", "Остальное продолжает работать." },
-			{ "ja", "残りは引き続き有効です" },
-			{ "zhhant", "其餘仍可使用。" },
-			{ "zhhans", "其余仍可使用。" },
-		};
-
-		// A setting with some pieces off, then what it still changes, for a
-		// number, or still works for, for a switch.
-		constexpr Line SETTING_SOME[]{
-			{ "en", "{0}: no effect on {1} for now." },
-			{ "fr", "{0}\u00A0: sans effet sur {1} pour l'instant." },
-			{ "de", "{0}: vorerst keine Wirkung auf {1}." },
-			{ "it", "{0}: nessun effetto per {1} per ora." },
-			{ "es", "{0}: sin efecto en {1} por ahora." },
-			{ "esmx", "{0}: sin efecto en {1} por ahora." },
-			{ "ptbr", "{0}: sem efeito para {1} por enquanto." },
-			{ "pl", "{0}: na razie bez wpływu na: {1}." },
-			{ "ru", "{0}: пока не влияет на: {1}." },
-			{ "ja", "{0}: 今のところ{1}には効果がありません" },
-			{ "zhhant", "{0}：目前對{1}沒有效果。" },
-			{ "zhhans", "{0}：暂时对{1}不生效。" },
-		};
-
-		constexpr Line STILL_CHANGES[]{
-			{ "en", "Still changes {0}." },
-			{ "fr", "Modifie encore {0}." },
-			{ "de", "Ändert weiterhin {0}." },
-			{ "it", "Cambia ancora {0}." },
-			{ "es", "Aún cambia {0}." },
-			{ "esmx", "Aún cambia {0}." },
-			{ "ptbr", "Ainda altera {0}." },
-			{ "pl", "Nadal zmienia: {0}." },
-			{ "ru", "По-прежнему меняет: {0}." },
-			{ "ja", "{0}には引き続き効果があります" },
-			{ "zhhant", "仍會影響{0}。" },
-			{ "zhhans", "仍会影响{0}。" },
-		};
-
-		constexpr Line STILL_WORKS_FOR[]{
-			{ "en", "Still works for {0}." },
-			{ "fr", "Fonctionne encore pour {0}." },
-			{ "de", "Wirkt weiterhin für {0}." },
-			{ "it", "Funziona ancora per {0}." },
-			{ "es", "Sigue funcionando para {0}." },
-			{ "esmx", "Sigue funcionando para {0}." },
-			{ "ptbr", "Ainda funciona para {0}." },
-			{ "pl", "Nadal działa dla: {0}." },
-			{ "ru", "По-прежнему действует для: {0}." },
-			{ "ja", "{0}には引き続き有効です" },
-			{ "zhhant", "仍適用於{0}。" },
-			{ "zhhans", "仍适用于{0}。" },
-		};
-
-		// Trader repairs and Trader repair price while Worn item prices is
-		// left to another mod: a quote then starts from the game's own barter
-		// price, which can be the buying or the selling side.
-		constexpr Line TRADER_OWN_PRICE[]{
-			{ "en", "Repair prices follow the item's barter price for now." },
-			{ "fr", "Les prix de réparation suivent le prix de troc de l'objet pour l'instant." },
-			{ "de", "Reparaturpreise folgen vorerst dem Handelspreis des Gegenstands." },
-			{ "it", "Per ora i prezzi di riparazione seguono il prezzo di scambio dell'oggetto." },
-			{ "es", "Por ahora los precios de reparación siguen el precio de trueque del objeto." },
-			{ "esmx", "Por ahora los precios de reparación siguen el precio de trueque del objeto." },
-			{ "ptbr", "Por enquanto os preços de conserto seguem o preço de troca do item." },
-			{ "pl", "Ceny napraw na razie opierają się na cenie handlowej przedmiotu." },
-			{ "ru", "Цены ремонта пока равны торговой цене предмета." },
-			{ "ja", "今のところ、修理価格はアイテム本来の取引価格が基準です" },
-			{ "zhhant", "目前由物品原本的交易價格決定修理價格。" },
-			{ "zhhans", "暂时由物品原本的交易价格决定修理价格。" },
-		};
-
-		// 2 sentences on 1 line, so a language that puts no space between
-		// sentences can drop it.
-		constexpr Line SENTENCES[]{
-			{ "en", "{0} {1}" },
-			{ "fr", "{0} {1}" },
-			{ "de", "{0} {1}" },
-			{ "it", "{0} {1}" },
-			{ "es", "{0} {1}" },
-			{ "esmx", "{0} {1}" },
-			{ "ptbr", "{0} {1}" },
-			{ "pl", "{0} {1}" },
-			{ "ru", "{0} {1}" },
-			{ "ja", "{0}。{1}" },
-			{ "zhhant", "{0}{1}" },
-			{ "zhhans", "{0}{1}" },
-		};
-
-		std::span<const Line> WordsIn(std::span<const PieceWords> a_rows, Piece a_piece)
+		std::optional<Key> WordsIn(std::span<const PieceWords> a_rows, Piece a_piece)
 		{
 			const auto it = std::ranges::find(a_rows, a_piece, &PieceWords::piece);
-			return it != a_rows.end() ? it->words : std::span<const Line>{};
+			return it != a_rows.end() ? std::optional{ it->words } : std::nullopt;
 		}
 
 		// A piece by itself: its name, its part's for the only piece of a
@@ -168,8 +39,8 @@ namespace Text
 				return a_out == Out::kLog ? std::string{ PartLogName(row.part) } : PartName(row.part);
 			}
 			for (const auto rows : { PlayPieces(), ArmorPieces(), UiPieces(), PiecePhrases() }) {
-				if (const auto words = WordsIn(rows, a_piece); !words.empty()) {
-					return PickFor(words, a_out);
+				if (const auto words = WordsIn(rows, a_piece)) {
+					return PickFor(*words, a_out);
 				}
 			}
 			return {};
@@ -183,8 +54,8 @@ namespace Text
 			std::vector<std::string> names;
 			std::vector<Part>        named;
 			for (const auto piece : a_pieces) {
-				if (const auto phrase = WordsIn(PiecePhrases(), piece); !phrase.empty()) {
-					names.emplace_back(PickFor(phrase, a_out));
+				if (const auto phrase = WordsIn(PiecePhrases(), piece)) {
+					names.emplace_back(PickFor(*phrase, a_out));
 					continue;
 				}
 				const auto part = RowOfPiece(piece).part;
@@ -194,7 +65,7 @@ namespace Text
 				named.push_back(part);
 				std::vector<Piece> group;
 				for (const auto other : a_pieces) {
-					if (RowOfPiece(other).part == part && WordsIn(PiecePhrases(), other).empty()) {
+					if (RowOfPiece(other).part == part && !WordsIn(PiecePhrases(), other)) {
 						group.push_back(other);
 					}
 				}

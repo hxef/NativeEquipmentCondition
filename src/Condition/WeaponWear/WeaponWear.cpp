@@ -59,7 +59,7 @@ namespace WeaponWear
 		if (automatic <= 0.0F) {
 			REX::INFO("Automatic weapons, yours and NPCs', never wear as they fire or cut, since fAutoWearRateMult is {:g}. A bash still wears them.",
 				Settings::fAutoWearRateMult.GetValue());
-		} else if (automatic < 1.0F) {
+		} else if (automatic != 1.0F) {
 			REX::INFO("Automatic weapons, yours and NPCs', wear {:g} times as fast as they fire or cut, by fAutoWearRateMult. A bash wears as any other weapon's does.",
 				automatic);
 		}
@@ -101,65 +101,33 @@ namespace WeaponWear
 	{
 		// The base form's own instance data, for items carrying none. Read
 		// only.
-		RE::TBO_InstanceData* BaseInstanceData(const RE::TESBoundObject& a_object)
+		RE::TBO_InstanceData* BaseInstanceData(const RE::TESObjectWEAP& a_weapon)
 		{
 			// weaponData holds the unmodified stats, and TESObjectWEAP::Data
 			// derives from TBO_InstanceData, so it can be used in place of the
 			// per stack copy. Writing here would change every copy in the game.
-			if (!a_object.IsWeapon()) {
-				return nullptr;
-			}
-			const auto& weapon = static_cast<const RE::TESObjectWEAP&>(a_object);
-			return const_cast<RE::TESObjectWEAP::Data*>(&weapon.weaponData);
+			return const_cast<RE::TESObjectWEAP::Data*>(&a_weapon.weaponData);
 		}
 
-		// Picks the equipped stack as Equipped::EquippedStack does, and asks
-		// there whether it is the keeper's own, see Equipped::Issued. The copy
-		// the engine splits off a stack of 2 or more need not carry every
-		// entry Issued reads, so the stack they hold is asked before the split.
-		class KeptStack final :
+		// Picks the equipped stack and works out there what this use takes
+		// off it, for Equipped::WearStack. Whether the copy is the keeper's own
+		// is asked here as well, see Equipped::Issued, since the copy need not
+		// carry every entry Issued reads.
+		class FindStack final :
 			public RE::BGSInventoryItem::StackDataCompareFunctor
 		{
 		public:
-			KeptStack(const RE::Actor* a_keeper, const RE::TESBoundObject& a_object) noexcept :
+			FindStack(const RE::TESObjectWEAP& a_weapon, const char* a_source, float a_scale, bool a_theirs,
+				const RE::Actor* a_keeper) noexcept :
+				weapon(&a_weapon),
 				keeper(a_keeper),
-				object(&a_object)
+				wear(a_source, a_scale, a_theirs)
 			{}
 
 			bool CompareData(const RE::BGSInventoryItem::Stack& a_stack) override
 			{
 				if (!equipped.CompareData(a_stack)) {
 					return false;
-				}
-				kept = keeper && Equipped::Issued(*keeper, *object, a_stack.extra.get());
-				return true;
-			}
-
-			Equipped::EquippedStack   equipped;
-			const RE::Actor*          keeper;
-			const RE::TESBoundObject* object;
-			bool                      kept{ false };
-		};
-
-		// Wears down the one stack the engine hands it, and remembers whether
-		// the health changed. The engine has already split the stack if it held
-		// more than one item, see Equipped::WriteStack, so the weapon in
-		// hand and the weapon that wears stay the same one.
-		class WearStack final :
-			public RE::BGSInventoryItem::StackDataWriteFunctor
-		{
-		public:
-			WearStack(const char* a_source, float a_scale, bool a_theirs, const KeptStack& a_find) noexcept :
-				source(a_source),
-				scale(a_scale),
-				theirs(a_theirs),
-				find(&a_find)
-			{}
-
-			void WriteDataImpl(RE::TESBoundObject& a_object, RE::BGSInventoryItem::Stack& a_stack) override
-			{
-				if (!a_stack.extra) {
-					return;
 				}
 
 				// The engine only builds per stack instance data for an item
@@ -169,54 +137,36 @@ namespace WeaponWear
 				auto* xInstanceData = a_stack.extra->GetByType<RE::ExtraInstanceData>();
 				auto* instanceData = xInstanceData ? xInstanceData->data.get() : nullptr;
 				if (!instanceData) {
-					instanceData = BaseInstanceData(a_object);
-				}
-
-				// Every line names the item and the event, since guns and melee
-				// come through different code on different threads.
-				const auto name = RE::TESFullName::GetFullName(a_object);
-				if (!instanceData) {
-					REX::WARN("{:s}: {:s} [{:08X}] has no instance data and no base data, condition will not be decreased",
-						source, name, a_object.formID);
-					return;
+					instanceData = BaseInstanceData(*weapon);
 				}
 
 				// An essential NPC's own weapon never wears, the rule
 				// ArmorEvents.h gives their own armor.
-				if (find->kept) {
-					TraceLog::Npc::Line("wear", "{:s} [{:08X}] is their own and they are essential, so no wear", name, a_object.formID);
-					return;
+				if (keeper && Equipped::Issued(*keeper, *weapon, a_stack.extra.get())) {
+					TraceLog::Npc::Line("wear", "{:s} [{:08X}] is their own and they are essential, so no wear",
+						RE::TESFullName::GetFullName(*weapon), weapon->formID);
+					return false;
 				}
 
 				// Listed once per weapon in the player's log, so an NPC's copy
 				// never takes the player's listing.
-				if (!theirs) {
-					LogDamageSources(a_object, instanceData, xInstanceData && xInstanceData->data);
+				if (!wear.theirs) {
+					LogDamageSources(*weapon, instanceData, xInstanceData && xInstanceData->data);
 				}
 
-				// The stats of the copy in hand, mods included. WearsOut has
-				// already made sure this is a weapon.
-				const auto& weapon = static_cast<const RE::TESObjectWEAP&>(a_object);
+				// What this weapon costs per use with the stats of the copy in
+				// hand, mods included, times how many ordinary uses this event
+				// counts as, see a_scale in WeaponWear.h.
 				const auto& instance = *static_cast<const RE::TESObjectWEAP::InstanceData*>(instanceData);
-
-				// What this weapon costs per use, times how many ordinary uses
-				// this event counts as, see a_scale in WeaponWear.h.
-				const bool bash = std::string_view{ source } == BASH;
-				const auto amount = Rate(weapon, instance, a_stack.extra.get(), theirs, bash) * scale;
-				moved = Condition::Decrease(*a_stack.extra, a_object, amount, source, scale, theirs);
-
-				// The engine's own broken check, run on the health just
-				// written. It is the same check that stops the weapon being
-				// equipped again, see MIN_HEALTH in Condition.h.
-				broke = moved && a_stack.extra->IsItemBroken();
+				const bool  bash = std::string_view{ wear.source } == BASH;
+				wear.amount = Rate(*weapon, instance, a_stack.extra.get(), wear.theirs, bash) * wear.scale;
+				return Condition::Lowers(Condition::HealthOf(&a_stack), *weapon, wear.amount, wear.source, wear.theirs);
 			}
 
-			const char*      source;
-			float            scale;
-			bool             theirs;
-			const KeptStack* find;
-			bool             moved{ false };
-			bool             broke{ false };
+			Equipped::EquippedStack  equipped;
+			const RE::TESObjectWEAP* weapon;
+			const RE::Actor*         keeper;
+			Equipped::WearStack      wear;
 		};
 
 		// Takes a weapon just worn to 0 out of the owner's hands. The game
@@ -272,8 +222,8 @@ namespace WeaponWear
 	Worn WearCopy(RE::TESObjectREFR& a_owner, RE::TESObjectWEAP& a_weapon, const char* a_source, float a_scale, bool a_theirs,
 		const RE::Actor* a_keeper)
 	{
-		KeptStack find{ a_keeper, a_weapon };
-		WearStack wear{ a_source, a_scale, a_theirs, find };
+		FindStack find{ a_weapon, a_source, a_scale, a_theirs, a_keeper };
+		auto&     wear = find.wear;
 		Equipped::WriteStack(a_owner, a_weapon, find, wear);
 		const auto count = find.equipped.count;
 

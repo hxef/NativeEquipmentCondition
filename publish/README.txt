@@ -165,7 +165,9 @@ COMPATIBILITY
   NEC.log name that mod and what is off.
 * The plugin's own text comes in every language the game ships in. The rest is
   the game's own words. Every language but English was translated by AI, not
-  by a person, so some lines may read a little off.
+  by a person, so some lines may read a little off. To fix a line or add a
+  language, edit or copy a file in Data\F4SE\Plugins\NEC\Translations, as
+  en.ini there explains. For Simplified Chinese, copy zhhans.ini over cn.ini.
 * A DLL mod that changes item stats as the game starts, like RobCo Patcher,
   does not make gear wear too fast or too slow, since NEC reads the stats
   again at every save load and new game.

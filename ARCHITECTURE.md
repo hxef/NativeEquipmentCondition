@@ -4,8 +4,9 @@ Native Equipment Condition is one DLL that gives Fallout 4 weapons and armor a
 condition that wears down with use. It patches about 120 places in the
 game's own code, reads what the load order says about weapons, armor, recipes,
 perks and leveled lists, and draws its readouts into the game's own menus. It
-ships no ESP, no scripts and no assets, only the DLL, `NEC.ini` beside it and
-a page for the Mod Configuration Menu.
+ships no ESP, no scripts and no assets, only the DLL, `NEC.ini` beside it, 1
+language file per language in `NEC/Translations` and a page for the Mod
+Configuration Menu.
 
 Read `src/Features.cpp` next. It lists every feature in the order it runs.
 Then read the header of whichever feature you are here for. Every header opens
@@ -56,8 +57,10 @@ src/
     Plugin.h                 the data handler the load order is read through
     Settings.h/.cpp          every setting, read from NEC.ini
     Text/
-      Text.h/.cpp            the plugin's own sentences, in every language
-      Lines.h                what the files here and in Names and Menu share
+      Text.h/.cpp            the plugin's own sentences, 1 function each
+      Translations.cpp       reading the player's language file, and the line each key gives
+      FileText.h/.cpp        what a language file must be: its encoding and the {n} slots of each line
+      Lines.h                what the files here and in Names and Menu share, and the keys the build writes from en.ini
       Repair.cpp             the repair question and the bench's sentences
       Trader.cpp             what a trader says about a repair
       Tips.cpp               the loading screen's tips
@@ -202,6 +205,11 @@ src/
       VendorRepair/          paying a trader to repair weapons, armor or clothing, and their stock
 ```
 
+The words themselves are in `publish/Translations`, 1 file per language, and
+the files under `Text/` hold keys, not words. Each build writes
+`Core/Text/Keys.h` from `en.ini` into the build folder and checks the other
+files, see `xmake/texts.lua`.
+
 A feature that has grown past one pair of files has a folder named after its
 namespace: the feature's own header and source, a private header for what the
 files share, and one file per job.
@@ -217,6 +225,8 @@ and one row in `src/Features.cpp`. `src/main.cpp` walks the rows:
    after every full reset, which is the game deleting every form and loading
    every file again after a prompt about changed DLC, Creations or a save's
    load order. Everything measured from the load order is measured here first.
+   Just before it, `src/main.cpp` runs `Text::Load`, which reads the player's
+   language file, see `src/Core/Text/Text.h`.
 3. **Unload**, just before a full reset deletes every form, in reverse order,
    so a feature lets go before anything it read from does.
 4. **OnMovieLoaded**, for every menu movie the game loads, through

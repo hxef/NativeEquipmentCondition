@@ -34,10 +34,6 @@ namespace HudCondition
 		// deep as on that divider, which is 2 thick.
 		constexpr Spot SHIPPED{ { 0.0, 0.0, 44.0 }, DEEP_PER_THICK * 2.0, true };
 
-		// The word's font size, which sets its gap and drop, see
-		// HudParts::Readout.
-		constexpr double TEXT_SIZE = 20.0;
-
 		// How long the readout fades on its own, about as long as the counter's
 		// own fade.
 		constexpr double FADE_SECONDS = 0.25;
@@ -48,28 +44,6 @@ namespace HudCondition
 
 		// A value Percent never returns, so the first frame always draws.
 		constexpr std::int32_t NOT_DRAWN = -2;
-
-		// Writes the word with a_first, once a movie since it never changes,
-		// and returns where it sits from the bar's right end, a_moved taken
-		// back, which is how far Follow moved it. Both have their origin on
-		// their right end, so the bar runs left and the word follows past it.
-		// The trace says the first try and the one that measures.
-		HudParts::Readout::LabelPlace Label(Value& a_readout, bool a_first, const Flash::Point& a_moved)
-		{
-			if (a_first) {
-				HudParts::Readout::SetLabel(a_readout, { .size = TEXT_SIZE, .gap = HudParts::Readout::LABEL_GAP * TEXT_SIZE, .drop = HudParts::Readout::LABEL_DROP * TEXT_SIZE });
-			}
-			auto label = HudParts::Readout::LabelExtent(a_readout);
-			label.field = label.field.Moved(-a_moved.x, -a_moved.y);
-			label.letters = label.letters.Moved(-a_moved.x, -a_moved.y);
-			const auto& field = label.field;
-			const auto& letters = label.letters;
-			if (a_first || label.measured) {
-				TraceLog::Line("menu", "HUD CND word's letters fill {:.1f},{:.1f} to {:.1f},{:.1f} from the bar's end, its field {:.1f},{:.1f} to {:.1f},{:.1f}{:s}",
-					letters.left, letters.top, letters.right, letters.bottom, field.left, field.top, field.right, field.bottom, label.measured ? "" : ", not measured yet");
-			}
-			return label;
-		}
 
 		// The bar takes the colour the divider is drawn in, checked every
 		// reading, since the HUD colour or a HUD mod can change it. In vanilla
@@ -127,10 +101,10 @@ namespace HudCondition
 					if (auto* menu = HudParts::MenuFor(*a_params.movie)) {
 						HudParts::AddColorTarget(*menu, readout);
 						recolorFrom = frames + FRAMES_PER_READING;
-						counterCanBeVisible = HudParts::ComponentCanBeVisible(*menu, RE::VTABLE::HUDAmmoCounter[0].address());
+						counterPart = HudParts::AmmoCounterPart(*menu);
 						colored = true;
 						TraceLog::Line("menu", "HUD CND is a HUD part of its own, in the gameplay HUD colour, {:s}",
-							counterCanBeVisible ? "and follows the ammo counter's HUD modes" : "but found no ammo counter to follow HUD modes by");
+							counterPart ? "and follows the ammo counter's HUD modes" : "but found no ammo counter to follow HUD modes by");
 					}
 				}
 
@@ -178,23 +152,28 @@ namespace HudCondition
 					PlaceOnScreen(*a_params.movie, meters, counter, readout, basis);
 				}
 
-				// A gun keeps the counter showing, and the bar fades with it. A
-				// melee weapon hides the counter, so the bar fades on its own,
-				// shown while the weapon is out. When the HUD mode hides the
-				// counter, in the Pip-Boy for example, the bar fades too, even
-				// with a weapon out.
-				const auto hudAllows = !counterCanBeVisible || *counterCanBeVisible;
+				// While the counter shows, the bar fades with it. A melee
+				// weapon hides the counter, so the bar fades on its own, shown
+				// while the weapon is out. When the HUD mode hides the counter,
+				// in the Pip-Boy for example, the bar fades too, even with a
+				// weapon out. A hidden counter with rounds to count keeps the
+				// bar hidden while bHudBarHidesWithCounter is on. While it is
+				// off, a bar that stays never dips as the counter fades out.
+				const auto hudAllows = !counterPart || counterPart->hudModes.canBeVisible;
+				const auto alone = hudAllows && HudParts::Weapon::Drawn();
+				const auto hidesWithCounter = counterPart && Settings::bHudBarHidesWithCounter.GetValue() && HudParts::HasRounds(*counterPart);
 				const auto counterOpacity = Flash::Opacity(counter);
 				const auto counterShows = counterOpacity > 0.0;
+				const auto stays = alone && !hidesWithCounter;
 
 				auto opacity = 0.0;
 				if (percent < 0) {
 					fade = 0.0;
 				} else if (counterShows) {
-					opacity = counterOpacity;
-					fade = counterOpacity;
+					opacity = stays ? std::max(counterOpacity, fade) : counterOpacity;
+					fade = opacity;
 				} else {
-					const auto target = hudAllows && HudParts::Weapon::Drawn() ? 1.0 : 0.0;
+					const auto target = stays ? 1.0 : 0.0;
 					const auto step = elapsed / FADE_SECONDS;
 					fade = target > fade ? std::min(target, fade + step) : std::max(target, fade - step);
 					opacity = fade;
@@ -218,7 +197,7 @@ namespace HudCondition
 				if (opacity != shownOpacity) {
 					if ((opacity > 0.0) != (shownOpacity > 0.0)) {
 						TraceLog::Line("menu", "HUD CND {:s} {:s}, percent {}", opacity > 0.0 ? "shows" : "hides",
-							!counterShows ? "on its own" : (spot.onDivider ? "in place of the ammo divider" : "beside the ammo counter"), percent);
+							!counterShows ? (alone && hidesWithCounter ? "with the ammo counter" : "on its own") : (spot.onDivider ? "in place of the ammo divider" : "beside the ammo counter"), percent);
 					}
 					readout.SetMember("alpha"sv, Value(opacity));
 					readout.SetMember("visible"sv, Value(opacity > 0.0));
@@ -247,7 +226,7 @@ namespace HudCondition
 				toldTint.reset();
 				dividerHidden = false;
 				ownVisible.reset();
-				counterCanBeVisible = nullptr;
+				counterPart = nullptr;
 			}
 
 		private:
@@ -341,8 +320,8 @@ namespace HudCondition
 			// back when the bar moves off.
 			std::optional<bool> ownVisible;
 
-			// The ammo counter's canBeVisible, found along with the HUD menu.
-			const bool* counterCanBeVisible = nullptr;
+			// Found along with the HUD menu, see HudParts::AmmoCounterPart.
+			const RE::HUDAmmoCounter* counterPart = nullptr;
 		};
 
 		FrameListener g_frameListener;

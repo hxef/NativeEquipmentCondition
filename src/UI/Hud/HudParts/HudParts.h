@@ -183,10 +183,17 @@ namespace HudParts
 	// colour, into a movie that no longer exists.
 	void AddColorTarget(RE::HUDMenu& a_menu, const Value& a_clip);
 
-	// Where the HUD part carrying this vtable keeps canBeVisible, which says
-	// whether the current HUD mode lets it be seen, or null. The game writes
-	// the byte and the HUD reads it, so no lock.
-	[[nodiscard]] const bool* ComponentCanBeVisible(const RE::HUDMenu& a_menu, std::uintptr_t a_vtable);
+	// The game's own ammo counter part in this HUD menu, or null. Its
+	// canBeVisible says whether the HUD mode now lets the counter be seen.
+	[[nodiscard]] const RE::HUDAmmoCounter* AmmoCounterPart(const RE::HUDMenu& a_menu);
+
+	// Whether the counter has rounds to count. NEC reads them on the HUD's
+	// thread without the lock the game takes for them, so a read is a frame
+	// old at worst.
+	[[nodiscard]] inline bool HasRounds(const RE::HUDAmmoCounter& a_counter)
+	{
+		return a_counter.nextAmmoCount.eventDataStruct.optionalValue.has_value();
+	}
 
 	// Builds a HUD part of NEC's the first frame its switch reads on, so while
 	// it is off the HUD movie gets nothing of NEC's but this listener on its

@@ -2,7 +2,7 @@
 
 #include "Core/Settings.h"
 
-// The names and help lines of the HUD numbers and the log level on the MCM
+// The names and help lines of the HUD settings and the log level on the MCM
 // page, see MenuLine in Text.h, and the HUD bar sliders' Default sentence.
 namespace Text
 {
@@ -17,6 +17,7 @@ namespace Text
 			{ &Settings::fHudBarY, HUD_BAR_Y_NAME, HUD_BAR_Y_HELP },
 			{ &Settings::fPowerArmorBarX, POWER_ARMOR_BAR_X_NAME, POWER_ARMOR_BAR_X_HELP },
 			{ &Settings::fPowerArmorBarY, POWER_ARMOR_BAR_Y_NAME, POWER_ARMOR_BAR_Y_HELP },
+			{ &Settings::bHudBarHidesWithCounter, HUD_BAR_HIDES_NAME, HUD_BAR_HIDES_HELP },
 			{ &LOG_LEVEL, LOG_LEVEL_NAME, LOG_LEVEL_HELP },
 		};
 	}

@@ -123,7 +123,8 @@ SEE IT AT A GLANCE
 * CND on the item cards, with the worn damage, resistances, fire rate,
   accuracy and range.
 * CND bars on the HUD ammo counter, the power armor dash and the Pip-Boy
-  apparel figure, and condition meters on the quick container rows.
+  apparel figure, and condition meters on the quick container rows. An MCM
+  switch lets the ammo counter's bar fade with the counter.
 * Broken items fade out in the Pip-Boy lists.
 
 MAKE IT YOURS
@@ -230,7 +231,7 @@ For anything else, share NEC's logs:
        bTraceLogs=true
 2. Play until the bug happens again.
 3. Open the folder Documents\My Games\Fallout4\F4SE and share these files:
-   * NEC.log, NEC.trace.log, NEC.ui.trace.log and NEC.npc.trace.log
+   * NEC.log, NEC.trace.log, NEC.ui.trace.log and NEC.npc.trace.log.
    * If the game crashed and you started it again, also the 4 files with a
      1 in the name, like NEC.1.log. They are from the game that crashed.
      NEC keeps your last 10 games this way, and a higher number is older.

@@ -14,11 +14,15 @@
 // size.
 //
 // The bar is a sprite beside the counter, not inside it. With a gun out it
-// replaces the divider and fades with the counter. With a melee weapon out the
-// game hides the counter, so the bar shows alone while the weapon is out. It
-// hides when the HUD mode hides the counter, in the Pip-Boy for example, or in
-// power armor, where PowerArmorCondition.h takes over. With no condition to
-// show, the divider comes back and the HUD is exactly as it was.
+// replaces the divider and fades with the counter. The game fades the counter
+// out uAmmoCounterFadeTimeMS after the last shot, 10 seconds as it ships, and
+// with bHudBarHidesWithCounter on the bar goes with it. Off, the default, the
+// bar shows alone while the gun is out. A melee weapon gives the counter no
+// rounds to count, so the game never shows it, and the bar shows alone while
+// the weapon is out either way. It hides when the HUD mode hides the counter,
+// in the Pip-Boy for example, or in power armor, where PowerArmorCondition.h
+// takes over. With no condition to show, the divider comes back and the HUD
+// is exactly as it was.
 //
 // A HUD mod can turn the divider, shorten it, or put a number or another part
 // where the bar would go. Then the bar sits in the nearest free spot by the

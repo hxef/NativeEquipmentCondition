@@ -84,7 +84,12 @@ namespace Mcm
 					return on;
 				}
 			}
-			return IsIdOf(Settings::bTraceLogs, a_id) ? &Settings::bTraceLogs : nullptr;
+			for (auto* on : { &Settings::bHudBarHidesWithCounter, &Settings::bTraceLogs }) {
+				if (IsIdOf(*on, a_id)) {
+					return on;
+				}
+			}
+			return nullptr;
 		}
 
 		// A number by its id on the page, a float or a whole number as T asks.

@@ -16,8 +16,8 @@
 // logs through, would. spdlog's file sinks take the path in the Windows code
 // page, so a Documents folder with letters outside it, such as Cyrillic on a
 // Western Windows, would get no log. NEC's sink opens the file by the path
-// as Windows gives it, which holds any letter, and every path NEC.log prints
-// is written in UTF-8.
+// as Windows gives it, which holds any letter, and NEC.log prints every path
+// as Shown below says.
 //
 // NEC opens NEC.log here and not through F4SE::Init. Its rotation option
 // builds the sink without catching, and the sink throws when an old file
@@ -57,7 +57,9 @@ namespace LogFiles
 	// The file a_sink writes to, empty for a sink this file did not open.
 	[[nodiscard]] std::filesystem::path FileOf(const spdlog::sink_ptr& a_sink);
 
-	// a_path in UTF-8, as every log line is written. Never throws, unlike
-	// path::string, which throws on a letter outside the Windows code page.
-	[[nodiscard]] std::string Utf8(const std::filesystem::path& a_path);
+	// a_path as NEC's logs print it, from My Games on, so a log a player posts
+	// never names their Windows user. In UTF-8, as every log line is written.
+	// Never throws, unlike path::string, which throws on a letter outside the
+	// Windows code page.
+	[[nodiscard]] std::string Shown(const std::filesystem::path& a_path);
 }

@@ -79,7 +79,7 @@ src/
         MenuSwitches.cpp     the MCM page's switches: help, and the bug report logs switch's name
         MenuWear.cpp         the MCM page's wear speeds, yours, NPCs' and automatic weapons': names and help
         MenuNumbers.cpp      the MCM page's other Balance numbers: names and help
-        MenuHudLog.cpp       the MCM page's HUD numbers and log level: names and help, and the HUD bar sliders' default
+        MenuHudLog.cpp       the MCM page's HUD settings and log level: names and help, and the HUD bar sliders' default
         MenuNotes.cpp        the MCM page's grey lines about parts left to other mods
         MenuPieces.cpp       a part with its pieces in brackets, what still works, and a setting's sentence with pieces off
     TraceLog.h/.cpp          the trace logs, for lines that arrive in floods

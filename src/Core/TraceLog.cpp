@@ -232,7 +232,7 @@ namespace TraceLog
 				// LogFiles.h.
 				logger = std::make_shared<spdlog::logger>(a_name, LogFiles::OpenFile(a_path, a_maxSize));
 			} catch (const std::exception& e) {
-				REX::WARN("Could not open the bug report log {:s}: {:s}", LogFiles::Utf8(a_path), e.what());
+				REX::WARN("Could not open the bug report log {:s}: {:s}", LogFiles::Shown(a_path), e.what());
 				return nullptr;
 			}
 
@@ -244,7 +244,7 @@ namespace TraceLog
 			// Lines arrive already formatted, times, tags and threads included.
 			logger->set_pattern("%v");
 
-			REX::INFO("Bug report log: {:s}", LogFiles::Utf8(a_path));
+			REX::INFO("Bug report log: {:s}", LogFiles::Shown(a_path));
 			return logger;
 		}
 	}

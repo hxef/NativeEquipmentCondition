@@ -1,5 +1,7 @@
 #include "UI/Hud/HudCondition/Spot.h"
 
+#include "Core/TraceLog.h"
+
 #include <algorithm>
 #include <cmath>
 #include <format>
@@ -19,6 +21,10 @@ namespace HudCondition
 
 		// A bar shorter than 4 times its depth reads as a dot, not a level.
 		constexpr double MIN_LENGTH_PER_DEEP = 4.0;
+
+		// The word's font size, which sets its gap and drop, see
+		// HudParts::Readout.
+		constexpr double TEXT_SIZE = 20.0;
 
 		// How long a choice holds before NEC.log says it. A HUD mod seen
 		// moved its parts for 0.3 seconds after the HUD loaded.
@@ -288,6 +294,23 @@ namespace HudCondition
 			return WithWord(a_around, line, a_keepOff, std::format("bar keeps the ammo divider's place, since {:s} and no spot by the ammo counter is free", a_why.said),
 				"divider, " + a_why.kind);
 		}
+	}
+
+	HudParts::Readout::LabelPlace Label(Roles::Value& a_readout, bool a_first, const Flash::Point& a_moved)
+	{
+		if (a_first) {
+			HudParts::Readout::SetLabel(a_readout, { .size = TEXT_SIZE, .gap = HudParts::Readout::LABEL_GAP * TEXT_SIZE, .drop = HudParts::Readout::LABEL_DROP * TEXT_SIZE });
+		}
+		auto label = HudParts::Readout::LabelExtent(a_readout);
+		label.field = label.field.Moved(-a_moved.x, -a_moved.y);
+		label.letters = label.letters.Moved(-a_moved.x, -a_moved.y);
+		const auto& field = label.field;
+		const auto& letters = label.letters;
+		if (a_first || label.measured) {
+			TraceLog::Line("menu", "HUD CND word's letters fill {:.1f},{:.1f} to {:.1f},{:.1f} from the bar's end, its field {:.1f},{:.1f} to {:.1f},{:.1f}{:s}",
+				letters.left, letters.top, letters.right, letters.bottom, field.left, field.top, field.right, field.bottom, label.measured ? "" : ", not measured yet");
+		}
+		return label;
 	}
 
 	std::optional<Choice> Choose(Scaleform::GFx::Movie& a_movie, Roles::Value& a_counter, const Roles::Value& a_readout,

@@ -121,12 +121,13 @@ namespace
 		{ &Settings::fBenchCostMult, nullptr, BENCH, {}, BENCH_EXCEPTIONS },
 		{ &Settings::iFreeMendAbove, &Settings::fBenchCostMult, BENCH },
 		{ &Settings::fTraderPriceMult, &Settings::bVendorRepair, TRADER_REPAIRS, TRADER_PRICE_SIDE },
-		// The 2 rows that draw the bars share bHudCondition, so they never
-		// run once HUD condition bars is left to another mod.
+		// The HUD bar rows share bHudCondition, so they never run once HUD
+		// condition bars is left to another mod.
 		{ &Settings::fHudBarX, &Settings::bHudCondition, HUD_BARS },
 		{ &Settings::fHudBarY, &Settings::bHudCondition, HUD_BARS },
 		{ &Settings::fPowerArmorBarX, &Settings::bHudCondition, HUD_BARS },
 		{ &Settings::fPowerArmorBarY, &Settings::bHudCondition, HUD_BARS },
+		{ &Settings::bHudBarHidesWithCounter, &Settings::bHudCondition, HUD_BARS },
 	};
 
 	// Every setting changes something, no list names kNone or a piece twice,

@@ -26,12 +26,12 @@ struct Feature;  // Core/Feature.h
 // alone, which is what the condition scaling needs: the calls combat makes,
 // not the ones the save system makes.
 //
-// CallPatch.cpp reads each place, Ledger.cpp keeps every place and writes
-// them, Sets.cpp says whether a set's hooks run, Walk.cpp follows the hooks on
-// a place and judges what another DLL left, with the memory reads of
-// Reach.cpp, Recheck.cpp reads every place back as the game runs, Owners.cpp
-// names who has a place, Losses.cpp works out which pieces are off and to
-// whom, and Summary.cpp writes NEC.log's summary of it.
+// CallPatch.cpp reads each place, Ledger.cpp keeps and writes them, Sets.cpp
+// says whether a set's hooks run, Walk.cpp follows the hooks on a place and
+// judges what another DLL left, with Reach.cpp's memory reads, Recheck.cpp
+// reads every place back as the game runs, with Changed.cpp's lines and
+// MenuWait.cpp's menus, Owners.cpp names who has a place, Losses.cpp finds
+// which pieces are off and to whom, and Summary.cpp writes NEC.log's summary.
 namespace CallPatch
 {
 	// A call site: the Address Library ID of the function around it plus the
@@ -229,7 +229,7 @@ namespace CallPatch
 		std::vector<Piece> pieces;  // the shown pieces of the lost part off for this cause
 		std::vector<Piece> taken;
 		std::vector<Owner> owners;  // each once, in the order of Before
-		bool               waits = false;  // off only while a held set waits for its hook to run, see Sets.cpp
+		bool               waits = false;  // off only while its set waits, see Sets.cpp
 	};
 
 	// A part another mod took some of: 1 cause, or 1 for each where its pieces
@@ -293,8 +293,8 @@ namespace CallPatch
 	// Reads back every place NEC noted, written or left alone, and follows the
 	// hooks of any DLL that changed one since. While the call still reaches NEC
 	// the place is shared, except in a set that has to run on every call, see
-	// EVERY_CALL. Else NEC's change there is off from now on, its pieces go to
-	// that DLL, and NEC.log says which. A trace only place is logged and takes
-	// nothing. a_moment says when, for the log. True when the Summary changes.
+	// EVERY_CALL. Else NEC's change there is off from now on, or at a place
+	// MenuWait.h lists once its menu opens with no call reaching NEC. a_moment
+	// says when, for the log. True when the Summary changes or a wait ends in a cut.
 	bool Recheck(std::string_view a_moment);
 }

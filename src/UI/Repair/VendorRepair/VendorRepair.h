@@ -34,8 +34,8 @@ namespace VendorRepair
 	void Load();
 
 	// Whether the barter highlight hook still runs, false once another mod
-	// cut its place. A refresh no hook starts, for a message box or a frame
-	// of a wait or a watch, asks it first, since it would show the item that
-	// hook last stored.
+	// cut its place or while NEC has not seen this screen open. A refresh no
+	// hook starts, for a message box or a frame of a wait or a watch, asks it
+	// first, since it would show the item that hook last stored.
 	[[nodiscard]] bool HighlightLive();
 }

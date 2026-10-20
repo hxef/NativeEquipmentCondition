@@ -73,7 +73,7 @@ namespace CallPatch
 		kOwn,     // NEC's alone: nobody else was there, or it is back to NEC's bytes
 		kOnTop,   // NEC runs on top of a DLL it found there at install
 		kShared,  // a DLL hooked over NEC later and the call still reaches NEC
-		kProven,  // kShared in a held set whose hook has run since
+		kProven,  // kShared in a set that waited, whose hook has run since
 		kCut,     // a DLL took it later and skips NEC, a set of every call changed, or another place of its set was cut
 		kLeft,    // taken when NEC noted it, in a way NEC cannot build on, so left alone
 	};
@@ -186,7 +186,7 @@ namespace CallPatch
 		Why                         why = Why::kNone;
 		std::vector<Owner>          owners{};  // who has it while it is off, first found first
 		std::vector<Owner>          under{};   // the DLLs NEC runs on top of, outermost first
-		std::vector<Owner>          line{};    // the DLLs over NEC as the last walk found them
+		std::vector<Owner>          line{};    // the last walk's DLLs over NEC, see MenuWait.h
 		std::array<std::uint8_t, 8> wrote{};
 		std::array<std::uint8_t, 8> seen{};    // what the last read found there
 		std::uint8_t                size = 0;  // bytes NEC wrote, 0 while it is not written
@@ -194,8 +194,8 @@ namespace CallPatch
 	};
 
 	// Whether a place is off for good, so the page names who has it. A place
-	// of a held set also counts as off on the page and in NEC.log while the
-	// set waits, see Losses.cpp.
+	// of a set that waits, held or waiting for its menu, also counts as off on
+	// the page and in NEC.log, see Losses.cpp.
 	[[nodiscard]] inline bool IsOff(const Place& a_place)
 	{
 		return a_place.share == Share::kCut || a_place.share == Share::kLeft;
@@ -256,9 +256,9 @@ namespace CallPatch
 	// reaches when its pieces are all off for a cause outside its set, such
 	// as a piece they need, and is empty otherwise. Another place of a piece
 	// marked alone is no such cause, see PieceRow in Core/Pieces.h. With
-	// a_forNow, as for the recheck's held, lone and runs again lines,
-	// neither is a held set of the same pieces while it only waits, as it
-	// comes back by itself. Every other caller leaves it false, so the
+	// a_forNow, as for the recheck's waits, held, lone and runs again lines,
+	// neither is a set of the same pieces while it only waits, as it comes
+	// back by itself. Every other caller leaves it false, so the
 	// summary shares a part only once no set of it waits.
 	void                      Say(const Pass& a_pass, Lines& a_lines, bool a_install);
 	[[nodiscard]] std::string PiecesOffTail(const Place& a_place, bool a_forNow = false);

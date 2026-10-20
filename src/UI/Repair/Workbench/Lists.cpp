@@ -19,14 +19,16 @@ namespace Workbench
 		REL::Relocation<void (*)(RE::ExamineMenu*)>               _UpdateModSlotList;
 		REL::Relocation<void (*)(RE::ExamineMenu*)>               _UpdateModChoiceList;
 
-		// Whether each of the 3 slots still runs, see CallPatch::PatchSlot.
+		// Whether each of the 3 slots still runs, see CallPatch::PatchSlot. The
+		// item list hook asks Runs first, see Core/CallPatch/MenuWait.h.
 		CallPatch::LinkBase g_itemListLink;
 		CallPatch::LinkBase g_modSlotsLink;
 		CallPatch::LinkBase g_modChoicesLink;
 
 		// Where the bench's rebuild of its item list hands the new rows to
 		// Flash, which draws them and puts the highlight back on the item it
-		// was on, or on the nearest row shown.
+		// was on, or on the nearest row shown. Its hook asks Runs first, see
+		// Core/CallPatch/MenuWait.h.
 		constexpr CallPatch::CallSite REFRESH_SITE{ 2223054, 0x245, "item list refresh" };
 
 		// The bench while it rebuilds its item list. The bench is a menu, so
@@ -43,7 +45,7 @@ namespace Workbench
 		// a long inventory costs it no more time.
 		void UpdateItemListHk(RE::ExamineMenu* a_menu, std::int32_t a_selected)
 		{
-			if (!Repairs() || !g_itemListLink.Live() || !a_menu || a_menu->inspectMode) {
+			if (!g_itemListLink.Runs() || !Repairs() || !a_menu || a_menu->inspectMode) {
 				_UpdateItemList(a_menu, a_selected);
 				return;
 			}
@@ -62,7 +64,7 @@ namespace Workbench
 		bool RefreshItemListHk(Scaleform::GFx::Value::ObjectInterface* a_interface, void* a_data, Scaleform::GFx::Value* a_result,
 			const char* a_name, const Scaleform::GFx::Value* a_args, std::size_t a_count, bool a_isDisplayObject)
 		{
-			if (g_rebuilding && Repairs() && g_refreshLink.Live()) {
+			if (g_refreshLink.Runs() && g_rebuilding && Repairs()) {
 				MarkWorn(g_rebuilding);
 			}
 			return g_refreshLink(a_interface, a_data, a_result, a_name, a_args, a_count, a_isDisplayObject);

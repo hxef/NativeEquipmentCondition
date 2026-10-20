@@ -33,7 +33,9 @@ namespace ConfirmScroll
 		REL::Relocation<bool (*)(RE::BSInputEventUser*, const RE::InputEvent*)>              _ShouldHandleEvent;
 		REL::Relocation<void (*)(RE::BSInputEventUser*, const RE::ButtonEvent*)>             _OnButtonEvent;
 
-		// Whether each place that scrolls runs, see CallPatch::PatchSlot.
+		// Whether each place that scrolls runs, see CallPatch::PatchSlot. The
+		// input and keys hooks ask the messages place too, so while it waits
+		// for the box's next open the box scrolls only as the game's does.
 		CallPatch::LinkBase g_messagesLink;
 		CallPatch::LinkBase g_handlesLink;
 		CallPatch::LinkBase g_keysLink;
@@ -261,6 +263,9 @@ namespace ConfirmScroll
 		// traced, since a short box leaves no other line.
 		RE::UI_MESSAGE_RESULTS ProcessMessageHk(RE::ExamineConfirmMenu* a_menu, RE::UIMessage& a_message)
 		{
+			// Only the message that opens the box brings a waiting place back,
+			// as Grow runs there.
+			const auto runs = *a_message.type == RE::UI_MESSAGE_TYPE::kShow && g_messagesLink.Runs();
 			const auto result = _ProcessMessage(a_menu, a_message);
 			if (!a_menu) {
 				return result;
@@ -270,7 +275,7 @@ namespace ConfirmScroll
 				if (TraceLog::IsOpen()) {
 					TraceLog::Line("menu", "Confirmation box {:X} opens, asking \"{:s}\"", Id(a_menu), Roles::Boxes::Question(*a_menu));
 				}
-				if (Settings::bConfirmScroll.GetValue() && g_messagesLink.Live()) {
+				if (Settings::bConfirmScroll.GetValue() && runs) {
 					Grow(*a_menu);
 				}
 				break;
@@ -289,7 +294,7 @@ namespace ConfirmScroll
 		bool ShouldHandleEventHk(RE::BSInputEventUser* a_this, const RE::InputEvent* a_event)
 		{
 			const auto* const button = a_event->As<RE::ButtonEvent>();
-			return (Settings::bConfirmScroll.GetValue() && g_handlesLink.Live() && button && Way(*button) != DIRECTION_VAL::kNone) ||
+			return (Settings::bConfirmScroll.GetValue() && g_handlesLink.Live() && g_messagesLink.Live() && button && Way(*button) != DIRECTION_VAL::kNone) ||
 			       _ShouldHandleEvent(a_this, a_event);
 		}
 
@@ -298,7 +303,7 @@ namespace ConfirmScroll
 		void OnButtonEventHk(RE::BSInputEventUser* a_this, const RE::ButtonEvent* a_event)
 		{
 			auto*      menu = static_cast<RE::ExamineConfirmMenu*>(a_this);
-			const auto way = Settings::bConfirmScroll.GetValue() && g_keysLink.Live() ? Way(*a_event) : DIRECTION_VAL::kNone;
+			const auto way = Settings::bConfirmScroll.GetValue() && g_keysLink.Live() && g_messagesLink.Live() ? Way(*a_event) : DIRECTION_VAL::kNone;
 			if (way == DIRECTION_VAL::kNone) {
 				// Said on a release, before the game's answer closes the box.
 				if (a_event->QReleased() && TraceLog::IsOpen()) {

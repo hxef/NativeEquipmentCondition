@@ -1,6 +1,5 @@
-#include "Core/CallPatch/Ledger.h"
-
-#include "Core/Feature.h"
+#include "Core/CallPatch/Changed.h"
+#include "Core/CallPatch/MenuWait.h"
 
 #include <algorithm>
 #include <cstring>
@@ -9,6 +8,7 @@
 #include <span>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 // Reading every place NEC noted back, since a DLL that patches after NEC can
@@ -18,118 +18,12 @@
 // still reaches NEC the 2 share the place, except in a set that has to run on
 // every call, else NEC's change there is off from now on. The DLL that cuts
 // NEC off is named, never one in front of it that hands the call on, but where
-// NEC has to run on every call each DLL over it is named.
+// NEC has to run on every call each DLL over it is named. A place MenuWait.h
+// lists waits for its menu instead.
 namespace CallPatch
 {
 	namespace
 	{
-		// The newest owner of a place, as a list of 1 for Words.
-		std::string Newest(const Place& a_place)
-		{
-			return Words(std::span{ &a_place.owners.back(), 1 });
-		}
-
-		// The DLLs over NEC the walk found, outermost first, for the share,
-		// cut and again lines: 1 name, or "B.dll over A.dll" for 2 or more.
-		// A place no walk read names its newest owner, or else whoever it
-		// leads to now.
-		std::string By(const Place& a_place)
-		{
-			if (!a_place.line.empty()) {
-				return Over(a_place.line);
-			}
-			if (!a_place.owners.empty()) {
-				return Newest(a_place);
-			}
-			const auto owner = OwnerAt(a_place.where, a_place.kind, true);
-			return Words(std::span{ &owner, 1 });
-		}
-
-		// Adds an owner to a place once. True when it is new.
-		bool AddOwner(Place& a_place, const Owner& a_owner)
-		{
-			if (std::ranges::find(a_place.owners, a_owner) != a_place.owners.end()) {
-				return false;
-			}
-			a_place.owners.push_back(a_owner);
-			return true;
-		}
-
-		// The DLL that cuts NEC off on a line that does not reach NEC: the
-		// last one the walk named, which keeps the game's own function or
-		// nothing NEC can read. A DLL in front of it hands the call on and is
-		// never named. With none named, whoever the place leads to.
-		Owner Cutter(const Place& a_place, const Walked& a_walked)
-		{
-			return a_walked.dlls.empty() ? OwnerAt(a_place.where, a_place.kind, true) : a_walked.dlls.back();
-		}
-
-		// The sentence that ends the line of a place that stays off, or whose
-		// row's switch is left to another mod.
-		std::string Tail(const Place& a_place)
-		{
-			const auto trace = TraceTail(a_place);
-			return std::string{ trace.empty() ? " NEC still counts it as left to another mod while the game runs."sv : trace };
-		}
-
-		// Whether NEC's change at a place does nothing while the game runs,
-		// whatever stands on the place, since its row's switch is left to
-		// another mod. A place from Part::kTrace on works the same either way.
-		bool SwitchLeft(const Place& a_place)
-		{
-			return a_place.use != Use::kTraceOnly && a_place.row->on && YieldedLocked(a_place.row->on);
-		}
-
-		// The line of a written place another DLL changed: the DLLs over NEC,
-		// then a_tail and a_trace, what that leaves of NEC's change there.
-		std::string ChangedLine(const Place& a_place, std::string_view a_tail, std::string_view a_trace = {})
-		{
-			return std::format("{:s}: {:s} at {:X} was changed by {:s} after NEC patched it.{:s}{:s}", NameOf(a_place), a_place.what,
-				a_place.where, By(a_place), a_tail, a_trace);
-		}
-
-		// The line of a place NEC is off at from now on. The bench place's
-		// hook asks nothing of its place, so its 2 messages still show
-		// whenever the call reaches it, unless Workbench repairs is off. Every
-		// place that turns repairs off comes before it, see Workbench.cpp, so
-		// its line reads a cut in the same pass too. The barter input place's
-		// key rule stops with its hook, and does nothing while Trader repairs
-		// is off, whose 4 places come before it, see VendorRepair.cpp. A walk
-		// NEC could not follow to its end says so first, so the line never
-		// blames the DLL for a cut that comes from NEC's doubt. A set that has
-		// to run on every call is cut either way.
-		std::string CutLine(const Place& a_place, bool a_everyCall, const Walked& a_walked)
-		{
-			std::string tail;
-			if (!a_everyCall && a_walked.reaches == Reaches::kUnread) {
-				const auto cutter = Cutter(a_place, a_walked);
-				tail = std::format(" NEC cannot read where {:s}'s hook leads, so it cannot tell whether the call still reaches NEC.",
-					Words(std::span{ &cutter, 1 }));
-			}
-			if (a_place.part == Part::kBenchMessages) {
-				const auto off = PiecesOffTail(a_place);
-				tail += off.empty() ? " NEC's 2 messages when MODIFY opens nothing show only while the call reaches NEC, so repairs are not affected."sv : std::string_view{ off };
-			} else if (a_place.part == Part::kTraderKeys) {
-				const auto off = PiecesOffTail(a_place);
-				tail += off.empty() ? " REPAIR's key may answer a UI replacer's own button combinations again, so trader repairs are not affected."sv : std::string_view{ off };
-			} else {
-				tail += a_place.use == Use::kTraceOnly ? " It only fed the bug report logs, so play is not affected."sv :
-				        a_everyCall                    ? " NEC's change there has to run on every call, so it is off from now on."sv :
-				                                         " NEC's change there is off from now on."sv;
-			}
-			return ChangedLine(a_place, tail);
-		}
-
-		// The line of a place whose hooks call each other without end, see
-		// Walked. The game runs out of stack at the next call whatever NEC
-		// does there, so the line names the DLL to remove.
-		std::string LoopLine(const Place& a_place, const Owner& a_dll)
-		{
-			const auto dll = Words(std::span{ &a_dll, 1 });
-			return std::format("{:s}: {:s} hooked {:s} at {:X} both before and after NEC, so its hook and NEC's hand each call back and forth without end. The game will most likely crash the next time it is used, and removing {:s} stops that.",
-				NameOf(a_place), dll, a_place.what, a_place.where, dll);
-		}
-
 		// Whether NEC.log has said a written place changed: one cut by its own
 		// change has an owner, and every walk that reached NEC left its line.
 		// A place off only since a cut elsewhere stopped its set, with no
@@ -141,7 +35,7 @@ namespace CallPatch
 
 		// A place that leads straight to NEC's hook again. One that is off
 		// stays off, since NEC never takes one back. A shared place is NEC's
-		// again, and a held set that waited on it runs once more. True when it
+		// again, and a set that waited on it runs once more. True when it
 		// gets a line, which only a place whose change got one does.
 		bool Back(Place& a_place)
 		{
@@ -153,8 +47,64 @@ namespace CallPatch
 			}
 			a_place.share = a_place.under.empty() ? Share::kOwn : Share::kOnTop;
 			a_place.line.clear();
+			if (auto* wait = MenuWaitOf(a_place)) {
+				Done(*wait);
+			}
 			Release(a_place);
 			return true;
+		}
+
+		// A menu's place the call may not reach, settled once every cut of
+		// the pass is in.
+		struct Waiting
+		{
+			Place*    place;
+			MenuWait* wait;
+			Walked    walked;
+		};
+
+		// A place that waited for its menu, which opened and closed with no
+		// call reaching NEC's hook, is off from now on. Judged before the pass
+		// reads any change, so a hook put in after the menu closed never saves
+		// the one that skipped NEC, and every later check of the pass sees the
+		// cut and the switch it turned off. True when one is cut.
+		bool Judge(Pass& a_pass, Lines& a_lines)
+		{
+			auto judged = false;
+			for (auto& place : Places()) {
+				auto* wait = WaitingOf(place);
+				if (wait && place.share == Share::kShared && MenuUsed(*wait) && Proving(place)) {
+					place.line = Done(*wait);
+					AddOwner(place, Cutter(place, { .dlls = place.line }));
+					Lose(place, a_pass, Share::kCut);
+					a_lines.push_back({ REX::ELogLevel::Warning, VerdictLine(place, *wait) });
+					judged = true;
+				}
+			}
+			return judged;
+		}
+
+		// A wait gains nothing while the row's switch is left to another mod
+		// or the place's pieces are off for good, so such a place is cut like
+		// any other. A place that waits names only the DLL that cuts NEC off
+		// on the page and in its part's line, and its wait keeps the walk's
+		// DLLs for its own line, see By.
+		void Settle(std::span<const Waiting> a_waits, Pass& a_pass, Lines& a_lines, std::vector<const Place*>& a_held)
+		{
+			for (const auto& [place, wait, walked] : a_waits) {
+				if (SwitchLeft(*place) || !PiecesOffTail(*place, true).empty()) {
+					AddOwner(*place, Cutter(*place, walked));
+					Lose(*place, a_pass, Share::kCut);
+					a_lines.push_back({ REX::ELogLevel::Warning, CutLine(*place, false, walked) });
+					continue;
+				}
+				// Never false, as the place is not off and its set has only it.
+				Hold(*place);
+				place->share = Share::kShared;
+				Wait(*wait, std::exchange(place->line, std::vector<Owner>{ Cutter(*place, walked) }),
+					walked.reaches == Reaches::kUnread);
+				a_held.push_back(place);
+			}
 		}
 	}
 
@@ -163,16 +113,21 @@ namespace CallPatch
 		Lines       lines;
 		std::size_t checked = 0;
 		std::size_t changed = 0;
+		bool        judged = false;
 		const auto  before = Summary();
 		{
 			const std::scoped_lock    l{ Lock() };
-			std::vector<const Place*> held;   // a held set's place the call still reaches, worded after the pass
+			std::vector<const Place*> held;   // a place of a set that waits, worded after the pass
 			std::vector<const Place*> lone;   // a lone or switched place the call still reaches, worded after the pass
 			std::vector<const Place*> late;   // changed after NEC left it alone
 			std::vector<const Place*> again;  // already off, changed again
 			std::vector<const Place*> back;   // back to NEC's hook
 			std::vector<std::string>  loops;  // hooks that call each other without end
+			std::vector<Waiting>      waits;
 			Pass                      pass;
+
+			judged = Judge(pass, lines);
+
 			for (auto& place : Places()) {
 				checked++;
 
@@ -247,6 +202,18 @@ namespace CallPatch
 				const auto first = !Said(place);
 				place.line = walked.dlls;
 
+				// A new change ends any wait of the last one. A place every
+				// open of its menu calls waits for that menu, see MenuWait.h,
+				// when its new walk may not reach NEC, unless it is off
+				// already or its hooks call each other without end. One whose
+				// hook has not run yet waits again, whatever its new hook
+				// reads.
+				auto* menu = MenuWaitOf(place);
+				if (menu) {
+					Done(*menu);
+				}
+				auto* wait = menu && !IsOff(place) && !walked.loops && (!reaches || Proving(place)) ? menu : nullptr;
+
 				// A set that has to run on every call, see
 				// CallPatch::EVERY_CALL, goes to every DLL over NEC there for
 				// good. Elsewhere a line that skips NEC is named after the DLL
@@ -257,7 +224,7 @@ namespace CallPatch
 						AddOwner(place, dll);
 					}
 				}
-				if (!reaches) {
+				if (!reaches && !wait) {
 					AddOwner(place, Cutter(place, walked));
 				}
 
@@ -275,9 +242,11 @@ namespace CallPatch
 					continue;
 				}
 
-				if (everyCall || !reaches) {
+				if (everyCall || (!reaches && !wait)) {
 					Lose(place, pass, Share::kCut);
 					lines.push_back({ REX::ELogLevel::Warning, CutLine(place, everyCall, walked) });
+				} else if (wait) {
+					waits.push_back({ &place, wait, walked });
 				} else if (HeldSet(place.set)) {
 					// A held set waits until this place's hook runs again.
 					// Hold fails only when a sibling already cut the set, which
@@ -296,6 +265,8 @@ namespace CallPatch
 					lone.push_back(&place);
 				}
 			}
+
+			Settle(waits, pass, lines, held);
 
 			// A written place whose set a cut stopped is off with it, whatever
 			// the DLL over it does, and names nobody. Set before any line
@@ -316,11 +287,12 @@ namespace CallPatch
 					pass.parts.set(static_cast<std::size_t>(place->part));
 				}
 				// A held place is off only since a sibling's cut, as its own
-				// walk reached NEC, and that cut's line comes first.
+				// walk reached NEC, and that cut's line comes first. A place
+				// that waits for its menu is neither off nor left here.
 				lines.push_back({ REX::ELogLevel::Warning,
 					IsOff(*place) || SwitchLeft(*place) ? ChangedLine(*place, Tail(*place)) :
 					!off.empty()                        ? ChangedLine(*place, off) :
-					                                      ChangedLine(*place, " If the call still reaches NEC, NEC's change there comes back the next time it is used."sv, TraceTail(*place)) });
+					                                      ChangedLine(*place, WaitTail(*place), TraceTail(*place)) });
 			}
 			for (const auto* place : lone) {
 				const auto off = PiecesOffTail(*place, true);
@@ -333,14 +305,20 @@ namespace CallPatch
 					!off.empty()       ? ChangedLine(*place, off) :
 					                     ChangedLine(*place, " NEC's change there keeps working as long as the call still reaches NEC."sv, TraceTail(*place)) });
 			}
-			// A held set put to wait that has run since comes back on. Read
+			// A set put to wait that has run since comes back on. Read
 			// once the pass is over, so a set this pass made wait or stopped
 			// never reads as back on, and none is said in a row whose switch
 			// is left to another mod or for a place whose pieces are all off
 			// anyway.
 			for (auto& place : Places()) {
-				if (HeldSet(place.set) && place.share == Share::kShared && RunOf(place.set) == Run::kLive) {
+				auto* wait = WaitingOf(place);
+				if ((HeldSet(place.set) || wait) && place.share == Share::kShared && RunOf(place.set) == Run::kLive) {
 					place.share = Share::kProven;
+					// Every DLL the walk found handed the call on, so the
+					// Shared line names them all.
+					if (wait) {
+						place.line = Done(*wait);
+					}
 					if (!SwitchLeft(place) && PiecesOffTail(place, true).empty()) {
 						lines.push_back({ REX::ELogLevel::Info,
 							std::format("{:s}: NEC's change at {:s} runs again.", NameOf(place), place.what) });
@@ -368,6 +346,7 @@ namespace CallPatch
 			Say(pass, lines, false);
 		}
 		Write(lines);
+		CountMenus();
 
 		// A WARN only when a line of the pass is a warning or an error, or
 		// turns a setting off.
@@ -381,6 +360,8 @@ namespace CallPatch
 		} else {
 			REX::INFO("Checked {:d} places again as {:s}, {:d} changed.", checked, a_moment, changed);
 		}
-		return changed != 0 && Summary() != before;
+		// A verdict can turn a switch off with no change of bytes, and the
+		// Settings line still has to say so.
+		return (changed != 0 && Summary() != before) || judged;
 	}
 }

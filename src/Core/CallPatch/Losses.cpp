@@ -35,7 +35,7 @@ namespace CallPatch
 			bool               off = false;
 			bool               own = false;     // a place of its own is off
 			bool               folded = false;  // off only as the switch it rides on is left to another mod
-			bool               waits = false;   // off only while a held set waits, so it can come back
+			bool               waits = false;   // off only while a set waits, so it can come back
 			Part               cause = Part::kNone;
 			Piece              root = Piece::kNone;
 			std::vector<Owner> owners;
@@ -66,16 +66,16 @@ namespace CallPatch
 		}
 
 		// Whether a place counts as off for the page and NEC.log: off for good,
-		// or in a held set that waits, whose hooks give the game's result until
-		// the changed place's hook runs.
+		// or in a set that waits, whose hooks give the game's result until the
+		// changed place's hook runs.
 		bool OffNow(const Place& a_place)
 		{
 			return IsOff(a_place) || RunOf(a_place.set) == Run::kWaiting;
 		}
 
 		// Adds who has a place that counts as off to a_owners, each once: its
-		// owners, or for a set that waits, the DLLs over each changed place of
-		// that set whose hook has not run since.
+		// owners, or for a set that waits, the line of each changed place of
+		// that set whose hook has not run since, see Place::line.
 		void AddOwners(std::vector<Owner>& a_owners, const Place& a_place)
 		{
 			const auto add = [&](const std::vector<Owner>& a_from) {

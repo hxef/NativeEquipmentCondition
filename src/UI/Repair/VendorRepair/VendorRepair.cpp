@@ -33,12 +33,23 @@ namespace VendorRepair
 		REL::Relocation<bool (*)(RE::BSInputEventUser*, const RE::InputEvent*)>      _ShouldHandleEvent;
 
 		// Whether each of the 4 places still runs, see CallPatch::PatchSlot,
-		// and the input place, which trader repairs work without.
+		// and the input place, which trader repairs work without. The messages
+		// and list hooks ask Runs, as those 2 places can wait for the screen's
+		// next open.
 		CallPatch::LinkBase g_messagesLink;
 		CallPatch::LinkBase g_keyLink;
 		CallPatch::LinkBase g_highlightLink;
 		CallPatch::LinkBase g_listLink;
 		CallPatch::LinkBase g_inputLink;
+
+		// Whether NEC saw this screen open. Not while barter messages or barter
+		// list waits for the screen's next open, see Core/CallPatch/MenuWait.h,
+		// since the screen may still hold the last one's state, so the other
+		// hooks give the game's result until then.
+		bool Seen()
+		{
+			return g_messagesLink.Live() && g_listLink.Live();
+		}
 
 		// A UI replacer can use the key in button combinations of its own and
 		// leave the key's release to the game, as one can with LB on a pad. So
@@ -104,7 +115,7 @@ namespace VendorRepair
 			std::int32_t a_count)
 		{
 			_UpdateItemPickpocketInfo(a_menu, a_index, a_inContainer, a_count);
-			if (!g_highlightLink.Live()) {
+			if (!HighlightLive()) {
 				return;
 			}
 			Highlight(a_index, a_inContainer);
@@ -117,7 +128,7 @@ namespace VendorRepair
 		// sets off reads it again.
 		void UpdateListHk(RE::BarterMenu* a_menu, bool a_inContainer)
 		{
-			if (!g_listLink.Live()) {
+			if (!g_listLink.Runs() || !g_messagesLink.Live()) {
 				_UpdateList(a_menu, a_inContainer);
 				return;
 			}
@@ -136,7 +147,7 @@ namespace VendorRepair
 		// see g_keyJoined.
 		bool OnButtonEventReleaseHk(RE::BarterMenu* a_menu, const RE::BSFixedString& a_event)
 		{
-			if (g_keyLink.Live() && a_event == HINT_EVENT && Offered(a_menu)) {
+			if (g_keyLink.Live() && Seen() && a_event == HINT_EVENT && Offered(a_menu)) {
 				if (std::exchange(g_releaseJoined, false)) {
 					TraceLog::Line("menu", "REPAIR's key came up at {:s} after another button or a stick went down while it was held, so REPAIR opens nothing and the key goes on to the game",
 						Trader(a_menu));
@@ -153,10 +164,13 @@ namespace VendorRepair
 		// through F4SE's task queue, once for each kind repaired.
 		RE::UI_MESSAGE_RESULTS ProcessMessageHk(RE::BarterMenu* a_menu, RE::UIMessage& a_message)
 		{
-			if (!g_messagesLink.Live()) {
+			// Only the message that opens the screen brings a waiting place
+			// back, as the last screen is forgotten there.
+			const auto opens = *a_message.type == RE::UI_MESSAGE_TYPE::kShow;
+			if (opens ? !g_messagesLink.Runs() : !g_messagesLink.Live()) {
 				return _ProcessMessage(a_menu, a_message);
 			}
-			if (*a_message.type == RE::UI_MESSAGE_TYPE::kShow) {
+			if (opens) {
 				Forget();
 				ForgetKey();
 				ForgetQuestion();
@@ -268,6 +282,6 @@ namespace VendorRepair
 
 	bool HighlightLive()
 	{
-		return g_highlightLink.Live();
+		return g_highlightLink.Live() && Seen();
 	}
 }

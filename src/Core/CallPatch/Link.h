@@ -21,7 +21,7 @@ namespace CallPatch
 		explicit operator bool() const { return _next != 0; }
 
 		// Marks that this place's hook ran, for a set waiting on it, see
-		// Held::Runs. Only ever asked on a hook's cold path.
+		// Held::Runs and Runs. Only ever asked on a hook's cold path.
 		void Proved() const;
 
 		// Whether this place's set runs, 1 relaxed atomic load. A recheck
@@ -29,6 +29,13 @@ namespace CallPatch
 		// stands alone asks it on every call and changes nothing while it is
 		// false, as a hook of a Together asks its Held.
 		[[nodiscard]] bool Live() const;
+
+		// Live, for the hook of a place a recheck can make wait for its menu,
+		// see Core/CallPatch/MenuWait.h. Asked before any other test. While
+		// the place waits it marks that this hook ran, so the call that
+		// reaches it runs NEC's change, and it pays the same 1 load while the
+		// set runs.
+		[[nodiscard]] bool Runs() const;
 
 	protected:
 		std::uintptr_t _next = 0;

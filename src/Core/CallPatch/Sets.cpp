@@ -9,8 +9,9 @@
 // finds a place of a held set changed, while the call still reaches NEC, makes
 // the set wait. Its hooks then give the game's result, so the set never runs
 // half, until the changed place's own hook runs. That shows the DLL over it
-// hands the call on, and the set runs again. A set that is off stays off, so
-// a cut never comes back.
+// hands the call on, and the set runs again. A recheck makes a place
+// MenuWait.h lists wait the same way, as a set of 1. A set that is off stays
+// off, so a cut never comes back.
 //
 // Hooks read this with no lock. The ledger's lock covers the rest.
 namespace CallPatch
@@ -124,6 +125,15 @@ namespace CallPatch
 	bool LinkBase::Live() const
 	{
 		return g_live[_set].load(std::memory_order_relaxed) == SET_LIVE;
+	}
+
+	bool LinkBase::Runs() const
+	{
+		if (Live()) {
+			return true;
+		}
+		Proved();
+		return Live();
 	}
 
 	bool Held::Intact() const

@@ -41,6 +41,8 @@ src/
       Ledger.h/.cpp          every place patched, written once its row's install ends
       Sets.cpp               whether a set's hooks run, and the proof that brings a shared set back
       Recheck.cpp            every noted place read back as the game runs, shared or left alone
+      Changed.h/.cpp         the NEC.log lines of a place another DLL changed, and the DLL each names
+      MenuWait.h/.cpp        the 5 places every open of their menu calls, and those menus' opens and closes
       Walk.cpp               following a place's hooks from the outside in, and the shape NEC builds on
       Reach.h/.cpp           reading a loaded module's image, the memory the walk is built on
       Owners.cpp             who has a place, and how NEC.log names them

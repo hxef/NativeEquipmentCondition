@@ -1,3 +1,8 @@
+1.5.2
+Version 1.5.2 adds an MCM switch that fades the HUD CND bar out with the ammo counter. The MCM page now shows on Mod Configuration Menu - RD, repair costs and loot follow RobCo Patcher, and NEC.log names no Windows user.
+
+FO4 1.11.240
+
 1.5.0
 Version 1.5.0 moves NEC's texts into 1 file per language, so anyone can fix a line or add a language. With the game set to Chinese, NEC now speaks Traditional Chinese instead of English. Automatic weapon wear speed now goes up to 10.
 

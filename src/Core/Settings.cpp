@@ -292,6 +292,8 @@ namespace Settings
 				std::format_to(std::back_inserter(line), " {:s}={:s}{:s}", a_number->key, Shown(a_number->GetValue()), Mark(*a_number));
 			}, entry);
 		}
+		// NUMBERS ends in [HUD], where this switch follows them.
+		std::format_to(std::back_inserter(line), " {:s}={:s}", bHudBarHidesWithCounter.key, Shown(bHudBarHidesWithCounter));
 		std::format_to(std::back_inserter(line), " [Log] sLogLevel={:s} bTraceLogs={}", LogLevelWord(), bTraceLogs.GetValue());
 		REX::INFO("{:s}", line);
 		// Above info NEC.log drops these lines, so no summary is kept and the

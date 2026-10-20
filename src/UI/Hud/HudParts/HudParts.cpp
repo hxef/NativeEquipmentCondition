@@ -355,13 +355,13 @@ namespace HudParts
 		g_colorTargets.push_back({ &a_menu, std::move(target) });
 	}
 
-	const bool* ComponentCanBeVisible(const RE::HUDMenu& a_menu, std::uintptr_t a_vtable)
+	const RE::HUDAmmoCounter* AmmoCounterPart(const RE::HUDMenu& a_menu)
 	{
 		// The first thing in any HUD part is its vtable, which says what kind
 		// of part it is.
 		for (const auto& component : a_menu.hudObjects) {
-			if (component && *reinterpret_cast<const std::uintptr_t*>(component.get()) == a_vtable) {
-				return &component->hudModes.canBeVisible;
+			if (component && *reinterpret_cast<const std::uintptr_t*>(component.get()) == RE::HUDAmmoCounter::VTABLE[0].address()) {
+				return static_cast<const RE::HUDAmmoCounter*>(component.get());
 			}
 		}
 		return nullptr;

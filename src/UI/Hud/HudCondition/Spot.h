@@ -41,6 +41,13 @@ namespace HudCondition
 		std::string key;
 	};
 
+	// Writes the word with a_first, once a movie since it never changes,
+	// and returns where it sits from the bar's right end, a_moved taken
+	// back, the wordX and wordY the word was last moved by. Both have their
+	// origin on their right end, so the bar runs left and the word follows
+	// past it. The trace says the first try and the one that measures.
+	[[nodiscard]] HudParts::Readout::LabelPlace Label(Roles::Value& a_readout, bool a_first, const Flash::Point& a_moved);
+
 	// Measures the HUD around the counter now and chooses the spot. Nothing
 	// while the divider is hidden or off screen, so the bar keeps its last
 	// spot. a_ownVisible is the divider's own visible while NEC covers it,

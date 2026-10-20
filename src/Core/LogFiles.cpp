@@ -47,6 +47,10 @@ namespace LogFiles
 		// one for a moment, for example while an antivirus reads the file.
 		constexpr unsigned int RENAME_WAIT_MS = 100;
 
+		// Documents as Windows names it, kept by MainPath for Shown. Set once
+		// before any other thread logs, so reading it needs no lock.
+		std::filesystem::path g_documents;
+
 		// -------------------------------------------------------------------
 		// The file sink
 		// -------------------------------------------------------------------
@@ -104,7 +108,7 @@ namespace LogFiles
 					}
 				}
 				if (std::fwrite(line.data(), 1, line.size(), file.get()) != line.size()) {
-					spdlog::throw_spdlog_ex(std::format("Failed writing to file {:s}", Utf8(path)), errno);
+					spdlog::throw_spdlog_ex(std::format("Failed writing to file {:s}", Shown(path)), errno);
 				}
 				size = newSize;
 			}
@@ -112,7 +116,7 @@ namespace LogFiles
 			void flush_() override
 			{
 				if (file && std::fflush(file.get()) != 0) {
-					spdlog::throw_spdlog_ex(std::format("Failed flush to file {:s}", Utf8(path)), errno);
+					spdlog::throw_spdlog_ex(std::format("Failed flush to file {:s}", Shown(path)), errno);
 				}
 			}
 
@@ -146,7 +150,7 @@ namespace LogFiles
 						return;
 					}
 				}
-				spdlog::throw_spdlog_ex(std::format("Failed opening file {:s} for writing", Utf8(path)), errno);
+				spdlog::throw_spdlog_ex(std::format("Failed opening file {:s} for writing", Shown(path)), errno);
 			}
 
 			// NEC.log, NEC.1.log and so on, by the number of starts back.
@@ -189,7 +193,7 @@ namespace LogFiles
 					if (!Move(from, to)) {
 						// Read before the reopen below can change it.
 						why = errno;
-						failed = std::format("Failed renaming {:s} to {:s}", Utf8(from), Utf8(to));
+						failed = std::format("Failed renaming {:s} to {:s}", Shown(from), Shown(to));
 						break;
 					}
 				}
@@ -223,7 +227,7 @@ namespace LogFiles
 		// already emptied the file, and a plain sink opens it empty.
 		Opened Open(const std::filesystem::path& a_path, std::size_t a_maxSize)
 		{
-			const auto name = Utf8(a_path);
+			const auto name = Shown(a_path);
 			try {
 				return { std::make_shared<FileSink>(a_path, a_maxSize), {} };
 			} catch (const std::exception& e) {
@@ -242,14 +246,14 @@ namespace LogFiles
 						throw;
 					}
 					return { std::make_shared<FileSink>(a_path, a_maxSize),
-						std::format("Could not write to {:s}, so it moved to {:s} and an empty one starts: {:s}", name, Utf8(aside), e.what()) };
+						std::format("Could not write to {:s}, so it moved to {:s} and an empty one starts: {:s}", name, Shown(aside), e.what()) };
 				}
 			}
 		}
 
 		// Documents\My Games\<save folder>\F4SE\NEC.log, worked out as
-		// F4SE::Init does. Empty, with a_why filled in, when Windows or F4SE
-		// names no folder.
+		// F4SE::Init does, keeping Documents for Shown. Empty, with a_why
+		// filled in, when Windows or F4SE names no folder.
 		std::filesystem::path MainPath(std::string& a_why)
 		{
 			const auto saveFolder = F4SE::GetSaveFolderName();
@@ -266,7 +270,8 @@ namespace LogFiles
 				return {};
 			}
 
-			std::filesystem::path path = documents.get();
+			g_documents = documents.get();
+			std::filesystem::path path = g_documents;
 			path /= std::format("My Games/{}/F4SE", saveFolder);
 			path /= MAIN_FILE;
 			// Windows gives Documents with backslashes and the folders after it
@@ -306,7 +311,7 @@ namespace LogFiles
 
 			REX::INFO("{} v{}", F4SE::GetPluginName(), F4SE::GetPluginVersion());
 			if (!noFile.empty()) {
-				const auto where = path.empty() ? std::string{ MAIN_FILE } : Utf8(path);
+				const auto where = path.empty() ? std::string{ MAIN_FILE } : Shown(path);
 				REX::WARN("Could not open {:s}, so this game start writes no log file: {:s}", where, noFile);
 			} else if (!file.warning.empty()) {
 				REX::WARN("{:s}", file.warning);
@@ -332,12 +337,12 @@ namespace LogFiles
 		return file ? file->Path() : std::filesystem::path{};
 	}
 
-	std::string Utf8(const std::filesystem::path& a_path)
+	std::string Shown(const std::filesystem::path& a_path)
 	{
-		// Stays empty for an empty path, the only case where the conversion
-		// fails.
+		// Every path NEC prints sits below Documents. Stays empty for an empty
+		// path, the only case where the conversion fails.
 		std::string text;
-		REX::UTF16_TO_UTF8(a_path.native(), text);
+		REX::UTF16_TO_UTF8(a_path.lexically_relative(g_documents).native(), text);
 		return text;
 	}
 }

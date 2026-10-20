@@ -75,8 +75,8 @@ namespace Text
 
 	// The 8 switches and bTraceLogs, in MenuSwitches.cpp, the 5 wear speeds,
 	// in MenuWear.cpp, the 12 other Balance numbers, in MenuNumbers.cpp, and
-	// the 4 HUD numbers and sLogLevel, in MenuHudLog.cpp, each in NEC.ini's
-	// order.
+	// the 4 HUD numbers, bHudBarHidesWithCounter and sLogLevel, in
+	// MenuHudLog.cpp, each in NEC.ini's order.
 	[[nodiscard]] std::span<const MenuRow> MenuSwitches();
 	[[nodiscard]] std::span<const MenuRow> MenuWear();
 	[[nodiscard]] std::span<const MenuRow> MenuNumbers();

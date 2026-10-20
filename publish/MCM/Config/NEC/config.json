@@ -1,7 +1,7 @@
 {
   "modName": "NEC",
   "displayName": "Native Equipment Condition",
-  "minMcmVersion": 11,
+  "minMcmVersion": 9,
   "content": [
     { "id": "parts:Note", "type": "hiddenSwitcher", "groupControl": 1,
       "valueOptions": { "sourceType": "ModSettingBool" } },
@@ -188,6 +188,10 @@
       "text": "NEC|fPowerArmorBarY", "textFromFormName": true,
       "help": "NEC|fPowerArmorBarY.help", "helpFromFormName": true,
       "valueOptions": { "min": -720, "max": 720, "step": 5, "sourceType": "ModSettingFloat" } },
+    { "id": "bHudBarHidesWithCounter:HUD", "type": "switcher",
+      "text": "NEC|bHudBarHidesWithCounter", "textFromFormName": true,
+      "help": "NEC|bHudBarHidesWithCounter.help", "helpFromFormName": true,
+      "valueOptions": { "sourceType": "ModSettingBool" } },
     { "id": "bQuickContainer:Free", "type": "hiddenSwitcher", "groupControl": 19,
       "valueOptions": { "sourceType": "ModSettingBool" } },
     { "id": "bQuickContainer:Note", "type": "hiddenSwitcher", "groupControl": 20,

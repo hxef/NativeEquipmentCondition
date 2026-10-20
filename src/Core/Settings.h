@@ -26,7 +26,9 @@
 // A setting added here is added to publish/NEC.ini too, with a line saying
 // what it does, and to SWITCHES or NUMBERS in Settings.cpp in NEC.ini's
 // order. A setting left out of those is missing from the Settings line, and
-// the MCM page can neither read nor change it.
+// the MCM page can neither read nor change it. The 2 switches outside
+// [Features], bHudBarHidesWithCounter and bTraceLogs, are named in
+// Settings.cpp's ReportLine and in UI/Mcm/Bridge.cpp's SwitchFor instead.
 namespace Settings
 {
 	// Where a setting sits in NEC.ini, which is also its id on the MCM page.
@@ -229,9 +231,10 @@ namespace Settings
 	// VendorRepair/Quote.h.
 	inline Live<float> fTraderPriceMult{ "Balance", "fTraderPriceMult", 1.0F };
 
-	// HUD. Where the CND bars sit, moved from their own place in units of
-	// the HUD, which is 1280 across and 720 down on any screen. Read every
-	// frame, so a change shows at once. 0 and 0 is the bar's own place.
+	// HUD. Where the CND bars sit and when the one by the ammo counter hides.
+	// Read every frame, so a change shows at once. The 4 numbers move a bar
+	// from its own place in units of the HUD, which is 1280 across and 720
+	// down on any screen, and 0 and 0 is its own place.
 
 	// How far right of its own spot by the ammo counter the CND bar sits,
 	// below 0 to the left. Off its spot, the divider shows again.
@@ -248,6 +251,10 @@ namespace Settings
 
 	// How far up from the dash's ammo digits it sits, below 0 down.
 	inline Live<float> fPowerArmorBarY{ "HUD", "fPowerArmorBarY", 0.0F };
+
+	// Whether the CND bar by the ammo counter hides with the counter while
+	// the counter has rounds to count, see HudCondition.h.
+	inline Live<bool> bHudBarHidesWithCounter{ "HUD", "bHudBarHidesWithCounter", false };
 
 	// Log. Read once, as the log is opened. The MCM page sets the level and
 	// switches the trace logs on the spot, see SetLogLevel and

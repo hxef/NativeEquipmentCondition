@@ -1,3 +1,10 @@
+1.5.2
+* A new MCM switch, HUD bar hides with counter (bHudBarHidesWithCounter, off), fades the HUD CND bar out with the ammo counter about 10 seconds after your last shot.
+* NEC's MCM page now shows on Mod Configuration Menu - RD, where it said "Wrong MCM version: 9 (required: 11)".
+* Recipes, leveled lists and NPC outfits that RobCo Patcher changes as the game starts now count in repair costs, crafting perk discounts, wear and loot condition.
+* NEC.log no longer shows your Windows user name in the paths of its logs.
+* When another DLL mod changes the barter screen, a workbench's item list or the confirmation box after NEC, NEC now waits for that screen to open and keeps its own change there if that mod still lets it run.
+
 1.5.0
 * Every language is a text file in Data\F4SE\Plugins\NEC\Translations, so anyone can fix a line or add a language.
 * With the game set to Chinese, NEC now shows Traditional Chinese, not English. For Simplified Chinese, copy zhhans.ini over cn.ini.

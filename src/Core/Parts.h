@@ -77,9 +77,9 @@ enum class Piece : std::uint8_t;  // Core/Pieces.h
 // line. With every core piece off it does nothing. A side piece takes a piece
 // of it away. An exception is something NEC changes about it, or a text that
 // tells of it, which only gets its part's line. always is what it changes that
-// no mod can take. A switch leads its own block on the page, and so does a
-// number with nothing above it. Any other number sits in the block of the
-// setting named by under, a switch or a number that leads, and config.json
+// no mod can take. A feature switch leads its own block on the page, and so
+// does a number with nothing above it. Any other setting sits in the block of
+// the setting named by under, a switch or a number that leads, and config.json
 // lays the page out the same way.
 struct SettingLink
 {

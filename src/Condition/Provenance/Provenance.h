@@ -3,6 +3,9 @@
 #include "Condition/Condition.h"
 #include "Core/Plugin.h"
 
+#include <string>
+#include <vector>
+
 // Where a weapon or a piece of armor came from and who carries it. A purely
 // random condition makes every raider's gun as worn as every Courser's. Fallout
 // 3 wrote a health onto each leveled list entry by hand. Naming factions here
@@ -41,8 +44,15 @@ namespace Provenance
 	// against the rest. Runs every time game data has loaded.
 	void Load();
 
-	// Forgets everything Load measured.
+	// Forgets everything Load and MeasureAgain measured.
 	void Unload();
+
+	// Ranks every leveled list and character again, as Load does, at every
+	// save load, new game and coc from the main menu, and swaps the new
+	// ranking in whole. A list counts without what a script added to it, and a
+	// character whose outfit a script changed is measured by the outfit the
+	// last measure counted. Returns what moved, for main.cpp's line.
+	[[nodiscard]] std::vector<std::string> MeasureAgain();
 
 	// A half that could not be measured. Different from a measured 0, which is
 	// the poorest thing in the load order.

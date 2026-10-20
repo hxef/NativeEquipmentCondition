@@ -107,14 +107,13 @@ namespace CraftingPerks
 
 	Reach ReachOf(const RE::TESForm& a_built, const Slots& a_slots)
 	{
-		// The same 2 forms Materials::Load reads: a mod itself, or a list of
-		// items.
+		// Read as Materials reads it: a mod itself, or a list's own forms.
 		if (!a_built.Is(RE::ENUM_FORM_ID::kFLST)) {
 			return ReachOfMod(&a_built, a_slots);
 		}
 
 		Reach reach;
-		for (const auto* listed : static_cast<const RE::BGSListForm&>(a_built).arrayOfForms) {
+		for (const auto* listed : static_cast<const RE::BGSListForm&>(a_built).GetOwnForms()) {
 			const auto one = ReachOfMod(listed, a_slots);
 			reach.kinds |= one.kinds;
 			reach.armor = reach.armor || one.armor;

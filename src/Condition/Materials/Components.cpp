@@ -10,15 +10,6 @@ namespace Materials
 {
 	namespace
 	{
-		// Which component prices a form. A mod's recipe asks for the component
-		// itself, steel. A scrap recipe asks for the scrap item instead,
-		// c_Steel_scrap, a separate form with a caps price and no worth. Both
-		// map to the component here, a scrap item to the component its own
-		// Components list names where it can, see LoadComponents. The
-		// component is kept, not its worth, so the worth is read fresh each
-		// time.
-		std::unordered_map<const RE::TESForm*, const RE::BGSComponent*> g_pricedBy;
-
 		// Whether a_item's own Components list names a_component. The game
 		// counts a junk item as the components that list names.
 		bool Lists(const RE::TESObjectMISC& a_item, const RE::BGSComponent& a_component)
@@ -32,31 +23,32 @@ namespace Materials
 		}
 	}
 
-	const RE::BGSComponent* PricedBy(const RE::TESForm* a_form)
+	const RE::BGSComponent* PricedBy(const Index& a_index, const RE::TESForm* a_form)
 	{
-		const auto found = a_form ? g_pricedBy.find(a_form) : g_pricedBy.end();
-		return found == g_pricedBy.end() ? nullptr : found->second;
+		const auto& pricedBy = a_index.pricedBy;
+		const auto  found = a_form ? pricedBy.find(a_form) : pricedBy.end();
+		return found == pricedBy.end() ? nullptr : found->second;
 	}
 
-	bool AsksForParts(const RE::BGSConstructibleObject& a_recipe)
+	bool AsksForParts(const Index& a_index, const RE::BGSConstructibleObject& a_recipe)
 	{
 		if (!a_recipe.requiredItems) {
 			return false;
 		}
 		for (const auto& required : *a_recipe.requiredItems) {
-			if (PricedBy(required.first) && required.second.i != 0) {
+			if (PricedBy(a_index, required.first) && required.second.i != 0) {
 				return true;
 			}
 		}
 		return false;
 	}
 
-	std::string Spell(const RE::BGSConstructibleObject* a_recipe)
+	std::string Spell(const Index& a_index, const RE::BGSConstructibleObject* a_recipe)
 	{
 		std::string out;
 		if (a_recipe && a_recipe->requiredItems) {
 			for (const auto& required : *a_recipe->requiredItems) {
-				const auto* component = PricedBy(required.first);
+				const auto* component = PricedBy(a_index, required.first);
 				if (!component || required.second.i == 0) {
 					continue;
 				}
@@ -67,9 +59,16 @@ namespace Materials
 		return out.empty() ? std::string{ "nothing" } : out;
 	}
 
-	std::size_t LoadComponents()
+	void LoadComponents(Index& a_index, bool a_again)
 	{
 		const auto& components = g_dataHandler->GetFormArray<RE::BGSComponent>();
+
+		// A mod's recipe asks for the component itself, steel. A scrap recipe
+		// asks for the scrap item instead, c_Steel_scrap, a separate form with
+		// a caps price and no worth. Both map to the component, and the
+		// component is kept, not its worth, so the worth is read fresh each
+		// time.
+		auto& pricedBy = a_index.pricedBy;
 
 		// A scrap item goes first to a component its own Components list
 		// names. A plugin can add Packed Steel with the junk Steel as its scrap
@@ -81,9 +80,9 @@ namespace Materials
 			if (!component) {
 				continue;
 			}
-			g_pricedBy.try_emplace(component, component);
+			pricedBy.try_emplace(component, component);
 			if (component->scrapItem && Lists(*component->scrapItem, *component)) {
-				g_pricedBy.try_emplace(component->scrapItem, component);
+				pricedBy.try_emplace(component->scrapItem, component);
 			}
 		}
 
@@ -96,7 +95,7 @@ namespace Materials
 			if (!component || !component->scrapItem) {
 				continue;
 			}
-			const auto [at, added] = g_pricedBy.try_emplace(component->scrapItem, component);
+			const auto [at, added] = pricedBy.try_emplace(component->scrapItem, component);
 			if (!added && at->second != component) {
 				shared.insert(component->scrapItem);
 				if (!passedOver) {
@@ -105,20 +104,14 @@ namespace Materials
 			}
 		}
 
-		if (passedOver) {
-			const auto unlisted = std::ranges::count_if(shared, [](const auto* a_item) {
-				return !Lists(*a_item, *g_pricedBy.at(a_item));
+		if (passedOver && !a_again) {
+			const auto unlisted = std::ranges::count_if(shared, [&pricedBy](const auto* a_item) {
+				return !Lists(*a_item, *pricedBy.at(a_item));
 			});
 			const auto* example = passedOver->scrapItem;
 			REX::INFO("Junk items named as the scrap item of more than 1 component: {:d}. Each prices as the component its own Components list names, or as the first naming it where the list names none of them, which {:d} do. The junk {:s}, for one, prices as {:s} and not as {:s}.",
-				shared.size(), unlisted, RE::TESFullName::GetFullName(*example), RE::TESFullName::GetFullName(*g_pricedBy.at(example)),
+				shared.size(), unlisted, RE::TESFullName::GetFullName(*example), RE::TESFullName::GetFullName(*pricedBy.at(example)),
 				RE::TESFullName::GetFullName(*passedOver));
 		}
-		return g_pricedBy.size();
-	}
-
-	void UnloadComponents()
-	{
-		g_pricedBy.clear();
 	}
 }

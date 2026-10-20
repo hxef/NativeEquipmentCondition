@@ -8,33 +8,18 @@
 #include <mutex>
 #include <ranges>
 #include <shared_mutex>
+#include <span>
 
 namespace Materials
 {
 	namespace
 	{
-		// A scrap recipe and the list of items it names.
-		struct ScrapList
-		{
-			const RE::BGSListForm*            list;
-			const RE::BGSConstructibleObject* recipe;
-		};
-
-		// What Load found. Written only by Load and Unload, while nothing
-		// wears, so wear reads it with no lock.
-		Scrapping g_scrapping;
-
-		// The scrap recipes Load found, each with its list, so the lists can
-		// be read again. Filled by Load and emptied by Unload.
-		std::vector<ScrapList> g_lists;
-
 		// The latest reading of the lists. Wear reads it under a shared lock,
 		// and a new reading replaces it whole under the full lock.
 		Recipes           g_own;
 		std::shared_mutex g_ownLock;
 
-		// One reading at a time, and none while Load or Unload changes
-		// g_lists. Only a holder of it changes g_own.
+		// 1 reading at a time. Only a holder of it changes g_own.
 		std::mutex g_listsLock;
 
 		// The list a_recipe names when it is a scrap recipe, found the way the
@@ -53,17 +38,19 @@ namespace Materials
 		}
 
 		// Which recipe each weapon and wearable on the lists scraps by now.
-		// The bench reads the forms a list holds as it scraps, a script's adds
-		// among them. An item on 2 lists scraps by the list a scrap recipe
-		// names first in load order. The bench picks by where each list lands
-		// in its own index, which agrees for every vanilla item with the usual
-		// DLC, and copying that order is not worth it for 1 component on a few
-		// items.
-		Recipes RecipesOnLists()
+		// a_own for the lists' own forms, without what a script added, which
+		// the save brings back, so such an add moves no other number.
+		// Otherwise every form, as the bench reads them as it scraps. An item
+		// on 2 lists scraps by the list a scrap recipe names first in load
+		// order. The bench picks by where each list lands in its own index,
+		// which agrees for every vanilla item with the usual DLC, and copying
+		// that order is not worth it for 1 component on a few items.
+		Recipes RecipesOnLists(std::span<const ScrapList> a_lists, bool a_own)
 		{
 			Recipes out;
-			for (const auto& [list, recipe] : g_lists) {
-				for (const auto* form : list->arrayOfForms) {
+			for (const auto& [list, recipe] : a_lists) {
+				const auto forms = a_own ? list->GetOwnForms() : std::span{ list->arrayOfForms.data(), list->arrayOfForms.size() };
+				for (const auto* form : forms) {
 					if (form && (form->Is(RE::ENUM_FORM_ID::kWEAP) || form->Is(RE::ENUM_FORM_ID::kARMO))) {
 						out.emplace(form, recipe);
 					}
@@ -75,7 +62,7 @@ namespace Materials
 		// The items whose scrap recipe differs between 2 readings, for the
 		// log. The 5 with the lowest form IDs are named, so the line is the
 		// same on every run.
-		std::string Changes(const Recipes& a_last, const Recipes& a_now)
+		std::string Changes(const Index& a_index, const Recipes& a_last, const Recipes& a_now)
 		{
 			constexpr std::size_t NAMED = 5;
 
@@ -99,7 +86,7 @@ namespace Materials
 			for (const auto& [form, recipe] : changed | std::views::take(NAMED)) {
 				const auto name = RE::TESFullName::GetFullName(*form);
 				if (recipe) {
-					out += std::format(" {:s} [{:08X}] now has the scrap recipe {:s}.", name, form->formID, Spell(recipe));
+					out += std::format(" {:s} [{:08X}] now has the scrap recipe {:s}.", name, form->formID, Spell(a_index, recipe));
 				} else {
 					out += std::format(" {:s} [{:08X}] no longer has a scrap recipe of its own.", name, form->formID);
 				}
@@ -119,18 +106,18 @@ namespace Materials
 		}
 
 		// The recipe most items of a kind scrap into, over every item that
-		// takes part, has a scrap recipe of its own and a_ofKind keeps. Ties
+		// takes part, has a scrap recipe in a_recipes and a_ofKind keeps. Ties
 		// go to the lower form ID, so the answer is the same on every load.
 		template <class Item>
-		const RE::BGSConstructibleObject* MostBorrowed(bool (*a_ofKind)(const Item&))
+		const RE::BGSConstructibleObject* MostBorrowed(const Recipes& a_recipes, bool (*a_ofKind)(const Item&))
 		{
 			std::unordered_map<const RE::BGSConstructibleObject*, std::uint32_t> items;
 			for (const auto* item : g_dataHandler->GetFormArray<Item>()) {
 				if (!item || !Condition::WearsOut(*item) || !a_ofKind(*item)) {
 					continue;
 				}
-				const auto own = g_scrapping.recipes.find(item);
-				if (own != g_scrapping.recipes.end()) {
+				const auto own = a_recipes.find(item);
+				if (own != a_recipes.end()) {
 					items[own->second]++;
 				}
 			}
@@ -147,11 +134,6 @@ namespace Materials
 		}
 	}
 
-	const Scrapping& Scrapped()
-	{
-		return g_scrapping;
-	}
-
 	const RE::BGSConstructibleObject* OwnRecipe(const RE::TESForm& a_form)
 	{
 		const std::shared_lock l{ g_ownLock };
@@ -162,27 +144,32 @@ namespace Materials
 	void ReadScrapLists()
 	{
 		const std::scoped_lock l{ g_listsLock };
-		auto                   now = RecipesOnLists();
+		// Nothing measured, and Unload left g_own empty.
+		const auto index = Current();
+		if (!index) {
+			return;
+		}
+		auto now = RecipesOnLists(index->lists, false);
 		if (now == g_own) {
 			return;
 		}
 
 		REX::INFO("A script or another mod changed a scrap list since NEC last read it, so {:d} items scrap by a recipe of their own, {:d} before.{:s}",
-			now.size(), g_own.size(), Changes(g_own, now));
+			now.size(), g_own.size(), Changes(*index, g_own, now));
 		Publish(now);
 	}
 
-	std::size_t LoadScrapLists()
+	void LoadScrapLists(Index& a_index, bool a_again)
 	{
-		const std::scoped_lock l{ g_listsLock };
-
 		// The keyword the bench asks for. The game registers the default
 		// object under this name, so the lookup finds the one the bench reads.
 		auto* store = RE::TESForm::GetFormByEditorID<RE::BGSDefaultObject>("WorkbenchScrappableKeyword");
 		auto* scrap = store ? store->GetForm<RE::BGSKeyword>() : nullptr;
 		if (!scrap) {
-			REX::WARN("The game's default object WorkbenchScrappableKeyword names no keyword, so NEC finds no scrap recipe and repairs go by an item's mods alone.");
-			return 0;
+			if (!a_again) {
+				REX::WARN("The game's default object WorkbenchScrappableKeyword names no keyword, so NEC finds no scrap recipe and repairs go by an item's mods alone.");
+			}
+			return;
 		}
 
 		for (auto* recipe : g_dataHandler->GetFormArray<RE::BGSConstructibleObject>()) {
@@ -193,30 +180,33 @@ namespace Materials
 
 			// A later recipe naming the same list replaces the earlier one, as
 			// in the bench's own index, and the list keeps its place.
-			const auto known = std::ranges::find(g_lists, list, &ScrapList::list);
-			if (known != g_lists.end()) {
+			const auto known = std::ranges::find(a_index.lists, list, &ScrapList::list);
+			if (known != a_index.lists.end()) {
 				known->recipe = recipe;
 			} else {
-				g_lists.push_back({ list, recipe });
+				a_index.lists.push_back({ list, recipe });
 			}
 		}
 
-		g_scrapping.recipes = RecipesOnLists();
-		auto own = g_scrapping.recipes;
-		Publish(own);
+		auto& scrapping = a_index.scrapping;
+		scrapping.recipes = RecipesOnLists(a_index.lists, true);
+		scrapping.borrowedClothing = MostBorrowed<RE::TESObjectARMO>(scrapping.recipes, [](const RE::TESObjectARMO& a_armor) { return ArmorWear::IsClothing(a_armor); });
+		scrapping.borrowedArmor = MostBorrowed<RE::TESObjectARMO>(scrapping.recipes, [](const RE::TESObjectARMO& a_armor) { return !ArmorWear::IsClothing(a_armor); });
+		scrapping.borrowedWeapon = MostBorrowed<RE::TESObjectWEAP>(scrapping.recipes, [](const RE::TESObjectWEAP&) { return true; });
 
-		g_scrapping.borrowedClothing = MostBorrowed<RE::TESObjectARMO>([](const RE::TESObjectARMO& a_armor) { return ArmorWear::IsClothing(a_armor); });
-		g_scrapping.borrowedArmor = MostBorrowed<RE::TESObjectARMO>([](const RE::TESObjectARMO& a_armor) { return !ArmorWear::IsClothing(a_armor); });
-		g_scrapping.borrowedWeapon = MostBorrowed<RE::TESObjectWEAP>([](const RE::TESObjectWEAP&) { return true; });
-		return g_lists.size();
+		// At Load, the first reading of the lists for OwnRecipe, taken
+		// without a line in NEC.log.
+		if (!a_again) {
+			const std::scoped_lock l{ g_listsLock };
+			auto                   own = RecipesOnLists(a_index.lists, false);
+			Publish(own);
+		}
 	}
 
 	void UnloadScrapLists()
 	{
 		const std::scoped_lock l{ g_listsLock };
-		g_lists.clear();
-		g_scrapping = {};
-		Recipes none;
+		Recipes                none;
 		Publish(none);
 	}
 }

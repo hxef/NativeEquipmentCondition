@@ -5,6 +5,8 @@
 #include "Condition/Condition.h"
 
 #include <span>
+#include <string>
+#include <vector>
 
 // What an item is built from. Fallout 4 has no item health and no field saying
 // how fast a gun or a piece of armor should wear. It does say what every item
@@ -34,10 +36,11 @@
 // None of these numbers are written in the code. Components, their worth and
 // the recipes are read from the load order, so another plugin repricing steel
 // or adding a weapon is picked up. Only which recipe builds which item or mod
-// is worked out in advance, at Load, since searching every recipe on every
-// shot is far too slow. The scrap lists are read again where a script could
-// have added an item to one, see ReadScrapLists. WeaponWear/Rate.cpp and
-// ArmorWear/Rate.cpp turn the quality into a wear rate.
+// is worked out in advance, at Load and again at every save load, new game and
+// coc from the main menu, since searching every recipe on every shot is far too
+// slow. The scrap lists are read again where a script could have added an item
+// to one, see ReadScrapLists. WeaponWear/Rate.cpp and ArmorWear/Rate.cpp turn
+// the quality into a wear rate.
 namespace Materials
 {
 	// Reads every recipe in the load order and remembers the recipe of each
@@ -45,23 +48,25 @@ namespace Materials
 	// with nothing of its own borrows. Runs every time game data has loaded.
 	void Load();
 
-	// Forgets everything Load found.
+	// Forgets everything Load and MeasureAgain found.
 	void Unload();
 
-	// Measures the 2 medians of ReferenceQuality again from what each
-	// component is worth now, at every save load, new game and coc from the
-	// main menu, and says only what moved. The recipes stay the ones Load
-	// found.
-	void MeasureAgain();
+	// Reads every recipe and scrap list again, as Load does, at every save
+	// load, new game and coc from the main menu, and swaps the new index in
+	// whole. A list counts without what a script added to it, which a save
+	// keeps. Says in NEC.log only which of the 2 medians moved, and returns
+	// what moved of the rest, for main.cpp's line.
+	[[nodiscard]] std::vector<std::string> MeasureAgain();
 
 	// Reads the scrap lists again, as the bench reads them when it scraps. An
 	// item a script or the console added to one costs and wears by that
 	// list's recipe, and one taken off goes back to what it had before. Says
 	// only what changed. What an item with nothing of its own borrows and the
-	// 2 medians stay as Load read the lists, so such an add moves no other
-	// number. Call it only from the save load and new game messages, an F4SE
-	// task or the bench's own code, where no script changes a list at the
-	// same time. Wear runs beside scripts, so it uses the last reading.
+	// 2 medians stay as the last measure read the lists, without a script's
+	// adds, so such an add moves no other number. Call it only from the save
+	// load and new game messages, an F4SE task or the bench's own code, where
+	// no script changes a list at the same time. Wear runs beside scripts, so
+	// it uses the last reading.
 	void ReadScrapLists();
 
 	// The worth of 1 unit of an average component for an item of a_kind, the

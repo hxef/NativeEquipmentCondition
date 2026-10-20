@@ -168,9 +168,9 @@ COMPATIBILITY
   by a person, so some lines may read a little off. To fix a line or add a
   language, edit or copy a file in Data\F4SE\Plugins\NEC\Translations, as
   en.ini there explains. For Simplified Chinese, copy zhhans.ini over cn.ini.
-* A DLL mod that changes item stats as the game starts, like RobCo Patcher,
-  does not make gear wear too fast or too slow, since NEC reads the stats
-  again at every save load and new game.
+* Item stats, recipes, leveled lists and NPC outfits that a DLL mod like RobCo
+  Patcher changes as the game starts count in wear, repair costs and loot
+  condition, since NEC reads them again at every save load and new game.
 * Both vanilla fixes under Little extras can be switched off, for a load order
   where another mod already fixes them.
 

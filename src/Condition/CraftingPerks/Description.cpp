@@ -2,6 +2,7 @@
 
 #include "Condition/CraftingPerks/CraftingPerks.h"
 #include "Condition/CraftingPerks/Ladder.h"
+#include "Condition/CraftingPerks/Perks.h"
 #include "Core/CallPatch/CallPatch.h"
 #include "Core/Text/Text.h"
 #include "Core/TraceLog.h"
@@ -10,28 +11,11 @@
 #include <array>
 #include <cstdint>
 #include <string>
-#include <vector>
 
 namespace CraftingPerks
 {
 	namespace
 	{
-		// One rank's own description, what it takes off a repair, and what its
-		// mods go on. perk and rank name it in the trace.
-		struct Told
-		{
-			const RE::TESDescription* description{ nullptr };
-			std::uint32_t             percent{ 0 };
-			const RE::BGSPerk*        perk{ nullptr };
-			std::uint32_t             rank{ 0 };
-			bool                      weapons{ false };
-			bool                      armor{ false };
-		};
-
-		// Every rank of every perk that can price a repair, 15 in vanilla, so a
-		// plain loop is fast enough.
-		std::vector<Told> g_told;
-
 		// The 2 places a perk's words are read for the screen: the level up
 		// chart and the Pip-Boy's perks page.
 		constexpr CallPatch::CallSite DESCRIPTION_SITES[]{
@@ -46,11 +30,11 @@ namespace CraftingPerks
 		// Whether the bench repairs, see SetBench. Set once at install.
 		bool (*g_benchRepairs)() = nullptr;
 
-		[[nodiscard]] const Told* Ours(const RE::TESDescription* a_description)
+		[[nodiscard]] const Told* Ours(const Perks& a_perks, const RE::TESDescription* a_description)
 		{
-			const auto found = std::find_if(g_told.begin(), g_told.end(),
+			const auto found = std::find_if(a_perks.told.begin(), a_perks.told.end(),
 				[a_description](const Told& a_told) { return a_told.description == a_description; });
-			return found != g_told.end() ? &*found : nullptr;
+			return found != a_perks.told.end() ? &*found : nullptr;
 		}
 
 		// Adds the plugin's line after the game's own words, so a description
@@ -63,7 +47,8 @@ namespace CraftingPerks
 		{
 			g_links[I](a_description, a_out, a_form);
 			const auto  bench = g_benchRepairs && g_benchRepairs();
-			const auto* ours = g_links[I].Live() && bench ? Ours(a_description) : nullptr;
+			const auto  perks = g_links[I].Live() && bench ? Current() : nullptr;
+			const auto* ours = perks ? Ours(*perks, a_description) : nullptr;
 			if (!ours) {
 				return;
 			}
@@ -109,26 +94,22 @@ namespace CraftingPerks
 		g_benchRepairs = a_repairs;
 	}
 
-	void TellRanks(std::span<const RE::BGSPerk* const> a_first)
+	void TellRanks(Perks& a_perks, std::span<const RE::BGSPerk* const> a_first)
 	{
 		// Walked from the first rank, and each next rank asks a higher level,
-		// so the count is the rank.
+		// so the count is the rank. The line names what the perk's mods go on,
+		// weapons, armor or both, since Science unlocks laser receivers and
+		// lead lined armor alike.
 		for (const auto* first : a_first) {
 			const auto    ranks = Ranks(first);
-			const auto    weapons = PricesWeapons(first);
-			const auto    armor = PricesArmor(first);
+			const auto    gates = GatesOf(a_perks, first);
 			const auto*   walk = first;
 			std::uint32_t at = 0;
 			do {
 				at++;
-				g_told.push_back({ static_cast<const RE::TESDescription*>(walk), Discount(at, ranks), walk, at, weapons, armor });
+				a_perks.told.push_back({ static_cast<const RE::TESDescription*>(walk), Discount(at, ranks), walk, at, gates.weapons > 0, gates.armor > 0 });
 				walk = walk->nextPerk;
 			} while (walk && walk != first && at < LADDER_LIMIT);
 		}
-	}
-
-	void ForgetTold()
-	{
-		g_told.clear();
 	}
 }

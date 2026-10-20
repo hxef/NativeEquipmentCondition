@@ -19,15 +19,6 @@ namespace Provenance
 		constexpr float NAMED_CARE = 0.75F;
 		constexpr float NAMED_LIFT = 0.35F;
 
-		// Where each character ranks against the rest by the armor they are
-		// given. Keyed by base form, which the owner of an inventory points to
-		// directly.
-		std::unordered_map<const RE::TESNPC*, float> g_care;
-
-		// Every ranked character's armor total, sorted, so a character who was
-		// not there to be ranked can be placed among them.
-		std::vector<float> g_ladder;
-
 		// -------------------------------------------------------------------
 		// What a character is given
 		// -------------------------------------------------------------------
@@ -41,24 +32,24 @@ namespace Provenance
 			return a_npc.powerArmorFurn != nullptr;
 		}
 
-		// How much armor one character is given, outfit and own inventory
+		// How much armor 1 character is given, a_outfit and own inventory
 		// together. A raider's armor and a gunner's gear are not outfit items
 		// but leveled lists in the inventory, beside the gun. Only the record
 		// itself is read, see Issued in Equipped.cpp for why a template needs no
 		// walk. Returns nothing when any part could not be worked out, so nobody
-		// is ranked on part of their gear. Only reads: every list was measured
-		// at Load, so the spawn hook can call this on any thread.
-		std::optional<float> ArmorIssued(const RE::TESNPC& a_npc)
+		// is ranked on part of their gear. Only reads, so the spawn hook can
+		// call it on any thread.
+		std::optional<float> ArmorIssued(const Supply& a_supply, const RE::TESNPC& a_npc, const RE::BGSOutfit* a_outfit)
 		{
 			float armor = 0.0F;
 
-			if (const auto* outfit = a_npc.defOutfit) {
-				for (const auto* piece : outfit->outfitItems) {
+			if (a_outfit) {
+				for (const auto* piece : a_outfit->outfitItems) {
 					if (!piece) {
 						continue;
 					}
 
-					const auto worth = ArmorFrom(*piece);
+					const auto worth = ArmorFrom(a_supply, *piece);
 					if (!worth) {
 						return std::nullopt;
 					}
@@ -71,7 +62,7 @@ namespace Provenance
 					continue;
 				}
 
-				const auto worth = ArmorFrom(*entry->obj);
+				const auto worth = ArmorFrom(a_supply, *entry->obj);
 				if (!worth) {
 					return std::nullopt;
 				}
@@ -81,22 +72,43 @@ namespace Provenance
 			return armor;
 		}
 
-		// Where one armor total ranks among the characters ranked at startup,
-		// the same answer PositionsOf gives, for someone it never saw.
-		float PositionIn(float a_armor)
+		// Where 1 armor total ranks among the characters the last measure
+		// ranked, the same answer PositionsOf gives, for someone it never saw.
+		float PositionIn(const Care& a_care, float a_armor)
 		{
-			if (g_ladder.size() < 2) {
+			const auto& ladder = a_care.ladder;
+			if (ladder.size() < 2) {
 				return UNKNOWN_HALF;
 			}
 
-			const auto first = std::lower_bound(g_ladder.begin(), g_ladder.end(), a_armor) - g_ladder.begin();
-			const auto after = std::upper_bound(g_ladder.begin(), g_ladder.end(), a_armor) - g_ladder.begin();
+			const auto first = std::lower_bound(ladder.begin(), ladder.end(), a_armor) - ladder.begin();
+			const auto after = std::upper_bound(ladder.begin(), ladder.end(), a_armor) - ladder.begin();
 			const auto middle = (static_cast<float>(first) + static_cast<float>(after - 1)) * 0.5F;
-			return std::clamp(middle / static_cast<float>(g_ladder.size() - 1), 0.0F, 1.0F);
+			return std::clamp(middle / static_cast<float>(ladder.size() - 1), 0.0F, 1.0F);
+		}
+
+		// The outfit a character is measured by: the record's own, or for a
+		// character whose outfit a script changed in this game, as
+		// Actor.SetOutfit and the console's setoutfit do, the one the measure
+		// before counted. The save brings the script's outfit back at every
+		// load, and the one the plugins and DLL mods gave cannot be read any
+		// more. Their own inventory is read as it is now either way.
+		const RE::BGSOutfit* OutfitCounted(const RE::TESNPC& a_npc, const Care* a_last)
+		{
+			if (!a_last) {
+				return a_npc.defOutfit;
+			}
+			const auto  last = a_last->issued.find(&a_npc);
+			const auto* save = RE::BGSSaveLoadGame::GetSingleton();
+			if (last == a_last->issued.end() || !save ||
+				!save->HasChangeFlags(&a_npc, RE::CHANGE_TYPES::kNPCDefaultOutfit)) {
+				return a_npc.defOutfit;
+			}
+			return last->second.outfit;
 		}
 	}
 
-	CareCount MeasureCare()
+	CareCount MeasureCare(const Supply& a_supply, const Care* a_last, Care& a_out)
 	{
 		std::size_t spoiled = 0;
 
@@ -120,7 +132,9 @@ namespace Provenance
 				continue;
 			}
 
-			const auto armor = ArmorIssued(*npc);
+			const auto* outfit = OutfitCounted(*npc, a_last);
+			const auto  armor = ArmorIssued(a_supply, *npc, outfit);
+			a_out.issued.emplace(npc, Issued{ outfit, armor });
 			if (!armor) {
 				++spoiled;
 			} else if (*armor > 0.0F) {
@@ -130,52 +144,46 @@ namespace Provenance
 			}
 		}
 
-		g_care = PositionsOf(kits);
+		a_out.ranks = PositionsOf(kits);
 
 		// The same totals sorted, so a character the engine creates later can
 		// be ranked.
-		g_ladder.clear();
-		g_ladder.reserve(kits.size());
+		auto& ladder = a_out.ladder;
+		ladder.reserve(kits.size());
 		for (const auto& [npc, armor] : kits) {
-			g_ladder.push_back(armor);
+			ladder.push_back(armor);
 		}
-		std::sort(g_ladder.begin(), g_ladder.end());
+		std::sort(ladder.begin(), ladder.end());
 
 		for (const auto* npc : issuedNothing) {
-			g_care.emplace(npc, 0.0F);
+			a_out.ranks.emplace(npc, 0.0F);
 		}
 		for (const auto* npc : armored) {
-			g_care.emplace(npc, 1.0F);
+			a_out.ranks.emplace(npc, 1.0F);
 		}
 
-		return { g_care.size(), kits.size(), issuedNothing.size(), armored.size(), spoiled };
+		return { a_out.ranks.size(), kits.size(), issuedNothing.size(), armored.size(), spoiled };
 	}
 
-	void ForgetCare()
-	{
-		g_care.clear();
-		g_ladder.clear();
-	}
-
-	float CareOf(const RE::TESNPC& a_npc)
+	float CareOf(const Supply& a_supply, const Care& a_care, const RE::TESNPC& a_npc)
 	{
 		float care = UNMEASURED;
 
 		// A record that was loaded when the measuring happened, every settler
 		// and every named character: one lookup.
-		const auto found = g_care.find(&a_npc);
-		if (found != g_care.end()) {
+		const auto found = a_care.ranks.find(&a_npc);
+		if (found != a_care.ranks.end()) {
 			care = found->second;
 
 		// Otherwise the engine created them while the game ran. A raider or a
 		// gunner is rolled from a leveled character list into a new record with
 		// a form ID starting FF. The copy has its outfit and inventory filled
-		// in, so it is measured on the spot from what Load worked out and lands
-		// on the same scale.
+		// in, so it is measured on the spot from what the last measure worked
+		// out and lands on the same scale.
 		} else if (InPowerArmor(a_npc)) {
 			care = 1.0F;
-		} else if (const auto armor = ArmorIssued(a_npc)) {
-			care = *armor > 0.0F ? PositionIn(OnARung(*armor)) : 0.0F;
+		} else if (const auto armor = ArmorIssued(a_supply, a_npc, a_npc.defOutfit)) {
+			care = *armor > 0.0F ? PositionIn(a_care, OnARung(*armor)) : 0.0F;
 		}
 
 		// A unique or protected character gets a boost, since someone the game

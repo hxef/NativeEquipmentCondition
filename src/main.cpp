@@ -1,5 +1,7 @@
 #include "Condition/ArmorWear/ArmorWear.h"
+#include "Condition/CraftingPerks/CraftingPerks.h"
 #include "Condition/Materials/Materials.h"
+#include "Condition/Provenance/Provenance.h"
 #include "Condition/WeaponWear/WeaponWear.h"
 #include "Core/CallPatch/CallPatch.h"
 #include "Core/Feature.h"
@@ -19,11 +21,13 @@
 #include <spdlog/details/os.h>
 
 #include <atomic>
+#include <chrono>
 #include <ctime>
 #include <format>
 #include <ranges>
 #include <string>
 #include <string_view>
+#include <vector>
 
 RE::TESDataHandler* g_dataHandler;
 
@@ -72,6 +76,36 @@ namespace
 		WeaponWear::ForgetOwed();
 	}
 
+	// -------------------------------------------------------------------
+	// Measuring the load order again
+	// -------------------------------------------------------------------
+
+	// The recipes, crafting perks, leveled lists and characters, read again in
+	// the order of Features.cpp, with the scrap lists read again from the
+	// recipes Materials just found. NEC.log gets 1 line naming what moved, and
+	// the time it took at debug level.
+	void MeasureAgain()
+	{
+		const auto start = std::chrono::steady_clock::now();
+		auto       moved = Materials::MeasureAgain();
+		Materials::ReadScrapLists();
+		for (auto& said : CraftingPerks::MeasureAgain()) {
+			moved.push_back(std::move(said));
+		}
+		for (auto& said : Provenance::MeasureAgain()) {
+			moved.push_back(std::move(said));
+		}
+		if (!moved.empty()) {
+			REX::INFO("Since NEC last measured the load order, another mod changed {:s}.", Text::List(moved, Text::Out::kLog));
+		}
+		const auto took = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - start);
+		REX::DEBUG("Measured the recipes, crafting perks, leveled lists and characters again in {:d} ms.", took.count());
+	}
+
+	// -------------------------------------------------------------------
+	// The main menu and loading screens
+	// -------------------------------------------------------------------
+
 	// Set while a game could begin with no save load or new game message,
 	// as a coc from the main menu does. 0 means nothing is due, 1 that the
 	// main menu opened and 2 that a loading screen opened after it. A quit's
@@ -114,8 +148,7 @@ namespace
 						REX::INFO("A loading screen closed with no save load or new game since the main menu opened, as after a coc from there, so NEC measures the load order again.");
 						TraceLog::Mark("COC", "a loading screen closed with no save load or new game since the main menu opened");
 						ArmorWear::MeasureModsAgain();
-						Materials::ReadScrapLists();
-						Materials::MeasureAgain();
+						MeasureAgain();
 						WeaponWear::MeasureAgain();
 					});
 				}
@@ -212,12 +245,15 @@ namespace
 				REX::INFO("The save {:s}.", loaded ? "has loaded" : "did not load");
 				TraceLog::Mark("LOADED", "the save {:s}", loaded ? "has loaded" : "did not load");
 			}
-			// The scrap lists as this game left them, since the save keeps a
-			// script's adds. The ordinary weapon and armor, measured again for
-			// a mod that changed them after game data loaded. 1 walk of every
-			// weapon and recipe, behind the loading screen.
-			Materials::ReadScrapLists();
-			Materials::MeasureAgain();
+			// The load order measured again for a DLL mod that changed it after
+			// game data loaded, behind the loading screen. A save that did not
+			// load leaves every table as it is, and the scrap lists are read
+			// again as at every load.
+			if (a_msg->type == F4SE::MessagingInterface::kNewGame || static_cast<bool>(a_msg->data)) {
+				MeasureAgain();
+			} else {
+				Materials::ReadScrapLists();
+			}
 			WeaponWear::MeasureAgain();
 			// Every patch is read back before the save plays, see
 			// CallPatch::Recheck.

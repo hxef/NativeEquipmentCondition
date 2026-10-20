@@ -58,6 +58,7 @@ src/
     Places.cpp               which pieces each patched place is
     Plugin.h                 the data handler the load order is read through
     Settings.h/.cpp          every setting, read from NEC.ini
+    Snapshot.h               a table other threads read while it is measured again, swapped in whole, and how 2 readings differ
     Text/
       Text.h/.cpp            the plugin's own sentences, 1 function each
       Translations.cpp       reading the player's language file, and the line each key gives
@@ -91,7 +92,7 @@ src/
       Index.h                the index, for this folder
       Bill.cpp               the bill of parts and the order it is charged in
       Components.cpp         which component prices a form, a junk item by its own Components list
-      Scrap.cpp              the scrap recipes the bench reads and the lists they name, read at Load and again where a script can add to one
+      Scrap.cpp              the scrap recipes the bench reads and the lists they name, read at Load, again at every save load, new game and coc from the main menu, and where a script can add to one
     Repair.h/.cpp            what a worn item owes
     WeaponWear/
       WeaponWear.h/.cpp      which weapons take part, wearing the copy in hand
@@ -105,6 +106,7 @@ src/
     CraftingPerks/
       CraftingPerks.h/.cpp   the perk behind an item, the player's rank in it
       Ladder.h/.cpp          walking a perk's ring of ranks
+      Perks.h/.cpp           what every recipe says about perks: the gates, the fallbacks and the perk page lines
       Recipes.h/.cpp         which perks a recipe needs and what its mod reaches, a weapon's kind
       Description.h/.cpp     the line every rank grows on the perk page
     Provenance/

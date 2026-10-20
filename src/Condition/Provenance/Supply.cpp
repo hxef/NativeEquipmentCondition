@@ -2,47 +2,13 @@
 
 #include "Condition/Provenance/Rank.h"
 
-#include <cstdint>
-
 namespace Provenance
 {
 	namespace
 	{
-		// Where each leveled list ranks against every other list that can give
-		// out a weapon, and the same for armor. Keyed by form ID, which is what
-		// the engine records on the item.
-		std::unordered_map<RE::TESFormID, float> g_supply;
-		std::unordered_map<RE::TESFormID, float> g_armorSupply;
-
-		// What one pick from each list is worth in armor, and the lists that
-		// could not be worked out. Filled by MeasureSupply and read from then
-		// on, so a character the engine creates mid game is measured without
-		// walking a list again, see CareOf.
-		std::unordered_map<const RE::TESLevItem*, float> g_listArmor;
-		std::unordered_set<const RE::TESLevItem*>        g_ruinedLists;
-
 		// -------------------------------------------------------------------
 		// Walking a leveled list
 		// -------------------------------------------------------------------
-
-		// What one list can give out, over everything it reaches. Weapons and
-		// armor in one walk, since the same lists feed both and the walk is the
-		// only slow part.
-		struct Haul
-		{
-			std::uint64_t weaponWorth{ 0 };
-			std::uint64_t weapons{ 0 };
-
-			// The armor the same way, by what it sells for, for the supply
-			// half of a piece of armor spawning.
-			std::uint64_t armorValue{ 0 };
-			std::uint64_t armors{ 0 };
-
-			// What one pick is worth in armor rating, an average and not a
-			// total, since a list usually gives out one entry. See HaulOf for
-			// the exception. The care half reads it.
-			float armorWorth{ 0.0F };
-		};
 
 		// What a list gives out, and whether the walk had to give up somewhere.
 		struct Walk
@@ -94,10 +60,14 @@ namespace Provenance
 
 			const auto entries = static_cast<std::size_t>(a_list.baseListCount);
 			for (std::size_t i = 0; a_list.leveledLists && i < entries; ++i) {
-				const auto* form = a_list.leveledLists[i].form;
-				if (!form) {
+				// What a script's AddForm put in, which the save brings back,
+				// is left out, so the list ranks as the plugins and DLL mods
+				// made it.
+				const auto& entry = a_list.leveledLists[i];
+				if (!entry.form || a_list.IsScriptAdded(&entry)) {
 					continue;
 				}
+				const auto* form = entry.form;
 
 				switch (form->GetFormType()) {
 					case RE::ENUM_FORM_ID::kWEAP:
@@ -171,7 +141,7 @@ namespace Provenance
 		}
 	}
 
-	SupplyCount MeasureSupply()
+	SupplyCount MeasureSupply(Supply& a_out)
 	{
 		Notes notes;
 		std::size_t spoiled = 0;
@@ -191,14 +161,14 @@ namespace Provenance
 			// weapons fall back to the plain middle.
 			const auto walk = HaulOf(*list, notes);
 			if (walk.gaveUp) {
-				g_ruinedLists.insert(list);
+				a_out.ruined.insert(list);
 				++spoiled;
 				continue;
 			}
 
 			// Kept for the care half, which reads it back rather than walking
 			// again.
-			g_listArmor.emplace(list, walk.haul.armorWorth);
+			a_out.hauls.emplace(list, walk.haul);
 
 			if (walk.haul.weapons > 0) {
 				pipelines.emplace_back(list->formID,
@@ -209,28 +179,20 @@ namespace Provenance
 					OnARung(static_cast<float>(walk.haul.armorValue) / static_cast<float>(walk.haul.armors)));
 			}
 		}
-		g_supply = PositionsOf(pipelines);
-		g_armorSupply = PositionsOf(armorPipelines);
+		a_out.weapons = PositionsOf(pipelines);
+		a_out.armor = PositionsOf(armorPipelines);
 
-		return { g_supply.size(), g_armorSupply.size(), spoiled };
+		return { a_out.weapons.size(), a_out.armor.size(), spoiled };
 	}
 
-	void ForgetSupply()
+	std::optional<float> SupplyOf(const Supply& a_supply, RE::TESFormID a_list, Condition::Kind a_kind)
 	{
-		g_supply.clear();
-		g_armorSupply.clear();
-		g_listArmor.clear();
-		g_ruinedLists.clear();
-	}
-
-	std::optional<float> SupplyOf(RE::TESFormID a_list, Condition::Kind a_kind)
-	{
-		const auto& supply = a_kind == Condition::Kind::kArmor ? g_armorSupply : g_supply;
+		const auto& supply = a_kind == Condition::Kind::kArmor ? a_supply.armor : a_supply.weapons;
 		const auto  found = supply.find(a_list);
 		return found != supply.end() ? std::optional{ found->second } : std::nullopt;
 	}
 
-	std::optional<float> ArmorFrom(const RE::TESForm& a_form)
+	std::optional<float> ArmorFrom(const Supply& a_supply, const RE::TESForm& a_form)
 	{
 		if (a_form.Is(RE::ENUM_FORM_ID::kARMO)) {
 			return static_cast<float>(static_cast<const RE::TESObjectARMO&>(a_form).armorData.rating);
@@ -238,12 +200,12 @@ namespace Provenance
 
 		if (a_form.Is(RE::ENUM_FORM_ID::kLVLI)) {
 			const auto* list = static_cast<const RE::TESLevItem*>(&a_form);
-			if (g_ruinedLists.contains(list)) {
+			if (a_supply.ruined.contains(list)) {
 				return std::nullopt;
 			}
 
-			const auto found = g_listArmor.find(list);
-			return found != g_listArmor.end() ? found->second : 0.0F;
+			const auto found = a_supply.hauls.find(list);
+			return found != a_supply.hauls.end() ? found->second.armorWorth : 0.0F;
 		}
 
 		return 0.0F;

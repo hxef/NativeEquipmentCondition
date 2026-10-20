@@ -4,6 +4,8 @@
 #include "Core/Plugin.h"
 
 #include <span>
+#include <string>
+#include <vector>
 
 // Which crafting perk prices the repair of a weapon or a piece of armor, and
 // which rank of it the player has. Gun Nut unlocks ballistic mods, Science
@@ -38,8 +40,8 @@
 // from its instance data.
 //
 // Ladder.cpp walks a ring of ranks, Recipes.cpp reads which perks a recipe
-// needs and what kind a weapon is, and Description.cpp adds the line to the
-// perk page.
+// needs and what kind a weapon is, Perks.cpp reads every recipe into the gates
+// and fallbacks, and Description.cpp adds the line to the perk page.
 namespace CraftingPerks
 {
 	// Patches the perk descriptions, so every rank says how much it takes off a
@@ -51,8 +53,14 @@ namespace CraftingPerks
 	// recipes.
 	void Load();
 
-	// Forgets every perk and recipe Load found.
+	// Forgets every perk and recipe Load and MeasureAgain found.
 	void Unload();
+
+	// Reads every recipe again, as Load does, at every save load, new game and
+	// coc from the main menu, and swaps the new gates in whole. A recipe's list
+	// counts without what a script added to it. Returns what moved, for
+	// main.cpp's line.
+	[[nodiscard]] std::vector<std::string> MeasureAgain();
 
 	// Takes the workbench's check, so a rank's line shows only while the
 	// bench repairs, the one place the discount is given. Workbench::Install
@@ -105,11 +113,6 @@ namespace CraftingPerks
 	// null, and then the base form says what kind of weapon this is.
 	[[nodiscard]] Standing Of(const RE::TESBoundObject& a_object, const RE::ExtraDataList* a_extra,
 		std::span<const Materials::Line> a_bill);
-
-	// What a perk's mods go on, for the line on its page: weapons, armor or
-	// both. Science unlocks laser receivers and lead lined armor alike.
-	[[nodiscard]] bool PricesWeapons(const RE::BGSPerk* a_first);
-	[[nodiscard]] bool PricesArmor(const RE::BGSPerk* a_first);
 
 	// Where the player stands on the perk a recipe names in its condition. None
 	// for a recipe naming no perk. Where it names 2, which many weapon mods do,

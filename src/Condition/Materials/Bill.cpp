@@ -9,7 +9,7 @@ namespace Materials
 	namespace
 	{
 		// Adds a line to a_bill for every component a_recipe asks for.
-		void AddLines(std::vector<Line>& a_bill, const RE::BGSConstructibleObject& a_recipe)
+		void AddLines(const Index& a_index, std::vector<Line>& a_bill, const RE::BGSConstructibleObject& a_recipe)
 		{
 			if (!a_recipe.requiredItems) {
 				return;
@@ -18,7 +18,7 @@ namespace Materials
 			for (const auto& required : *a_recipe.requiredItems) {
 				// A line for a finished item or for nothing at all says nothing
 				// about what the item is made of.
-				const auto* component = PricedBy(required.first);
+				const auto* component = PricedBy(a_index, required.first);
 				const auto  count = required.second.i;
 				if (!component || count == 0) {
 					continue;
@@ -42,8 +42,12 @@ namespace Materials
 	std::vector<Line> BillOfLines(const RE::TESBoundObject& a_object, const RE::ExtraDataList* a_extra)
 	{
 		std::vector<Line> bill;
-		ForEachRecipe(a_object, a_extra, [&bill](const RE::BGSConstructibleObject& a_recipe) {
-			AddLines(bill, a_recipe);
+		const auto        index = Current();
+		if (!index) {
+			return bill;
+		}
+		ForEachRecipe(*index, a_object, a_extra, [&index, &bill](const RE::BGSConstructibleObject& a_recipe) {
+			AddLines(*index, bill, a_recipe);
 		});
 		return bill;
 	}

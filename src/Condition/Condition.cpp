@@ -97,9 +97,14 @@ namespace Condition
 		return a_percent >= 100 ? MAX_HEALTH : static_cast<float>(a_percent) / 100.0F;
 	}
 
+	float HealthOf(RE::ExtraDataList* a_extra)
+	{
+		return a_extra ? a_extra->GetHealthPerc() : INVALID_HEALTH;
+	}
+
 	float HealthOf(const RE::BGSInventoryItem::Stack* a_stack)
 	{
-		return a_stack && a_stack->extra ? a_stack->extra->GetHealthPerc() : INVALID_HEALTH;
+		return a_stack ? HealthOf(a_stack->extra.get()) : INVALID_HEALTH;
 	}
 
 	namespace

@@ -16,7 +16,7 @@ namespace FireRate
 		// animation. A held attack like the Ripper's sends one every 0.2 s from
 		// a clip that plays at the same pace whatever the speed, so the pace is
 		// kept here, see CutHk.
-		constexpr CallPatch::CallSite CUT_SITE{ 2235282, 0x3E, "blade cut" };
+		constexpr CallPatch::CallSite CUT_SITE{ CallPatch::AE{ 2235282, 0x3E }, CallPatch::OG{ 88020, 0x3E }, "blade cut" };
 
 		CallPatch::Link<void(RE::Actor*, std::uint32_t, bool)> g_cutLink;
 
@@ -124,7 +124,7 @@ namespace FireRate
 
 	bool InstallCuts()
 	{
-		return CallPatch::PatchCall(CUT_SITE, RE::ID::Actor::QueueMeleeHit.address(), reinterpret_cast<std::uintptr_t>(&CutHk), g_cutLink);
+		return CallPatch::PatchCall(CUT_SITE, RE::ID::Actor::QueueMeleeHit, reinterpret_cast<std::uintptr_t>(&CutHk), g_cutLink);
 	}
 
 	bool CutLive()

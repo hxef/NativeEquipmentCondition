@@ -1,7 +1,7 @@
 {
   "modName": "NEC",
   "displayName": "Native Equipment Condition",
-  "minMcmVersion": 9,
+  "minMcmVersion": 8,
   "content": [
     { "id": "parts:Note", "type": "hiddenSwitcher", "groupControl": 1,
       "valueOptions": { "sourceType": "ModSettingBool" } },

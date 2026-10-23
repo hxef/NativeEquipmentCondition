@@ -17,8 +17,8 @@ namespace ItemValue
 		// vendor's offer, the take all button. The first reads the condition
 		// through ExtraDataList::GetHealthPerc, the second prices it through
 		// GamePlayFormulas::CalculateItemValue.
-		constexpr CallPatch::CallSite VALUE_HEALTH_SITE{ RE::ID::BGSInventoryItemUtils::GetInventoryValue.id(), 0x030, "value health" };
-		constexpr CallPatch::CallSite VALUE_SITE{ RE::ID::BGSInventoryItemUtils::GetInventoryValue.id(), 0x05D, "value" };
+		constexpr CallPatch::CallSite VALUE_HEALTH_SITE{ CallPatch::AE{ RE::ID::BGSInventoryItemUtils::GetInventoryValue.ae(), 0x030 }, CallPatch::OG{ RE::ID::BGSInventoryItemUtils::GetInventoryValue.og(), 0x035 }, "value health" };
+		constexpr CallPatch::CallSite VALUE_SITE{ CallPatch::AE{ RE::ID::BGSInventoryItemUtils::GetInventoryValue.ae(), 0x05D }, CallPatch::OG{ RE::ID::BGSInventoryItemUtils::GetInventoryValue.og(), 0x06A }, "value" };
 
 		// Fallout 3 and New Vegas priced a worn item with one curve from 3 game
 		// settings:
@@ -143,8 +143,8 @@ namespace ItemValue
 		// The second patch does the work and reads what the first recorded, so
 		// it is not installed alone.
 		g_held = CallPatch::PatchTogether({
-			{ VALUE_HEALTH_SITE, RE::ID::ExtraDataList::GetHealthPerc.address(), reinterpret_cast<std::uintptr_t>(&ValueHealthHk), &g_valueHealthLink },
-			{ VALUE_SITE, RE::ID::GamePlayFormulas::CalculateItemValue.address(), reinterpret_cast<std::uintptr_t>(&ItemValueHk), &g_valueLink },
+			{ VALUE_HEALTH_SITE, RE::ID::ExtraDataList::GetHealthPerc, reinterpret_cast<std::uintptr_t>(&ValueHealthHk), &g_valueHealthLink },
+			{ VALUE_SITE, RE::ID::GamePlayFormulas::CalculateItemValue, reinterpret_cast<std::uintptr_t>(&ItemValueHk), &g_valueLink },
 		});
 
 		if (!g_held) {

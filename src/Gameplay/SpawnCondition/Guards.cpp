@@ -31,7 +31,7 @@ namespace SpawnCondition
 		// runs it, so it covers a typed command, a batch file and ForEachRef
 		// alike.
 		constexpr CallPatch::CallSite RUN_CONSOLE_COMMANDS_SITE[] = {
-			{ 2228917, 0xDC4, "console commands" },
+			{ CallPatch::AE{ 2228917, 0xDC4 }, CallPatch::OG{ 633524, 0x7D4 }, "console commands" },
 		};
 
 		std::array<CallPatch::Link<void()>, 1> g_consoleLink;
@@ -313,10 +313,10 @@ namespace SpawnCondition
 		// Index 1 is the call operator. Every script AddItem and RemoveItem
 		// runs through one, whatever the script is attached to.
 		const CallPatch::Together scripts{ Part::kGifts };
-		REL::Relocation<std::uintptr_t> addItem{ RE::GameScript::AddItemFunctor::VTABLE[0] };
-		_RunScriptAddItem = CallPatch::PatchSlot(addItem, 0x01, RunScriptAddItemHk, "script additem", Part::kNone, true, &g_addItemLink).value_or(0);
-		REL::Relocation<std::uintptr_t> removeItem{ RE::GameScript::RemoveItemFunctor::VTABLE[0] };
-		_RunScriptRemoveItem = CallPatch::PatchSlot(removeItem, 0x01, RunScriptRemoveItemHk, "script removeitem", Part::kNone, true, &g_removeItemLink).value_or(0);
+		const auto& addItem = RE::GameScript::AddItemFunctor::VTABLE[0];
+		_RunScriptAddItem = CallPatch::PatchSlot(addItem, { 0x01, 0x01 }, RunScriptAddItemHk, "script additem", Part::kNone, true, &g_addItemLink).value_or(0);
+		const auto& removeItem = RE::GameScript::RemoveItemFunctor::VTABLE[0];
+		_RunScriptRemoveItem = CallPatch::PatchSlot(removeItem, { 0x01, 0x01 }, RunScriptRemoveItemHk, "script removeitem", Part::kNone, true, &g_removeItemLink).value_or(0);
 		g_scripts = scripts.Set();
 		if (!g_scripts) {
 			REX::WARN("Weapons and armor a script gives the player will be rolled like any other loot.");

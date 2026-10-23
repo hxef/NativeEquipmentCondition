@@ -9,7 +9,7 @@ end
 
 -- set project constants
 set_project("NativeEquipmentCondition")
-set_version("1.5.2")
+set_version("1.6.0")
 set_license("GPL-3.0")
 set_languages("c++23")
 set_warnings("allextra")
@@ -36,10 +36,12 @@ option_end()
 -- define targets
 -- The target name is the DLL name, so this builds NEC.dll.
 target("NEC")
+    -- old_gen adds the F4SEPlugin_Query export F4SE 0.6.x asks on 1.10.163.
     add_rules("commonlibf4.plugin", {
         name = "Native Equipment Condition",
         author = "hxef",
-        description = "Equipment condition for Fallout 4"
+        description = "Equipment condition for Fallout 4",
+        options = { old_gen = true }
     })
 
     -- Every file under src, with includes written from src. legacy/ is never

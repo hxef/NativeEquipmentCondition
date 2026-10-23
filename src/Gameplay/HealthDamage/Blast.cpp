@@ -21,7 +21,9 @@ namespace HealthDamage
 		// Where the engine works damage out
 		// -------------------------------------------------------------------
 
+		using CallPatch::AE;
 		using CallPatch::CallSite;
+		using CallPatch::OG;
 
 		// The 3 places the engine asks a live explosion how much damage it
 		// does, through Explosion::GetDamage. A weapon that fires something
@@ -34,19 +36,19 @@ namespace HealthDamage
 		// is strong enough to look for targets, ProcessTargets working out what
 		// each loses, and the hit data being filled in.
 		constexpr CallSite BLAST_SITES[] = {
-			{ 2236662, 0x4BB, "targets" },
-			{ RE::ID::Explosion::ProcessTargets.id(), 0x5F5, "damage" },
-			{ 2236848, 0x039, "hit" },
+			{ AE{ 2236662, 0x4BB }, OG{ 976589, 0x4AF }, "targets" },
+			{ AE{ RE::ID::Explosion::ProcessTargets.ae(), 0x5F5 }, OG{ RE::ID::Explosion::ProcessTargets.og(), 0x57C }, "damage" },
+			{ AE{ 2236848, 0x039 }, OG{ 754797, 0x039 }, "hit" },
 		};
 
 		// The call to MagicCaster::Cast inside MagicCaster::CastSpellImmediate,
 		// which casts at once. A blast casts its object effect through it,
 		// along with much else. See Effect.cpp.
-		constexpr CallSite BLAST_EFFECT_SITE{ 2226290, 0x0AF, "blast effect" };
+		constexpr CallSite BLAST_EFFECT_SITE{ AE{ 2226290, 0x0AF }, OG{ 152390, 0x091 }, "blast effect" };
 
 		// The one call to Explosion::ProcessTargets, which goes through
 		// everything the blast hit.
-		constexpr CallSite BLAST_TARGETS_SITE{ 2236666, 0x15E8, "blast targets" };
+		constexpr CallSite BLAST_TARGETS_SITE{ AE{ 2236666, 0x15E8 }, OG{ 1540997, 0x10A1 }, "blast targets" };
 
 		constexpr std::size_t NUM_BLAST_SITES = std::size(BLAST_SITES);
 
@@ -198,12 +200,12 @@ namespace HealthDamage
 		CallPatch::PatchAll(BLAST_SITES, RE::ID::Explosion::GetDamage, blastHooks, g_blastLinks,
 			"An explosion is worth what the weapon that set it off is worth");
 
-		const auto cast = RE::ID::MagicCaster::Cast.address();
+		const auto& cast = RE::ID::MagicCaster::Cast;
 
 		// The first only marks the blast and the second reads the mark, so the
 		// second is not installed alone.
 		g_blastEffect = CallPatch::PatchTogether({
-			{ BLAST_TARGETS_SITE, RE::ID::Explosion::ProcessTargets.address(), reinterpret_cast<std::uintptr_t>(&BlastTargetsHk), &g_blastTargetsLink },
+			{ BLAST_TARGETS_SITE, RE::ID::Explosion::ProcessTargets, reinterpret_cast<std::uintptr_t>(&BlastTargetsHk), &g_blastTargetsLink },
 			{ BLAST_EFFECT_SITE, cast, reinterpret_cast<std::uintptr_t>(&BlastEffectHk), &g_blastEffectLink },
 		});
 

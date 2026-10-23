@@ -1,3 +1,7 @@
+1.6.0
+* NEC now runs on OG too (Fallout 4 1.10.163 with F4SE 0.6.23), with every part working as on AE.
+* NEC.log now names the game and F4SE versions it runs on.
+
 1.5.2
 * A new MCM switch, HUD bar hides with counter (bHudBarHidesWithCounter, off), fades the HUD CND bar out with the ammo counter about 10 seconds after your last shot.
 * NEC's MCM page now shows on Mod Configuration Menu - RD, where it said "Wrong MCM version: 9 (required: 11)".

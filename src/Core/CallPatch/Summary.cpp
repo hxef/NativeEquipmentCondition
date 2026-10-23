@@ -66,9 +66,10 @@ namespace CallPatch
 	std::string LeftLine()
 	{
 		// A part only this game version keeps off is no other mod's, so it
-		// gets a sentence of its own. The pieces come before the owners. A
-		// piece off only because a piece of another part is taken is named in
-		// its part's line, not here.
+		// gets a sentence of its own, as OG does with a part it has no
+		// place for. The pieces come before the owners. A piece off only
+		// because a piece of another part is taken is named in its part's line,
+		// not here.
 		std::string mods;
 		std::string version;
 		for (const auto& loss : Losses()) {
@@ -94,8 +95,7 @@ namespace CallPatch
 			line = std::format("Left to other mods: {:s}.", mods);
 		}
 		if (!version.empty()) {
-			std::format_to(std::back_inserter(line), "{:s}Off on game version {:s}, which is not supported: {:s}.", line.empty() ? "" : " ",
-				GameVersion(), version);
+			std::format_to(std::back_inserter(line), "{:s}Off on {:s}: {:s}.", line.empty() ? "" : " ", VersionNamed(), version);
 		}
 		return line;
 	}

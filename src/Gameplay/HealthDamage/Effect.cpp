@@ -13,7 +13,9 @@ namespace HealthDamage
 {
 	namespace
 	{
+		using CallPatch::AE;
 		using CallPatch::CallSite;
+		using CallPatch::OG;
 
 		// The call to MagicCaster::Cast that carries a weapon's object effects.
 		// Object effects are spells, the radiation a Radium Rifle applies to
@@ -23,7 +25,7 @@ namespace HealthDamage
 		// follows the caster's own check on a spell. The engine casts a blow's
 		// effects from its task queue, so they can land a moment after the
 		// blow.
-		constexpr CallSite HIT_EFFECT_SITE{ 2226293, 0x0E4, "hit effect" };
+		constexpr CallSite HIT_EFFECT_SITE{ AE{ 2226293, 0x0E4 }, OG{ 549963, 0x0EB }, "hit effect" };
 
 		CallPatch::Link<bool(RE::MagicCaster*, float, std::uint32_t*, RE::TESBoundObject*, bool, bool)> g_hitEffect;
 
@@ -72,7 +74,7 @@ namespace HealthDamage
 
 	void InstallEffect()
 	{
-		const auto cast = RE::ID::MagicCaster::Cast.address();
+		const auto& cast = RE::ID::MagicCaster::Cast;
 
 		if (!CallPatch::PatchCall(HIT_EFFECT_SITE, cast, reinterpret_cast<std::uintptr_t>(&HitEffectHk), g_hitEffect)) {
 			REX::WARN("A worn weapon's object effects will keep landing at full strength.");

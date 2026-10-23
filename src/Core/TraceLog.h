@@ -267,7 +267,7 @@ namespace TraceLog
 		if (own && *own) {
 			return own;
 		}
-		const char* resistance = a_type.data.resistance ? a_type.data.resistance->formEditorID.c_str() : nullptr;
+		const char* resistance = a_type.data.resistance ? a_type.data.resistance->GetFormEditorIDString().c_str() : nullptr;
 		return resistance && *resistance ? resistance : "a damage type";
 	}
 }

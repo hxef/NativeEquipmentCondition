@@ -16,7 +16,9 @@ namespace ItemCard
 {
 	namespace
 	{
+		using CallPatch::AE;
 		using CallPatch::CallSite;
+		using CallPatch::OG;
 		using Scaleform::GFx::Value;
 
 		// The calls to InventoryUserUIUtils::PopulateItemCardInfo_Helper, which
@@ -24,9 +26,9 @@ namespace ItemCard
 		// bartering, the workbench and inspect and the power armor station,
 		// and cooking.
 		constexpr CallSite HELPER_SITES[] = {
-			{ 2222624, 0x0E6, "container card" },
-			{ 2223053, 0x281, "examine card" },
-			{ 2222904, 0x0E9, "cooking card" },
+			{ AE{ 2222624, 0x0E6 }, OG{ 223535, 0x0A8 }, "container card" },
+			{ AE{ 2223053, 0x281 }, OG{ 579386, 0x240 }, "examine card" },
+			{ AE{ 2222904, 0x0E9 }, OG{ 1053915, 0x0E9 }, "cooking card" },
 		};
 
 		// The calls to PipboyInventoryData::PopulateItemCardInfo, the same job
@@ -35,8 +37,8 @@ namespace ItemCard
 		// item, which it does again after every wear of the item. The second
 		// is a category rebuilt, on an equip and when ItemCards::Refresh asks.
 		constexpr CallSite PIPBOY_SITES[] = {
-			{ RE::ID::PipboyInventoryData::InitializeItem.id(), 0x651, "pipboy card", true },
-			{ RE::ID::PipboyInventoryData::RepopulateItemCardOnSection.id(), 0x40F, "pipboy card rebuild" },
+			{ AE{ RE::ID::PipboyInventoryData::InitializeItem.ae(), 0x651, true }, OG{ RE::ID::PipboyInventoryData::InitializeItem.og(), 0x5A3, true }, "pipboy card" },
+			{ AE{ RE::ID::PipboyInventoryData::RepopulateItemCardOnSection.ae(), 0x40F }, OG{ RE::ID::PipboyInventoryData::RepopulateItemCardOnSection.og(), 0x412 }, "pipboy card rebuild" },
 		};
 
 		// The 2 Pip-Boy sites, which go in together, see PopulatePipboy.
@@ -200,7 +202,7 @@ namespace ItemCard
 
 		// The 2 Pip-Boy sites build the same card, so they go in together, see
 		// PopulatePipboy.
-		const auto populate = RE::ID::PipboyInventoryData::PopulateItemCardInfo.address();
+		const auto& populate = RE::ID::PipboyInventoryData::PopulateItemCardInfo;
 		g_pipboy = CallPatch::PatchTogether({
 			{ PIPBOY_SITES[0], populate, reinterpret_cast<std::uintptr_t>(&PipboyNewEntryHk), &g_pipboyLinks[0] },
 			{ PIPBOY_SITES[1], populate, reinterpret_cast<std::uintptr_t>(&PipboyPopulateHk), &g_pipboyLinks[1] },

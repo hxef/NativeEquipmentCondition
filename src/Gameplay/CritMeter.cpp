@@ -15,13 +15,13 @@ namespace CritMeter
 	{
 		// The one call to CombatFormulas::CalcVATSCriticalCharge, inside the
 		// function VATS calls whenever it adds charge.
-		constexpr CallPatch::CallSite CHARGE_SITE{ 2237284, 0x108, "crit meter" };
+		constexpr CallPatch::CallSite CHARGE_SITE{ CallPatch::AE{ 2237284, 0x108 }, CallPatch::OG{ 197436, 0xFA }, "crit meter" };
 
 		// 2 calls inside HitData::RollCritical: the perk check on the chance,
 		// entry point 1, with the attacker and the weapon, and the roll itself,
 		// a random number the chance is compared with.
-		constexpr CallPatch::CallSite CHANCE_SITE{ 2236866, 0x1B9, "crit chance" };
-		constexpr CallPatch::CallSite ROLL_SITE{ 2236866, 0x22A, "crit roll" };
+		constexpr CallPatch::CallSite CHANCE_SITE{ CallPatch::AE{ 2236866, 0x1B9 }, CallPatch::OG{ 470088, 0xCF }, "crit chance" };
+		constexpr CallPatch::CallSite ROLL_SITE{ CallPatch::AE{ 2236866, 0x22A }, CallPatch::OG{ 470088, 0x12F }, "crit roll" };
 
 		// A straight line from fCritMeterFloor at nothing to 1 at
 		// fWeaponPenaltyStart, the shape of HealthDamage/Curve.h. Lower than
@@ -140,13 +140,13 @@ namespace CritMeter
 
 		// The meter and the NPC pair each go alone, so another mod on one
 		// leaves the other working.
-		const auto meter = CallPatch::PatchCall(CHARGE_SITE, RE::ID::CombatFormulas::CalcVATSCriticalCharge.address(),
+		const auto meter = CallPatch::PatchCall(CHARGE_SITE, RE::ID::CombatFormulas::CalcVATSCriticalCharge,
 			reinterpret_cast<std::uintptr_t>(&CritChargeHk), g_chargeLink);
 
 		// The roll reads what the chance noted, so the 2 go in together.
 		g_rolled = CallPatch::PatchTogether({
-			{ CHANCE_SITE, RE::ID::BGSEntryPoint::HandleEntryPoint.address(), reinterpret_cast<std::uintptr_t>(&ChanceHk), &g_chanceLink },
-			{ ROLL_SITE, RE::ID::BSRandom::Float0To1.address(), reinterpret_cast<std::uintptr_t>(&RollHk), &g_rollLink },
+			{ CHANCE_SITE, RE::ID::BGSEntryPoint::HandleEntryPoint, reinterpret_cast<std::uintptr_t>(&ChanceHk), &g_chanceLink },
+			{ ROLL_SITE, RE::ID::BSRandom::Float0To1, reinterpret_cast<std::uintptr_t>(&RollHk), &g_rollLink },
 		}, Part::kNpcCrits);
 
 		if (meter) {

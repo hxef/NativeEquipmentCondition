@@ -7,6 +7,7 @@
 #include "Gameplay/SpawnCondition/Owners.h"
 #include "Gameplay/SpawnCondition/Trace.h"
 
+#include <cstdint>
 #include <format>
 #include <optional>
 
@@ -21,9 +22,10 @@ namespace SpawnCondition
 		return a_object.IsWeapon() || a_object.Is(RE::ENUM_FORM_ID::kARMO);
 	}
 
-	std::optional<Aim> Roll(RE::BGSInventoryList* a_list, RE::TESBoundObject* a_object, RE::BGSInventoryItem::Stack* a_stack)
+	std::optional<Aim> Roll(RE::BGSInventoryList* a_list, RE::TESBoundObject* a_object, RE::ExtraDataList* a_extra, std::uint32_t a_count,
+		bool a_private)
 	{
-		if (!a_object || !a_stack) {
+		if (!a_object) {
 			return std::nullopt;
 		}
 
@@ -35,7 +37,7 @@ namespace SpawnCondition
 
 		const auto name = NameOf(*a_object, "unnamed item");
 		const auto id = a_object->formID;
-		const auto count = a_stack->count;
+		const auto count = a_count;
 		const auto players = Players(a_list);
 
 		// A trader's chest restocking, whose stock rolls in the trader's
@@ -52,7 +54,7 @@ namespace SpawnCondition
 
 		// Nowhere to write the health. A stack with no extra data list is
 		// identical to every other copy of the form.
-		if (!a_stack->extra) {
+		if (!a_extra) {
 			Report(listed, "with no extradata", "{:<30s} [{:08X}] x{:<3d} left alone, no extradata to write to", name, id, count);
 			return std::nullopt;
 		}
@@ -62,9 +64,9 @@ namespace SpawnCondition
 		// it was rolled in the giver's hands, like the gun Paladin Brandis
 		// gives away. Only a stack nothing else shares, or the write would
 		// reach the giver's copy too.
-		if (players && GiftFromScript(*a_stack->extra) && Private(*a_stack)) {
-			const auto before = a_stack->extra->GetHealthPerc();
-			a_stack->extra->SetHealthPerc(Condition::MAX_HEALTH);
+		if (players && GiftFromScript(*a_extra) && a_private) {
+			const auto before = a_extra->GetHealthPerc();
+			a_extra->SetHealthPerc(Condition::MAX_HEALTH);
 			Report(listed, "a gift", "{:<30s} [{:08X}] x{:<3d} starts at {:.4f}, a gift, was {:.4f}",
 				name, id, count, Condition::MAX_HEALTH, before);
 			return std::nullopt;
@@ -77,7 +79,7 @@ namespace SpawnCondition
 		// condition. At or above 0, not above: 0 is broken, and treating it
 		// as no health would let a broken minigun repair itself by changing
 		// hands.
-		const auto existing = a_stack->extra->GetHealthPerc();
+		const auto existing = a_extra->GetHealthPerc();
 		if (existing >= 0.0F && !Condition::IsUnrolled(existing)) {
 			Report(listed, "already set", "{:<30s} [{:08X}] x{:<3d} left alone, already at {:.4f}", name, id, count, existing);
 			return std::nullopt;
@@ -88,7 +90,7 @@ namespace SpawnCondition
 		// since an item with none would be rolled the first time it changed
 		// hands. Several at once stay one stack.
 		if (FromConsole() && ConsoleTarget(a_list)) {
-			a_stack->extra->SetHealthPerc(Condition::MAX_HEALTH);
+			a_extra->SetHealthPerc(Condition::MAX_HEALTH);
 			Report(listed, "given by the console", "{:<30s} [{:08X}] x{:<3d} starts at {:.4f}, from the console",
 				name, id, count, Condition::MAX_HEALTH);
 			return std::nullopt;
@@ -98,7 +100,7 @@ namespace SpawnCondition
 		// character giving a gift or another mod's script, so it arrives
 		// new as well.
 		if (FromScript() && players) {
-			a_stack->extra->SetHealthPerc(Condition::MAX_HEALTH);
+			a_extra->SetHealthPerc(Condition::MAX_HEALTH);
 			Report(listed, "given by a script", "{:<30s} [{:08X}] x{:<3d} starts at {:.4f}, from a script",
 				name, id, count, Condition::MAX_HEALTH);
 			return std::nullopt;
@@ -106,8 +108,8 @@ namespace SpawnCondition
 
 		// A showpiece arrives new. A chest does not say which trader it
 		// belongs to, so any chest counts, a reward chest's legendary too.
-		if (Showpiece(a_list, *a_stack->extra)) {
-			a_stack->extra->SetHealthPerc(Condition::MAX_HEALTH);
+		if (Showpiece(a_list, *a_extra)) {
+			a_extra->SetHealthPerc(Condition::MAX_HEALTH);
 			Report(listed, "a showpiece", "{:<30s} [{:08X}] x{:<3d} starts at {:.4f}, legendary, in a chest",
 				name, id, count, Condition::MAX_HEALTH);
 			return std::nullopt;
@@ -116,8 +118,8 @@ namespace SpawnCondition
 		// What the player's own record dresses them in arrives at full
 		// condition, as an essential character's gear does. Loot they pick
 		// up later still rolls.
-		if (const auto* outfit = players ? PlayersOutfit(*a_stack->extra) : nullptr) {
-			a_stack->extra->SetHealthPerc(Condition::MAX_HEALTH);
+		if (const auto* outfit = players ? PlayersOutfit(*a_extra) : nullptr) {
+			a_extra->SetHealthPerc(Condition::MAX_HEALTH);
 			Report(listed, "the player's own outfit", "{:<30s} [{:08X}] x{:<3d} starts at {:.4f}, outfit [{:08X}] of the player's own record",
 				name, id, count, Condition::MAX_HEALTH, outfit->formID);
 			return std::nullopt;
@@ -126,7 +128,7 @@ namespace SpawnCondition
 		// An essential character's weapons and armor arrive new, and the ones
 		// from their own record never wear, see Equipped::Issued.
 		if (const auto* essential = Essential(a_list)) {
-			a_stack->extra->SetHealthPerc(Condition::MAX_HEALTH);
+			a_extra->SetHealthPerc(Condition::MAX_HEALTH);
 			Report(listed, "for an essential character", "{:<30s} [{:08X}] x{:<3d} starts at {:.4f}, for {:s} [{:08X}], who is essential",
 				name, id, count, Condition::MAX_HEALTH, NameOf(*essential, "unnamed character"), essential->formID);
 			return std::nullopt;
@@ -139,12 +141,12 @@ namespace SpawnCondition
 		// Where this item came from and who is about to hold it. An owner
 		// that is not a character, a footlocker for one, leaves the care
 		// half unmeasured.
-		const auto origin = a_list && !stock ? Provenance::Of(*a_list, *a_stack, Condition::KindOf(*a_object)) :
+		const auto origin = a_list && !stock ? Provenance::Of(*a_list, a_extra, Condition::KindOf(*a_object)) :
 		                                       Provenance::Origin{};
 
 		const Aim  aim{ origin.Centre(), stock };
 		const auto rolled = RollHealth(aim);
-		a_stack->extra->SetHealthPerc(rolled.health);
+		a_extra->SetHealthPerc(rolled.health);
 
 		// Spelled out only where a trace file takes it, since a cell
 		// loading hands dozens of stacks through here.
@@ -155,13 +157,18 @@ namespace SpawnCondition
 			// The list the health went on, to match against the one the
 			// Pip-Boy reads, see ItemCard/Hooks.cpp.
 			if (listed) {
-				const auto* legendary = a_stack->extra->GetLegendaryMod();
+				const auto* legendary = a_extra->GetLegendaryMod();
 				TraceLog::Line("spawn", "  {:s} [{:08X}] rolled on extra data {:p}, {:s}", name, id,
-					static_cast<const void*>(a_stack->extra.get()),
+					static_cast<const void*>(a_extra),
 					legendary ? std::format("legendary {}", TraceLog::Who{ legendary }) : "no legendary");
 			}
 		}
 		return aim;
+	}
+
+	std::optional<Aim> Roll(RE::BGSInventoryList* a_list, RE::TESBoundObject* a_object, RE::BGSInventoryItem::Stack* a_stack)
+	{
+		return a_stack ? Roll(a_list, a_object, a_stack->extra.get(), a_stack->count, Private(*a_stack)) : std::nullopt;
 	}
 
 	// -------------------------------------------------------------------
@@ -218,14 +225,14 @@ namespace SpawnCondition
 			Rolled rolled{};
 		};
 
-		// Splits a_stack inside a_item, 1 copy at a time, or logs it as kept
-		// whole when there is no item.
+		// Splits the stack of a_count that holds a_extra inside a_item, 1 copy
+		// at a time, or logs it as kept whole when there is no item.
 		void Split(RE::BGSInventoryList& a_list, const RE::TESBoundObject& a_object, RE::BGSInventoryItem* a_item,
-			const RE::BGSInventoryItem::Stack& a_stack, const Aim& a_aim)
+			const RE::ExtraDataList* a_extra, std::uint32_t a_count, const Aim& a_aim)
 		{
 			const auto name = NameOf(a_object, "unnamed item");
 			const auto id = a_object.formID;
-			const auto count = a_stack.count;
+			const auto count = a_count;
 
 			// AddStack keeps a copy of the stack sharing its extra data list,
 			// which is how Arrived finds it. A stack that merged into one
@@ -238,7 +245,7 @@ namespace SpawnCondition
 			const bool players = Players(&a_list);
 			const bool listed = players || Restocking(&a_list);
 			const auto owner = players ? a_list.owner : RE::ObjectRefHandle{};
-			Arrived    arrived{ a_stack.extra.get() };
+			Arrived    arrived{ a_extra };
 			for (auto left = count; left > 1; left--) {
 				Reroll reroll{ a_aim };
 				if (!a_item || !a_item->FindAndWriteStackData(arrived, reroll, false, owner)) {
@@ -255,7 +262,7 @@ namespace SpawnCondition
 		}
 	}
 
-	void SplitOff(RE::BGSInventoryList& a_list, RE::TESBoundObject& a_object, const RE::BGSInventoryItem::Stack& a_stack,
+	void SplitOff(RE::BGSInventoryList& a_list, RE::TESBoundObject& a_object, const RE::ExtraDataList* a_extra, std::uint32_t a_count,
 		const Aim& a_aim)
 	{
 		RE::BGSInventoryItem* item = nullptr;
@@ -265,14 +272,20 @@ namespace SpawnCondition
 				break;
 			}
 		}
-		Split(a_list, a_object, item, a_stack, a_aim);
+		Split(a_list, a_object, item, a_extra, a_count, a_aim);
+	}
+
+	void SplitOff(RE::BGSInventoryList& a_list, RE::TESBoundObject& a_object, const RE::BGSInventoryItem::Stack& a_stack,
+		const Aim& a_aim)
+	{
+		SplitOff(a_list, a_object, a_stack.extra.get(), a_stack.count, a_aim);
 	}
 
 	void SplitOff(RE::BGSInventoryList& a_list, RE::BGSInventoryItem& a_entry, const RE::BGSInventoryItem::Stack& a_stack,
 		const Aim& a_aim)
 	{
 		if (a_entry.object) {
-			Split(a_list, *a_entry.object, &a_entry, a_stack, a_aim);
+			Split(a_list, *a_entry.object, &a_entry, a_stack.extra.get(), a_stack.count, a_aim);
 		}
 	}
 }

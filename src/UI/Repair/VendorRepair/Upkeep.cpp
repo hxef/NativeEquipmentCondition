@@ -26,9 +26,9 @@ namespace VendorRepair
 		// trade and after an investment. Each restocks the trader's chests
 		// first, where a restock is due.
 		constexpr CallPatch::CallSite BUILD_SITES[] = {
-			{ 2222703, 0x343, "barter screen opens" },
-			{ RE::ID::BarterMenu::CompleteTrade.id(), 0x245, "barter trade" },
-			{ 2222702, 0x137, "barter investment" },
+			{ CallPatch::AE{ 2222703, 0x343 }, CallPatch::OG{ 1520739, 0x33A }, "barter screen opens" },
+			{ CallPatch::AE{ RE::ID::BarterMenu::CompleteTrade.ae(), 0x245 }, CallPatch::OG{ RE::ID::BarterMenu::CompleteTrade.og(), 0x2FF }, "barter trade" },
+			{ CallPatch::AE{ 2222702, 0x137 }, CallPatch::OG{ 497671, 0x13A }, "barter investment" },
 		};
 
 		// The barter trade's call runs once the trade has bought every stack,
@@ -44,12 +44,12 @@ namespace VendorRepair
 		// BuildBarterContainer, is each chest linked to the trader, and it
 		// runs only when the first said a restock was due.
 		constexpr CallPatch::CallSite RESTOCK_SITES[] = {
-			{ 2207175, 0x06D, "merchant container restock" },
-			{ RE::ID::TESDataHandler::BuildBarterContainer.id(), 0x1F5, "linked chest restock" },
+			{ CallPatch::AE{ 2207175, 0x06D }, CallPatch::OG{ 707394, 0x06D }, "merchant container restock" },
+			{ CallPatch::AE{ RE::ID::TESDataHandler::BuildBarterContainer.ae(), 0x1F5 }, CallPatch::OG{ RE::ID::TESDataHandler::BuildBarterContainer.og(), 0x1E7 }, "linked chest restock" },
 		};
 
 		// TESObjectREFR::ResetInventory, see CallPatch::PatchVirtualCall.
-		constexpr std::size_t RESET_INVENTORY_SLOT = 0xB1;
+		constexpr CallPatch::Slot RESET_INVENTORY_SLOT{ 0xB1, 0xB1 };
 
 		// The band a trader's stock rolls in rises with how far they repair its
 		// kind, from 30% to 50% at the bottom of the scale, or for a kind they

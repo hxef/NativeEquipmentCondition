@@ -1,6 +1,7 @@
 #include "Core/CallPatch/Ledger.h"
 
 #include "Core/Feature.h"
+#include "Core/Runtime.h"
 #include "Core/Text/Text.h"
 
 #include <algorithm>
@@ -22,11 +23,8 @@ namespace CallPatch
 {
 	namespace
 	{
-		// The game version F4SE reports, see SetGameVersion.
-		REL::Version g_version;
-
 		// Why NEC leaves a place alone, as a clause of the clash line, in the
-		// order of Why. The unsupported version has lines of its own.
+		// order of Why. The game version has lines of its own.
 		constexpr std::string_view REASONS[]{
 			""sv,
 			""sv,
@@ -36,6 +34,7 @@ namespace CallPatch
 			"and it leads into the middle of a function"sv,
 			"and NEC cannot read where it leads"sv,
 			"and NEC's change there would skip that mod"sv,
+			""sv,
 		};
 		static_assert(std::size(REASONS) == static_cast<std::size_t>(Why::kTotal));
 
@@ -44,21 +43,6 @@ namespace CallPatch
 		{
 			return a_owner.dll.empty() ? "another mod"sv : std::string_view{ a_owner.dll };
 		}
-	}
-
-	void SetGameVersion(const REL::Version& a_version)
-	{
-		g_version = a_version;
-	}
-
-	std::string GameVersion()
-	{
-		return std::format("{:d}.{:d}.{:d}", g_version.major(), g_version.minor(), g_version.patch());
-	}
-
-	bool Supported()
-	{
-		return g_version == F4SE::RUNTIME_1_11_240;
 	}
 
 	std::uintptr_t LeadsTo(std::uintptr_t a_where, Kind a_kind)
@@ -84,7 +68,7 @@ namespace CallPatch
 
 		Owner owner;
 		owner.dll = lands ? ModuleOf(lands) : std::string{};
-		owner.sure = Supported() || a_changed || (lands && !InGame(lands));
+		owner.sure = Runtime::Supported() || a_changed || (lands && !InGame(lands));
 		return owner;
 	}
 
@@ -134,9 +118,12 @@ namespace CallPatch
 	{
 		const auto& owner = a_place.owners.front();
 		std::string line;
-		if (!owner.sure) {
+		if (a_place.why == Why::kNoPlace) {
+			line = std::format("{:s}: {:s} has no place on game version {:s}, so NEC leaves it off.", NameOf(a_place), a_place.what,
+				Runtime::GameVersion());
+		} else if (!owner.sure) {
 			line = std::format("{:s}: {:s} at {:X} is not what NEC expects on game version {:s}, which is not supported, so NEC leaves it alone.",
-				NameOf(a_place), a_place.what, a_place.where, GameVersion());
+				NameOf(a_place), a_place.what, a_place.where, Runtime::GameVersion());
 		} else if (a_place.why == Why::kVersion) {
 			line = std::format("{:s}: {:s} at {:X} is already changed by {:s}, so NEC leaves it alone.", NameOf(a_place), a_place.what,
 				a_place.where, Named(owner));
@@ -223,12 +210,27 @@ namespace CallPatch
 		return !a_owners.empty() && std::ranges::none_of(a_owners, &Owner::sure);
 	}
 
+	// A game version NEC supports keeps a place off only where it has none,
+	// as OG does with a place it has no checked value for. Supported()
+	// decides, not OldGen(), since any supported game can lack a place.
+	std::string VersionWhy()
+	{
+		return Runtime::Supported() ? std::format("game version {:s} has no place for it", Runtime::GameVersion()) :
+		                              std::format("game version {:s} is not supported", Runtime::GameVersion());
+	}
+
+	std::string VersionNamed()
+	{
+		return std::format("game version {:s}{:s}", Runtime::GameVersion(), Runtime::Supported() ? "" : ", which is not supported");
+	}
+
 	std::string Words(std::span<const Owner> a_owners)
 	{
 		const auto names = OwnerNames(a_owners, "another mod");
 		if (names.empty()) {
 			const auto version = std::ranges::any_of(a_owners, [](const Owner& a_owner) { return !a_owner.sure; });
-			return version ? std::format("this game version ({:s}), which is not supported", GameVersion()) : std::string{ "another mod" };
+			return version ? std::format("this game version ({:s}){:s}", Runtime::GameVersion(), Runtime::Supported() ? "" : ", which is not supported") :
+			                 std::string{ "another mod" };
 		}
 		// "A", "A and B", "A, B and C".
 		std::string words = names.front();

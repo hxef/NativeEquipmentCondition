@@ -24,24 +24,26 @@ namespace HealthDamage
 
 		// Every site below is an Address Library ID and an offset, see
 		// CallPatch.h. InstallCombat names the function each one calls.
+		using CallPatch::AE;
 		using CallPatch::CallSite;
+		using CallPatch::OG;
 
 		// The calls to CombatFormulas::CalcWeaponDamage. Every point of
 		// physical weapon damage comes out of it, for the player and every NPC,
 		// and so does the number the Pip-Boy prints.
 		constexpr CallSite CALC_SITES[] = {
-			{ 2209000, 0x010, "shim" },
-			{ RE::ID::CombatFormulas::GetWeaponDisplayDamage.id(), 0x059, "display" },
-			{ 2236845, 0x37A, "attack1" },
-			{ 2237056, 0x152, "attack2" },
+			{ AE{ 2209000, 0x010 }, OG{ 1355914, 0x010 }, "shim" },
+			{ AE{ RE::ID::CombatFormulas::GetWeaponDisplayDamage.ae(), 0x059 }, OG{ RE::ID::CombatFormulas::GetWeaponDisplayDamage.og(), 0x069 }, "display" },
+			{ AE{ 2236845, 0x37A }, OG{ 1330650, 0x362 }, "attack1" },
+			{ AE{ 2237056, 0x152 }, OG{ 1166882, 0x16A }, "attack2" },
 		};
 
 		// The calls to Actor::GetEquippedItemHealth, the engine's own answer to
 		// how worn the weapon an actor swings is. Only these 2 combat paths
 		// call it.
 		constexpr CallSite HEALTH_SITES[] = {
-			{ 2236845, 0x2C8, "attack1 health" },
-			{ 2237056, 0x10D, "attack2 health" },
+			{ AE{ 2236845, 0x2C8 }, OG{ 1330650, 0x2BB }, "attack1 health" },
+			{ AE{ 2237056, 0x10D }, OG{ 1166882, 0x125 }, "attack2 health" },
 		};
 
 		// The 3 places the engine walks a weapon's damage type list, through
@@ -52,9 +54,9 @@ namespace HealthDamage
 		// ordinary hit path, the other 2 are similar paths for attacks whose
 		// damage is already worked out.
 		constexpr CallSite TYPE_SITES[] = {
-			{ 2236845, 0x3EA, "types1" },
-			{ 2236846, 0x19F, "types2" },
-			{ 2236849, 0x0BF, "types3" },
+			{ AE{ 2236845, 0x3EA }, OG{ 1330650, 0x3DC }, "types1" },
+			{ AE{ 2236846, 0x19F }, OG{ 1327603, 0x19B }, "types2" },
+			{ AE{ 2236849, 0x0BF }, OG{ 568163, 0x0BF }, "types3" },
 		};
 
 		constexpr std::size_t NUM_CALC_SITES = std::size(CALC_SITES);
@@ -356,7 +358,7 @@ namespace HealthDamage
 
 	void InstallCombat()
 	{
-		const auto calc = RE::ID::CombatFormulas::CalcWeaponDamage.address();
+		const auto& calc = RE::ID::CombatFormulas::CalcWeaponDamage;
 		const auto calcHooks = CallPatch::PerSite<NUM_CALC_SITES>([]<std::size_t I>() {
 			if constexpr (I == SHIM_SITE) {
 				return &ShimHk;
@@ -373,7 +375,7 @@ namespace HealthDamage
 		// The engine's own health call answers 0 for a creature or a bare fist,
 		// which the damage hook would read as broken, so each attack's 2 calls
 		// go in together or not at all.
-		const auto health = RE::ID::Actor::GetEquippedItemHealth.address();
+		const auto& health = RE::ID::Actor::GetEquippedItemHealth;
 		const auto healthHooks = CallPatch::PerSite<std::size(HEALTH_SITES)>([]<std::size_t P>() { return &EquippedHealthHk<P>; });
 		std::size_t attacks = 0;
 		for (std::size_t i = 0; i < std::size(HEALTH_SITES); i++) {

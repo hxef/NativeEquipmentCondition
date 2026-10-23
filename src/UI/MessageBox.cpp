@@ -105,10 +105,10 @@ namespace MessageBox
 				// this listener runs under, so it never points at a freed box.
 				const auto* ui = RE::UI::GetSingleton();
 				const auto  menu = ui ? ui->GetMenu<RE::MessageBoxMenu>() : nullptr;
-				if (!menu || menu->uiMovie.get() != a_params.movie || !menu->currentMessage) {
+				if (!menu || menu->uiMovie.get() != a_params.movie || !menu->GetRuntimeData().currentMessage) {
 					return;
 				}
-				const auto number = NumberOf(menu->currentMessage->callback.get());
+				const auto number = NumberOf(menu->GetRuntimeData().currentMessage->callback.get());
 				if (!number || *number == refused) {
 					return;
 				}

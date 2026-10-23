@@ -331,13 +331,13 @@ namespace ConfirmScroll
 
 	void Install()
 	{
-		REL::Relocation<std::uintptr_t> menu{ RE::ExamineConfirmMenu::VTABLE[0] };
-		REL::Relocation<std::uintptr_t> input{ RE::ExamineConfirmMenu::VTABLE[1] };
+		const auto& menu = RE::ExamineConfirmMenu::VTABLE[0];
+		const auto& input = RE::ExamineConfirmMenu::VTABLE[1];
 
-		const auto messages = CallPatch::PatchSlot(menu, 0x03, ProcessMessageHk, "confirm box messages", Part::kNone, true, &g_messagesLink);
-		const auto handles = CallPatch::PatchSlot(input, 0x01, ShouldHandleEventHk, "confirm box input", Part::kNone, true, &g_handlesLink);
-		const auto keys = CallPatch::PatchSlot(input, 0x08, OnButtonEventHk, "confirm box keys", Part::kNone, true, &g_keysLink);
-		_Call = CallPatch::PatchSlot(menu, 0x01, CallHk, "confirm box clicks", Part::kTrace).value_or(0);
+		const auto messages = CallPatch::PatchSlot(menu, { 0x03, 0x03 }, ProcessMessageHk, "confirm box messages", Part::kNone, true, &g_messagesLink);
+		const auto handles = CallPatch::PatchSlot(input, { 0x01, 0x01 }, ShouldHandleEventHk, "confirm box input", Part::kNone, true, &g_handlesLink);
+		const auto keys = CallPatch::PatchSlot(input, { 0x08, 0x08 }, OnButtonEventHk, "confirm box keys", Part::kNone, true, &g_keysLink);
+		_Call = CallPatch::PatchSlot(menu, { 0x01, 0x01 }, CallHk, "confirm box clicks", Part::kTrace).value_or(0);
 		if (!messages || !handles || !keys) {
 			return;
 		}

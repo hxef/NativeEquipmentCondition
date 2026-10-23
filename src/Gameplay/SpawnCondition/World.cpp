@@ -2,6 +2,7 @@
 
 #include "Condition/Condition.h"
 #include "Core/CallPatch/CallPatch.h"
+#include "Core/Runtime.h"
 #include "Core/Settings.h"
 #include "Core/TraceLog.h"
 #include "Gameplay/SpawnCondition/Guards.h"
@@ -100,7 +101,7 @@ namespace SpawnCondition
 
 		// The one call in TESObjectREFR::DropIntoWorld.
 		constexpr CallPatch::CallSite DROP_SITE[] = {
-			{ 2200922, 0x254, "drop" },
+			{ CallPatch::AE{ 2200922, 0x254 }, CallPatch::OG{ 1044135, 0x271 }, "drop" },
 		};
 
 		// The handle comes back through the 2nd argument, as in Upkeep.cpp's
@@ -120,8 +121,8 @@ namespace SpawnCondition
 		void InstallCreated()
 		{
 			const CallPatch::Together created{ Part::kWorldLoot };
-			const REL::Relocation<std::uintptr_t> table{ RE::NEW_REFR_DATA::VTABLE[0] };
-			_HandlePre3D = CallPatch::PatchSlot(table, 0x00, NewReferenceHk, "new reference", Part::kNone, true, &g_newRefLink).value_or(0);
+			const auto& table = RE::NEW_REFR_DATA::VTABLE[0];
+			_HandlePre3D = CallPatch::PatchSlot(table, { 0x00, 0x00 }, NewReferenceHk, "new reference", Part::kNone, true, &g_newRefLink).value_or(0);
 			const auto dropHooks = CallPatch::PerSite<std::size(DROP_SITE)>([]<std::size_t I>() { return &DropHk; });
 			CallPatch::PatchAll(DROP_SITE, RE::ID::TESDataHandler::CreateReferenceAtLocation, dropHooks, g_dropLink,
 				"Weapons and armor a script or the console places in the world roll for their first holder, and a dropped one keeps its condition");
@@ -146,11 +147,15 @@ namespace SpawnCondition
 			kEnable,       // a reference enabled, only a real reroll counts
 		};
 
+		// OG has no first attach reroll call. A cell attaching there for
+		// the first time calls ResetUnchangedRefInventory, which 1.11.240 has
+		// inline here, and its reroll is the unchanged reroll site. So
+		// FIRST_ATTACH_SITE stands in for this site there.
 		constexpr CallPatch::CallSite REROLL_SITES[] = {
-			{ 2200352, 0x828, "first attach reroll" },
-			{ 2200352, 0x638, "respawn reroll" },
-			{ 2200547, 0x03C, "unchanged reroll", true },
-			{ RE::ID::TESObjectREFR::Enable.id(), 0x1DB, "enable reroll" },
+			{ CallPatch::AE{ 2200352, 0x828 }, CallPatch::NO_OG_COVERED, "first attach reroll" },
+			{ CallPatch::AE{ 2200352, 0x638 }, CallPatch::OG{ 1080467, 0x5DD }, "respawn reroll" },
+			{ CallPatch::AE{ RE::ID::TESObjectREFR::ResetUnchangedRefInventory.ae(), 0x03C, true }, CallPatch::OG{ RE::ID::TESObjectREFR::ResetUnchangedRefInventory.og(), 0x03C, true }, "unchanged reroll" },
+			{ CallPatch::AE{ RE::ID::TESObjectREFR::Enable.ae(), 0x1DB }, CallPatch::OG{ RE::ID::TESObjectREFR::Enable.og(), 0x1F7 }, "enable reroll" },
 		};
 		constexpr Road ROADS[] = { Road::kFirstAttach, Road::kRespawn, Road::kReset, Road::kEnable };
 		static_assert(std::size(ROADS) == std::size(REROLL_SITES));
@@ -160,7 +165,7 @@ namespace SpawnCondition
 		// never without one, so it tells a real reroll from a call that
 		// changed nothing.
 		constexpr CallPatch::CallSite REROLL_MODS_SITE[] = {
-			{ RE::ID::TESObjectREFR::RerollLeveledItemBase.id(), 0x157, "reroll mods" },
+			{ CallPatch::AE{ RE::ID::TESObjectREFR::RerollLeveledItemBase.ae(), 0x157 }, CallPatch::OG{ RE::ID::TESObjectREFR::RerollLeveledItemBase.og(), 0x159 }, "reroll mods" },
 		};
 
 		thread_local bool t_rerolled = false;
@@ -168,6 +173,27 @@ namespace SpawnCondition
 		std::array<CallPatch::Link<void (*)(RE::TESObjectREFR*)>, std::size(REROLL_SITES)> g_rerollLinks;
 		std::array<CallPatch::Link<bool (*)(RE::ExtraDataList*, std::uint8_t)>, 1>          g_rerollModsLink;
 		CallPatch::Held                                                                     g_rerolls;
+
+		// OG's call to ResetUnchangedRefInventory at a cell's first attach.
+		constexpr CallPatch::CallSite FIRST_ATTACH_SITE[] = {
+			{ CallPatch::NO_AE, CallPatch::OG{ 1080467, 0x79E }, "first attach" },
+		};
+
+		// Up while that call runs, so the unchanged reroll site inside it
+		// takes the first attach road.
+		thread_local bool t_firstAttach = false;
+
+		using ResetUnchanged_t = void (*)(void*, RE::TESObjectREFR*, std::uint64_t);
+		std::array<CallPatch::Link<ResetUnchanged_t>, 1> g_firstAttachLink;
+
+		// The 1st and 3rd arguments pass on as the game gave them. Runs is
+		// asked only so a set waiting on this place can end.
+		void FirstAttachHk(void* a_data, RE::TESObjectREFR* a_ref, std::uint64_t a_arg)
+		{
+			static_cast<void>(g_rerolls.Runs(g_firstAttachLink[0]));
+			const Scoped first{ t_firstAttach, true };
+			g_firstAttachLink[0](a_data, a_ref, a_arg);
+		}
 
 		// The type goes as a byte. The engine sets only the low byte, so a
 		// 4 byte enum here would read 3 bytes of junk.
@@ -248,7 +274,7 @@ namespace SpawnCondition
 		template <std::size_t I>
 		void RerollHk(RE::TESObjectREFR* a_ref)
 		{
-			constexpr auto road = ROADS[I];
+			const auto road = ROADS[I] == Road::kReset && t_firstAttach ? Road::kFirstAttach : ROADS[I];
 			if (!Settings::bSpawnCondition.GetValue() || !g_rerolls.Runs(g_rerollLinks[I]) || !a_ref || Loading() ||
 				a_ref->IsCreated() || a_ref->IsDeleted() || (road == Road::kEnable && !CellLoaded(*a_ref))) {
 				return g_rerollLinks[I](a_ref);
@@ -272,6 +298,11 @@ namespace SpawnCondition
 			const auto modsHooks = CallPatch::PerSite<std::size(REROLL_MODS_SITE)>([]<std::size_t I>() { return &RerollModsHk; });
 			CallPatch::PatchAll(REROLL_MODS_SITE, RE::ID::ExtraDataList::RemoveByType, modsHooks, g_rerollModsLink,
 				"A leveled weapon or piece of armor the game picks again rolls again, even as the same item");
+			if (Runtime::OldGen()) {
+				const auto firstHooks = CallPatch::PerSite<std::size(FIRST_ATTACH_SITE)>([]<std::size_t I>() { return &FirstAttachHk; });
+				CallPatch::PatchAll(FIRST_ATTACH_SITE, RE::ID::TESObjectREFR::ResetUnchangedRefInventory, firstHooks, g_firstAttachLink,
+					"Weapons and armor lying where the game placed them roll when their cell first attaches");
+			}
 			g_rerolls = rerolls.Set();
 			if (!g_rerolls) {
 				REX::WARN("Weapons and armor lying where the game placed them arrive at full condition.");
@@ -285,7 +316,7 @@ namespace SpawnCondition
 		// TESObjectREFR::InitItemImpl calling the pickup road, for an item
 		// placed to spawn inside a container, see ScopedSpawnContainer.
 		constexpr CallPatch::CallSite SPAWN_CONTAINER_SITE[] = {
-			{ 2200727, 0x218, "spawn container" },
+			{ CallPatch::AE{ 2200727, 0x218 }, CallPatch::OG{ 918070, 0x219 }, "spawn container" },
 		};
 
 		std::array<CallPatch::Link<void (*)(RE::TESObjectREFR*, RE::TESObjectREFR*, std::uint32_t)>, 1> g_spawnContainerLink;
@@ -321,8 +352,8 @@ namespace SpawnCondition
 		// scripts, a tail jump. In an unmodified game a loose weapon reads -1
 		// there, so a marked one does too.
 		constexpr CallPatch::CallSite ITEM_HEALTH_SITES[] = {
-			{ 2203770, 0x018, "condition item health" },
-			{ 2254255, 0x003, "script item health", true },
+			{ CallPatch::AE{ 2203770, 0x018 }, CallPatch::OG{ 347638, 0x018 }, "condition item health" },
+			{ CallPatch::AE{ 2254255, 0x003, true }, CallPatch::OG{ 1271292, 0x003, true }, "script item health" },
 		};
 
 		std::array<CallPatch::Link<float (*)(RE::TESObjectREFR*)>, std::size(ITEM_HEALTH_SITES)> g_itemHealthLinks;

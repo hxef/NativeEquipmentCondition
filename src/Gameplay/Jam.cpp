@@ -241,8 +241,8 @@ namespace Jam
 		// The one call to Actor::ReloadWeapon inside
 		// ReloadCompleteHandler::Handle, the function the reloadComplete
 		// animation event runs, through the actor's vtable slot 0xEF.
-		constexpr CallPatch::CallSite RELOAD_SITE{ 2235362, 0xAE, "reload" };
-		constexpr std::size_t         RELOAD_WEAPON_SLOT = 0xEF;
+		constexpr CallPatch::CallSite RELOAD_SITE{ CallPatch::AE{ 2235362, 0xAE }, CallPatch::OG{ 601919, 0xA5 }, "reload" };
+		constexpr CallPatch::Slot     RELOAD_WEAPON_SLOT{ 0xEF, 0xEF };
 
 		// Set when NEC runs on top of a mod's hook at this vtable call, so the
 		// reload goes on to that mod. Empty for the vanilla reload, which the hook

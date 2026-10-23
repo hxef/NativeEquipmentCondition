@@ -38,13 +38,6 @@ namespace CallPatch
 	inline constexpr std::uint8_t MODRM_JMP_RIP = 0x25;
 	inline constexpr std::size_t  RIP_SIZE = 6;
 
-	// Where a site's instruction sits in the running game.
-	inline std::uintptr_t Address(const CallSite& a_site)
-	{
-		const REL::Relocation<std::uintptr_t> owner{ REL::ID(a_site.id) };
-		return owner.address() + a_site.offset;
-	}
-
 	// How a place is written: a call or a jump of 5 bytes, a call through a
 	// vtable of 6, or a pointer of 8.
 	enum class Kind
@@ -89,6 +82,7 @@ namespace CallPatch
 		kMiddle,   // it leads into the middle of a function
 		kUnread,   // NEC cannot read where it leads
 		kSkips,    // NEC's hook never hands on, so it would skip that DLL
+		kNoPlace,  // this game version has no such place, so it is never read, see Site.h
 		kTotal,
 	};
 
@@ -96,7 +90,7 @@ namespace CallPatch
 	struct Ask
 	{
 		const char*    what;
-		std::uintptr_t where;
+		std::uintptr_t where;  // 0 for a place this game version has none of, see Why::kNoPlace
 		Kind           kind;
 		std::uintptr_t hook;
 		Part           part;            // kNone: the open Together's, else the row's
@@ -131,12 +125,12 @@ namespace CallPatch
 	[[nodiscard]] std::mutex& Lock();
 	void                      Write(const Lines& a_lines);
 
-	// Whether the game is 1.11.240, the version every place was read off.
-	[[nodiscard]] bool Supported();
-
-	// In Owners.cpp. Whether every owner is this game version. It reads only
-	// the owners it is given, so it needs no lock.
-	[[nodiscard]] bool OnlyVersion(std::span<const Owner> a_owners);
+	// In Owners.cpp. Whether every owner is this game version, which needs no
+	// lock as it reads only the owners it is given, then why that version
+	// keeps something off and its name with that, for a line.
+	[[nodiscard]] bool        OnlyVersion(std::span<const Owner> a_owners);
+	[[nodiscard]] std::string VersionWhy();
+	[[nodiscard]] std::string VersionNamed();
 
 	// In Reach.cpp. Memory reads that touch no ledger state, so they take no
 	// lock and need none, and CallPatch.cpp reads a place with them before

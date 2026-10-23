@@ -4,6 +4,7 @@
 
 #include "Gameplay/SpawnCondition/Band.h"
 
+#include <cstdint>
 #include <optional>
 
 // A stack's first condition, and splitting a stack that arrived several at
@@ -21,6 +22,12 @@ namespace SpawnCondition
 	// either way.
 	std::optional<Aim> Roll(RE::BGSInventoryList* a_list, RE::TESBoundObject* a_object, RE::BGSInventoryItem::Stack* a_stack);
 
+	// Roll for a_count copies on their way in as 1 stack, before the stack
+	// is built, with a_extra the list it will hold. a_private says nothing
+	// else holds them, as Private does for a stack.
+	std::optional<Aim> Roll(RE::BGSInventoryList* a_list, RE::TESBoundObject* a_object, RE::ExtraDataList* a_extra, std::uint32_t a_count,
+		bool a_private);
+
 	// Gives every item in a stack that arrived several at once a
 	// condition of its own. Roll gave the whole stack one condition between
 	// them. A stack like that comes from a leveled list handing out several
@@ -29,6 +36,11 @@ namespace SpawnCondition
 	// workbench repair takes 1 gun out of 6, and rolls each copy. Runs
 	// straight after AddStack under the caller's write lock.
 	void SplitOff(RE::BGSInventoryList& a_list, RE::TESBoundObject& a_object, const RE::BGSInventoryItem::Stack& a_stack,
+		const Aim& a_aim);
+
+	// The same for the stack that went in holding a_extra, a_count of them,
+	// for a caller that never saw the stack.
+	void SplitOff(RE::BGSInventoryList& a_list, RE::TESBoundObject& a_object, const RE::ExtraDataList* a_extra, std::uint32_t a_count,
 		const Aim& a_aim);
 
 	// The same for a stack whose entry the caller holds, as a fill that

@@ -158,8 +158,9 @@ namespace Text
 	// the last saying what still works: "Worn armor protection (how NPCs rank
 	// armor): off, left to NECClashTest.dll. Still works: damage resistance,
 	// energy and radiation resistance, best item marks in menus.", "Jamming:
-	// off, since Gun wear from firing is left to ...", or "...: off, as this
-	// game version (1.10.984) is not supported."
+	// off, since Gun wear from firing is left to ...", "...: off, as this
+	// game version (1.11.191) is not supported." or on OG "...: off on
+	// this game version (1.10.163)."
 	[[nodiscard]] std::vector<std::string> PartLines(const CallPatch::Loss& a_loss, Out a_out = Out::kPage);
 
 	// A part with the pieces of it that are off, "CND on item cards
@@ -192,7 +193,8 @@ namespace Text
 	[[nodiscard]] std::string MenuTopMore(std::size_t a_count);
 
 	// The help line under every grey row, and the one shown instead while
-	// only this game version keeps parts off and no mod has any.
+	// only this game version keeps parts off and no mod has any, which on
+	// OG says those parts do not work there.
 	[[nodiscard]] std::string MenuNoteHelp();
 	[[nodiscard]] std::string MenuVersionHelp();
 

@@ -1,5 +1,7 @@
 #include "Core/CallPatch/Reach.h"
 
+#include "Core/Runtime.h"
+
 #include <algorithm>
 #include <cstdint>
 #include <cstring>
@@ -333,7 +335,7 @@ namespace CallPatch
 
 	Found BuildableAt(const Ask& a_ask)
 	{
-		if (!Supported()) {
+		if (!Runtime::Supported()) {
 			return { .why = Why::kVersion };
 		}
 		if (!a_ask.handsOn) {

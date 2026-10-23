@@ -43,7 +43,7 @@ namespace CallPatch
 
 		using States = std::array<State, PIECE_COUNT>;
 
-		State& At(States& a_states, Piece a_piece)
+		State& StateAt(States& a_states, Piece a_piece)
 		{
 			return a_states[static_cast<std::size_t>(a_piece)];
 		}
@@ -127,7 +127,7 @@ namespace CallPatch
 					if (std::ranges::contains(a_alone, piece) || (!IsOff(place) && std::ranges::contains(a_forGood, piece))) {
 						continue;
 					}
-					auto& state = At(states, piece);
+					auto& state = StateAt(states, piece);
 					state.waits = (!state.own || state.waits) && !IsOff(place);
 					state.off = state.own = true;
 					state.cause = RowOfPiece(piece).part;
@@ -137,10 +137,10 @@ namespace CallPatch
 				}
 			}
 			for (const auto& row : PieceRows()) {
-				auto& state = At(states, row.piece);
+				auto& state = StateAt(states, row.piece);
 				for (const auto need : row.needs) {
 					// A need off for good outlasts an off that only waits.
-					const auto* from = need != Piece::kNone ? &At(states, need) : nullptr;
+					const auto* from = need != Piece::kNone ? &StateAt(states, need) : nullptr;
 					if (from && from->off && (!state.off || (state.waits && !from->waits))) {
 						state.off = true;
 						state.cause = from->cause;
@@ -168,7 +168,7 @@ namespace CallPatch
 				}
 				for (const auto list : { link->side, link->exceptions }) {
 					for (const auto piece : list) {
-						auto& state = At(states, piece);
+						auto& state = StateAt(states, piece);
 						state.folded = state.off && !state.own;
 					}
 				}
@@ -235,7 +235,7 @@ namespace CallPatch
 		{
 			const auto name = Text::PartLogName(a_part);
 			if (OnlyVersion(a_owners)) {
-				return std::format("{:s}: off, game version {:s} is not supported.", name, GameVersion());
+				return std::format("{:s}: off, {:s}.", name, VersionWhy());
 			}
 			if (a_cause != a_part) {
 				return std::format("{:s}: off, since {:s} is left to {:s}.", name, Text::PartLogName(a_cause), Words(a_owners));
@@ -256,7 +256,7 @@ namespace CallPatch
 			a_lines.push_back({ REX::ELogLevel::Warning, SwitchLine(a_off.row->part, a_off.cause, owners) + tail });
 			if (a_off.was) {
 				a_lines.push_back({ REX::ELogLevel::Info,
-					OnlyVersion(owners) ? std::format("as game version {:s} is not supported", GameVersion()) :
+					OnlyVersion(owners) ? std::format("as {:s}", VersionWhy()) :
 										  std::format("as {:s} is left to {:s}", Text::PartLogName(a_off.cause), Words(owners)),
 					key });
 			}
@@ -311,13 +311,13 @@ namespace CallPatch
 		std::vector<Piece> alone;
 		std::ranges::copy_if(pieces, std::back_inserter(alone), [](Piece a_piece) { return RowOfPiece(a_piece).alone; });
 		auto states = StatesLocked(a_place.set, alone, a_forNow ? pieces : std::span<const Piece>{});
-		if (pieces.empty() || !std::ranges::all_of(pieces, [&](Piece a_piece) { return At(states, a_piece).off; })) {
+		if (pieces.empty() || !std::ranges::all_of(pieces, [&](Piece a_piece) { return StateAt(states, a_piece).off; })) {
 			return {};
 		}
-		const auto& state = At(states, pieces.front());
+		const auto& state = StateAt(states, pieces.front());
 		const auto  root = ShownIn(state.root, state.cause) ? std::span{ &state.root, 1 } : std::span<const Piece>{};
 		const auto  part = Text::PartPieces(state.cause, root, Text::Out::kLog);
-		return OnlyVersion(state.owners) ? std::format(" NEC's change there does nothing while {:s} is off on game version {:s}, which is not supported.", part, GameVersion()) :
+		return OnlyVersion(state.owners) ? std::format(" NEC's change there does nothing while {:s} is off on {:s}.", part, VersionNamed()) :
 		       state.waits               ? std::format(" NEC's change there does nothing while {:s} is off for now, left to {:s}.", part, Words(state.owners)) :
 		                                   std::format(" NEC's change there does nothing while {:s} is left to {:s}.", part, Words(state.owners));
 	}

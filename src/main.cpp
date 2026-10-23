@@ -7,6 +7,7 @@
 #include "Core/Feature.h"
 #include "Core/LogFiles.h"
 #include "Core/Plugin.h"
+#include "Core/Runtime.h"
 #include "Core/Settings.h"
 #include "Core/Text/Text.h"
 #include "Core/TraceLog.h"
@@ -346,8 +347,8 @@ F4SE_PLUGIN_LOAD(const F4SE::LoadInterface* a_f4se)
 	// was read is reported after F4SE::Init.
 	Settings::Load();
 
-	// Every place NEC patches is checked against the game version F4SE runs.
-	CallPatch::SetGameVersion(a_f4se->RuntimeVersion());
+	// The game and F4SE versions NEC.log and the support check read.
+	Runtime::Set(a_f4se->RuntimeVersion(), a_f4se->F4SEVersion());
 
 	// F4SE::Init opens no log, since LogFiles opens NEC.log right after, see
 	// LogFiles.h. The trampoline is a block of executable memory near the game
@@ -371,6 +372,13 @@ F4SE_PLUGIN_LOAD(const F4SE::LoadInterface* a_f4se)
 	const auto built = LinkTime();
 	REX::INFO("{} v{} loaded, built {:s}.", F4SE::GetPluginName(), F4SE::GetPluginVersion().string(), built);
 	TraceLog::Mark("PLUGIN", "{} v{} built {:s}", F4SE::GetPluginName(), F4SE::GetPluginVersion().string(), built);
+	REX::INFO("{:s}", Runtime::Line());
+
+	// A game the runtime check does not know has no address NEC can look up,
+	// so NEC stays off there and returns false.
+	if (RE::GetRuntime() == RE::Runtime::kUnknown) {
+		return false;
+	}
 	Settings::Report();
 
 	const auto messaging = F4SE::GetMessagingInterface();

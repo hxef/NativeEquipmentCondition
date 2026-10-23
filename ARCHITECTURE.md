@@ -37,8 +37,10 @@ src/
   Core/
     CallPatch/
       CallPatch.h/.cpp       patching a call or a function table slot, shared with another DLL or left to it
+      Site.h                 where a call site or a table slot is on 1.11.240 and on OG, 1.10.163
       Link.h                 what a hook hands on to and the set it is in
       Ledger.h/.cpp          every place patched, written once its row's install ends
+      Write.h/.cpp           writing a noted place into the game, the Link first
       Sets.cpp               whether a set's hooks run, and the proof that brings a shared set back
       Recheck.cpp            every noted place read back as the game runs, shared or left alone
       Changed.h/.cpp         the NEC.log lines of a place another DLL changed, and the DLL each names
@@ -57,6 +59,7 @@ src/
     Pieces.h/.cpp            the pieces of every part, and what each piece needs
     Places.cpp               which pieces each patched place is
     Plugin.h                 the data handler the load order is read through
+    Runtime.h/.cpp           the game version NEC runs on, 1.11.240 or OG, and NEC.log's line about it
     Settings.h/.cpp          every setting, read from NEC.ini
     Snapshot.h               a table other threads read while it is measured again, swapped in whole, and how 2 readings differ
     Text/
@@ -142,6 +145,7 @@ src/
     SpawnCondition/
       SpawnCondition.h/.cpp  the roll at the door of every inventory
       Band.h/.cpp            the roll, either side of an item's middle or in a trader's band
+      Fill.h/.cpp            a list filled from a container's record, its plain lines and its stock record
       Guards.h/.cpp          what marks a save being applied, a game recording no change, a console command, a script's gift and a restock, the folder's scope, and what the player carries
       Handover.h/.cpp        an item changing hands, a trader's loose item and SpawnDupe's copies
       Owners.h/.cpp          who a stack goes to, and which of them get it at full condition

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Core/CallPatch/Link.h"
+#include "Core/CallPatch/Site.h"
 #include "Core/Parts.h"
 #include "Core/Pieces.h"
 #include "Core/Settings.h"
@@ -34,19 +35,6 @@ struct Feature;  // Core/Feature.h
 // which pieces are off and to whom, and Summary.cpp writes NEC.log's summary.
 namespace CallPatch
 {
-	// A call site: the Address Library ID of the function around it plus the
-	// offset of the call instruction inside, read off the 1.11.240 build. The
-	// library maps a stable ID to the function's address in any build, but not
-	// offsets inside it, so every site is checked before writing. what names
-	// the site in the log, short because it is on every trace line.
-	struct CallSite
-	{
-		std::uint64_t id;
-		std::size_t   offset;
-		const char*   what;
-		bool          jump = false;  // the game has a tail jump here, not a call
-	};
-
 	// Each place belongs to a part, see Core/Parts.h: the open Together's,
 	// else the one its patch call names, else its row's. Losing a place of
 	// the row's own part in a row with a switch leaves the whole row to the
@@ -92,28 +80,33 @@ namespace CallPatch
 	// DLL left a plain hook that NEC runs on top of. End still leaves it
 	// unwritten when another place of its set, or of a switched row's own
 	// part, is taken. a_part names a part other than the row's own, see above.
+	// A place this game version has none of, or whose expected target it
+	// lacks, is noted as off and never read, see Site.h.
 
 	// Points one call at a hook, which hands each call on through a_link. A
 	// site can be a jump: a call that is the last thing a function does is
 	// often compiled as a jump into the callee, a tail call. Such a site is
 	// repointed with a jump, and the hook returns what the callee would have.
-	bool PatchCall(const CallSite& a_site, std::uintptr_t a_expected, std::uintptr_t a_hook, LinkBase& a_link,
+	// The expected target is converted to an address only after the site is
+	// found, so a missing target never stops the game.
+	bool PatchCall(const CallSite& a_site, const RE::RuntimeID& a_expected, std::uintptr_t a_hook, LinkBase& a_link,
 		Part a_part = Part::kNone);
 
 	// PatchCall for a call through a vtable. The slot stands in for the
 	// expected target. While a_link is empty the hook makes the virtual call
 	// itself, else it calls a_link, the hook of the DLL NEC runs on top of.
-	bool PatchVirtualCall(const CallSite& a_site, std::size_t a_slot, std::uintptr_t a_hook, LinkBase& a_link,
+	bool PatchVirtualCall(const CallSite& a_site, Slot a_slot, std::uintptr_t a_hook, LinkBase& a_link,
 		Part a_part = Part::kNone);
 
 	// Patches every site in a list that calls a_target, site i with hook i
 	// handing on through link i, and logs how many go in, once the row does.
-	std::size_t PatchSites(std::span<const CallSite> a_sites, REL::ID a_target, std::span<const std::uintptr_t> a_hooks,
+	// On OG a site marked NO_OG_COVERED is skipped and counts as handled.
+	std::size_t PatchSites(std::span<const CallSite> a_sites, const RE::RuntimeID& a_target, std::span<const std::uintptr_t> a_hooks,
 		std::span<LinkBase* const> a_links, const char* a_what, Part a_part);
 
 	// PatchSites for an array or a span of Links, 1 a site.
 	template <class Links>
-	std::size_t PatchAll(std::span<const CallSite> a_sites, REL::ID a_target, std::span<const std::uintptr_t> a_hooks,
+	std::size_t PatchAll(std::span<const CallSite> a_sites, const RE::RuntimeID& a_target, std::span<const std::uintptr_t> a_hooks,
 		Links&& a_links, const char* a_what, Part a_part = Part::kNone)
 	{
 		std::vector<LinkBase*> links;
@@ -127,7 +120,7 @@ namespace CallPatch
 	struct Patch
 	{
 		CallSite       site;
-		std::uintptr_t expected;
+		RE::RuntimeID  expected;
 		std::uintptr_t hook;
 		LinkBase*      link;
 	};
@@ -148,14 +141,17 @@ namespace CallPatch
 	std::optional<std::uintptr_t> PatchPointer(std::uintptr_t a_where, std::uintptr_t a_hook, const char* a_what,
 		Part a_part = Part::kNone, bool a_handsOn = true, LinkBase* a_link = nullptr);
 
-	// a_link is filled so the hook can ask its set, see LinkBase::Live, though
-	// the hook hands on through the pointer this returns, not through it.
+	// PatchPointer for a slot of the function table a_table names. a_link is
+	// filled so the hook can ask its set, see LinkBase::Live, though the hook
+	// hands on through the pointer this returns, not through it.
+	std::optional<std::uintptr_t> PatchTableSlot(const RE::RuntimeID& a_table, Slot a_slot, std::uintptr_t a_hook,
+		const char* a_what, Part a_part, bool a_handsOn, LinkBase* a_link);
+
 	template <class F>
-	std::optional<std::uintptr_t> PatchSlot(const REL::Relocation<std::uintptr_t>& a_table, std::size_t a_index, F a_hook,
-		const char* a_what, Part a_part = Part::kNone, bool a_handsOn = true, LinkBase* a_link = nullptr)
+	std::optional<std::uintptr_t> PatchSlot(const RE::RuntimeID& a_table, Slot a_slot, F a_hook, const char* a_what,
+		Part a_part = Part::kNone, bool a_handsOn = true, LinkBase* a_link = nullptr)
 	{
-		return PatchPointer(a_table.address() + a_index * sizeof(std::uintptr_t),
-			REX::UNRESTRICTED_CAST<std::uintptr_t>(a_hook), a_what, a_part, a_handsOn, a_link);
+		return PatchTableSlot(a_table, a_slot, REX::UNRESTRICTED_CAST<std::uintptr_t>(a_hook), a_what, a_part, a_handsOn, a_link);
 	}
 
 	// The a_everyCall of a Together whose hooks must run on every call, so any
@@ -186,19 +182,12 @@ namespace CallPatch
 	void End();
 	void SayOnTop();
 
-	// The game version F4SE reports, handed over as the plugin loads. On any
-	// version but 1.11.240 every pointer place, a function table slot or a
-	// console command's function, counts as taken, as what it holds can differ.
-	void SetGameVersion(const REL::Version& a_version);
-
-	// That version as text, such as 1.10.984.
-	[[nodiscard]] std::string GameVersion();
-
 	// A DLL found on a place: one NEC left the place to, one NEC runs on top
 	// of, or one hooked over NEC. dll is a file name or empty. sure says it is
-	// a mod: the game is 1.11.240, or the place leads outside Fallout4.exe, or
-	// it changed since NEC wrote it or found it taken. Not sure means the game
-	// version is not supported. IsMod says whether a line names it.
+	// a mod: NEC supports the game, or the place leads outside Fallout4.exe,
+	// or it changed since NEC wrote it or found it taken. Not sure means the
+	// game version, which NEC does not support or which has no such place.
+	// IsMod says whether a line names it.
 	struct Owner
 	{
 		std::string dll;
@@ -271,8 +260,9 @@ namespace CallPatch
 	// The NEC.log line of every part whose own places another mod took:
 	// "Left to other mods: CND on item cards (containers and traders,
 	// NECClashTest.dll), Workbench repairs (NECClashTest.dll).", then the
-	// parts only this game version keeps off, "Off on game version 1.10.984,
-	// which is not supported: HUD condition bars." Empty when there are none.
+	// parts only this game version keeps off, "Off on game version 1.11.191,
+	// which is not supported: HUD condition bars." or on OG "Off on game
+	// version 1.10.163: HUD condition bars." Empty when there are none.
 	[[nodiscard]] std::string LeftLine();
 
 	// The NEC.log line of every part NEC shares a place of with another DLL,
@@ -287,7 +277,8 @@ namespace CallPatch
 	bool                                   KeepSummary(const std::vector<std::string>& a_summary);
 
 	// Owners in a log line: "A.dll and B.dll", "another mod", or "this game
-	// version (1.10.984), which is not supported" when every one is that.
+	// version (1.11.191), which is not supported" when every one is that, on
+	// OG "this game version (1.10.163)".
 	[[nodiscard]] std::string Words(std::span<const Owner> a_owners);
 
 	// Reads back every place NEC noted, written or left alone, and follows the

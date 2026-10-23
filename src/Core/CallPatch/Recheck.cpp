@@ -129,6 +129,11 @@ namespace CallPatch
 			judged = Judge(pass, lines);
 
 			for (auto& place : Places()) {
+				// A place this game version has none of is never read, nor
+				// counted.
+				if (place.why == Why::kNoPlace) {
+					continue;
+				}
 				checked++;
 
 				const auto* now = reinterpret_cast<const void*>(place.where);

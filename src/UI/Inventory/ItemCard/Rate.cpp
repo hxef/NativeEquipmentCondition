@@ -19,7 +19,9 @@ namespace ItemCard
 		// Where the game asks for a fire rate
 		// -------------------------------------------------------------------
 
+		using CallPatch::AE;
 		using CallPatch::CallSite;
+		using CallPatch::OG;
 
 		// The calls to CombatFormulas::GetWeaponDisplayRateOfFire inside the 2
 		// card builders. The game hands them the weapon and its mods, not
@@ -27,9 +29,9 @@ namespace ItemCard
 		constexpr CallSite RATE_SITES[] = {
 			// PopulateItemCardInfo_Helper, the item on the card and the
 			// equipped weapon it is compared with, then the Pip-Boy's card.
-			{ RE::ID::InventoryUserUIUtils::PopulateItemCardInfo_Helper.id(), 0x7E7, "card fire rate" },
-			{ RE::ID::InventoryUserUIUtils::PopulateItemCardInfo_Helper.id(), 0x7FF, "card fire rate compared" },
-			{ RE::ID::PipboyInventoryData::PopulateItemCardInfo.id(), 0x454, "pipboy card fire rate" },
+			{ AE{ RE::ID::InventoryUserUIUtils::PopulateItemCardInfo_Helper.ae(), 0x7E7 }, OG{ RE::ID::InventoryUserUIUtils::PopulateItemCardInfo_Helper.og(), 0x83F }, "card fire rate" },
+			{ AE{ RE::ID::InventoryUserUIUtils::PopulateItemCardInfo_Helper.ae(), 0x7FF }, OG{ RE::ID::InventoryUserUIUtils::PopulateItemCardInfo_Helper.og(), 0x857 }, "card fire rate compared" },
+			{ AE{ RE::ID::PipboyInventoryData::PopulateItemCardInfo.ae(), 0x454 }, OG{ RE::ID::PipboyInventoryData::PopulateItemCardInfo.og(), 0x4E9 }, "pipboy card fire rate" },
 		};
 
 		// 2 lists compare weapons by fire rate without a card. Each reads a
@@ -38,20 +40,20 @@ namespace ItemCard
 		// The first is the better mark of the quick container, which adds up
 		// damage types through FillDamageTypeInfo and multiplies by the rate.
 		constexpr CallSite BETTER_TYPES_SITES[] = {
-			{ 2222626, 0x198, "better check types" },
-			{ 2222626, 0x210, "better check equipped types" },
+			{ AE{ 2222626, 0x198 }, OG{ 131710, 0x180 }, "better check types" },
+			{ AE{ 2222626, 0x210 }, OG{ 131710, 0x1F6 }, "better check equipped types" },
 		};
 		constexpr CallSite BETTER_RATE_SITES[] = {
-			{ 2222626, 0x1CF, "better check fire rate" },
-			{ 2222626, 0x242, "better check equipped fire rate" },
+			{ AE{ 2222626, 0x1CF }, OG{ 131710, 0x1B7 }, "better check fire rate" },
+			{ AE{ 2222626, 0x242 }, OG{ 131710, 0x228 }, "better check equipped fire rate" },
 		};
 
 		// The second is the sort a container or a trader uses. By fire rate or
 		// accuracy it reads each weapon's mods through GetInstanceData and
 		// asks for that 1 figure right after. The Pip-Boy sorts by the figures
 		// on its cards.
-		constexpr CallSite SORT_MODS_SITE{ RE::ID::InventoryUserUIUtils::SortCompareItems.id(), 0x2EB, "sort mods" };
-		constexpr CallSite SORT_RATE_SITE{ RE::ID::InventoryUserUIUtils::SortCompareItems.id(), 0x33E, "sort fire rate" };
+		constexpr CallSite SORT_MODS_SITE{ AE{ RE::ID::InventoryUserUIUtils::SortCompareItems.ae(), 0x2EB }, OG{ RE::ID::InventoryUserUIUtils::SortCompareItems.og(), 0x34B }, "sort mods" };
+		constexpr CallSite SORT_RATE_SITE{ AE{ RE::ID::InventoryUserUIUtils::SortCompareItems.ae(), 0x33E }, OG{ RE::ID::InventoryUserUIUtils::SortCompareItems.og(), 0x3AA }, "sort fire rate" };
 
 		// The rate hooks of the cards, and the better check's note and rate
 		// hooks. A list that weighs fire rates keeps its name for the trace.
@@ -191,7 +193,7 @@ namespace ItemCard
 		// The cards' rate set and the better check's. Each set goes in whole
 		// or not at all, so every card prints the same rate for the same gun
 		// and a list's rate hook always has its note.
-		void PatchCardRates(std::uintptr_t a_rate)
+		void PatchCardRates(const RE::RuntimeID& a_rate)
 		{
 			g_cards = CallPatch::PatchTogether({
 				{ RATE_SITES[0], a_rate, reinterpret_cast<std::uintptr_t>(&CardRateHk<0>), &g_cardLinks[0] },
@@ -204,7 +206,7 @@ namespace ItemCard
 				REX::WARN("Item cards will keep printing a worn gun at the fire rate of a new one.");
 			}
 
-			const auto types = RE::ID::PipboyInventoryUtils::FillDamageTypeInfo.address();
+			const auto& types = RE::ID::PipboyInventoryUtils::FillDamageTypeInfo;
 			g_betterHeld = CallPatch::PatchTogether({
 				{ BETTER_TYPES_SITES[0], types, reinterpret_cast<std::uintptr_t>(&BetterTypesHk<0>), &g_betterTypeLinks[0] },
 				{ BETTER_TYPES_SITES[1], types, reinterpret_cast<std::uintptr_t>(&BetterTypesHk<1>), &g_betterTypeLinks[1] },
@@ -252,7 +254,7 @@ namespace ItemCard
 		// While a worn gun fires as fast as a new one, the vanilla fire rate
 		// is the true one, so the menus keep it.
 		const auto slows = FireRate::Slows();
-		const auto rate = RE::ID::CombatFormulas::GetWeaponDisplayRateOfFire.address();
+		const auto& rate = RE::ID::CombatFormulas::GetWeaponDisplayRateOfFire;
 		if (slows) {
 			PatchCardRates(rate);
 		}
@@ -264,7 +266,7 @@ namespace ItemCard
 		if (!slows && !Aim::Spreads()) {
 			return;
 		}
-		g_sortNoted = CallPatch::PatchCall(SORT_MODS_SITE, RE::ID::BGSInventoryItem::GetInstanceData.address(),
+		g_sortNoted = CallPatch::PatchCall(SORT_MODS_SITE, RE::ID::BGSInventoryItem::GetInstanceData,
 			reinterpret_cast<std::uintptr_t>(&SortModsHk), g_sortModsLink, Part::kSort);
 		if (!slows) {
 			return;

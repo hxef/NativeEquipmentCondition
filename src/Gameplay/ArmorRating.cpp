@@ -18,26 +18,31 @@ namespace ArmorRating
 {
 	namespace
 	{
+		using CallPatch::AE;
 		using CallPatch::CallSite;
+		using CallPatch::OG;
 
 		// The calls to the armor rating visitor, one per equipped piece.
 		// CalcArmorRating1 adds up the actor's own DamageResist.
-		// CalcArmorRating2 rates one item for the menus, and the AI rates a
-		// piece it might pick up or put on through the other 2, so everybody
-		// sees the same worn number. The engine's RecalcArmorRating holds the
-		// 6th call and has no callers.
+		// CalcArmorRating2 rates one item for the menus. GetDesirability rates
+		// an item an NPC might take. The 2 EvaluateArmor calls are the AI's
+		// armor search, which rates only the inventory of a power armor frame,
+		// so they change a number only when a piece that can wear sits in one.
+		// Everybody sees the same worn number. The engine's RecalcArmorRating
+		// holds the 6th call and has no callers.
 		constexpr CallSite VISITOR_SITES[] = {
-			{ RE::ID::Actor::CalcArmorRating1.id(), 0x0FC, "damage resist" },
-			{ RE::ID::Actor::CalcArmorRating2.id(), 0x02B, "one piece rating" },
-			{ RE::ID::Actor::GetDesirability.id(), 0x056, "AI desirability" },
-			{ RE::ID::CombatBehaviorFindObject::EvaluateArmor.id(), 0x4ED, "AI evaluate armor" },
-			{ RE::ID::CombatBehaviorFindObject::EvaluateArmor.id(), 0x579, "AI evaluate armor again" },
+			{ AE{ RE::ID::Actor::CalcArmorRating1.ae(), 0x0FC }, OG{ 1282606, 0x06A }, "damage resist" },
+			{ AE{ RE::ID::Actor::CalcArmorRating2.ae(), 0x02B }, OG{ RE::ID::Actor::CalcArmorRating2.og(), 0x02B }, "one piece rating" },
+			{ AE{ RE::ID::Actor::GetDesirability.ae(), 0x056 }, OG{ RE::ID::Actor::GetDesirability.og(), 0x054 }, "AI desirability" },
+			{ AE{ RE::ID::CombatBehaviorFindObject::EvaluateArmor.ae(), 0x4ED }, OG{ RE::ID::CombatBehaviorFindObject::EvaluateArmor.og(), 0x4DB }, "AI evaluate armor" },
+			{ AE{ RE::ID::CombatBehaviorFindObject::EvaluateArmor.ae(), 0x579 }, OG{ 153891, 0x067 }, "AI evaluate armor again" },
 		};
 
 		// The one call to SumEquippedArmorDamageTypes, inside
 		// UpdateEquippedArmorResistances, which turns the sums into the typed
-		// resistance actor values.
-		constexpr CallSite SUM_SITE{ RE::ID::ActorUtils::UpdateEquippedArmorResistances.id(), 0x119, "typed resistances" };
+		// resistance actor values. On OG it sits in a body of its own that
+		// UpdateEquippedArmorResistances calls.
+		constexpr CallSite SUM_SITE{ AE{ RE::ID::ActorUtils::UpdateEquippedArmorResistances.ae(), 0x119 }, OG{ 1542778, 0x8D }, "typed resistances" };
 
 		// The calls to FillResistTypeInfo, which adds one copy's resistances
 		// into the list a menu prints: the menus' item card, once for the item
@@ -45,10 +50,10 @@ namespace ArmorRating
 		// card, and the paper doll, once per equipped piece. The same function
 		// serves the better mark and the sort, which are left as they are.
 		constexpr CallSite FILL_SITES[] = {
-			{ RE::ID::InventoryUserUIUtils::PopulateItemCardInfo_Helper.id(), 0xEE9, "card resistances" },
-			{ RE::ID::InventoryUserUIUtils::PopulateItemCardInfo_Helper.id(), 0xFB2, "card resistances compared" },
-			{ RE::ID::PipboyInventoryData::PopulateItemCardInfo.id(), 0x74A, "pipboy card resistances" },
-			{ RE::ID::PipboyInventoryData::UpdateSlotResists.id(), 0x159, "paper doll resistances" },
+			{ AE{ RE::ID::InventoryUserUIUtils::PopulateItemCardInfo_Helper.ae(), 0xEE9 }, OG{ RE::ID::InventoryUserUIUtils::PopulateItemCardInfo_Helper.og(), 0xFEA }, "card resistances" },
+			{ AE{ RE::ID::InventoryUserUIUtils::PopulateItemCardInfo_Helper.ae(), 0xFB2 }, OG{ RE::ID::InventoryUserUIUtils::PopulateItemCardInfo_Helper.og(), 0x10BF }, "card resistances compared" },
+			{ AE{ RE::ID::PipboyInventoryData::PopulateItemCardInfo.ae(), 0x74A }, OG{ RE::ID::PipboyInventoryData::PopulateItemCardInfo.og(), 0x82D }, "pipboy card resistances" },
+			{ AE{ RE::ID::PipboyInventoryData::UpdateSlotResists.ae(), 0x159 }, OG{ 611980, 0xA2 }, "paper doll resistances" },
 		};
 
 		using Visitor_t = std::int64_t (*)(RE::ActorUtils::ArmorRatingVisitorBase*, const RE::BGSInventoryItem*, std::uint32_t);
@@ -223,7 +228,7 @@ namespace ArmorRating
 		CallPatch::PatchAll(VISITOR_SITES, RE::ID::ActorUtils::ArmorRatingVisitorBase::_operator, visitorHooks, g_visitorLinks,
 			"A worn piece of armor counts for less of its rating");
 
-		if (CallPatch::PatchCall(SUM_SITE, RE::ID::ActorUtils::SumEquippedArmorDamageTypes.address(),
+		if (CallPatch::PatchCall(SUM_SITE, RE::ID::ActorUtils::SumEquippedArmorDamageTypes,
 				reinterpret_cast<std::uintptr_t>(&SumHk), g_sumLink)) {
 			REX::INFO("A worn piece of armor counts for less of its energy and radiation resistance.");
 		} else {

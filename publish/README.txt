@@ -156,6 +156,7 @@ LITTLE EXTRAS
   gives nothing, so it reads as full again.
 
 COMPATIBILITY
+* Runs on Fallout 4 1.11.240 (AE) and 1.10.163 (OG).
 * No ESP, so it takes no plugin slot.
 * Works with UI replacers like FallUI and DEF_UI. The HUD CND bar finds a free
   spot by the ammo counter on any HUD layout and stays on screen at any
@@ -176,12 +177,12 @@ COMPATIBILITY
   where another mod already fixes them.
 
 REQUIREMENTS
-* Fallout 4 1.11.240
-* Fallout 4 Script Extender (F4SE)
+* Fallout 4 1.11.240 (AE) or 1.10.163 (OG)
+* Fallout 4 Script Extender (F4SE), version 0.7.9 on AE or 0.6.23 on OG
   https://www.nexusmods.com/fallout4/mods/42147
 * Address Library for F4SE Plugins
   https://www.nexusmods.com/fallout4/mods/47327
-* Optional: Mod Configuration Menu
+* Optional: Mod Configuration Menu, version 1.39 on OG
   https://www.nexusmods.com/fallout4/mods/21497
 
 INSTALLATION

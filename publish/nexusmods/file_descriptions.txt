@@ -1,3 +1,8 @@
+1.6.0
+Version 1.6.0 adds OG support.
+
+OG & AE only
+
 1.5.2
 Version 1.5.2 adds an MCM switch that fades the HUD CND bar out with the ammo counter. The MCM page now shows on Mod Configuration Menu - RD, repair costs and loot follow RobCo Patcher, and NEC.log names no Windows user.
 

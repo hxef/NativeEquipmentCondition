@@ -20,7 +20,7 @@ namespace WeaponEvents
 	{
 		// The one call to TESObjectWEAP::Fire inside WeaponFireHandler::Handle,
 		// the function the weaponFire animation event runs. See FireHk.
-		constexpr CallPatch::CallSite FIRE_SITE{ 2235360, 0x11D, "fire" };
+		constexpr CallPatch::CallSite FIRE_SITE{ CallPatch::AE{ 2235360, 0x11D }, CallPatch::OG{ 1240981, 0x111 }, "fire" };
 
 		CallPatch::Link<void(const RE::BGSObjectInstanceT<RE::TESObjectWEAP>*, RE::TESObjectREFR*, std::uint32_t, RE::TESAmmo*, RE::AlchemyItem*)> g_fire;
 
@@ -203,8 +203,7 @@ namespace WeaponEvents
 
 	void Install()
 	{
-		const REL::Relocation<std::uintptr_t> fire{ RE::ID::TESObjectWEAP::Fire };
-		if (CallPatch::PatchCall(FIRE_SITE, fire.address(), reinterpret_cast<std::uintptr_t>(&FireHk), g_fire)) {
+		if (CallPatch::PatchCall(FIRE_SITE, RE::ID::TESObjectWEAP::Fire, reinterpret_cast<std::uintptr_t>(&FireHk), g_fire)) {
 			REX::INFO("Guns wear down with every shot the game fires.");
 		} else {
 			REX::WARN("Guns will not wear down when fired.");

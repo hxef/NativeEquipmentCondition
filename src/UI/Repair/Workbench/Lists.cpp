@@ -29,7 +29,7 @@ namespace Workbench
 		// Flash, which draws them and puts the highlight back on the item it
 		// was on, or on the nearest row shown. Its hook asks Runs first, see
 		// Core/CallPatch/MenuWait.h.
-		constexpr CallPatch::CallSite REFRESH_SITE{ 2223054, 0x245, "item list refresh" };
+		constexpr CallPatch::CallSite REFRESH_SITE{ CallPatch::AE{ 2223054, 0x245 }, CallPatch::OG{ 1509036, 0x312 }, "item list refresh" };
 
 		// The bench while it rebuilds its item list. The bench is a menu, so
 		// only its own thread comes here.
@@ -93,16 +93,16 @@ namespace Workbench
 
 	void InstallLists()
 	{
-		REL::Relocation<std::uintptr_t> menu{ RE::ExamineMenu::VTABLE[0] };
+		const auto& menu = RE::ExamineMenu::VTABLE[0];
 
-		_UpdateItemList = CallPatch::PatchSlot(menu, 0x2F, UpdateItemListHk, "bench item list", Part::kBenchLists, true,
+		_UpdateItemList = CallPatch::PatchSlot(menu, { 0x2F, 0x2F }, UpdateItemListHk, "bench item list", Part::kBenchLists, true,
 			&g_itemListLink).value_or(0);
-		_UpdateModSlotList = CallPatch::PatchSlot(menu, 0x3E, UpdateModSlotListHk, "bench mod slots", Part::kBenchLists, true,
+		_UpdateModSlotList = CallPatch::PatchSlot(menu, { 0x3E, 0x3E }, UpdateModSlotListHk, "bench mod slots", Part::kBenchLists, true,
 			&g_modSlotsLink).value_or(0);
-		_UpdateModChoiceList = CallPatch::PatchSlot(menu, 0x3F, UpdateModChoiceListHk, "bench mod choices", Part::kBenchLists, true,
+		_UpdateModChoiceList = CallPatch::PatchSlot(menu, { 0x3F, 0x3F }, UpdateModChoiceListHk, "bench mod choices", Part::kBenchLists, true,
 			&g_modChoicesLink).value_or(0);
 
-		CallPatch::PatchCall(REFRESH_SITE, Scaleform::ID::GFx::Value::Invoke.address(),
+		CallPatch::PatchCall(REFRESH_SITE, Scaleform::ID::GFx::Value::Invoke,
 			reinterpret_cast<std::uintptr_t>(&RefreshItemListHk), g_refreshLink, Part::kBenchLists);
 	}
 }

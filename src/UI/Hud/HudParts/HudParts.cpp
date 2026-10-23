@@ -322,8 +322,8 @@ namespace HudParts
 		// over it that skips NEC now and then leaves a menu's targets behind,
 		// and the sweep lets go of them, see ForgetOldTargets. So the place
 		// stands alone, shared while the call still reaches NEC.
-		REL::Relocation<std::uintptr_t> menu{ RE::HUDMenu::VTABLE[0] };
-		_DeleteMenu = CallPatch::PatchSlot(menu, 0x00, DeleteMenuHk, "HUD menu delete", Part::kNone, true, &g_deleteLink).value_or(0);
+		const auto& menu = RE::HUDMenu::VTABLE[0];
+		_DeleteMenu = CallPatch::PatchSlot(menu, { 0x00, 0x00 }, DeleteMenuHk, "HUD menu delete", Part::kNone, true, &g_deleteLink).value_or(0);
 	}
 
 	void Load()

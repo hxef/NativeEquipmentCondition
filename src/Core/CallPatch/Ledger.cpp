@@ -1,5 +1,6 @@
 #include "Core/CallPatch/Ledger.h"
 
+#include "Core/CallPatch/Write.h"
 #include "Core/Feature.h"
 #include "Core/Settings.h"
 
@@ -23,17 +24,6 @@
 // and log lines are gathered under the lock and written after it.
 namespace CallPatch
 {
-	// Fills a hook's Link as its place is written, see LinkBase.
-	struct Fill
-	{
-		static void Into(LinkBase& a_link, const Place& a_place)
-		{
-			a_link._next = a_place.next;
-			a_link._set = a_place.set;
-			a_link._mark = a_place.mark;
-		}
-	};
-
 	namespace
 	{
 		std::mutex         g_lock;
@@ -119,7 +109,7 @@ namespace CallPatch
 			}
 
 			const auto set = g_together ? g_together : NewSet();
-			const auto twice = std::ranges::any_of(g_places, [&](const Place& a_place) { return a_place.where == a_ask.where; });
+			const auto twice = a_ask.where != 0 && std::ranges::any_of(g_places, [&](const Place& a_place) { return a_place.where == a_ask.where; });
 			if (twice || set == 0 || g_places.size() >= MAX_PLACES) {
 				a_lines.push_back({ REX::ELogLevel::Error,
 					std::format("{:s} at {:X} is {:s}, so it is left alone.", a_ask.what, a_ask.where,
@@ -141,14 +131,23 @@ namespace CallPatch
 				.link = a_ask.link,
 				.free = a_ask.free,
 				.mark = static_cast<std::uint16_t>(g_places.size()),
+				.why = a_ask.where == 0 ? Why::kNoPlace : Why::kNone,
 			};
 			// Every place is watched from now on, also one NEC leaves alone,
-			// so a mod that writes over it later is named too.
-			place.watch = SizeOf(place.kind);
-			std::memcpy(place.seen.data(), reinterpret_cast<const void*>(place.where), place.watch);
-			// The vanilla function is handed on to, or none for a call through a
-			// vtable, which the hook makes itself, or a DLL's plain hook.
-			if (place.free) {
+			// so a mod that writes over it later is named too. A place this
+			// game version has none of is never read, and its owner is left
+			// empty.
+			if (place.why == Why::kNone) {
+				place.watch = SizeOf(place.kind);
+				std::memcpy(place.seen.data(), reinterpret_cast<const void*>(place.where), place.watch);
+			}
+			if (place.why == Why::kNoPlace) {
+				place.owners.push_back(Owner{});
+				a_lines.push_back({ REX::ELogLevel::Warning, ClashLine(place) });
+				g_whole[set] = false;
+			} else if (place.free) {
+				// The vanilla function is handed on to, or none for a call through a
+				// vtable, which the hook makes itself, or a DLL's plain hook.
 				place.next = place.kind == Kind::kVirtualCall ? 0 : LeadsTo(place.where, place.kind);
 			} else if (auto found = BuildableAt(a_ask); found.why == Why::kNone) {
 				place.free = true;
@@ -163,34 +162,6 @@ namespace CallPatch
 			const auto free = place.free;
 			g_places.push_back(std::move(place));
 			return free;
-		}
-
-		void WritePlace(Place& a_place)
-		{
-			// The Link first, so the hook hands on from its very first call.
-			if (a_place.link) {
-				Fill::Into(*a_place.link, a_place);
-			}
-			auto& trampoline = REL::GetTrampoline();
-			if (a_place.kind == Kind::kCall) {
-				trampoline.write_call<REL32_SIZE>(a_place.where, a_place.hook);
-				a_place.size = REL32_SIZE;
-			} else if (a_place.kind == Kind::kJump) {
-				trampoline.write_jmp<REL32_SIZE>(a_place.where, a_place.hook);
-				a_place.size = REL32_SIZE;
-			} else if (a_place.kind == Kind::kVirtualCall) {
-				trampoline.write_call<VCALL_SIZE>(a_place.where, a_place.hook);
-				a_place.size = VCALL_SIZE;
-			} else {
-				REL::WriteSafeData(a_place.where, a_place.hook);
-				a_place.size = sizeof(std::uintptr_t);
-			}
-			std::memcpy(a_place.wrote.data(), reinterpret_cast<const void*>(a_place.where), a_place.size);
-			a_place.seen = a_place.wrote;
-			a_place.watch = a_place.size;
-			if (!a_place.under.empty()) {
-				a_place.share = Share::kOnTop;
-			}
 		}
 
 		// Leaves a row's switch off while the game runs: off in memory only,
@@ -242,6 +213,8 @@ namespace CallPatch
 					continue;
 				}
 				WritePlace(place);
+				const auto rva = place.where - REX::FModule::GetExecutingModule().GetBaseAddress();
+				a_lines.push_back({ REX::ELogLevel::Debug, std::format("Wrote {:s} at Fallout4.exe+{:X}.", place.what, rva) });
 			}
 
 			// Flagged once every place of the turn is in, so no hook sees half

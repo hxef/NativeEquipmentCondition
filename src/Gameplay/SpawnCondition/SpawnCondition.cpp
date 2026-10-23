@@ -3,9 +3,11 @@
 #include "Condition/Condition.h"
 #include "Condition/Provenance/Provenance.h"
 #include "Core/CallPatch/CallPatch.h"
+#include "Core/Runtime.h"
 #include "Core/Settings.h"
 #include "Core/TraceLog.h"
 #include "Gameplay/SpawnCondition/Band.h"
+#include "Gameplay/SpawnCondition/Fill.h"
 #include "Gameplay/SpawnCondition/Guards.h"
 #include "Gameplay/SpawnCondition/Handover.h"
 #include "Gameplay/SpawnCondition/Owners.h"
@@ -37,13 +39,17 @@ namespace SpawnCondition
 		// once on a slow path that takes it. AddItem2 calls it too, but only for
 		// invested caps and a list the examine menu builds for a moment, so it
 		// is left alone.
+		//
+		// OG's fill adds through AddItem2, which has AddStack inline, so
+		// the 2 container sites have no call there and CONTAINER_FILL_SITE
+		// does their work.
 		constexpr std::size_t ADD_ITEM_SITES = 2;  // AddItem1's, first in the list
 
 		constexpr CallPatch::CallSite ADD_STACK_SITES[] = {
-			{ RE::ID::BGSInventoryList::AddItem1.id(), 0x04C, "additem locked" },
-			{ RE::ID::BGSInventoryList::AddItem1.id(), 0x071, "additem" },
-			{ RE::ID::BGSInventoryList::BuildFromContainer_Impl.id(), 0x12F, "container locked" },
-			{ RE::ID::BGSInventoryList::BuildFromContainer_Impl.id(), 0x155, "container" },
+			{ CallPatch::AE{ RE::ID::BGSInventoryList::AddItem1.ae(), 0x04C }, CallPatch::OG{ RE::ID::BGSInventoryList::AddItem1.og(), 0x04C }, "additem locked" },
+			{ CallPatch::AE{ RE::ID::BGSInventoryList::AddItem1.ae(), 0x071 }, CallPatch::OG{ RE::ID::BGSInventoryList::AddItem1.og(), 0x071 }, "additem" },
+			{ CallPatch::AE{ RE::ID::BGSInventoryList::BuildFromContainer_Impl.ae(), 0x12F }, CallPatch::NO_OG_COVERED, "container locked" },
+			{ CallPatch::AE{ RE::ID::BGSInventoryList::BuildFromContainer_Impl.ae(), 0x155 }, CallPatch::NO_OG_COVERED, "container" },
 		};
 
 		// -------------------------------------------------------------------
@@ -73,28 +79,6 @@ namespace SpawnCondition
 			OpenBlock(restock);
 			Report(Players(a_list) || restock, a_why, "{:<30s} [{:08X}] x{:<3d} {:s}",
 				NameOf(a_object, "unnamed item"), a_object.formID, a_stack.count, a_why);
-		}
-
-		// -------------------------------------------------------------------
-		// The fill scope
-		// -------------------------------------------------------------------
-
-		// What the fill in progress on this thread has rolled, see FillHk, or
-		// null outside a fill. A fill inside a fill counts for itself.
-		thread_local std::uint32_t* t_filled = nullptr;
-
-		// Roll, counted for the fill around it when it aims or writes a health.
-		std::optional<Aim> RollInFill(RE::BGSInventoryList* a_list, RE::TESBoundObject* a_object, RE::BGSInventoryItem::Stack* a_stack)
-		{
-			if (!t_filled) {
-				return Roll(a_list, a_object, a_stack);
-			}
-			const auto before = Condition::HealthOf(a_stack);
-			auto       aim = Roll(a_list, a_object, a_stack);
-			if (aim || Condition::HealthOf(a_stack) != before) {
-				++*t_filled;
-			}
-			return aim;
 		}
 
 		// -------------------------------------------------------------------
@@ -211,106 +195,38 @@ namespace SpawnCondition
 			AddThenSplit<I>(aim, a_list, a_object, a_stack, a_oldCount, a_newCount);
 		}
 
-		// -------------------------------------------------------------------
-		// Lists filled from a container's record
-		// -------------------------------------------------------------------
-
-		// The 2 calls to BGSInventoryList::BuildFromContainer_Impl: the list's
-		// constructor, and a rebuild such as a container resetting. Both hold
-		// the list's write lock. A line whose item has no mod slots, such as a
-		// hat or a pair of glasses, never reaches AddStack. The fill writes it
-		// straight into the list as 1 entry with the line's count.
-		constexpr CallPatch::CallSite FILL_SITES[] = {
-			{ RE::ID::BGSInventoryList::ctor.id(), 0x0A2, "list build" },
-			{ RE::ID::BGSInventoryList::BuildFromContainer.id(), 0x02E, "list rebuild" },
+		// OG's call to AddItem2 inside BuildFromContainer_Impl, where each
+		// record line with mod slots joins the list. AddItem2 holds both
+		// AddStack calls the fill has inline on 1.11.240.
+		constexpr CallPatch::CallSite CONTAINER_FILL_SITE[] = {
+			{ CallPatch::NO_AE, CallPatch::OG{ RE::ID::BGSInventoryList::BuildFromContainer_Impl.og(), 0x0FD }, "container fill" },
 		};
 
-		using Fill_t = decltype(&RE::BGSInventoryList::BuildFromContainer_Impl);
-		std::array<CallPatch::Link<Fill_t>, std::size(FILL_SITES)> g_fillLinks;
-		CallPatch::Held                                            g_fill;
+		using AddItem2_t = void (*)(RE::BGSInventoryList*, RE::TESBoundObject*, std::uint32_t, RE::ExtraDataList*, std::uint16_t);
+		std::array<CallPatch::Link<AddItem2_t>, std::size(CONTAINER_FILL_SITE)> g_containerFillLink;
 
-		// Rolls each entry the fill wrote from a_first on, as AddStack's hook
-		// rolls the rest, and returns how many rolled. An entry whose item
-		// went through AddStack already holds its roll and is skipped.
-		std::uint32_t RollPlainLines(RE::BGSInventoryList& a_list, std::uint32_t a_first)
+		// ContainerHk for OG. The stack is built inside the call, so the
+		// roll goes on the extra data list it is built from, which nothing else
+		// holds yet. That is still before any merge, and the split comes once
+		// the stack is in.
+		void ContainerFillHk(RE::BGSInventoryList* a_list, RE::TESBoundObject* a_object, std::uint32_t a_count, RE::ExtraDataList* a_extra,
+			std::uint16_t a_flags)
 		{
-			std::uint32_t rolled = 0;
-			for (auto i = a_first; i < a_list.data.size(); i++) {
-				auto&      entry = a_list.data[i];
-				auto*      stack = entry.stackData.get();
-				const auto health = Condition::HealthOf(stack);
-				if (!entry.object || !stack || !stack->extra || !Gear(*entry.object) ||
-					Condition::WhyNoCondition(*entry.object) || (health >= 0.0F && !Condition::IsUnrolled(health))) {
-					continue;
-				}
-				// The fill keeps a negative count as it is, which a split would
-				// read as billions of copies, so such a line is left alone.
-				if (static_cast<std::int32_t>(stack->count) < 1) {
-					continue;
-				}
-				const auto aim = Roll(&a_list, entry.object, stack);
-				if (aim || Condition::HealthOf(stack) != health) {
-					rolled++;
-				}
-				if (aim && stack->count > 1) {
-					SplitOff(a_list, entry, *stack, *aim);
+			std::optional<Aim> aim;
+			if (Settings::bSpawnCondition.GetValue() && g_containerFillLink[0].Live()) {
+				if (!Loading()) {
+					// A negative count is kept as it is, which a split would
+					// read as billions of copies, see RollPlainLines.
+					if (static_cast<std::int32_t>(a_count) >= 1) {
+						aim = RollInFill(a_list, a_object, a_extra, a_count, true);
+					}
+				} else if (a_object && Gear(*a_object)) {
+					CountApplied(a_list);
 				}
 			}
-			return rolled;
-		}
-
-		// The record the engine makes for leveled lines, forced the same way so
-		// a stock filled while nothing else records is kept. It does not stop a
-		// later attach from remaking a stock nobody added to. The engine skips
-		// it until the game first idles, and so does this. A temporary owner,
-		// such as the barter screen's copy, is refused.
-		void RecordStock(RE::BGSInventoryList& a_list, std::uint32_t a_rolled)
-		{
-			const auto* main = RE::Main::GetSingleton();
-			if (a_rolled == 0 || !main || !main->onIdle) {
-				return;
-			}
-			const auto owner = a_list.owner.get();
-			if (!owner || !owner->AddChangeForced(RE::CHANGE_TYPES::kRefrLeveledInventory) || !TraceLog::IsOpen()) {
-				return;
-			}
-			const auto* restock = Restocking(&a_list);
-			OpenBlock(restock);
-			Report(Players(&a_list) || restock, "a plain record line", "{:<30s} [{:08X}] its stock is recorded, {:d} rolled in its fill",
-				NameOf(*owner, "unnamed owner"), owner->formID, a_rolled);
-		}
-
-		// Calls the fill with a scope up, so AddStack's hook counts what it
-		// rolls, then rolls the plain lines and records the stock. Rolls
-		// nothing while a save is applied.
-		template <std::size_t I>
-		bool FillHk(const RE::TESContainer* a_container, RE::BGSInventoryList** a_list)
-		{
-			auto* list = a_list ? *a_list : nullptr;
-			if (!list || !Settings::bSpawnCondition.GetValue() || !g_fill.Runs(g_fillLinks[I]) || Loading()) {
-				return g_fillLinks[I](a_container, a_list);
-			}
-			const auto    first = list->data.size();
-			std::uint32_t rolled = 0;
-			bool          result = false;
-			{
-				const Scoped fill{ t_filled, &rolled };
-				result = g_fillLinks[I](a_container, a_list);
-			}
-			rolled += RollPlainLines(*list, first);
-			RecordStock(*list, rolled);
-			return result;
-		}
-
-		void InstallFill()
-		{
-			const CallPatch::Together fill{ Part::kModlessLoot };
-			const auto                hooks = CallPatch::PerSite<std::size(FILL_SITES)>([]<std::size_t I>() { return &FillHk<I>; });
-			CallPatch::PatchAll(FILL_SITES, RE::ID::BGSInventoryList::BuildFromContainer_Impl, hooks, g_fillLinks,
-				"Weapons and armor with no mod slots that a container lists roll too, and the stock is kept");
-			g_fill = fill.Set();
-			if (!g_fill) {
-				REX::WARN("Weapons and armor with no mod slots that a container lists arrive at full condition, and a container that always holds the same items can lose their conditions after a save and reload.");
+			g_containerFillLink[0](a_list, a_object, a_count, a_extra, a_flags);
+			if (aim && a_count > 1) {
+				SplitOff(*a_list, *a_object, a_extra, a_count, *aim);
 			}
 		}
 	}
@@ -329,6 +245,13 @@ namespace SpawnCondition
 
 		if (patched != std::size(ADD_STACK_SITES)) {
 			return;
+		}
+		if (Runtime::OldGen()) {
+			const auto fillHooks = CallPatch::PerSite<std::size(CONTAINER_FILL_SITE)>([]<std::size_t I>() { return &ContainerFillHk; });
+			if (CallPatch::PatchAll(CONTAINER_FILL_SITE, RE::ID::BGSInventoryList::AddItem2, fillHooks, g_containerFillLink,
+					"Weapons and armor with mod slots that a container lists roll as each goes in") != std::size(CONTAINER_FILL_SITE)) {
+				return;
+			}
 		}
 
 		// The limits a weapon can actually arrive at, not the clamp, which is

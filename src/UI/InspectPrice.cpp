@@ -43,8 +43,8 @@ namespace InspectPrice
 
 	void Install()
 	{
-		REL::Relocation<std::uintptr_t> menu{ RE::BarterMenu::VTABLE[0] };
-		const auto call = CallPatch::PatchSlot(menu, 0x01, CallHk, "inspect price", Part::kNone, true, &g_callLink);
+		const auto& menu = RE::BarterMenu::VTABLE[0];
+		const auto call = CallPatch::PatchSlot(menu, { 0x01, 0x01 }, CallHk, "inspect price", Part::kNone, true, &g_callLink);
 		if (!call) {
 			return;
 		}

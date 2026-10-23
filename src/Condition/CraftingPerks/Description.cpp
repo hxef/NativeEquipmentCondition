@@ -19,8 +19,8 @@ namespace CraftingPerks
 		// The 2 places a perk's words are read for the screen: the level up
 		// chart and the Pip-Boy's perks page.
 		constexpr CallPatch::CallSite DESCRIPTION_SITES[]{
-			{ 2206559, 0x434, "perk chart" },
-			{ 2225718, 0x36A, "Pip-Boy perks page" },
+			{ CallPatch::AE{ 2206559, 0x434 }, CallPatch::OG{ 1471750, 0x382 }, "perk chart" },
+			{ CallPatch::AE{ 2225718, 0x36A }, CallPatch::OG{ 1034674, 0x29A }, "Pip-Boy perks page" },
 		};
 
 		using GetDescription_t = void (*)(RE::TESDescription*, RE::BSString&, const RE::TESForm*);

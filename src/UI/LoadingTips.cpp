@@ -1,6 +1,7 @@
 #include "UI/LoadingTips.h"
 
 #include "Core/CallPatch/CallPatch.h"
+#include "Core/Runtime.h"
 #include "Core/Settings.h"
 #include "Core/Text/Text.h"
 #include "Core/TraceLog.h"
@@ -71,10 +72,18 @@ namespace LoadingTips
 
 		// The one call to LoadingMenu::CollectLoadScreens inside
 		// LoadingMenu::PopulateLoadScreens, which gathers every loading screen
-		// that may show, straight before one is picked.
-		constexpr CallPatch::CallSite COLLECT_SITE{ RE::ID::LoadingMenu::PopulateLoadScreens.id(), 0xB6, "loading screens" };
+		// that may show, straight before one is picked. OG has that call
+		// inline, see COLLECT_FORM_SITE.
+		constexpr CallPatch::CallSite COLLECT_SITE{ CallPatch::AE{ RE::ID::LoadingMenu::PopulateLoadScreens.ae(), 0xB6 }, CallPatch::NO_OG_COVERED, "loading screens" };
+
+		// OG's PopulateLoadScreens walks the loading screens itself and
+		// calls this for each one that is not empty, with the same candidates
+		// as CollectLoadScreens takes. It always returns 1, which keeps the
+		// walk going.
+		constexpr CallPatch::CallSite COLLECT_FORM_SITE{ CallPatch::NO_AE, CallPatch::OG{ RE::ID::LoadingMenu::PopulateLoadScreens.og(), 0xEC }, "loading screen forms" };
 
 		CallPatch::Link<void(RE::TESDataHandler*, RE::ENUM_FORM_ID, RE::LoadingMenu::LoadScreenCandidates*)> g_collectLink;
+		CallPatch::Link<std::int32_t(RE::LoadingMenu::LoadScreenCandidates*, RE::TESForm*)> g_collectFormLink;
 
 		// A loading screen of the plugin's own for every row of TIPS, made once
 		// and kept until the game shuts down. One without a borrowed picture is
@@ -118,18 +127,13 @@ namespace LoadingTips
 			return screen;
 		}
 
-		// Everything the load order holds, then the tips. The game draws the
+		// The tips, after everything the load order holds. The game draws the
 		// words from validScreens and the picture from artCandidates. The tips
 		// have no conditions and a picture, so they go on both lists. Nothing
 		// is offered during a full reset, while the pictures are being handed
-		// back and borrowed again. Nothing at all while bLoadingTips is off.
-		void CollectHk(RE::TESDataHandler* a_handler, RE::ENUM_FORM_ID a_type, RE::LoadingMenu::LoadScreenCandidates* a_candidates)
+		// back and borrowed again.
+		void AddTips(RE::LoadingMenu::LoadScreenCandidates* a_candidates)
 		{
-			g_collectLink(a_handler, a_type, a_candidates);
-			if (!Settings::bLoadingTips.GetValue() || !g_collectLink.Live()) {
-				return;
-			}
-
 			const auto* main = RE::Main::GetSingleton();
 			if (main && main->resetGame) {
 				return;
@@ -150,6 +154,44 @@ namespace LoadingTips
 
 			TraceLog::Line("menu", "loading screen picks from {:d} pictures, {:d} of them tips and {:d} with conditions",
 				a_candidates->artCandidates->size(), added, a_candidates->numNonDefaultArtCandidates);
+		}
+
+		// Stands in for CollectLoadScreens and adds the tips once it returns,
+		// nothing while bLoadingTips is off.
+		void CollectHk(RE::TESDataHandler* a_handler, RE::ENUM_FORM_ID a_type, RE::LoadingMenu::LoadScreenCandidates* a_candidates)
+		{
+			g_collectLink(a_handler, a_type, a_candidates);
+			if (Settings::bLoadingTips.GetValue() && g_collectLink.Live()) {
+				AddTips(a_candidates);
+			}
+		}
+
+		// The last loading screen of the load order that is not empty, the one
+		// OG's walk ends on.
+		const RE::TESForm* LastScreen()
+		{
+			auto* handler = RE::TESDataHandler::GetSingleton();
+			if (!handler) {
+				return nullptr;
+			}
+			const auto& screens = handler->GetFormArray<RE::TESLoadScreen>();
+			for (auto i = screens.size(); i > 0; i--) {
+				if (screens[i - 1]) {
+					return screens[i - 1];
+				}
+			}
+			return nullptr;
+		}
+
+		// The tips go in after the last screen, where CollectLoadScreens
+		// returns on 1.11.240.
+		std::int32_t CollectFormHk(RE::LoadingMenu::LoadScreenCandidates* a_candidates, RE::TESForm* a_form)
+		{
+			const auto result = g_collectFormLink(a_candidates, a_form);
+			if (Settings::bLoadingTips.GetValue() && g_collectFormLink.Live() && a_form == LastScreen()) {
+				AddTips(a_candidates);
+			}
+			return result;
 		}
 
 		REL::Relocation<RE::UI_MESSAGE_RESULTS (*)(RE::LoadingMenu*, RE::UIMessage&)> _ProcessMessage;
@@ -180,14 +222,17 @@ namespace LoadingTips
 
 	void Install()
 	{
-		if (CallPatch::PatchCall(COLLECT_SITE, RE::ID::LoadingMenu::CollectLoadScreens.address(), reinterpret_cast<std::uintptr_t>(&CollectHk), g_collectLink)) {
+		const auto collecting = Runtime::OldGen() ?
+		                            CallPatch::PatchCall(COLLECT_FORM_SITE, RE::ID::LoadingMenu::CollectLoadScreen, reinterpret_cast<std::uintptr_t>(&CollectFormHk), g_collectFormLink) :
+		                            CallPatch::PatchCall(COLLECT_SITE, RE::ID::LoadingMenu::CollectLoadScreens, reinterpret_cast<std::uintptr_t>(&CollectHk), g_collectLink);
+		if (collecting) {
 			REX::INFO("Loading screen tips join the screens the game picks from.");
 		} else {
 			REX::WARN("Loading screen tips will not show.");
 		}
 
-		REL::Relocation<std::uintptr_t> menu{ RE::LoadingMenu::VTABLE[0] };
-		_ProcessMessage = CallPatch::PatchSlot(menu, 0x03, ProcessMessageHk, "loading screen messages", Part::kTrace).value_or(0);
+		const auto& menu = RE::LoadingMenu::VTABLE[0];
+		_ProcessMessage = CallPatch::PatchSlot(menu, { 0x03, 0x03 }, ProcessMessageHk, "loading screen messages", Part::kTrace).value_or(0);
 	}
 
 	void Load()

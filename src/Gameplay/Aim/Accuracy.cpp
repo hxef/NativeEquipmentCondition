@@ -25,19 +25,19 @@ namespace Aim
 
 		// The 1 call to AimModel::GetMinMaxCone inside ApplyConeOfFire, which
 		// Fire runs once per shot before it sends the pellets. Skipped in VATS.
-		constexpr CallPatch::CallSite SPREAD_SITE{ RE::ID::AimModel::ApplyConeOfFire.id(), 0xA4, "spread" };
+		constexpr CallPatch::CallSite SPREAD_SITE{ CallPatch::AE{ RE::ID::AimModel::ApplyConeOfFire.ae(), 0xA4 }, CallPatch::OG{ RE::ID::AimModel::ApplyConeOfFire.og(), 0xAB }, "spread" };
 
 		// The crosshair's min and max, in HUDCrosshair::UpdateComponent, and
 		// its size right now, in GetCurrentCone, which only the crosshair
 		// calls. Both ask for the player's aim model.
 		constexpr CallPatch::CallSite CROSSHAIR_SITES[]{
-			{ RE::ID::HUDCrosshair::UpdateComponent.id(), 0x236, "crosshair" },
-			{ RE::ID::AimModel::GetCurrentCone.id(), 0x23, "crosshair size" },
+			{ CallPatch::AE{ RE::ID::HUDCrosshair::UpdateComponent.ae(), 0x236 }, CallPatch::OG{ 1218510, 0xB6 }, "crosshair" },
+			{ CallPatch::AE{ RE::ID::AimModel::GetCurrentCone.ae(), 0x23 }, CallPatch::OG{ RE::ID::AimModel::GetCurrentCone.og(), 0x23 }, "crosshair size" },
 		};
 
 		// The 1 call to CombatFormulas::CalcWeaponAccuracy inside the VATS hit
 		// chance, which only the VATS menu works out, for the player's weapon.
-		constexpr CallPatch::CallSite VATS_SITE{ RE::ID::CombatFormulas::CalcVATSHitChance.id(), 0x85, "VATS accuracy" };
+		constexpr CallPatch::CallSite VATS_SITE{ CallPatch::AE{ RE::ID::CombatFormulas::CalcVATSHitChance.ae(), 0x85 }, CallPatch::OG{ RE::ID::CombatFormulas::CalcVATSHitChance.og(), 0x8D }, "VATS accuracy" };
 
 		using Cone_t = void (*)(const RE::AimModel*, float*, float*);
 		using Accuracy_t = float (*)(const RE::BGSObjectInstanceT<RE::TESObjectWEAP>&, RE::Actor*);
@@ -241,13 +241,13 @@ namespace Aim
 		// The spread, the crosshair and VATS each go alone. The crosshair's 2
 		// calls go in together, so its size never leaves its min and max
 		// behind.
-		const auto cone = RE::ID::AimModel::GetMinMaxCone.address();
+		const auto& cone = RE::ID::AimModel::GetMinMaxCone;
 		const auto spread = CallPatch::PatchCall(SPREAD_SITE, cone, reinterpret_cast<std::uintptr_t>(&SpreadHk), g_spreadLink);
 		g_crosshair = CallPatch::PatchTogether({
 			{ CROSSHAIR_SITES[0], cone, reinterpret_cast<std::uintptr_t>(&CrosshairHk<0>), &g_crosshairLinks[0] },
 			{ CROSSHAIR_SITES[1], cone, reinterpret_cast<std::uintptr_t>(&CrosshairHk<1>), &g_crosshairLinks[1] },
 		}, Part::kCrosshair);
-		const auto vats = CallPatch::PatchCall(VATS_SITE, RE::ID::CombatFormulas::CalcWeaponAccuracy.address(),
+		const auto vats = CallPatch::PatchCall(VATS_SITE, RE::ID::CombatFormulas::CalcWeaponAccuracy,
 			reinterpret_cast<std::uintptr_t>(&VatsAccuracyHk), g_vatsLink, Part::kVatsAccuracy);
 
 		// Every shot's condition comes through the fire call, whose row has

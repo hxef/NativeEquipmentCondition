@@ -16,7 +16,9 @@ namespace ItemCard
 		// Where the game asks for accuracy and range
 		// -------------------------------------------------------------------
 
+		using CallPatch::AE;
 		using CallPatch::CallSite;
+		using CallPatch::OG;
 		using Weapon = RE::BGSObjectInstanceT<RE::TESObjectWEAP>;
 
 		// The calls to CombatFormulas::GetWeaponDisplayAccuracy and
@@ -25,20 +27,20 @@ namespace ItemCard
 		// compared with, then the Pip-Boy's card. The Pip-Boy's compare arrows
 		// and its sort read the figures on its cards, so they follow.
 		constexpr CallSite ACCURACY_SITES[]{
-			{ RE::ID::InventoryUserUIUtils::PopulateItemCardInfo_Helper.id(), 0x917, "card accuracy" },
-			{ RE::ID::InventoryUserUIUtils::PopulateItemCardInfo_Helper.id(), 0x935, "card accuracy compared" },
-			{ RE::ID::PipboyInventoryData::PopulateItemCardInfo.id(), 0x497, "pipboy card accuracy" },
+			{ AE{ RE::ID::InventoryUserUIUtils::PopulateItemCardInfo_Helper.ae(), 0x917 }, OG{ RE::ID::InventoryUserUIUtils::PopulateItemCardInfo_Helper.og(), 0x96F }, "card accuracy" },
+			{ AE{ RE::ID::InventoryUserUIUtils::PopulateItemCardInfo_Helper.ae(), 0x935 }, OG{ RE::ID::InventoryUserUIUtils::PopulateItemCardInfo_Helper.og(), 0x98D }, "card accuracy compared" },
+			{ AE{ RE::ID::PipboyInventoryData::PopulateItemCardInfo.ae(), 0x497 }, OG{ RE::ID::PipboyInventoryData::PopulateItemCardInfo.og(), 0x52C }, "pipboy card accuracy" },
 		};
 		constexpr CallSite RANGE_SITES[]{
-			{ RE::ID::InventoryUserUIUtils::PopulateItemCardInfo_Helper.id(), 0x87C, "card range" },
-			{ RE::ID::InventoryUserUIUtils::PopulateItemCardInfo_Helper.id(), 0x898, "card range compared" },
-			{ RE::ID::PipboyInventoryData::PopulateItemCardInfo.id(), 0x472, "pipboy card range" },
+			{ AE{ RE::ID::InventoryUserUIUtils::PopulateItemCardInfo_Helper.ae(), 0x87C }, OG{ RE::ID::InventoryUserUIUtils::PopulateItemCardInfo_Helper.og(), 0x8D4 }, "card range" },
+			{ AE{ RE::ID::InventoryUserUIUtils::PopulateItemCardInfo_Helper.ae(), 0x898 }, OG{ RE::ID::InventoryUserUIUtils::PopulateItemCardInfo_Helper.og(), 0x8F0 }, "card range compared" },
+			{ AE{ RE::ID::PipboyInventoryData::PopulateItemCardInfo.ae(), 0x472 }, OG{ RE::ID::PipboyInventoryData::PopulateItemCardInfo.og(), 0x507 }, "pipboy card range" },
 		};
 
 		// The sort a container or a trader uses, by accuracy, right after its
 		// note of the stack, see TakeSortNote. The game never sorts those
 		// lists by range, so NEC leaves the sort's range call alone.
-		constexpr CallSite SORT_ACCURACY_SITE{ RE::ID::InventoryUserUIUtils::SortCompareItems.id(), 0x368, "sort accuracy" };
+		constexpr CallSite SORT_ACCURACY_SITE{ AE{ RE::ID::InventoryUserUIUtils::SortCompareItems.ae(), 0x368 }, OG{ RE::ID::InventoryUserUIUtils::SortCompareItems.og(), 0x3D4 }, "sort accuracy" };
 
 		using Accuracy_t = float (*)(const Weapon&, RE::Actor*);
 		using Range_t = float (*)(const Weapon&);
@@ -133,7 +135,7 @@ namespace ItemCard
 		// accuracy sort place goes alone and reads the sort's note, so it
 		// sorts only while that note goes in too.
 		if (Aim::Spreads()) {
-			const auto accuracy = RE::ID::CombatFormulas::GetWeaponDisplayAccuracy.address();
+			const auto& accuracy = RE::ID::CombatFormulas::GetWeaponDisplayAccuracy;
 			g_accuracyCards = CallPatch::PatchTogether({
 				{ ACCURACY_SITES[0], accuracy, reinterpret_cast<std::uintptr_t>(&CardAccuracyHk<0>), &g_accuracyLinks[0] },
 				{ ACCURACY_SITES[1], accuracy, reinterpret_cast<std::uintptr_t>(&CardAccuracyHk<1>), &g_accuracyLinks[1] },
@@ -154,7 +156,7 @@ namespace ItemCard
 		}
 
 		if (Aim::Shortens()) {
-			const auto range = RE::ID::CombatFormulas::GetWeaponDisplayRange.address();
+			const auto& range = RE::ID::CombatFormulas::GetWeaponDisplayRange;
 			g_rangeCards = CallPatch::PatchTogether({
 				{ RANGE_SITES[0], range, reinterpret_cast<std::uintptr_t>(&CardRangeHk<0>), &g_rangeLinks[0] },
 				{ RANGE_SITES[1], range, reinterpret_cast<std::uintptr_t>(&CardRangeHk<1>), &g_rangeLinks[1] },

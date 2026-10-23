@@ -19,7 +19,7 @@ namespace Aim
 		// ranges by their answer. HitData::Populate works the falloff out for
 		// every blow that is not melee, and Projectile::GetRangeMult for every
 		// round that hits.
-		constexpr CallPatch::CallSite RANGE_SITE{ RE::ID::CombatFormulas::CalcRangeDamageMult.id(), 0x71, "range falloff" };
+		constexpr CallPatch::CallSite RANGE_SITE{ CallPatch::AE{ RE::ID::CombatFormulas::CalcRangeDamageMult.ae(), 0x71 }, CallPatch::OG{ RE::ID::CombatFormulas::CalcRangeDamageMult.og(), 0x70 }, "range falloff" };
 
 		// HandleEntryPoint takes as many arguments as its entry point needs,
 		// here the shooter, the gun and the multiplier the perks change.
@@ -90,7 +90,7 @@ namespace Aim
 
 	void InstallRange()
 	{
-		if (!CallPatch::PatchCall(RANGE_SITE, RE::ID::BGSEntryPoint::HandleEntryPoint.address(),
+		if (!CallPatch::PatchCall(RANGE_SITE, RE::ID::BGSEntryPoint::HandleEntryPoint,
 				reinterpret_cast<std::uintptr_t>(&RangePerksHk), g_rangeLink)) {
 			REX::WARN("A worn gun will keep the range of a new one.");
 			return;

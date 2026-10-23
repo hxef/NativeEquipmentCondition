@@ -228,14 +228,14 @@ namespace VendorRepair
 
 	void Install()
 	{
-		REL::Relocation<std::uintptr_t> menu{ RE::BarterMenu::VTABLE[0] };
-		REL::Relocation<std::uintptr_t> input{ RE::BarterMenu::VTABLE[1] };
+		const auto& menu = RE::BarterMenu::VTABLE[0];
+		const auto& input = RE::BarterMenu::VTABLE[1];
 
-		const auto messages = CallPatch::PatchSlot(menu, 0x03, ProcessMessageHk, "barter messages", Part::kNone, true, &g_messagesLink);
-		const auto key = CallPatch::PatchSlot(menu, 0x0F, OnButtonEventReleaseHk, "barter key", Part::kNone, true, &g_keyLink);
-		const auto highlight = CallPatch::PatchSlot(menu, 0x1F, UpdateItemPickpocketInfoHk, "barter highlight", Part::kNone, true,
+		const auto messages = CallPatch::PatchSlot(menu, { 0x03, 0x03 }, ProcessMessageHk, "barter messages", Part::kNone, true, &g_messagesLink);
+		const auto key = CallPatch::PatchSlot(menu, { 0x0F, 0x0F }, OnButtonEventReleaseHk, "barter key", Part::kNone, true, &g_keyLink);
+		const auto highlight = CallPatch::PatchSlot(menu, { 0x1F, 0x1F }, UpdateItemPickpocketInfoHk, "barter highlight", Part::kNone, true,
 			&g_highlightLink);
-		const auto list = CallPatch::PatchSlot(menu, 0x20, UpdateListHk, "barter list", Part::kNone, true, &g_listLink);
+		const auto list = CallPatch::PatchSlot(menu, { 0x20, 0x20 }, UpdateListHk, "barter list", Part::kNone, true, &g_listLink);
 		if (!messages || !key || !highlight || !list) {
 			return;
 		}
@@ -247,7 +247,7 @@ namespace VendorRepair
 
 		// Noted only when the 4 can go in. Trader repairs work without it, so
 		// another mod there turns nothing off, see Part::kTraderKeys.
-		_ShouldHandleEvent = CallPatch::PatchSlot(input, 0x01, ShouldHandleEventHk, "barter input", Part::kTraderKeys, true, &g_inputLink).value_or(0);
+		_ShouldHandleEvent = CallPatch::PatchSlot(input, { 0x01, 0x01 }, ShouldHandleEventHk, "barter input", Part::kTraderKeys, true, &g_inputLink).value_or(0);
 
 		REX::INFO("Traders who restock {:d} rows of weapons with one row in {:d} a weapon, "
 				  "or {:d} rows of weapons, ammunition, grenades and mines with one row in {:d} one of those, "

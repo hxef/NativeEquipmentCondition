@@ -103,7 +103,7 @@ namespace Provenance
 		}
 	}
 
-	Origin Of(const RE::BGSInventoryList& a_list, const RE::BGSInventoryItem::Stack& a_stack, Condition::Kind a_kind)
+	Origin Of(const RE::BGSInventoryList& a_list, const RE::ExtraDataList* a_extra, Condition::Kind a_kind)
 	{
 		Origin origin;
 
@@ -116,8 +116,8 @@ namespace Provenance
 		// reference's starting inventory list and stamps the list's form ID
 		// into an ExtraLeveledItem on everything that came out of it, before
 		// any of it reaches an inventory.
-		if (a_stack.extra) {
-			if (const auto* came = a_stack.extra->GetByType<RE::ExtraLeveledItem>()) {
+		if (a_extra) {
+			if (const auto* came = a_extra->GetByType<RE::ExtraLeveledItem>()) {
 				if (const auto supply = SupplyOf(ranking->supply, came->levItem, a_kind)) {
 					origin.supply = *supply;
 					origin.pipeline = came->levItem;

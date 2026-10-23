@@ -261,7 +261,7 @@ namespace Workbench
 
 	void Install()
 	{
-		REL::Relocation<std::uintptr_t> menu{ RE::ExamineMenu::VTABLE[0] };
+		const auto& menu = RE::ExamineMenu::VTABLE[0];
 
 		// The 3 places behind the REPAIR button: the flag, the grey and the
 		// press. A repair runs through no other place of the bench's, since NEC
@@ -269,25 +269,25 @@ namespace Workbench
 		// repair and its mod lock off together, see Repairs. NEC owns the
 		// REPAIR button and never hands the call on at 2 of them while repairs
 		// run, see CallPatch::NEVER_HANDS_ON.
-		const auto canRepair = CallPatch::PatchSlot(menu, 0x32, GetCanRepairSelectedItemHk, "bench can repair", Part::kNone,
+		const auto canRepair = CallPatch::PatchSlot(menu, { 0x32, 0x32 }, GetCanRepairSelectedItemHk, "bench can repair", Part::kNone,
 			CallPatch::NEVER_HANDS_ON, &g_canRepairLink);
-		const auto switchItem = CallPatch::PatchSlot(menu, 0x37, OnSwitchBaseItemHk, "bench switch item", Part::kNone, true, &g_switchLink);
-		const auto repair = CallPatch::PatchSlot(menu, 0x3A, RepairSelectedItemHk, "bench repair", Part::kNone, CallPatch::NEVER_HANDS_ON,
+		const auto switchItem = CallPatch::PatchSlot(menu, { 0x37, 0x37 }, OnSwitchBaseItemHk, "bench switch item", Part::kNone, true, &g_switchLink);
+		const auto repair = CallPatch::PatchSlot(menu, { 0x3A, 0x3A }, RepairSelectedItemHk, "bench repair", Part::kNone, CallPatch::NEVER_HANDS_ON,
 			&g_repairLink);
 		_GetCanRepairSelectedItem = canRepair.value_or(0);
 		_OnSwitchBaseItem = switchItem.value_or(0);
 		_RepairSelectedItem = repair.value_or(0);
 
 		// These 2 stand alone too. A skipped call there never costs a repair.
-		_TryCreate = CallPatch::PatchSlot(menu, 0x1B, TryCreateHk, "bench try create", Part::kNone, true, &g_tryCreateLink).value_or(0);
-		_HighlightWeaponPart = CallPatch::PatchSlot(menu, 0x28, HighlightWeaponPartHk, "bench highlight part", Part::kNone, true,
+		_TryCreate = CallPatch::PatchSlot(menu, { 0x1B, 0x1B }, TryCreateHk, "bench try create", Part::kNone, true, &g_tryCreateLink).value_or(0);
+		_HighlightWeaponPart = CallPatch::PatchSlot(menu, { 0x28, 0x28 }, HighlightWeaponPartHk, "bench highlight part", Part::kNone, true,
 			&g_highlightLink).value_or(0);
 
 		// Every repair reaches NEC through the slots above. This hook only
 		// adds NEC's message once the engine's call is through, so it shows
 		// whenever the call reaches NEC while repairs work, and another DLL mod
 		// here takes nothing.
-		_Call = CallPatch::PatchSlot(menu, 0x01, CallHk, "bench calls", Part::kBenchMessages).value_or(0);
+		_Call = CallPatch::PatchSlot(menu, { 0x01, 0x01 }, CallHk, "bench calls", Part::kBenchMessages).value_or(0);
 
 		// The list places stand alone, see Lists.h. A skipped call there leaves
 		// 1 list as the game draws it.

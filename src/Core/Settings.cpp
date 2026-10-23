@@ -2,6 +2,7 @@
 
 #include "Core/CallPatch/CallPatch.h"
 #include "Core/IniText.h"
+#include "Core/Runtime.h"
 
 #include <algorithm>
 #include <cstdint>
@@ -102,14 +103,19 @@ namespace Settings
 		}
 
 		// Who has a switch's part, short for the Settings line: the DLLs,
-		// another mod, or the game version.
+		// another mod, or the game version, one NEC does not support or one
+		// with no place for it.
 		std::string Owned(std::span<const CallPatch::Owner> a_owners)
 		{
 			std::string text;
 			for (const auto& name : CallPatch::OwnerNames(a_owners, "another mod")) {
 				text += text.empty() ? name : ", " + name;
 			}
-			return text.empty() ? std::format("game version {:s} not supported", CallPatch::GameVersion()) : text;
+			if (!text.empty()) {
+				return text;
+			}
+			return Runtime::Supported() ? std::format("no place on game version {:s}", Runtime::GameVersion()) :
+			                              std::format("game version {:s} not supported", Runtime::GameVersion());
 		}
 
 		// A setting's mark on the Settings line while pieces it works through

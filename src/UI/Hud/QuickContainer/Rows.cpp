@@ -14,7 +14,9 @@ namespace QuickContainer
 {
 	namespace
 	{
+		using CallPatch::AE;
 		using CallPatch::CallSite;
+		using CallPatch::OG;
 
 		// -------------------------------------------------------------------
 		// Where the game builds the rows
@@ -24,13 +26,13 @@ namespace QuickContainer
 		// InventoryItemDisplayData each, once the model knows the container and
 		// before it sends them to the HUD.
 		constexpr CallSite ROWS_SITES[] = {
-			{ 2221633, 0xA64, "quick container rows" },
+			{ AE{ 2221633, 0xA64 }, OG{ 352670, 0x772 }, "quick container rows" },
 		};
 
 		// The one place AddItemRows makes a row for an inventory entry. The row
 		// of dots and the row for a locked container come from elsewhere.
 		constexpr CallSite ROW_SITES[] = {
-			{ RE::ID::HUDQuickContainerDataModel::AddItemRows.id(), 0x26F, "quick container row" },
+			{ AE{ RE::ID::HUDQuickContainerDataModel::AddItemRows.ae(), 0x26F }, OG{ RE::ID::HUDQuickContainerDataModel::AddItemRows.og(), 0x1B7 }, "quick container row" },
 		};
 
 		// The row AddItemRows adds last when more entries follow, see

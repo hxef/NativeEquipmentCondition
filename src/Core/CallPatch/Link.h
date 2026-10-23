@@ -41,7 +41,7 @@ namespace CallPatch
 		std::uintptr_t _next = 0;
 
 	private:
-		friend struct Fill;  // Ledger.cpp
+		friend struct Fill;  // Write.cpp
 
 		std::uint32_t _set = 0;
 		std::uint16_t _mark = 0;

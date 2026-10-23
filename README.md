@@ -12,7 +12,7 @@ page, [`config.json`](publish/MCM/Config/NEC/config.json). Put your own changes 
 ### Requirements
 * [XMake](https://xmake.io) [3.0.0+]
 * C++23 Compiler (MSVC or Clang-CL)
-* Fallout 4 1.11.240 and a matching [F4SE](https://f4se.silverlock.org/)
+* Fallout 4 1.11.240 with a matching [F4SE](https://f4se.silverlock.org/), or 1.10.163 (OG) with F4SE 0.6.23
 
 ## Getting Started
 ```bat

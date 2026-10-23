@@ -3,6 +3,7 @@
 #include "Condition/Condition.h"
 #include "Condition/Equipped.h"
 #include "Core/CallPatch/CallPatch.h"
+#include "Core/Runtime.h"
 #include "Core/Settings.h"
 #include "Core/TraceLog.h"
 #include "Gameplay/FireRate/Cuts.h"
@@ -10,6 +11,7 @@
 #include "Gameplay/WeaponEvents/WeaponEvents.h"
 
 #include <algorithm>
+#include <array>
 #include <mutex>
 #include <optional>
 #include <shared_mutex>
@@ -26,22 +28,30 @@ namespace FireRate
 		// The 3 calls the rate of an automatic weapon is read through. The
 		// sound is a smaller part, see Install. The weapon speed the animation
 		// graph is given every frame, weaponSpeedMult for the first equip slot
-		// and leftWeaponSpeedMult for the second.
-		constexpr CallPatch::CallSite SPEED_SITE{ 2235244, 0x32, "fire speed" };
+		// and leftWeaponSpeedMult for the second. OG has the call twice,
+		// once for each slot, while 1.11.240 has one call for both. NEC goes
+		// through both OG places, so a mod chained on either finds NEC
+		// there the same way. Only the first slot's weapon slows, so the
+		// second place always hands the vanilla value back.
+		constexpr CallPatch::CallSite SPEED_SITES[] = {
+			{ CallPatch::AE{ 2235244, 0x32 }, CallPatch::OG{ 515532, 0x24 }, "fire speed" },
+			{ CallPatch::NO_AE, CallPatch::OG{ 1566109, 0x2A }, "fire speed left" },
+		};
 
 		// The rate the player's attack handler builds its countdown from. Only
 		// a weapon with an attack delay loads it, which leaves out the minigun,
 		// and a bolt action takes a branch of its own.
-		constexpr CallPatch::CallSite RATE_SITE{ 2234929, 0x140, "fire rate" };
+		constexpr CallPatch::CallSite RATE_SITE{ CallPatch::AE{ 2234929, 0x140 }, CallPatch::OG{ 633786, 0xED }, "fire rate" };
 
 		// The rate the automatic weapon sound picks its loop by, inside the
 		// engine's Fire, as a burst starts. A burst starts up to 2 sounds, the
 		// shots and one for the surroundings, and each reads the rate here.
-		constexpr CallPatch::CallSite SOUND_SITE{ 2196901, 0x2F, "fire sound" };
+		constexpr CallPatch::CallSite SOUND_SITE{ CallPatch::AE{ 2196901, 0x2F }, CallPatch::OG{ 388432, 0x2F }, "fire sound" };
 
-		CallPatch::Link<float(const RE::Actor*, const RE::BGSObjectInstanceT<RE::TESObjectWEAP>&, std::uint32_t)> g_speedLink;
-		CallPatch::Link<float(const RE::TESObjectWEAP&, const RE::TESObjectWEAP::InstanceData*)>                  g_countdownLink;
-		CallPatch::Link<float(const RE::TESObjectWEAP&, const RE::TESObjectWEAP::InstanceData*)>                  g_soundLink;
+		using Speed_t = float(const RE::Actor*, const RE::BGSObjectInstanceT<RE::TESObjectWEAP>&, std::uint32_t);
+		std::array<CallPatch::Link<Speed_t>, std::size(SPEED_SITES)>                             g_speedLinks;
+		CallPatch::Link<float(const RE::TESObjectWEAP&, const RE::TESObjectWEAP::InstanceData*)> g_countdownLink;
+		CallPatch::Link<float(const RE::TESObjectWEAP&, const RE::TESObjectWEAP::InstanceData*)> g_soundLink;
 
 		// -------------------------------------------------------------------
 		// The share and NPCs
@@ -144,9 +154,10 @@ namespace FireRate
 		// Stands in for CombatFormulas::CalcWeaponSpeedMult where the animation
 		// graph is given its weaponSpeedMult. The equip slot arrives as a plain
 		// number.
+		template <std::size_t I>
 		float SpeedHk(const RE::Actor* a_actor, const RE::BGSObjectInstanceT<RE::TESObjectWEAP>& a_weapon, std::uint32_t a_equipIndex)
 		{
-			const auto speed = g_speedLink(a_actor, a_weapon, a_equipIndex);
+			const auto speed = g_speedLinks[I](a_actor, a_weapon, a_equipIndex);
 
 			// Both slots of every actor are asked every frame, so anything but
 			// an automatic weapon in the first slot returns at once.
@@ -234,9 +245,12 @@ namespace FireRate
 		// countdown and cut places, see Slows. Each stands alone, so a mod
 		// that still hands the call on to NEC shares its place and the pace
 		// keeps working.
-		const auto rateOfFire = RE::ID::TESObjectWEAP::GetRateOfFire.address();
-		const auto speed = CallPatch::PatchCall(SPEED_SITE, RE::ID::CombatFormulas::CalcWeaponSpeedMult.address(),
-			reinterpret_cast<std::uintptr_t>(&SpeedHk), g_speedLink);
+		const auto& rateOfFire = RE::ID::TESObjectWEAP::GetRateOfFire;
+		const auto& speedMult = RE::ID::CombatFormulas::CalcWeaponSpeedMult;
+		const auto  speed = CallPatch::PatchCall(SPEED_SITES[0], speedMult, reinterpret_cast<std::uintptr_t>(&SpeedHk<0>), g_speedLinks[0]);
+		if (Runtime::OldGen()) {
+			CallPatch::PatchCall(SPEED_SITES[1], speedMult, reinterpret_cast<std::uintptr_t>(&SpeedHk<1>), g_speedLinks[1]);
+		}
 		const auto rate = CallPatch::PatchCall(RATE_SITE, rateOfFire, reinterpret_cast<std::uintptr_t>(&CountdownHk), g_countdownLink);
 		const auto cuts = InstallCuts();
 		// A smaller part: without it a worn gun still fires slower and sounds
@@ -264,7 +278,7 @@ namespace FireRate
 
 	bool Slows()
 	{
-		return g_speedLink.Live() && g_countdownLink.Live() && CutLive();
+		return g_speedLinks[0].Live() && g_countdownLink.Live() && CutLive();
 	}
 
 	bool SlowsNow()

@@ -17,12 +17,12 @@ namespace BrokenEquip
 		// The 2 calls to ActorEquipManager::CanEquip: the toggle's, before it
 		// equips or takes off, and the container screen's, before it shows
 		// its equip button.
-		constexpr CallPatch::CallSite TOGGLE_SITE{ RE::ID::ActorEquipManager::ToggleEquipInventoryItem.id(), 0x188, "equip check" };
-		constexpr CallPatch::CallSite BUTTON_SITE{ RE::ID::ContainerMenu::GetCanEquipItem.id(), 0x19C, "equip button" };
+		constexpr CallPatch::CallSite TOGGLE_SITE{ CallPatch::AE{ RE::ID::ActorEquipManager::ToggleEquipInventoryItem.ae(), 0x188 }, CallPatch::OG{ RE::ID::ActorEquipManager::ToggleEquipInventoryItem.og(), 0x17A }, "equip check" };
+		constexpr CallPatch::CallSite BUTTON_SITE{ CallPatch::AE{ RE::ID::ContainerMenu::GetCanEquipItem.ae(), 0x19C }, CallPatch::OG{ RE::ID::ContainerMenu::GetCanEquipItem.og(), 0x1A1 }, "equip button" };
 
 		// The toggle for each item the game took off for a while and now puts
 		// back.
-		constexpr CallPatch::CallSite PUT_BACK_SITE{ RE::ID::Actor::EquipShouldEquipItems.id(), 0xDE, "put back" };
+		constexpr CallPatch::CallSite PUT_BACK_SITE{ CallPatch::AE{ RE::ID::Actor::EquipShouldEquipItems.ae(), 0xDE }, CallPatch::OG{ RE::ID::Actor::EquipShouldEquipItems.og(), 0xDE }, "put back" };
 
 		// The item the game is putting back, while it does. The question is
 		// asked inside the toggle on the same thread, about the same handle.
@@ -105,7 +105,7 @@ namespace BrokenEquip
 	{
 		// Both or neither: the button without the toggle offers what the
 		// toggle refuses.
-		const auto canEquip = RE::ID::ActorEquipManager::CanEquip.address();
+		const auto& canEquip = RE::ID::ActorEquipManager::CanEquip;
 		g_held = CallPatch::PatchTogether({ { TOGGLE_SITE, canEquip, reinterpret_cast<std::uintptr_t>(&CanEquipHk<0>), &g_canEquipLinks[0] },
 			{ BUTTON_SITE, canEquip, reinterpret_cast<std::uintptr_t>(&CanEquipHk<1>), &g_canEquipLinks[1] } });
 		if (!g_held) {
@@ -116,7 +116,7 @@ namespace BrokenEquip
 
 		// The put back hook only marks what CanEquipHk reads, so it goes in
 		// after it or not at all.
-		const auto toggle = RE::ID::ActorEquipManager::ToggleEquipInventoryItem.address();
+		const auto& toggle = RE::ID::ActorEquipManager::ToggleEquipInventoryItem;
 		if (!CallPatch::PatchCall(PUT_BACK_SITE, toggle, reinterpret_cast<std::uintptr_t>(&PutBackHk), g_putBackLink)) {
 			REX::WARN("A broken piece taken off for the barber chair or the surgeon stays off.");
 		}

@@ -21,27 +21,32 @@ namespace HealthDamage
 		// Where the engine works damage out
 		// -------------------------------------------------------------------
 
+		using CallPatch::AE;
 		using CallPatch::CallSite;
+		using CallPatch::NO_OG_COVERED;
+		using CallPatch::OG;
 
 		// Both sit inside PipboyInventoryUtils::FillDamageTypeInfo, which adds
 		// a weapon's damage types up for its item card. The first calls
 		// CombatFormulas::GetWeaponDisplayDamage and the second
 		// BGSEntryPoint::HandleEntryPoint.
-		constexpr CallSite CARD_HEALTH_SITE{ RE::ID::PipboyInventoryUtils::FillDamageTypeInfo.id(), 0x0B6, "card health" };
-		constexpr CallSite CARD_TYPES_SITE{ RE::ID::PipboyInventoryUtils::FillDamageTypeInfo.id(), 0x1B7, "card types" };
+		constexpr CallSite CARD_HEALTH_SITE{ AE{ RE::ID::PipboyInventoryUtils::FillDamageTypeInfo.ae(), 0x0B6 }, OG{ RE::ID::PipboyInventoryUtils::FillDamageTypeInfo.og(), 0x0BD }, "card health" };
+		constexpr CallSite CARD_TYPES_SITE{ AE{ RE::ID::PipboyInventoryUtils::FillDamageTypeInfo.ae(), 0x1B7 }, OG{ RE::ID::PipboyInventoryUtils::FillDamageTypeInfo.og(), 0x25B }, "card types" };
 
 		// The same function adds each object effect's magnitude to its damage
 		// type through 2 walks, one over the effects the mods add and one for
 		// the weapon's own and its blast's. Each asks the perk system about
-		// every magnitude.
+		// every magnitude. OG makes both calls from 1 place, so the
+		// mod effects have none of their own there and the one call scales
+		// both walks.
 		constexpr CallSite CARD_EFFECT_SITES[] = {
-			{ 2225299, 0x10A, "card mod effects" },
-			{ 2225344, 0x0DA, "card effects" },
+			{ AE{ 2225299, 0x10A }, NO_OG_COVERED, "card mod effects" },
+			{ AE{ 2225344, 0x0DA }, OG{ 282246, 0x063 }, "card effects" },
 		};
 
 		// Inside CombatFormulas::GetWeaponDisplayDamage, the one call about the
 		// blast half of a weapon's damage before the 2 halves are added.
-		constexpr CallSite CARD_BLAST_SITE{ RE::ID::CombatFormulas::GetWeaponDisplayDamage.id(), 0x14D, "card blast" };
+		constexpr CallSite CARD_BLAST_SITE{ AE{ RE::ID::CombatFormulas::GetWeaponDisplayDamage.ae(), 0x14D }, OG{ RE::ID::CombatFormulas::GetWeaponDisplayDamage.og(), 0x155 }, "card blast" };
 
 		// -------------------------------------------------------------------
 		// The item card hooks
@@ -144,10 +149,10 @@ namespace HealthDamage
 
 	void InstallCard()
 	{
-		const auto entryPoint = RE::ID::BGSEntryPoint::HandleEntryPoint.address();
+		const auto& entryPoint = RE::ID::BGSEntryPoint::HandleEntryPoint;
 
 		g_card = CallPatch::PatchTogether({
-			{ CARD_HEALTH_SITE, RE::ID::CombatFormulas::GetWeaponDisplayDamage.address(), reinterpret_cast<std::uintptr_t>(&CardHealthHk), &g_cardHealthLink },
+			{ CARD_HEALTH_SITE, RE::ID::CombatFormulas::GetWeaponDisplayDamage, reinterpret_cast<std::uintptr_t>(&CardHealthHk), &g_cardHealthLink },
 			{ CARD_TYPES_SITE, entryPoint, reinterpret_cast<std::uintptr_t>(&CardTypesHk<0>), &g_cardTypeLinks[0] },
 		}, Part::kCardDamage);
 
@@ -159,8 +164,7 @@ namespace HealthDamage
 			// The card's object effects read the condition the pair records, so
 			// they go in only once the pair has.
 			const auto effectHooks = CallPatch::PerSite<std::size(CARD_EFFECT_SITES)>([]<std::size_t I>() { return &CardTypesHk<1 + I>; });
-			CallPatch::PatchAll(CARD_EFFECT_SITES, RE::ID::BGSEntryPoint::HandleEntryPoint, effectHooks,
-				std::span{ g_cardTypeLinks }.subspan<1, std::size(CARD_EFFECT_SITES)>(),
+			CallPatch::PatchAll(CARD_EFFECT_SITES, RE::ID::BGSEntryPoint::HandleEntryPoint, effectHooks, std::span{ g_cardTypeLinks }.subspan(1),
 				"The item card prints object effects at the condition the item is in", Part::kCardDamage);
 		}
 

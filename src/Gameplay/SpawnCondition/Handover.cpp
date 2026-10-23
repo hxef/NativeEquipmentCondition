@@ -49,11 +49,14 @@ namespace SpawnCondition
 		// Death items, a perk's Add Leveled List and harvesting a plant come
 		// through with no old container, and those are births. RemoveItem's
 		// own call goes through a register form CallPatch cannot patch, so
-		// these 2 are patched instead.
+		// these 2 are patched instead. OG has no place of its own for the
+		// slot 0x7A body, since its body calls the actor handover's function
+		// there, so the actor handover site sees that road and the site is
+		// left out.
 		constexpr CallPatch::CallSite HANDOVER_SITES[] = {
-			{ RE::ID::TESObjectREFR::MoveRefIntoInventory.id(), 0x2E5, "pickup" },
-			{ 2201031, 0x2A3, "handover" },
-			{ 2200918, 0x06F, "actor handover" },
+			{ CallPatch::AE{ RE::ID::TESObjectREFR::MoveRefIntoInventory.ae(), 0x2E5 }, CallPatch::OG{ RE::ID::TESObjectREFR::MoveRefIntoInventory.og(), 0x30B }, "pickup" },
+			{ CallPatch::AE{ 2201031, 0x2A3 }, CallPatch::NO_OG_COVERED, "handover" },
+			{ CallPatch::AE{ 2200918, 0x06F }, CallPatch::OG{ 1129665, 0x06F }, "actor handover" },
 		};
 
 		// The list goes by value. AddInventoryItem releases the copy it is
@@ -150,9 +153,9 @@ namespace SpawnCondition
 		// The console's SpawnDupe adds each stack of the character it copies
 		// with that stack's own extra data list, so a write would reach the
 		// character too. The command's other copy call cannot run and is left
-		// alone.
+		// alone. On OG the one place also carries that other copy.
 		constexpr CallPatch::CallSite SPAWN_DUPE_SITE[] = {
-			{ 2205763, 0x0D3, "spawndupe" },
+			{ CallPatch::AE{ 2205763, 0x0D3 }, CallPatch::OG{ 1098931, 0x073 }, "spawndupe" },
 		};
 
 		std::array<CallPatch::Link<AddInventoryItem_t>, 1> g_spawnDupeLink;

@@ -43,8 +43,11 @@ namespace Condition
 		return a_health == UNROLLED;
 	}
 
-	// The health a_stack carries, or INVALID_HEALTH for a stack carrying none
-	// and for no stack at all, which count as new.
+	// The health an extra data list carries, or INVALID_HEALTH for a list
+	// carrying none and for no list at all, which count as new.
+	float HealthOf(RE::ExtraDataList* a_extra);
+
+	// The same for a stack, by its extra data list.
 	float HealthOf(const RE::BGSInventoryItem::Stack* a_stack);
 
 	// The instance data a_extra carries, or a_base, the record's own, when it

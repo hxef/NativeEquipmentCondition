@@ -1,6 +1,7 @@
 #include "Core/Text/Text.h"
 
 #include "Core/CallPatch/CallPatch.h"
+#include "Core/Runtime.h"
 #include "Core/Text/Lines.h"
 
 #include <cstddef>
@@ -20,9 +21,10 @@ namespace Text
 		for (const auto& cause : a_loss.causes) {
 			const auto title = PartPieces(a_loss.part, cause.pieces, a_out);
 			const auto owners = CallPatch::OwnerNames(cause.owners, PickFor(OWNER_MOD, a_out));
-			// No mod took it, every owner is this game version.
+			// No mod took it, every owner is this game version: one NEC does
+			// not support, or one with no place for it, such as OG.
 			if (owners.empty()) {
-				lines.push_back(SayFor(a_out, PART_VERSION, title, CallPatch::GameVersion()));
+				lines.push_back(SayFor(a_out, Runtime::Supported() ? PART_OLDGEN : PART_VERSION, title, Runtime::GameVersion()));
 			} else if (cause.part != a_loss.part) {
 				lines.push_back(SayFor(a_out, cause.waits ? PART_SINCE_NOW : PART_SINCE, title, PartPieces(cause.part, cause.taken, a_out),
 					List(owners, a_out)));
@@ -52,7 +54,7 @@ namespace Text
 		if (!a_owner.dll.empty()) {
 			return Say(TOP_BY, a_owner.dll, list);
 		}
-		return a_owner.sure ? Say(TOP_MOD, list) : Say(TOP_VERSION, CallPatch::GameVersion(), list);
+		return a_owner.sure ? Say(TOP_MOD, list) : Say(TOP_VERSION, Runtime::GameVersion(), list);
 	}
 
 	std::string MenuTopMore(std::size_t a_count)
@@ -65,9 +67,11 @@ namespace Text
 		return Pick(NOTE_HELP);
 	}
 
+	// NOTE_HELP_OLDGEN names 1.10.163, so OldGen() picks it. PartLines asks
+	// Supported() instead, as its line takes the version as a value.
 	std::string MenuVersionHelp()
 	{
-		return Pick(NOTE_HELP_VERSION);
+		return Pick(Runtime::OldGen() ? NOTE_HELP_OLDGEN : NOTE_HELP_VERSION);
 	}
 
 	std::string MenuNoteRest()

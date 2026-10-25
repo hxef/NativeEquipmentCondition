@@ -235,8 +235,8 @@ namespace SpawnCondition
 			const auto health = extra->GetHealthPerc();
 			const bool unrolled = Condition::IsUnrolled(health);
 			if (a_rerolled) {
-				// Rerolled into a grenade, ammo or a hat that gives nothing,
-				// the mark comes off. A health the list entry wrote is kept.
+				// Rerolled into a grenade or ammo, the mark comes off. A
+				// health the list entry wrote is kept.
 				if (!takes) {
 					if (unrolled) {
 						Unmark(a_ref, *extra);

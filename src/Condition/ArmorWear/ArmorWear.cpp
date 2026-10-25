@@ -2,6 +2,7 @@
 
 #include "Condition/ArmorWear/Mods.h"
 #include "Condition/ArmorWear/Rate.h"
+#include "Condition/ArmorWear/Skins.h"
 #include "Condition/Condition.h"
 #include "Condition/Equipped.h"
 #include "Core/Settings.h"
@@ -70,19 +71,14 @@ namespace ArmorWear
 			}
 			return false;
 		}
+	}
 
-		// Whether a piece gives anything to wear it for: protection, its own
-		// effect, or a mod that fits it and adds something, see LoadMods in
-		// ArmorWear.h. A wedding ring or Dogmeat's bandana gives none of the
-		// 3, so wear would only cut its price. While no table is built, any
-		// slot for a mod counts.
-		bool GivesAnything(const RE::TESObjectARMO& a_armor)
-		{
-			if (Protects(a_armor) || a_armor.GetBaseEnchanting()) {
-				return true;
-			}
-			return GivingModFits(a_armor).value_or(a_armor.attachParents.size > 0);
+	bool GivesAnything(const RE::TESObjectARMO& a_armor)
+	{
+		if (Protects(a_armor) || a_armor.GetBaseEnchanting()) {
+			return true;
 		}
+		return GivingModFits(a_armor).value_or(a_armor.attachParents.size > 0);
 	}
 
 	bool IsPowerArmor(const RE::TESObjectARMO& a_armor)
@@ -97,10 +93,18 @@ namespace ArmorWear
 			return "power armor";
 		}
 
-		// Everything the player can carry that gives anything. A null
-		// instance reads the flag off the record itself.
+		// Everything the player can carry, but a piece that gives nothing and
+		// has no name or is a skin. A null instance reads the flag off the
+		// record itself. Only a piece that gives nothing is asked, so a skin
+		// with a rating, like a Gen 1 synth's, takes part.
 		if (a_armor.GetPlayable(nullptr)) {
-			return GivesAnything(a_armor) ? nullptr : "gives nothing";
+			if (GivesAnything(a_armor)) {
+				return nullptr;
+			}
+			if (RE::TESFullName::GetFullName(a_armor).empty()) {
+				return "gives nothing and has no name";
+			}
+			return IsSkin(a_armor) ? "a skin" : nullptr;
 		}
 
 		// A creature's own armor, see WhyNoCondition in ArmorWear.h. The name

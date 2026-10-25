@@ -13,7 +13,8 @@
 // 30% or not at all, up to 85% to 100% for one who repairs it to full, see
 // BandFor in Upkeep.cpp. 1 in 100 ignores its band, as loot does, and lands
 // anywhere from 30% up. How far the trader repairs is worked out the way the
-// REPAIR button works it out, as the first chest restocks.
+// REPAIR button works it out, as the first chest restocks. Traders sell gear
+// that gives nothing new, with trader repair off too.
 //
 // A plain line of a weapon or piece of armor with no object template goes into
 // the chest without passing through AddStack, so it rolls right after the fill,

@@ -106,7 +106,8 @@ namespace VendorRepair
 		double clothing = 0.0;
 		for (const auto& [object, chance] : Restock(a_merchant, a_trader)) {
 			rows += chance;
-			if (Condition::WearsOut(*object)) {
+			const auto* piece = object->As<RE::TESObjectARMO>();
+			if (Condition::WearsOut(*object) && (!piece || ArmorWear::GivesAnything(*piece))) {
 				switch (TradeOf(*object)) {
 				case Trade::kWeapons:
 					weapons += chance;
@@ -122,7 +123,7 @@ namespace VendorRepair
 				rounds += chance;
 			} else if (const auto* weapon = object->As<RE::TESObjectWEAP>(); weapon && weapon->IsThrownWeapon()) {
 				thrown += chance;
-			} else if (const auto* piece = object->As<RE::TESObjectARMO>(); piece && ArmorWear::IsPowerArmor(*piece)) {
+			} else if (piece && ArmorWear::IsPowerArmor(*piece)) {
 				// Armor's filler, see Stock.h.
 				powerArmor += chance;
 			}

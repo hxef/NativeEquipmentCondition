@@ -1,6 +1,7 @@
 #include "Condition/ArmorWear/Mods.h"
 
 #include "Condition/ArmorWear/ArmorWear.h"
+#include "Condition/ArmorWear/Skins.h"
 
 #include <algorithm>
 #include <cstddef>
@@ -244,10 +245,11 @@ namespace ArmorWear
 		// Swapping the table in and saying so
 		// -------------------------------------------------------------------
 
-		// Builds a table, swaps it in whole, and counts what it leaves out.
-		// The old table is freed after the lock is let go.
+		// Reads the skins, builds a table, swaps it in whole, and counts what
+		// takes part. The old table is freed after the lock is let go.
 		Counts MeasureAndSwap()
 		{
+			MeasureSkins();
 			Counts counts;
 			auto   fresh = Measure(counts.giving);
 			{
@@ -255,14 +257,15 @@ namespace ArmorWear
 				g_slots.swap(fresh);
 			}
 
-			// The pieces the player can carry, and how many of them give
-			// nothing. Power armor never takes part.
+			// The pieces the player can carry that take part, and how many of
+			// them give nothing, so power armor, the skins and the pieces with
+			// no name that give nothing are not counted.
 			for (const auto* armor : g_dataHandler->GetFormArray<RE::TESObjectARMO>()) {
-				if (!armor || !armor->GetPlayable(nullptr) || IsPowerArmor(*armor)) {
+				if (!armor || !armor->GetPlayable(nullptr) || WhyNoCondition(*armor)) {
 					continue;
 				}
 				counts.carried++;
-				counts.nothing += WhyNoCondition(*armor) ? 1 : 0;
+				counts.nothing += GivesAnything(*armor) ? 0 : 1;
 			}
 			return counts;
 		}
@@ -296,7 +299,7 @@ namespace ArmorWear
 			WarnUnread();
 			return;
 		}
-		REX::INFO("{:d} armor mods add protection, an effect or a bonus. Of the {:d} pieces the player can carry, {:d} give nothing, with no protection, no effect and no such mod that fits, so they never wear.",
+		REX::INFO("{:d} armor mods add protection, an effect or a bonus. Of the {:d} pieces the player can carry, {:d} give nothing, with no protection, no effect and no such mod that fits, so their wear lowers only their price and traders sell them new.",
 			g_said.giving, g_said.carried, g_said.nothing);
 	}
 
@@ -326,6 +329,7 @@ namespace ArmorWear
 			const std::unique_lock l{ g_lock };
 			g_slots.swap(old);
 		}
+		UnloadSkins();
 		g_said = {};
 	}
 

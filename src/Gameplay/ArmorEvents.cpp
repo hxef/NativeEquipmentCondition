@@ -135,11 +135,17 @@ namespace ArmorEvents
 			// that names none, and the pieces on no limb, which cover the whole
 			// body. A blow lands on 1 spot, so the pieces on no limb split it:
 			// a super mutant's 3 each take a third, and a lone visor takes it
-			// all. A piece an essential NPC keeps still takes its share, and
-			// keeps its condition.
+			// all. A piece that gives nothing, a ring or a bandana, takes the
+			// same share and never makes theirs smaller: a visor worn with a
+			// ring still takes the whole blow, and so does the ring. A piece
+			// an essential NPC keeps still takes its share, and keeps its
+			// condition.
 			const auto onALimb = LimbSlots(target->race, nullptr);
 			const auto struck = condition ? LimbSlots(target->race, condition) : onALimb;
-			const auto sharing = std::ranges::count_if(pieces, [onALimb](const auto& a_piece) { return (a_piece.slots & onALimb) == 0; });
+			const auto shares = [onALimb](const auto& a_piece) {
+				return (a_piece.slots & onALimb) == 0 && ArmorWear::GivesAnything(*a_piece.armor);
+			};
+			const auto sharing = std::max<std::ptrdiff_t>(1, std::ranges::count_if(pieces, shares));
 			bool       moved = false;
 			for (const auto& piece : pieces) {
 				const bool onNoLimb = (piece.slots & onALimb) == 0;

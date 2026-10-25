@@ -15,6 +15,10 @@ namespace SpawnCondition
 	// roll.
 	[[nodiscard]] bool Gear(const RE::TESBoundObject& a_object);
 
+	// Whether a trader sells a_object new: a piece of armor that gives
+	// nothing, see ArmorWear::GivesAnything.
+	[[nodiscard]] bool SoldNew(const RE::TESBoundObject& a_object);
+
 	// Gives one stack a condition, if it is the kind of thing that has one
 	// and has none yet. Returns what it aimed at, so the copies SplitOff
 	// takes out roll the same way, or nothing when the stack was left

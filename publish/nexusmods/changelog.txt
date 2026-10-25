@@ -1,5 +1,6 @@
 1.6.0
 * NEC now runs on OG too (Fallout 4 1.10.163 with F4SE 0.6.23), with every part working as on AE.
+* Hats, bandanas, rings and other apparel with no armor rating or bonus wear again, as they did before 1.2.0, and traders sell them at 100%.
 * The CND bars on the Pip-Boy apparel figure now fill from the left, like the Pip-Boy's own limb meters.
 * NEC.log now names the game and F4SE versions it runs on.
 

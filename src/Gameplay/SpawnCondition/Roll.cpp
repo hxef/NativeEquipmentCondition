@@ -1,5 +1,6 @@
 #include "Gameplay/SpawnCondition/Roll.h"
 
+#include "Condition/ArmorWear/ArmorWear.h"
 #include "Condition/Condition.h"
 #include "Condition/Provenance/Provenance.h"
 #include "Core/TraceLog.h"
@@ -20,6 +21,12 @@ namespace SpawnCondition
 	bool Gear(const RE::TESBoundObject& a_object)
 	{
 		return a_object.IsWeapon() || a_object.Is(RE::ENUM_FORM_ID::kARMO);
+	}
+
+	bool SoldNew(const RE::TESBoundObject& a_object)
+	{
+		const auto* armor = a_object.As<RE::TESObjectARMO>();
+		return armor && !ArmorWear::GivesAnything(*armor);
 	}
 
 	std::optional<Aim> Roll(RE::BGSInventoryList* a_list, RE::TESBoundObject* a_object, RE::ExtraDataList* a_extra, std::uint32_t a_count,
@@ -131,6 +138,16 @@ namespace SpawnCondition
 			a_extra->SetHealthPerc(Condition::MAX_HEALTH);
 			Report(listed, "for an essential character", "{:<30s} [{:08X}] x{:<3d} starts at {:.4f}, for {:s} [{:08X}], who is essential",
 				name, id, count, Condition::MAX_HEALTH, NameOf(*essential, "unnamed character"), essential->formID);
+			return std::nullopt;
+		}
+
+		// A trader sells gear that gives nothing new, so a worn bandana never
+		// sells cheap. With trader repairs off too, when the restock has no
+		// band. Several at once stay one stack.
+		if (restock && SoldNew(*a_object)) {
+			a_extra->SetHealthPerc(Condition::MAX_HEALTH);
+			Report(listed, "sold new", "{:<30s} [{:08X}] x{:<3d} starts at {:.4f}, stock of {:s}, sold new as it gives nothing",
+				name, id, count, Condition::MAX_HEALTH, restock->trader);
 			return std::nullopt;
 		}
 

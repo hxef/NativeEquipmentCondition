@@ -32,11 +32,13 @@ namespace SpawnCondition
 	// Roll.cpp.
 	//
 	// A trader's own stock rolls in a band set by how far the trader repairs
-	// it, see VendorRepair/Upkeep.h. A legendary weapon or piece of armor put
-	// into any chest arrives new, which covers a trader's showpiece, placed
-	// once by a quest script and never restocked. An essential character's
-	// weapons and armor, a companion's for example, arrive new, and so does
-	// the outfit the player's own record puts on them in a new game.
+	// it, see VendorRepair/Upkeep.h. A piece that gives nothing is always
+	// stocked new, and a Restock with no band rolls the rest as loot. A
+	// legendary weapon or piece of armor put into any chest arrives new,
+	// which covers a trader's showpiece, placed once by a quest script and
+	// never restocked. An essential character's weapons and armor, a
+	// companion's for example, arrive new, and so does the outfit the
+	// player's own record puts on them in a new game.
 	//
 	// Band.cpp is the roll itself, either side of an item's middle or in a
 	// trader's band, Roll.cpp a stack's first condition and its split,

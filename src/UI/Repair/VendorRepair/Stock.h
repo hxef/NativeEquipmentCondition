@@ -29,8 +29,9 @@
 // Armor and clothing are counted the same way, each on rows of its own, told
 // apart by ArmorWear::IsClothing since no keyword on a piece does. Power armor
 // pieces, which never wear, count as armor's filler the way ammunition does for
-// weapons. Any other piece that does not wear, like a ring or the Minuteman
-// Hat, counts only toward the rows. Clothing has no filler: the vanilla
+// weapons. Any other piece that does not wear counts only toward the rows,
+// and so does one that gives nothing, like a ring or the Minuteman Hat, since
+// a trader always sells it new. Clothing has no filler: the vanilla
 // armorer's list is about a third clothes and its clothier's list has some
 // armor, so counting either as filler for the other would make every armorer a
 // clothier and every clothier an armorer. Tested the same way, Fallon's

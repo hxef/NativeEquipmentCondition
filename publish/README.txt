@@ -118,6 +118,7 @@ REPAIR AT A TRADER
   30% to 50% condition, and the best shops at 85% to 100%. So a gun shop that
   repairs guns to 90% sells its guns in good shape, but the odd piece of armor
   on its shelves comes in much worse shape, since it doesn't repair armor.
+  They sell apparel with no armor rating or bonus at 100%.
 
 SEE IT AT A GLANCE
 * CND on the item cards, with the worn damage, resistances, fire rate,
@@ -152,8 +153,6 @@ LITTLE EXTRAS
 * A console command for testing: "srm" brings the weapon in hand back to
   full, and "srm 25" sets it to 25%, any number from 0 to 100. Add armor, as
   in "srm armor" or "srm 25 armor", for every piece you have on that wears.
-  It also takes the condition off any ring, hat or other gear you carry that
-  gives nothing, so it reads as full again.
 
 COMPATIBILITY
 * Runs on Fallout 4 1.11.240 (AE) and 1.10.163 (OG).

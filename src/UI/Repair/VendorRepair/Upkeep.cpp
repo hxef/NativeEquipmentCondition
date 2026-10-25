@@ -113,18 +113,29 @@ namespace VendorRepair
 
 		// Marks what a_chest restocks with as the trader's stock. How far the
 		// trader repairs is worked out once, at the first chest, before
-		// anything of the restock arrives.
+		// anything of the restock arrives. A trader who does not repair still
+		// gets a restock with no band, so gear that gives nothing comes in
+		// new.
 		template <std::size_t I>
 		void RestockHk(RE::TESObjectREFR* a_chest, bool a_leveledOnly)
 		{
 			auto* making = t_making;
-			if (!making || !making->trader || !Settings::bVendorRepair.GetValue() || !Settings::bSpawnCondition.GetValue() ||
-				!g_restockLinks[I].Live()) {
+			if (!making || !making->trader || !Settings::bSpawnCondition.GetValue() || !g_restockLinks[I].Live()) {
 				ResetChest<I>(a_chest, a_leveledOnly);
 				return;
 			}
 
-			auto& trader = *making->trader;
+			auto&       trader = *making->trader;
+			const auto* base = a_chest->GetObjectReference();
+			if (!Settings::bVendorRepair.GetValue()) {
+				const SpawnCondition::Restock restock{ a_chest->GetHandle(), Trader(&trader), {} };
+				TraceLog::Begin("RESTOCK", "{:s} restocks chest {:08X} of {:08X}, with trader repairs off", restock.trader,
+					a_chest->formID, base ? base->formID : 0);
+				const SpawnCondition::ScopedRestock marked{ restock };
+				ResetChest<I>(a_chest, a_leveledOnly);
+				return;
+			}
+
 			if (!making->ceilings) {
 				// The chest the screen names, see Restock.h. A faction with no
 				// merchant container is covered by the linked chests instead.
@@ -140,7 +151,6 @@ namespace VendorRepair
 				[ceilings](const RE::TESBoundObject& a_item) { return BandFor(ceilings.Of(TradeOf(a_item))); },
 			};
 
-			const auto* base = a_chest->GetObjectReference();
 			TraceLog::Begin("RESTOCK", "{:s} restocks chest {:08X} of {:08X}, and repairs {:s}", restock.trader,
 				a_chest->formID, base ? base->formID : 0, Repairs(ceilings));
 

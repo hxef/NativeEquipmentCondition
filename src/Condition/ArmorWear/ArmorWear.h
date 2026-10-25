@@ -19,37 +19,47 @@ namespace ArmorWear
 	void Load();
 
 	// Finds which armor mods add protection, an effect or a bonus, and in
-	// which slots, for WhyNoCondition. A mod that only changes weight, price,
-	// keywords or looks, like a paint AWKCR gives every ring, does not count.
-	// Keeps keywords, so UnloadMods lets them go. When no armor mod adds
+	// which slots, and which pieces are skins, see Skins.h, for
+	// WhyNoCondition. A mod that only changes weight, price, keywords or
+	// looks, like a paint AWKCR gives every ring, does not count. Keeps
+	// keywords and skins, so UnloadMods lets them go. When no armor mod adds
 	// anything, which only a misread gives, the log warns and every slot
 	// counts.
 	void LoadMods();
 
-	// Forgets what LoadMods found, and every slot counts until it runs again.
+	// Forgets what LoadMods found, and every slot counts and no piece is a
+	// skin until it runs again.
 	void UnloadMods();
 
-	// Reads the armor mods again before every save load, at a new game and
-	// after a coc from the main menu, since a DLL mod such as RobCo Patcher
-	// can change them after LoadMods. Says only what moved. Builds a whole
-	// table and swaps it in under a lock that readers share, the way FireRate
-	// guards its NPC readings, since item cards, hits and inventories ask
-	// WhyNoCondition from other threads meanwhile.
+	// Reads the armor mods and the skins again before every save load, at a
+	// new game and after a coc from the main menu, since a DLL mod such as
+	// RobCo Patcher can change them after LoadMods. Says only what moved.
+	// Builds a whole table and swaps it in under a lock that readers share,
+	// the way FireRate guards its NPC readings, since item cards, hits and
+	// inventories ask WhyNoCondition from other threads meanwhile.
 	void MeasureModsAgain();
 
 	// Whether this armor takes part, as a reason: nullptr for one that does,
 	// otherwise what ruled it out. Every piece the player can carry does, from
-	// a chest piece to a hat, as every piece of clothing wore in the older
-	// games, unless it gives nothing: no protection, no effect and no mod that
-	// adds something fits it, like a wedding ring or Dogmeat's bandana. A mod
-	// fits when the piece offers its slot and each keyword the mod asks for is
-	// on the piece or added by an armor mod, so the Minuteman Hat, which no
-	// tier mod fits, gives nothing too. A piece the player can never carry, a
-	// super mutant's own chest piece or a disguise an NPC wears, takes part
-	// when it has a name and protects against something, so a creature's
-	// armor wears the way a raider's does. What is left, a skin, a shell or a
-	// set of rags, stays out. Power armor pieces stay out too, see above.
+	// a chest piece to a wedding ring, as every piece of clothing wore in the
+	// older games. A piece that gives nothing stays out only when it has no
+	// name or is a race's or a character's skin, see Skins.h. A piece the
+	// player can never carry, a super mutant's own chest piece or a disguise
+	// an NPC wears, takes part when it has a name and protects against
+	// something, so a creature's armor wears the way a raider's does. What is
+	// left, a skin, a shell or a set of rags, stays out. Power armor pieces
+	// stay out too, see above.
 	const char* WhyNoCondition(const RE::TESObjectARMO& a_armor);
+
+	// Whether a piece gives anything to wear it for: protection, its own
+	// effect, or a mod that fits it and adds something, see LoadMods. A mod
+	// fits when the piece offers its slot and each keyword the mod asks for
+	// is on the piece or added by an armor mod, so the Minuteman Hat, which
+	// no tier mod fits, gives nothing, like a wedding ring or Dogmeat's
+	// bandana. Such a piece wears only in price, so traders sell it new and
+	// it takes no share of a blow from the pieces that give something. While
+	// no table is built, any slot for a mod counts.
+	bool GivesAnything(const RE::TESObjectARMO& a_armor);
 
 	// Whether a piece is power armor, by the keyword the game itself finds
 	// every power armor piece by. Every rule that leaves power armor out asks

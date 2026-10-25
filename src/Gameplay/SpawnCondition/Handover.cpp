@@ -206,7 +206,7 @@ namespace SpawnCondition
 		const auto  listed = players || restock;
 		OpenBlock(restock);
 
-		// Gear that gives nothing keeps whatever an older NEC left on it. The
+		// Gear that does not wear keeps whatever an older NEC left on it. The
 		// mark comes off, so the item stacks with its copies again.
 		if (const auto* why = gear ? Condition::WhyNoCondition(*a_object) : "not a weapon or armor") {
 			if (extra && Condition::IsUnrolled(extra->GetHealthPerc())) {
@@ -276,9 +276,10 @@ namespace SpawnCondition
 	// when the copy still needs its mods or its form asks for 1 at a time.
 	// The first copy rolls, and the world item takes the same roll, so every
 	// later copy, a rebuild of the screen and the item bought all read it.
-	// The trade that buys it puts the mark back, see NoteBought. Lock
-	// order: the barter copy's inventory, held by the caller, then the
-	// change record, then the world item's extra data.
+	// The trade that buys it puts the mark back, see NoteBought. A piece
+	// that gives nothing is sold new. Lock order: the barter copy's
+	// inventory, held by the caller, then the change record, then the world
+	// item's extra data.
 	bool LooseItem(RE::BGSInventoryList* a_list, RE::TESBoundObject* a_object, RE::BGSInventoryItem::Stack* a_stack)
 	{
 		if (!a_object || !a_stack || !a_stack->extra || !Gear(*a_object)) {
@@ -314,6 +315,13 @@ namespace SpawnCondition
 		// Recorded first, so the roll written to the world item is saved. A
 		// legendary arrives new, as a showpiece, since the copy is a chest.
 		world->AddChange(RE::CHANGE_TYPES::kObjectExtraItemData);
+		if (SoldNew(*a_object)) {
+			copy.SetHealthPerc(Condition::MAX_HEALTH);
+			worldExtra->SetHealthPerc(Condition::MAX_HEALTH);
+			Report(true, "a trader's loose item, sold new", "{:<30s} [{:08X}] x{:<3d} starts at {:.4f}, a trader's loose item, sold new as it gives nothing",
+				name, id, count, Condition::MAX_HEALTH);
+			return true;
+		}
 		Roll(a_list, a_object, a_stack);
 		const auto rolled = copy.GetHealthPerc();
 		if (rolled >= 0.0F && !Condition::IsUnrolled(rolled)) {

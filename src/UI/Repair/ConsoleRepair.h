@@ -12,7 +12,7 @@
 //   srm armor      brings every worn piece of armor that wears back to full
 //   srm 25 armor   sets every one of them to 25%
 //
-// With the word armor, every piece carried that gives nothing but kept a
+// With the word armor, every piece carried that does not wear but kept a
 // condition loses it, whatever the percent, see Equipped::LeftoverPieces.
 //
 // Written the way the workbench writes it, so the HUD, the Pip-Boy and the

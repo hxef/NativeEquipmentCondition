@@ -50,8 +50,9 @@ namespace
 		// Condition: what condition is, and what repairing costs.
 
 		// Which pieces of armor take a mod that adds protection, an effect or
-		// a bonus. Which armor wears rests on it, and Materials and
-		// CraftingPerks ask that as they load, so it comes first.
+		// a bonus, and which are skins. Which armor wears rests on it, and
+		// Materials and CraftingPerks ask that as they load, so it comes
+		// first.
 		{ .name = "ArmorMods", .Load = ArmorWear::LoadMods, .Unload = ArmorWear::UnloadMods },
 		// What a weapon or a piece of armor is built from, read off the recipes
 		// in the load order.

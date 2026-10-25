@@ -2,13 +2,19 @@
 
 #include "Core/Text/Lines.h"
 
-// The question both repair menus ask and what the bench says around it, the
-// [Repair] lines of the language files. A trader's own words are in Trader.cpp.
+// The question both repair menus ask, the title of the bench's repair box and
+// what the bench says around it, the [Repair] lines of the language files. A
+// trader's own words are in Trader.cpp.
 namespace Text
 {
 	std::string RepairQuestion(std::string_view a_name, std::uint32_t a_percent)
 	{
 		return Say(REPAIR_QUESTION, a_name, a_percent);
+	}
+
+	std::string RepairBoxTitle(std::string_view a_name, std::uint32_t a_percent)
+	{
+		return Say(REPAIR_BOX_TITLE, a_name, a_percent);
 	}
 
 	std::string RepairDiscount(std::string_view a_perk, std::uint32_t a_rank, std::uint32_t a_percent)

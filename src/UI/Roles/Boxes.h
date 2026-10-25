@@ -28,6 +28,13 @@ namespace Roles::Boxes
 	// What the box asks, on one line, for the trace.
 	[[nodiscard]] std::string Question(RE::ExamineConfirmMenu& a_menu);
 
+	// Lets a question that wraps show its 2nd line. Vanilla's field is a few
+	// units short of 2 lines, so it draws only the 1st. The rows start at the
+	// field's old bottom, so it grows only into the gap above their letters
+	// and never past 2 lines. The field's new height, or nothing when the
+	// question already shows 2 lines, has 1 or was not found.
+	[[nodiscard]] std::optional<double> ShowSecondLine(RE::ExamineConfirmMenu& a_menu);
+
 	// Where the open bench's button bar starts, as a share of the screen's
 	// height from its top, whichever movie draws the bar. Nothing while no bar
 	// is on screen, and 1 trace line says why.

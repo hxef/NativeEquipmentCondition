@@ -1,7 +1,10 @@
 #include "UI/Repair/Workbench/Box.h"
 
+#include "Core/Text/Text.h"
 #include "Core/TraceLog.h"
 #include "UI/Repair/Workbench/Job.h"
+#include "UI/Repair/Workbench/Workbench.h"
+#include "UI/Roles/Boxes.h"
 
 #include <cstdint>
 #include <format>
@@ -15,9 +18,6 @@ namespace Workbench
 		// -------------------------------------------------------------------
 		// The box and what it does on yes or no
 		// -------------------------------------------------------------------
-
-		// What the box asks, in words the game already translates.
-		constexpr const char* QUESTION = "$Repair";
 
 		// The items the bench takes for the job's parts, an item and a count
 		// each, junk standing in for the components it holds.
@@ -57,7 +57,7 @@ namespace Workbench
 		};
 	}
 
-	void ShowRepairBox(RE::ExamineMenu* a_menu)
+	void ShowRepairBox(RE::ExamineMenu* a_menu, std::string_view a_name)
 	{
 		auto& job = InHand();
 
@@ -68,9 +68,14 @@ namespace Workbench
 
 		// The game frees the callback and the data with its own allocator,
 		// which CommonLibF4's operator new and Create use. The data copies
-		// the list, so the list goes with this function.
-		auto* box = new RepairBox(a_menu);
-		auto* data = RE::ExamineConfirmMenu::InitDataBuild::Create(QUESTION, REPAIR_WORD, &job.parts, &taken);
+		// the list and the title, so both go with this function.
+		//
+		// The title has no leading $, so the game draws it as written. A
+		// "$Repair" title drew REPAIR, since the engine's keys ignore case and
+		// its $REPAIR line comes later.
+		const auto title = Text::RepairBoxTitle(a_name, job.level);
+		auto*      box = new RepairBox(a_menu);
+		auto*      data = RE::ExamineConfirmMenu::InitDataBuild::Create(title.c_str(), REPAIR_WORD, &job.parts, &taken);
 		if (!data) {
 			delete box;
 			TraceLog::Line("menu", "Workbench put up no confirmation for the repair to {:d}%, so it dropped it", job.level);
@@ -87,6 +92,17 @@ namespace Workbench
 		if (RE::ExamineMenu::GetConfirmCallback() != box) {
 			TraceLog::Line("menu", "Workbench put up no confirmation for the repair to {:d}%, so it dropped it", job.level);
 			Drop();
+		}
+	}
+
+	void FitRepairTitle(RE::ExamineConfirmMenu& a_menu)
+	{
+		const auto* const box = InHand().box;
+		if (!box || RE::ExamineMenu::GetConfirmCallback() != box) {
+			return;
+		}
+		if (const auto height = Roles::Boxes::ShowSecondLine(a_menu)) {
+			TraceLog::Line("menu", "Workbench repair title field made {:.2f} high, so its 2nd line shows", *height);
 		}
 	}
 

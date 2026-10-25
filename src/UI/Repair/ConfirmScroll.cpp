@@ -4,6 +4,7 @@
 #include "Core/Settings.h"
 #include "Core/TraceLog.h"
 #include "UI/Flash.h"
+#include "UI/Repair/Workbench/Workbench.h"
 #include "UI/Roles/Boxes.h"
 
 #include <algorithm>
@@ -272,6 +273,10 @@ namespace ConfirmScroll
 			}
 			switch (*a_message.type) {
 			case RE::UI_MESSAGE_TYPE::kShow:
+				// Also with bConfirmScroll off, since the title is the repair's.
+				if (runs) {
+					Workbench::FitRepairTitle(*a_menu);
+				}
 				if (TraceLog::IsOpen()) {
 					TraceLog::Line("menu", "Confirmation box {:X} opens, asking \"{:s}\"", Id(a_menu), Roles::Boxes::Question(*a_menu));
 				}

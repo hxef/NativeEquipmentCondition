@@ -48,4 +48,9 @@ namespace Workbench
 	// kept out of the mod slots until it is repaired, which stops a cheap mod
 	// swap before a repair. Below full the player has chosen to allow that.
 	[[nodiscard]] std::uint32_t ModifyFloor();
+
+	// As the confirmation box a_menu opens, lets NEC's repair title show its
+	// 2nd line, where a long item name pushes the level. Every other box keeps
+	// the title as the game drew it.
+	void FitRepairTitle(RE::ExamineConfirmMenu& a_menu);
 }

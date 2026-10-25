@@ -123,6 +123,30 @@ namespace Roles::Boxes
 		return text;
 	}
 
+	std::optional<double> ShowSecondLine(RE::ExamineConfirmMenu& a_menu)
+	{
+		auto field = Flash::Child(a_menu.confirmObj, QUESTION_NAME);
+		if (!field.IsDisplayObject()) {
+			return std::nullopt;
+		}
+		const auto lines = NumberOf(field, "numLines"sv);
+		const auto shown = NumberOf(field, "bottomScrollV"sv);
+		const auto text = NumberOf(field, "textHeight"sv);
+		const auto height = NumberOf(field, "height"sv);
+		if (!lines || !shown || !text || !height || *lines < 2.0 || *shown >= 2.0) {
+			return std::nullopt;
+		}
+
+		// The field draws 1 font, so its lines are equally tall and its first
+		// 2 lines take about 2 / numLines of textHeight.
+		const auto two = (*text * 2.0 / *lines) + (2.0 * Flash::FIELD_MARGIN);
+		if (!(two > *height)) {
+			return std::nullopt;
+		}
+		field.SetMember("height"sv, Value(two));
+		return two;
+	}
+
 	// -------------------------------------------------------------------
 	// The bench's button bar
 	// -------------------------------------------------------------------

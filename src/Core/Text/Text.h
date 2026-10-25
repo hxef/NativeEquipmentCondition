@@ -51,6 +51,9 @@ namespace Text
 	// "Combat Rifle is at 62% condition. Repair it to:"
 	[[nodiscard]] std::string RepairQuestion(std::string_view a_name, std::uint32_t a_percent);
 
+	// "Repair 10mm Pistol to 70%?", the title of the bench's repair box.
+	[[nodiscard]] std::string RepairBoxTitle(std::string_view a_name, std::uint32_t a_percent);
+
 	// "Gun Nut 4 reduces the components required for this repair by 50%.", said
 	// over the question above when the player holds a rank of the perk pricing
 	// the item.

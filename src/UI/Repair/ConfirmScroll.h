@@ -16,6 +16,9 @@
 // of the vanilla lists. The Flash side is left alone, since the game sends the
 // stick to the movie a second time as arrow keys and a listener there would
 // scroll 2 rows a push.
+//
+// The hook that sees the box open also lets NEC's repair title show its 2nd
+// line, see FitRepairTitle in Workbench.h.
 namespace ConfirmScroll
 {
 	// Hooks the box.

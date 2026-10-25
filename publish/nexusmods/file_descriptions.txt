@@ -1,5 +1,5 @@
 1.6.0
-Version 1.6.0 adds OG support. Apparel with no bonus wears again, an MCM slider sets the condition needed to mod gear and the Pip-Boy CND bars fill from the left.
+Version 1.6.0 adds OG support. Apparel with no bonus wears again, an MCM slider sets the condition needed to mod gear, the Pip-Boy CND bars fill from the left and the repair box names the item.
 
 OG & AE only
 

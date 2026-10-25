@@ -3,6 +3,7 @@
 * Hats, bandanas, rings and other apparel with no armor rating or bonus wear again, as they did before 1.2.0, and traders sell them at 100%.
 * A new MCM slider, Mod lock below (fModLockStart), sets the condition gear needs before you can mod it.
 * The CND bars on the Pip-Boy apparel figure now fill from the left, like the Pip-Boy's own limb meters.
+* The workbench repair box now asks "Repair Combat Rifle to 70%?" instead of saying REPAIR twice.
 * NEC.log now names the game and F4SE versions it runs on.
 
 1.5.2

@@ -198,7 +198,7 @@ namespace Workbench
 			Drop();
 			return;
 		}
-		ShowRepairBox(a_menu);
+		ShowRepairBox(a_menu, selection.Name());
 	}
 
 	void Drop()

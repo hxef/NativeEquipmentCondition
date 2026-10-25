@@ -41,6 +41,11 @@ namespace Equipped
 	// carried beside it.
 	RE::TESObjectWEAP* Weapon(RE::Actor* a_actor);
 
+	// Whether the weapon the actor holds is on a list in NEC/Exclude, found by
+	// the same walk with the kind's own rule. Its blows then keep the vanilla
+	// damage, see EquippedHealthHk in Gameplay/HealthDamage/Combat.cpp.
+	bool HoldsListed(RE::Actor* a_actor);
+
 	// The health of the equipped weapon, MAX_HEALTH for one with no health yet,
 	// as Worn loot switched off leaves it, or INVALID_HEALTH when the actor
 	// holds none that takes part. a_weapon limits the search to that form, so a
@@ -98,8 +103,8 @@ namespace Equipped
 	// still holds a health, which an older NEC wrote before such gear was left
 	// out, in inventory order. One at 0 cannot go back on, so carried ones
 	// count too, also while the actor is in power armor. Power armor pieces
-	// never count, since their health stays vanilla. For the console
-	// repair, which takes that health off.
+	// and listed ones never count, since their health stays vanilla or is
+	// another mod's. For the console repair, which takes that health off.
 	std::vector<ArmorPiece> LeftoverPieces(RE::Actor* a_actor);
 
 	// ArmorPieces for a caller outside the engine's own code path, see

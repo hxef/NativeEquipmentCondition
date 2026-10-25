@@ -191,13 +191,6 @@ namespace HealthDamage
 		// The damage hooks
 		// -------------------------------------------------------------------
 
-		// The condition of the weapon the item card is drawn for, handed from
-		// the display site to CardBlastHk in Card.cpp through DisplayHealth.
-		// Both sit inside one function on one thread. The note is read once,
-		// so a card whose display hook did not run shows the vanilla
-		// explosion damage, never the last card's.
-		thread_local float t_displayHealth = Condition::INVALID_HEALTH;
-
 		// Each attack's 2 hooks, see InstallCombat.
 		std::array<CallPatch::Held, std::size(HEALTH_SITES)> g_attacks;
 
@@ -234,16 +227,13 @@ namespace HealthDamage
 
 			// The player's health comes from EquippedHealthHk, which reads the
 			// weapon in hand even while a grenade is thrown. A grenade or a
-			// mine has no condition, so its damage stays.
+			// mine has no condition, so its damage stays. A card's health goes
+			// through DisplayHealth, see Hooks.h.
+			const auto health = I == DISPLAY_SITE ? DisplayHealth(a_condition) : a_condition;
 			const auto thrown = a_data && (a_data->type == RE::WEAPON_TYPE::kGrenade || a_data->type == RE::WEAPON_TYPE::kMine);
-			const auto mult = thrown ? 1.0F : DamageMult(a_condition);
+			const auto mult = thrown ? 1.0F : DamageMult(health);
 
-			// Kept for the blast half of the same card, see t_displayHealth.
-			if constexpr (I == DISPLAY_SITE) {
-				t_displayHealth = a_condition;
-			}
-
-			Trace<I>(a_source, a_condition, base, mult);
+			Trace<I>(a_source, health, base, mult);
 			return base * mult;
 		}
 
@@ -308,7 +298,8 @@ namespace HealthDamage
 		// never showed. Equipped::WeaponHealth picks the equipped weapon that
 		// takes part, the same stack the wear is written to. When it finds none
 		// the original still runs, so every actor without such a weapon keeps
-		// vanilla behaviour.
+		// vanilla behaviour, and one holding a weapon on a list in NEC/Exclude
+		// keeps the vanilla damage too.
 		// One per attack, P being its index in HEALTH_SITES.
 		template <std::size_t P>
 		float EquippedHealthHk(RE::Actor* a_actor, RE::BGSEquipIndex a_equipIndex)
@@ -325,6 +316,7 @@ namespace HealthDamage
 			// it wears. 0 is a real health, so -1 means there is none.
 			const auto ours = Equipped::WeaponHealth(a_actor);
 			const auto mine = ours >= 0.0F;
+			const auto listed = !mine && Equipped::HoldsListed(a_actor);
 
 			auto result = ours;
 			if (!mine) {
@@ -339,21 +331,16 @@ namespace HealthDamage
 			}
 
 			// The calc hook of this blow scales only a blow its health hook
-			// ran, see t_health.
-			t_health[P] = true;
+			// ran, and none of a listed weapon, see t_health.
+			t_health[P] = !listed;
+			const auto* from = mine ? "NEC" : listed ? "engine, on a list in NEC/Exclude" : "engine";
 			if (a_actor == RE::PlayerCharacter::GetSingleton()) {
-				TraceLog::Line("health", "equipped {:.6f} from {:s}", result, mine ? "NEC" : "engine");
+				TraceLog::Line("health", "equipped {:.6f} from {:s}", result, from);
 			} else {
-				TraceLog::Npc::Line("health", "{:s} equipped {:.6f} from {:s}", TraceLog::Who{ a_actor }, result,
-					mine ? "NEC" : "engine");
+				TraceLog::Npc::Line("health", "{:s} equipped {:.6f} from {:s}", TraceLog::Who{ a_actor }, result, from);
 			}
 			return result;
 		}
-	}
-
-	float DisplayHealth()
-	{
-		return std::exchange(t_displayHealth, Condition::INVALID_HEALTH);
 	}
 
 	void InstallCombat()

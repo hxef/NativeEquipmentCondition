@@ -64,9 +64,9 @@ namespace Aim
 	[[nodiscard]] bool SpreadsNow();
 
 	// The share of its accuracy, or of its range, a copy of a gun keeps at
-	// a_health, for the crosshair and the menus. 1 for anything but a gun
-	// and a health below 0, and while the spread, or the falloff, does not
-	// run or its floor is 1.
+	// a_health, for the crosshair and the menus. 1 for anything but a gun,
+	// a gun on a list in NEC/Exclude and a health below 0, and while the
+	// spread, or the falloff, does not run or its floor is 1.
 	[[nodiscard]] float AccuracyShare(const RE::TESObjectWEAP& a_weapon, float a_health);
 	[[nodiscard]] float RangeShare(const RE::TESObjectWEAP& a_weapon, float a_health);
 

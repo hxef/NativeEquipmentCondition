@@ -113,7 +113,7 @@ namespace Materials
 		{
 			std::unordered_map<const RE::BGSConstructibleObject*, std::uint32_t> items;
 			for (const auto* item : g_dataHandler->GetFormArray<Item>()) {
-				if (!item || !Condition::WearsOut(*item) || !a_ofKind(*item)) {
+				if (!item || !Condition::KindWearsOut(*item) || !a_ofKind(*item)) {
 					continue;
 				}
 				const auto own = a_recipes.find(item);

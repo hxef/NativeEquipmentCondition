@@ -52,7 +52,8 @@ namespace FireRate
 
 	// The share of its own rate a copy of a weapon fires at in this condition,
 	// for the menus, see ItemCard/Rate.cpp. 1 for a weapon that is not
-	// automatic or carries no condition, and while SlowsNow is false.
+	// automatic, is on a list in NEC/Exclude or carries no condition, and
+	// while SlowsNow is false.
 	[[nodiscard]] float RateShare(const RE::TESObjectWEAP& a_weapon, const RE::TESObjectWEAP::InstanceData* a_data, float a_health);
 
 	// Reads the condition of the weapon an NPC just used, for the pace its

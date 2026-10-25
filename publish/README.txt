@@ -176,6 +176,28 @@ COMPATIBILITY
 * Both vanilla fixes under Little extras can be switched off, for a load order
   where another mod already fixes them.
 
+EXCLUSION LIST
+To have NEC leave some weapons or armor alone, such as gear with a condition
+of its own, list them in a file in Data\F4SE\Plugins\NEC\Exclude, 1 item a
+line: the plugin that adds the item, a bar, and the item's form ID from
+FO4Edit. The plugin name already says where the item comes from, so the load
+order digits can be left out, and 0x and leading zeros are optional.
+
+  ; MyExclusions.ini
+  Gas Masks of the Wasteland.esp|002672    ; M17 Gas Mask, no load order
+  Gas Masks of the Wasteland.esp|35A7      ; PMK-1 Gas Mask, no leading zeros
+  Gas Masks of the Wasteland.esp|0x000F99  ; GP-5 Gas Mask, with 0x
+  Gas Masks of the Wasteland.esp|0100928E  ; PPM-88 Gas Mask, whole FO4Edit ID
+  ccbgsfo4116-heavyflamer.esl|809          ; Heavy Incinerator, light plugin
+  ccbgsfo4116-heavyflamer.esl|FE000809     ; the same, whole FO4Edit ID
+
+For a light plugin (.esl or ESL flagged), write the last 3 digits or the whole
+ID, since those are the only digits that count.
+
+NEC.log lists what each file leaves alone and any line it skips. Repair
+broken gear before you list it, since the game won't let you put on an item
+at 0 condition.
+
 REQUIREMENTS
 * Fallout 4 1.11.240 (AE) or 1.10.163 (OG)
 * Fallout 4 Script Extender (F4SE), version 0.7.9 on AE or 0.6.23 on OG

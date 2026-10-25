@@ -2,6 +2,7 @@
 
 #include "Condition/ArmorWear/ArmorWear.h"
 #include "Condition/CraftingPerks/CraftingPerks.h"
+#include "Condition/Excluded.h"
 #include "Condition/Materials/Materials.h"
 #include "Condition/Provenance/Provenance.h"
 #include "Condition/WeaponWear/WeaponWear.h"
@@ -54,6 +55,10 @@ namespace
 		// Materials and CraftingPerks ask that as they load, so it comes
 		// first.
 		{ .name = "ArmorMods", .Load = ArmorWear::LoadMods, .Unload = ArmorWear::UnloadMods },
+		// The weapons and armor a patch lists for NEC to leave alone. Every
+		// row below asks which items wear, so it comes before them, and after
+		// ArmorMods, which its NEC.log reason for a listed piece rests on.
+		{ .name = "Excluded", .Load = Excluded::Load, .Unload = Excluded::Unload },
 		// What a weapon or a piece of armor is built from, read off the recipes
 		// in the load order.
 		{ .name = "Materials", .Load = Materials::Load, .Unload = Materials::Unload },

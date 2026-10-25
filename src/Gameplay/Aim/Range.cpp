@@ -1,6 +1,7 @@
 #include "Gameplay/Aim/Aim.h"
 
 #include "Condition/Condition.h"
+#include "Condition/Excluded.h"
 #include "Condition/Equipped.h"
 #include "Core/CallPatch/CallPatch.h"
 #include "Core/Settings.h"
@@ -105,6 +106,6 @@ namespace Aim
 
 	float RangeShare(const RE::TESObjectWEAP& a_weapon, float a_health)
 	{
-		return Shortens() && Lowers() && a_weapon.IsGunWeapon() ? Share(a_health) : 1.0F;
+		return Shortens() && Lowers() && a_weapon.IsGunWeapon() && !Excluded::Has(a_weapon) ? Share(a_health) : 1.0F;
 	}
 }

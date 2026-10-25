@@ -1,6 +1,7 @@
 #include "Condition/Condition.h"
 
 #include "Condition/ArmorWear/ArmorWear.h"
+#include "Condition/Excluded.h"
 #include "Condition/WeaponWear/WeaponWear.h"
 #include "Core/Settings.h"
 #include "Core/TraceLog.h"
@@ -12,7 +13,7 @@
 
 namespace Condition
 {
-	const char* WhyNoCondition(const RE::TESBoundObject& a_object)
+	const char* KindWhyNoCondition(const RE::TESBoundObject& a_object)
 	{
 		// One case per kind of item that wears. The form type byte costs
 		// nothing to read and never comes back empty like a runtime cast can.
@@ -23,6 +24,21 @@ namespace Condition
 			return ArmorWear::WhyNoCondition(static_cast<const RE::TESObjectARMO&>(a_object));
 		}
 		return "not a weapon or armor";
+	}
+
+	bool KindWearsOut(const RE::TESBoundObject& a_object)
+	{
+		return KindWhyNoCondition(a_object) == nullptr;
+	}
+
+	const char* WhyNoCondition(const RE::TESBoundObject& a_object)
+	{
+		// The kind first, so a listed power armor piece still reads as power
+		// armor.
+		if (const auto* why = KindWhyNoCondition(a_object)) {
+			return why;
+		}
+		return Excluded::Has(a_object) ? "on a list in NEC/Exclude" : nullptr;
 	}
 
 	bool WearsOut(const RE::TESBoundObject& a_object)

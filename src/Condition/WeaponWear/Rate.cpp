@@ -161,7 +161,7 @@ namespace WeaponWear
 		std::vector<float> damages;
 		std::vector<float> rates;
 		for (auto* weapon : g_dataHandler->GetFormArray<RE::TESObjectWEAP>()) {
-			if (!weapon || !Condition::WearsOut(*weapon)) {
+			if (!weapon || !Condition::KindWearsOut(*weapon)) {
 				continue;
 			}
 			const auto damage = TotalDamage(*weapon, weapon->weaponData);

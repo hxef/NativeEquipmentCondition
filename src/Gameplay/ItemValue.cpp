@@ -1,11 +1,13 @@
 #include "Gameplay/ItemValue.h"
 
 #include "Condition/Condition.h"
+#include "Condition/Excluded.h"
 #include "Core/CallPatch/CallPatch.h"
 #include "Core/Settings.h"
 #include "Core/TraceLog.h"
 
 #include <cmath>
+#include <cstdint>
 #include <utility>
 
 namespace ItemValue
@@ -19,6 +21,11 @@ namespace ItemValue
 		// GamePlayFormulas::CalculateItemValue.
 		constexpr CallPatch::CallSite VALUE_HEALTH_SITE{ CallPatch::AE{ RE::ID::BGSInventoryItemUtils::GetInventoryValue.ae(), 0x030 }, CallPatch::OG{ RE::ID::BGSInventoryItemUtils::GetInventoryValue.og(), 0x035 }, "value health" };
 		constexpr CallPatch::CallSite VALUE_SITE{ CallPatch::AE{ RE::ID::BGSInventoryItemUtils::GetInventoryValue.ae(), 0x05D }, CallPatch::OG{ RE::ID::BGSInventoryItemUtils::GetInventoryValue.og(), 0x06A }, "value" };
+
+		// The call to TESValueForm::GetFormValue between the 2, with the item
+		// as its first argument, the only place the price sees which item it
+		// is. All 3 run in that order on 1 thread with no branch around them.
+		constexpr CallPatch::CallSite VALUE_FORM_SITE{ CallPatch::AE{ RE::ID::BGSInventoryItemUtils::GetInventoryValue.ae(), 0x04E }, CallPatch::OG{ RE::ID::BGSInventoryItemUtils::GetInventoryValue.og(), 0x05B }, "value form" };
 
 		// Fallout 3 and New Vegas priced a worn item with one curve from 3 game
 		// settings:
@@ -89,6 +96,9 @@ namespace ItemValue
 		CallPatch::Link<float(RE::ExtraDataList*)> g_valueHealthLink;
 		CallPatch::Link<float(float, float)>       g_valueLink;
 
+		// The value form hook's link, outside the held pair.
+		CallPatch::Link<std::uint32_t(const RE::TESForm*, const RE::TBO_InstanceData*)> g_valueFormLink;
+
 		// Set while a caller wants prices without the wear, see
 		// ScopedSoundPrice.
 		thread_local bool t_soundPrice = false;
@@ -107,7 +117,18 @@ namespace ItemValue
 			return t_valueHealth;
 		}
 
-		// Scales the finished price by the condition the hook above recorded.
+		// Forgets the health ValueHealthHk recorded for an item on a list in
+		// NEC/Exclude, so it sells at the vanilla price whatever health it
+		// carries.
+		std::uint32_t ValueFormHk(const RE::TESForm* a_form, const RE::TBO_InstanceData* a_data)
+		{
+			if (a_form && g_valueFormLink.Live() && Excluded::Has(*a_form)) {
+				t_valueHealth = Condition::INVALID_HEALTH;
+			}
+			return g_valueFormLink(a_form, a_data);
+		}
+
+		// Scales the finished price by the condition ValueHealthHk recorded.
 		// The engine's formula has a multiply by condition of its own, Skyrim's
 		// tempering, which only raises a price above 1.0, to 2x at
 		// fHealthDataValue6, 1.6 in the executable. The clamp above keeps it at
@@ -150,6 +171,9 @@ namespace ItemValue
 		if (!g_held) {
 			REX::WARN("A worn item will keep selling for the price of a new one.");
 		} else {
+			// Without it a listed item sells by a health it carries, and every
+			// other price works.
+			CallPatch::PatchCall(VALUE_FORM_SITE, RE::ID::TESValueForm::GetFormValue, reinterpret_cast<std::uintptr_t>(&ValueFormHk), g_valueFormLink);
 			REX::INFO("Item value falls with condition, everywhere the game prints a price.");
 			const auto exponent = Exponent();
 			REX::INFO("Worn items lose value with condition to the power of {:.2f}{:s}", exponent,

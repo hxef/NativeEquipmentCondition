@@ -3,6 +3,7 @@
 #include <optional>
 #include <string>
 #include <string_view>
+#include <vector>
 
 // Changes or takes out 1 key in the text of an ini file and leaves every other
 // line as it is. NEC_custom.ini is the player's file, so their comments, blank
@@ -16,7 +17,7 @@
 //
 // It uses the standard library alone, so it builds and can be tested outside
 // the game. The language files' reader, Text/Translations.cpp, trims and
-// matches names with it too.
+// matches names with it too, and Condition/Excluded.cpp splits its lines.
 namespace IniText
 {
 	// a_text without the spaces and tabs at either end.
@@ -28,6 +29,10 @@ namespace IniText
 	// Whether 2 names match in any case, A to Z only, as the reader matches
 	// them.
 	[[nodiscard]] bool SameName(std::string_view a_lhs, std::string_view a_rhs);
+
+	// a_text's lines without their endings, split as the reader splits them,
+	// at \r\n, \n or a lone \r.
+	[[nodiscard]] std::vector<std::string_view> Lines(std::string_view a_text);
 
 	// a_text with a_key=a_value under [a_section]. Every line of that key in
 	// the section is rewritten. With none, the line goes after the section's

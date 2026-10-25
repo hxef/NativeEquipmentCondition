@@ -1,6 +1,7 @@
 #include "Gameplay/HealthDamage/Hooks.h"
 
 #include "Condition/Condition.h"
+#include "Condition/Excluded.h"
 #include "Core/CallPatch/CallPatch.h"
 #include "Core/TraceLog.h"
 #include "Gameplay/HealthDamage/Curve.h"
@@ -48,6 +49,12 @@ namespace HealthDamage
 		// blast half of a weapon's damage before the 2 halves are added.
 		constexpr CallSite CARD_BLAST_SITE{ AE{ RE::ID::CombatFormulas::GetWeaponDisplayDamage.ae(), 0x14D }, OG{ RE::ID::CombatFormulas::GetWeaponDisplayDamage.og(), 0x155 }, "card blast" };
 
+		// GetWeaponDisplayDamage has 4 callers on both games. Beside the card,
+		// this is the one that passes the health a stack carries. It works out
+		// 1 stack's damage for the item lists, such as the workbench's. The
+		// other 2 pass full health, which scales nothing.
+		constexpr CallSite STACK_DAMAGE_SITE{ AE{ 2222649, 0x13E }, OG{ 307737, 0x12F }, "stack damage" };
+
 		// -------------------------------------------------------------------
 		// The item card hooks
 		// -------------------------------------------------------------------
@@ -65,6 +72,18 @@ namespace HealthDamage
 		// its effects at full too.
 		thread_local float t_cardEffects = Condition::INVALID_HEALTH;
 
+		// Whether the call to GetWeaponDisplayDamage that the card health hook
+		// or the stack damage hook hands on is for a weapon on a list in
+		// NEC/Exclude, for the display site inside it. That site sees only the
+		// player and the instance data, never which weapon it is.
+		thread_local bool t_listed = false;
+
+		// The health the display site scaled the card by, for the blast hook
+		// a few instructions later in the same call. Read once, so a card
+		// whose display hook did not run shows the vanilla explosion
+		// damage, never the last card's.
+		thread_local float t_displayHealth = Condition::INVALID_HEALTH;
+
 		// The 2 Pip-Boy hooks. The object effect sites read what they hand
 		// on, so they ask it too.
 		CallPatch::Held g_card;
@@ -78,16 +97,33 @@ namespace HealthDamage
 		CallPatch::Link<CardHealth_t>                g_cardHealthLink;
 		std::array<CallPatch::Link<CardTypes_t>, 3>  g_cardTypeLinks;
 		CallPatch::Link<CardBlast_t>                 g_cardBlastLink;
+		CallPatch::Link<CardHealth_t>                g_stackDamageLink;
 
 		// Records the condition of the item, or -1 while the pair does not
-		// run. Changes nothing else. The physical damage is already scaled,
-		// since this call reaches CalcWeaponDamage through the display site in
-		// Combat.cpp.
+		// run and for a weapon on a list in NEC/Exclude. The physical damage
+		// is already scaled, since this call reaches CalcWeaponDamage through
+		// the display site in Combat.cpp. The vanilla call keeps a_health,
+		// so its base number stays vanilla.
 		float CardHealthHk(const RE::BGSObjectInstanceT<RE::TESObjectWEAP>& a_weapon, const RE::TESAmmo* a_ammo, float a_health)
 		{
+			const auto listed = a_weapon.object && Excluded::Has(*a_weapon.object);
 			t_cardEffects = Condition::INVALID_HEALTH;
-			t_cardHealth = g_card.Runs(g_cardHealthLink) ? a_health : Condition::INVALID_HEALTH;
-			return g_cardHealthLink(a_weapon, a_ammo, a_health);
+			t_cardHealth = g_card.Runs(g_cardHealthLink) && !listed ? a_health : Condition::INVALID_HEALTH;
+			const auto was = std::exchange(t_listed, listed);
+			const auto damage = g_cardHealthLink(a_weapon, a_ammo, a_health);
+			t_listed = was;
+			return damage;
+		}
+
+		// Marks a stack of a weapon on a list in NEC/Exclude, so its damage
+		// and blast stay vanilla whatever health it carries.
+		float StackDamageHk(const RE::BGSObjectInstanceT<RE::TESObjectWEAP>& a_weapon, const RE::TESAmmo* a_ammo, float a_health)
+		{
+			const auto listed = a_weapon.object && g_stackDamageLink.Live() && Excluded::Has(*a_weapon.object);
+			const auto was = std::exchange(t_listed, listed);
+			const auto damage = g_stackDamageLink(a_weapon, a_ammo, a_health);
+			t_listed = was;
+			return damage;
 		}
 
 		// The card's damage types are scaled the same way as in combat: the
@@ -127,7 +163,7 @@ namespace HealthDamage
 		void CardBlastHk(RE::BGSEntryPoint::ENTRY_POINT a_entryPoint, RE::Actor* a_perkOwner, const void* a_instance, float* a_out)
 		{
 			// Read first, so a weapon with no blast clears the note too.
-			const auto health = DisplayHealth();
+			const auto health = std::exchange(t_displayHealth, Condition::INVALID_HEALTH);
 			g_cardBlastLink(a_entryPoint, a_perkOwner, a_instance, a_out);
 			if (!a_out || !(*a_out > 0.0F) || !g_cardBlastLink.Live()) {
 				return;
@@ -145,6 +181,12 @@ namespace HealthDamage
 
 			*a_out *= mult;
 		}
+	}
+
+	float DisplayHealth(float a_condition)
+	{
+		t_displayHealth = t_listed ? Condition::INVALID_HEALTH : a_condition;
+		return t_displayHealth;
 	}
 
 	void InstallCard()
@@ -175,5 +217,9 @@ namespace HealthDamage
 		} else {
 			REX::INFO("The item card prints the blast at the condition the weapon is in.");
 		}
+
+		// Without it a listed weapon's stack in an item list counts by a
+		// health it carries, and every other number works.
+		CallPatch::PatchCall(STACK_DAMAGE_SITE, RE::ID::CombatFormulas::GetWeaponDisplayDamage, reinterpret_cast<std::uintptr_t>(&StackDamageHk), g_stackDamageLink);
 	}
 }

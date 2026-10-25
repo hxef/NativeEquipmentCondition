@@ -90,6 +90,7 @@ src/
   Condition/
     Condition.h/.cpp         the reading, its bounds, the share a stat keeps, what takes part, the write
     Equipped.h/.cpp          what an actor holds and has on, and writing to the copy in use
+    Excluded.h/.cpp          the weapons and armor a patch's file in NEC/Exclude tells NEC to leave alone
     Materials/
       Materials.h/.cpp       what an item is built from, the mod recipe index and the ordinary make
       Index.h                the index, for this folder
@@ -233,7 +234,10 @@ and one row in `src/Features.cpp`. `src/main.cpp` walks the rows:
 2. **Load**, every time game data has loaded: as the game starts, and again
    after every full reset, which is the game deleting every form and loading
    every file again after a prompt about changed DLC, Creations or a save's
-   load order. Everything measured from the load order is measured here first.
+   load order. Everything measured from the load order is measured here first,
+   and a patch's list in `Data/F4SE/Plugins/NEC/Exclude` is read, which takes
+   the items it names out of everything NEC does, see
+   `src/Condition/Excluded.h`.
    Just before it, `src/main.cpp` runs `Text::Load`, which reads the player's
    language file, see `src/Core/Text/Text.h`.
 3. **Unload**, just before a full reset deletes every form, in reverse order,

@@ -1,6 +1,7 @@
 #include "Gameplay/Aim/Aim.h"
 
 #include "Condition/Condition.h"
+#include "Condition/Excluded.h"
 #include "Core/CallPatch/CallPatch.h"
 #include "Core/Settings.h"
 #include "Core/TraceLog.h"
@@ -295,7 +296,7 @@ namespace Aim
 
 	float AccuracyShare(const RE::TESObjectWEAP& a_weapon, float a_health)
 	{
-		return SpreadsNow() && a_weapon.IsGunWeapon() ? Share(a_health) : 1.0F;
+		return SpreadsNow() && a_weapon.IsGunWeapon() && !Excluded::Has(a_weapon) ? Share(a_health) : 1.0F;
 	}
 
 	Fired::Fired(const RE::TESObjectREFR* a_shooter, const RE::TESObjectWEAP& a_weapon, float a_health) :

@@ -50,7 +50,7 @@ namespace CraftingPerks
 		}
 
 		for (const auto* weapon : g_dataHandler->GetFormArray<RE::TESObjectWEAP>()) {
-			if (!weapon || !Condition::WearsOut(*weapon)) {
+			if (!weapon || !Condition::KindWearsOut(*weapon)) {
 				continue;
 			}
 			slots.weaponCount++;
@@ -64,7 +64,7 @@ namespace CraftingPerks
 			}
 		}
 		for (const auto* armor : g_dataHandler->GetFormArray<RE::TESObjectARMO>()) {
-			if (!armor || !Condition::WearsOut(*armor)) {
+			if (!armor || !Condition::KindWearsOut(*armor)) {
 				continue;
 			}
 			slots.armorCount++;

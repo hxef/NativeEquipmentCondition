@@ -332,7 +332,7 @@ namespace Materials
 		// template can give them. Buffer 0 of each set lists its mods.
 		std::size_t borrowing = 0;
 		for (const auto* weapon : g_dataHandler->GetFormArray<RE::TESObjectWEAP>()) {
-			if (!weapon || !Condition::WearsOut(*weapon) || BuiltPriced(*index, weapon)) {
+			if (!weapon || !Condition::KindWearsOut(*weapon) || BuiltPriced(*index, weapon)) {
 				continue;
 			}
 			const auto priced = std::ranges::any_of(weapon->objectTemplate.items, [&index](const RE::BGSMod::Template::Item* a_item) {

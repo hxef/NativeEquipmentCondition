@@ -1,6 +1,7 @@
 #include "Condition/Equipped.h"
 
 #include "Condition/ArmorWear/ArmorWear.h"
+#include "Condition/Excluded.h"
 
 #include <algorithm>
 #include <span>
@@ -47,6 +48,36 @@ namespace Equipped
 						auto* armor = static_cast<RE::TESObjectARMO*>(a_item.object);
 						found.push_back({ armor, Condition::HealthOf(&a_stack), armor->bipedModelData.bipedObjectSlots,
 							Issued(*a_actor, *armor, a_stack.extra.get()), a_stack.count });
+					}
+					return true;  // Continue searching...
+				});
+			return found;
+		}
+
+		// The first equipped weapon a_takes picks, see Weapon.
+		template <class Takes>
+		RE::TESObjectWEAP* Held(RE::Actor* a_actor, Takes a_takes)
+		{
+			auto* inv = a_actor ? a_actor->inventoryList : nullptr;
+			if (!inv) {
+				return nullptr;
+			}
+
+			// The same walk as WeaponHealth: a_takes, WearsOut or the kind's
+			// rule, keeps a carried grenade, in an equip slot of its own, from
+			// being picked ahead of the weapon in hand, and IsWeapon keeps
+			// armor out.
+			RE::TESObjectWEAP*       found = nullptr;
+			const RE::BSAutoReadLock l(inv->rwLock);
+			inv->ForEachStack(
+				[&a_takes](RE::BGSInventoryItem& a_item) {
+					return a_item.object && a_item.object->IsWeapon() && a_takes(*a_item.object);
+				},
+				[&found](RE::BGSInventoryItem& a_item, RE::BGSInventoryItem::Stack& a_stack) {
+					if (a_stack.IsEquipped()) {
+						// The filter has already made sure this is a weapon.
+						found = static_cast<RE::TESObjectWEAP*>(a_item.object);
+						return false;  // Stop iteration.
 					}
 					return true;  // Continue searching...
 				});
@@ -105,29 +136,13 @@ namespace Equipped
 
 	RE::TESObjectWEAP* Weapon(RE::Actor* a_actor)
 	{
-		auto* inv = a_actor ? a_actor->inventoryList : nullptr;
-		if (!inv) {
-			return nullptr;
-		}
+		return Held(a_actor, Condition::WearsOut);
+	}
 
-		// The same walk and filter as WeaponHealth: WearsOut keeps a carried
-		// grenade, in an equip slot of its own, from being picked ahead of the
-		// weapon in hand, and IsWeapon keeps armor out.
-		RE::TESObjectWEAP*       found = nullptr;
-		const RE::BSAutoReadLock l(inv->rwLock);
-		inv->ForEachStack(
-			[](RE::BGSInventoryItem& a_item) {
-				return a_item.object && a_item.object->IsWeapon() && Condition::WearsOut(*a_item.object);
-			},
-			[&found](RE::BGSInventoryItem& a_item, RE::BGSInventoryItem::Stack& a_stack) {
-				if (a_stack.IsEquipped()) {
-					// The filter has already made sure this is a weapon.
-					found = static_cast<RE::TESObjectWEAP*>(a_item.object);
-					return false;  // Stop iteration.
-				}
-				return true;  // Continue searching...
-			});
-		return found;
+	bool HoldsListed(RE::Actor* a_actor)
+	{
+		const auto* weapon = Excluded::Any() ? Held(a_actor, Condition::KindWearsOut) : nullptr;
+		return weapon && Excluded::Has(*weapon);
 	}
 
 	std::optional<HeldWeapon> TryHeldWeapon(RE::Actor* a_actor)
@@ -158,7 +173,9 @@ namespace Equipped
 
 	std::vector<ArmorPiece> LeftoverPieces(RE::Actor* a_actor)
 	{
-		const auto takes = [](const RE::TESObjectARMO& a_armor) { return !Condition::WearsOut(a_armor) && !ArmorWear::IsPowerArmor(a_armor); };
+		const auto takes = [](const RE::TESObjectARMO& a_armor) {
+			return !Condition::WearsOut(a_armor) && !ArmorWear::IsPowerArmor(a_armor) && !Excluded::Has(a_armor);
+		};
 		auto       found = Pieces(a_actor, takes, true);
 		// -1 is a piece with no health, which stays as it is.
 		std::erase_if(found, [](const ArmorPiece& a_piece) { return a_piece.health < 0.0F; });

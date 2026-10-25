@@ -64,6 +64,9 @@ namespace
 		{ "card mod effects", { kCardDmgModEffects } },
 		{ "card effects", { kCardDmgOwnEffects } },
 		{ "card blast", { kCardDmgBlast } },
+		// Only weapons on a list in NEC/Exclude read this place, so losing it
+		// turns no piece off.
+		{ "stack damage", {} },
 		// ArmorRating
 		{ "damage resist", { kArmorDr } },
 		{ "one piece rating", { kArmorBestMark } },
@@ -82,6 +85,10 @@ namespace
 		// ItemValue
 		{ "value health", { kPrices } },
 		{ "value", { kPrices } },
+		// Only items on a list in NEC/Exclude read this place. Losing it sends
+		// them back to selling by a health they carry, and every other price
+		// works.
+		{ "value form", {} },
 		// FireRate
 		{ "fire speed", { kFireRate } },
 		{ "fire rate", { kFireRate } },

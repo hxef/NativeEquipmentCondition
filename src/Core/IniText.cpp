@@ -163,6 +163,15 @@ namespace IniText
 		}
 	}
 
+	std::vector<std::string_view> Lines(std::string_view a_text)
+	{
+		std::vector<std::string_view> texts;
+		for (const auto& line : Split(a_text)) {
+			texts.push_back(line.text);
+		}
+		return texts;
+	}
+
 	std::optional<std::string> WithKey(std::string_view a_text, std::string_view a_section, std::string_view a_key, std::string_view a_value)
 	{
 		const auto place = Find(a_text, a_section, a_key);

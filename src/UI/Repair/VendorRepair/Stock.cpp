@@ -107,7 +107,7 @@ namespace VendorRepair
 		for (const auto& [object, chance] : Restock(a_merchant, a_trader)) {
 			rows += chance;
 			const auto* piece = object->As<RE::TESObjectARMO>();
-			if (Condition::WearsOut(*object) && (!piece || ArmorWear::GivesAnything(*piece))) {
+			if (Condition::KindWearsOut(*object) && (!piece || ArmorWear::GivesAnything(*piece))) {
 				switch (TradeOf(*object)) {
 				case Trade::kWeapons:
 					weapons += chance;

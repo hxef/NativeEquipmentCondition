@@ -1,6 +1,7 @@
 #include "Gameplay/FireRate/FireRate.h"
 
 #include "Condition/Condition.h"
+#include "Condition/Excluded.h"
 #include "Condition/Equipped.h"
 #include "Core/CallPatch/CallPatch.h"
 #include "Core/Runtime.h"
@@ -288,7 +289,7 @@ namespace FireRate
 
 	float RateShare(const RE::TESObjectWEAP& a_weapon, const RE::TESObjectWEAP::InstanceData* a_data, float a_health)
 	{
-		return SlowsNow() && IsAutomatic(a_weapon, a_data) ? Share(a_health) : 1.0F;
+		return SlowsNow() && IsAutomatic(a_weapon, a_data) && !Excluded::Has(a_weapon) ? Share(a_health) : 1.0F;
 	}
 
 	void NoteNpcWeapon(RE::Actor& a_actor, const RE::BGSObjectInstanceT<RE::TESObjectWEAP>& a_weapon)

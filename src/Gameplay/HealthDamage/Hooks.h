@@ -20,8 +20,9 @@ namespace HealthDamage
 	// Patches the damage the item card prints, in Card.cpp.
 	void InstallCard();
 
-	// The condition of the weapon whose item card is being drawn, recorded at
-	// the display site in Combat.cpp and read by the card's blast hook in
-	// Card.cpp, on the thread drawing the card. Reading it clears it to -1.
-	float DisplayHealth();
+	// In Card.cpp: the health the display site in Combat.cpp scales a card's
+	// physical damage by, a_condition, or -1 for a weapon on a list in
+	// NEC/Exclude. The card's blast hook reads the same health once, on the
+	// thread drawing the card.
+	float DisplayHealth(float a_condition);
 }

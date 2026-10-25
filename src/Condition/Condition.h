@@ -62,14 +62,21 @@ namespace Condition
 	}
 
 	// Whether this object takes part at all. Weapons and armor, and
-	// WeaponWear.h and ArmorWear.h say which of each. Damage is not a test:
-	// a laser has 0 physical damage and keeps it all in damage types.
+	// WeaponWear.h and ArmorWear.h say which of each, and a patch's list can
+	// take some out, see Excluded.h. Damage is not a test: a laser has 0
+	// physical damage and keeps it all in damage types.
 	bool WearsOut(const RE::TESBoundObject& a_object);
 
 	// The same question as a reason: nullptr for an object that takes part,
 	// otherwise a short phrase for the trace log saying what ruled it out.
 	// WearsOut is written in terms of this, so the 2 cannot disagree.
 	const char* WhyNoCondition(const RE::TESBoundObject& a_object);
+
+	// WearsOut and WhyNoCondition by the kind's own rule, the list aside, for
+	// a measure over the whole load order, so a list changes only its own
+	// items.
+	bool        KindWearsOut(const RE::TESBoundObject& a_object);
+	const char* KindWhyNoCondition(const RE::TESBoundObject& a_object);
 
 	// The 2 kinds of item that wear, for a sentence or a refresh that has to
 	// name one. Only meaningful for an object WearsOut says yes to.

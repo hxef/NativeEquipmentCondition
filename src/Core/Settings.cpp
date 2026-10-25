@@ -66,6 +66,7 @@ namespace Settings
 			&fRangeFloor,
 			&fBenchCostMult,
 			&iFreeMendAbove,
+			&fModLockStart,
 			&fTraderPriceMult,
 			&fHudBarX,
 			&fHudBarY,

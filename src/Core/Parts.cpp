@@ -91,6 +91,9 @@ namespace
 	// lists show what it repairs, so the line of each part shows in this
 	// block.
 	constexpr Piece BENCH_EXCEPTIONS[]{ kPerksChart, kPerksPipboy, kBenchItemList, kBenchModLists };
+	// With another mod on the bench lists the lock still refuses BUILD, but
+	// no row fades and the mod slots stay open.
+	constexpr Piece MOD_LOCK_SIDE[]{ kBenchItemList, kBenchModLists };
 
 	constexpr SettingLink SETTINGS[]{
 		{ &Settings::bJam, nullptr, JAM, JAM_SIDE },
@@ -120,6 +123,7 @@ namespace
 		{ &Settings::fRangeFloor, nullptr, RANGE, RANGE_SIDE },
 		{ &Settings::fBenchCostMult, nullptr, BENCH, {}, BENCH_EXCEPTIONS },
 		{ &Settings::iFreeMendAbove, &Settings::fBenchCostMult, BENCH },
+		{ &Settings::fModLockStart, &Settings::fBenchCostMult, BENCH, MOD_LOCK_SIDE },
 		{ &Settings::fTraderPriceMult, &Settings::bVendorRepair, TRADER_REPAIRS, TRADER_PRICE_SIDE },
 		// The HUD bar rows share bHudCondition, so they never run once HUD
 		// condition bars is left to another mod.

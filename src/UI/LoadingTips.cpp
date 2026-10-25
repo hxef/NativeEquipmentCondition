@@ -14,6 +14,7 @@
 #include <cstdint>
 #include <iterator>
 #include <string>
+#include <string_view>
 
 namespace LoadingTips
 {
@@ -46,13 +47,19 @@ namespace LoadingTips
 			return ItemValue::Works() && !CallPatch::LossOf(Part::kDamage) && !CallPatch::LossOf(Part::kArmor);
 		}
 
+		// The bench tip with the mod lock as it stands.
+		std::string BenchWords()
+		{
+			return Text::BenchTip(Workbench::ModifyFloor());
+		}
+
 		// Every tip, each on a picture of what it tells of. Another one is a
 		// table in Tips.cpp, its function in Text.h and a row here.
 		constexpr Tip TIPS[]{
 			// Weapons1610mm, the 10mm pistol.
 			{ .words = &Text::WearTip, .picture = 0x001F6DBD, .in = &WearWorks },
 			// GeneralGameplay11WeaponsWorkbench, the weapons workbench.
-			{ .words = &Text::BenchTip, .picture = 0x001F9609, .in = &Workbench::Repairs },
+			{ .words = &BenchWords, .picture = 0x001F9609, .in = &Workbench::Repairs },
 			// GeneralGameplay22Shops, a shop counter.
 			{ .words = &Text::TraderTip, .picture = 0x001F9624, .on = &Settings::bVendorRepair },
 			// Armor06Metal, metal armor.
@@ -131,7 +138,9 @@ namespace LoadingTips
 		// words from validScreens and the picture from artCandidates. The tips
 		// have no conditions and a picture, so they go on both lists. Nothing
 		// is offered during a full reset, while the pictures are being handed
-		// back and borrowed again.
+		// back and borrowed again. The words were made at Load, and the bench
+		// tip's follow the mod lock, which the MCM page may have moved since,
+		// so a tip gets them again here before the game picks.
 		void AddTips(RE::LoadingMenu::LoadScreenCandidates* a_candidates)
 		{
 			const auto* main = RE::Main::GetSingleton();
@@ -143,6 +152,11 @@ namespace LoadingTips
 			for (std::size_t i = 0; i < std::size(TIPS); i++) {
 				auto* screen = g_tips[i];
 				if (TIPS[i].IsOn() && screen && screen->loadNIFData) {
+					if (const auto words = TIPS[i].words(); static_cast<std::string_view>(screen->loadingText) != words) {
+						screen->loadingText = words;
+						TraceLog::Line("menu", "loading screen tip {:08X} reworded, catalogue number {:d}, {:d} bytes",
+							screen->formID, CatalogueNumber(*screen), words.size());
+					}
 					a_candidates->artCandidates->push_back(screen);
 					a_candidates->validScreens->push_back(screen);
 					added++;

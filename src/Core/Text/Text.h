@@ -116,9 +116,10 @@ namespace Text
 	[[nodiscard]] std::string ArmorWornOut(std::string_view a_name);
 
 	// The tips the loading screen shows now and then, on wear, the bench, a
-	// trader's repairs, broken gear, jams and loot. See LoadingTips.h.
+	// trader's repairs, broken gear, jams and loot. See LoadingTips.h. The
+	// bench tip tells of the mod lock only where a_modifyFloor is at full.
 	[[nodiscard]] std::string WearTip();
-	[[nodiscard]] std::string BenchTip();
+	[[nodiscard]] std::string BenchTip(std::uint32_t a_modifyFloor);
 	[[nodiscard]] std::string TraderTip();
 	[[nodiscard]] std::string BrokenTip();
 	[[nodiscard]] std::string JamTip();

@@ -132,7 +132,8 @@ MAKE IT YOURS
 * With MCM, NEC's page changes any setting on the spot. Switch off jamming,
   worn loot, trader repairs, the HUD condition bars and more, or tune wear
   speed for you, for NPCs and for automatic weapons, where wear starts to cost
-  performance, how much gear keeps at 0 condition, prices and repair costs.
+  performance, how much gear keeps at 0 condition, prices, repair costs and
+  the condition gear needs before it can be modded.
 * Without MCM, NEC.ini in Data\F4SE\Plugins explains every setting. Copy a
   line into NEC_custom.ini beside it, under the same section heading, change
   the value and restart the game.

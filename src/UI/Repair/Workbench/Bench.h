@@ -3,6 +3,7 @@
 #include "Core/Plugin.h"
 
 #include "UI/Repair/SelectedItem.h"
+#include "UI/Repair/Workbench/Workbench.h"
 
 #include <cstdint>
 #include <optional>
@@ -10,15 +11,11 @@
 // The basics the weapon and armor bench code uses. Private to this folder.
 namespace Workbench
 {
-	// The condition an item has to be at to be modified. Full, so a gun that
-	// has fired one shot is kept out of the mod slots until it is repaired, and
-	// a chest piece that took one hit the same.
-	inline constexpr std::uint32_t MODIFY_FLOOR = 100;
-
 	// Above this condition a repair is free and immediate, and the button reads
-	// MEND. The floor is at full, so one shot closes the slots, and charging
-	// for that would make every shot cost components. It takes nothing off a
-	// real repair, since an item below it pays the whole way up to full.
+	// MEND. At the default floor of full, one shot closes the slots, and
+	// charging for that would make every shot cost components. It takes
+	// nothing off a real repair, since an item below it pays the whole way up
+	// to full.
 	// iFreeMendAbove kept between 0 and 100, see Settings.h, so at 100 nothing
 	// is free and at 0 everything but a broken item is.
 	[[nodiscard]] std::uint32_t FreeAbove();
@@ -35,7 +32,7 @@ namespace Workbench
 	struct Selection : SelectedItem::Item
 	{
 		// True for an item too worn for the bench to modify.
-		[[nodiscard]] bool TooWorn() const { return object && percent < MODIFY_FLOOR; }
+		[[nodiscard]] bool TooWorn() const { return object && percent < ModifyFloor(); }
 
 		// True for an item worn so little that repairing it is free, and for
 		// any worn item while repairs cost nothing.

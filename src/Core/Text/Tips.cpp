@@ -11,9 +11,9 @@ namespace Text
 		return Pick(TIP_WEAR);
 	}
 
-	std::string BenchTip()
+	std::string BenchTip(std::uint32_t a_modifyFloor)
 	{
-		return Pick(TIP_BENCH);
+		return Pick(a_modifyFloor >= FULL ? TIP_BENCH : TIP_BENCH_REPAIR);
 	}
 
 	std::string TraderTip()

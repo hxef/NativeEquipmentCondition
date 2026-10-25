@@ -72,13 +72,13 @@ namespace Workbench
 			return std::min(cap->GetFloat(), std::max(1.0F, xp));
 		}
 
-		// An item no mod fits stays greyed once a repair brings it to full, so
-		// the corner says why, after whatever the repair itself said. Told the
+		// An item no mod fits stays greyed once a repair lifts it to the mod
+		// lock, so the corner says why, after whatever the repair itself said. Told the
 		// item repaired, its name from before the repair, and the level it
 		// reached.
 		void SayCannotModify(const Selection& a_item, std::string_view a_name, std::uint32_t a_level)
 		{
-			if (a_level < FULL || !NoModFits(a_item)) {
+			if (a_level < ModifyFloor() || !NoModFits(a_item)) {
 				return;
 			}
 			const auto said = Text::CannotModify();

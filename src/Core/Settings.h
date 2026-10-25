@@ -227,6 +227,10 @@ namespace Settings
 	// whole percent, see Workbench/Bench.h.
 	inline Live<std::int32_t> iFreeMendAbove{ "Balance", "iFreeMendAbove", 95 };
 
+	// The condition below which a workbench opens no mod slots, a share of
+	// full, see Workbench/Bench.h.
+	inline Live<float> fModLockStart{ "Balance", "fModLockStart", 1.0F };
+
 	// What a trader asks for a repair, against the mod as tuned, see
 	// VendorRepair/Quote.h.
 	inline Live<float> fTraderPriceMult{ "Balance", "fTraderPriceMult", 1.0F };
@@ -273,7 +277,7 @@ namespace Settings
 	// setting only takes whole steps.
 	using Number = std::variant<Live<float>*, Live<std::int32_t>*>;
 
-	// The 8 switches under [Features] and the 21 numbers under [Balance] and
+	// The 8 switches under [Features] and the 22 numbers under [Balance] and
 	// [HUD], in NEC.ini's order, for Report and the MCM page.
 	[[nodiscard]] std::span<Live<bool>* const> Switches();
 	[[nodiscard]] std::span<const Number>      Numbers();

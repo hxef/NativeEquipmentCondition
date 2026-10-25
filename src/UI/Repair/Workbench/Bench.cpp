@@ -3,6 +3,7 @@
 #include "Core/Settings.h"
 
 #include <algorithm>
+#include <cmath>
 
 namespace Workbench
 {
@@ -10,6 +11,15 @@ namespace Workbench
 	{
 		constexpr auto full = static_cast<std::int32_t>(Repair::FULL);
 		return static_cast<std::uint32_t>(std::clamp(Settings::iFreeMendAbove.GetValue(), 0, full));
+	}
+
+	std::uint32_t ModifyFloor()
+	{
+		// Rounded, since a share such as 0.29 times 100 can land just under
+		// the whole percent as a float. NaN and anything at 1 or above lock at
+		// full.
+		const auto start = Settings::fModLockStart.GetValue();
+		return start < 1.0F ? static_cast<std::uint32_t>(std::lround(std::max(start, 0.0F) * 100.0F)) : Repair::FULL;
 	}
 
 	bool FreeRepairs()

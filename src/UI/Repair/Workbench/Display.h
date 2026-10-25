@@ -45,7 +45,7 @@
 // A worn one of the bench's own kind gets the filter's flag instead, so it can
 // still be repaired. Its row stays greyed whatever its condition, since no mod
 // will ever fit it, and a message in the corner says so once a repair brings it
-// to full and whenever its slots are asked for.
+// to the lock and whenever its slots are asked for.
 namespace Workbench
 {
 	// Greys out every row of one of the bench's lists by clearing the 3 flags

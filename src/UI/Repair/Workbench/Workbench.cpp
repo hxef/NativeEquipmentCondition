@@ -194,7 +194,7 @@ namespace Workbench
 			const auto selection = Selected(a_menu);
 			if (selection.TooWorn()) {
 				TraceLog::Line("menu", "Workbench refused to build on {:s} at {:d}%, below the {:d}% floor",
-					selection.Name(), selection.percent, MODIFY_FLOOR);
+					selection.Name(), selection.percent, ModifyFloor());
 				return false;
 			}
 			return _TryCreate(a_menu);
@@ -248,10 +248,11 @@ namespace Workbench
 				return;
 			}
 
-			const auto said = Text::TooDamaged(MODIFY_FLOOR);
+			const auto floor = ModifyFloor();
+			const auto said = Text::TooDamaged(floor);
 			RE::SendHUDMessage::ShowHUDMessage(said.c_str(), nullptr, true, true);
-			TraceLog::Line("menu", "Workbench turned {:s} at {:d}% away from the mod slots",
-				selection.Name(), selection.percent);
+			TraceLog::Line("menu", "Workbench turned {:s} at {:d}% away from the mod slots, below the {:d}% floor",
+				selection.Name(), selection.percent, floor);
 		}
 	}
 
@@ -305,7 +306,11 @@ namespace Workbench
 		const auto mend = FreeRepairs()                  ? std::string{ "Every repair is put right on the spot for nothing, since fBenchCostMult is 0." } :
 		                  FreeAbove() + 1 < Repair::FULL ? std::format("Condition above {:d}% is put right on the spot for nothing.", FreeAbove()) :
 		                                                   std::string{ "Every repair costs components." };
-		REX::INFO("The workbench modifies nothing below {:d}% condition. {:s}", MODIFY_FLOOR, mend);
+		if (const auto floor = ModifyFloor(); floor > 0) {
+			REX::INFO("The workbench modifies nothing below {:d}% condition. {:s}", floor, mend);
+		} else {
+			REX::INFO("The workbench modifies an item at any condition, since fModLockStart is 0. {:s}", mend);
+		}
 		std::string levels;
 		for (const auto level : Repair::LEVELS) {
 			levels += std::format("{:s}{:d}%", levels.empty() ? "" : " ", level);

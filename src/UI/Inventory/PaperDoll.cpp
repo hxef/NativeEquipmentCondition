@@ -307,7 +307,7 @@ namespace PaperDoll
 					if (percent == bar.shown) {
 						continue;
 					}
-					HudParts::Readout::SetPercent(readout, bar.width, BAR_DEEP, percent);
+					HudParts::Readout::SetPercent(readout, bar.width, BAR_DEEP, percent, HudParts::Readout::Still::kLeftEnd);
 					readout.SetMember("visible"sv, Value(percent >= 0));
 					bar.shown = percent;
 					std::format_to(std::back_inserter(drawn), "{:s}{:s} {:s}", drawn.empty() ? "" : ", ", ENTRY_NAMES[region],

@@ -74,11 +74,11 @@ namespace HudParts
 	}
 
 	// The readout itself: a bar over a dimmed track, and the word CND past the
-	// right end of the bar, drawn the way the AP meter is. The bar keeps its
-	// right end still and shrinks from the left, the track shows the worn part
-	// at half opacity like the HP meter's spare bar, and the word starts a
-	// little past the bar. A readout's origin is the right end of its bar,
-	// halfway down, so placing a readout means saying where its bar ends.
+	// right end of the bar, drawn the way the AP meter is. The track shows the
+	// worn part at half opacity like the HP meter's spare bar, and the word
+	// starts a little past the bar. Still below says which end of the bar
+	// stays put. A readout's origin is the right end of its bar, halfway down,
+	// so placing a readout means saying where its bar ends.
 	//
 	// The Pip-Boy's doll sizes everything from the font size, in the AP
 	// meter's proportions below: at font size 20 the bar is 6 deep, like the
@@ -139,8 +139,17 @@ namespace HudParts
 		// Lays the track out a_width across and a_deep deep.
 		void SetTrack(Value& a_readout, double a_width, double a_deep);
 
+		// The end of the bar that stays still as it empties. The HUD keeps the
+		// right end, as the AP meter does. The Pip-Boy keeps the left end, as
+		// its own meters do.
+		enum class Still
+		{
+			kRightEnd,
+			kLeftEnd,
+		};
+
 		// Sets how much of a bar laid out as above is left.
-		void SetPercent(Value& a_readout, double a_width, double a_deep, std::int32_t a_percent);
+		void SetPercent(Value& a_readout, double a_width, double a_deep, std::int32_t a_percent, Still a_still = Still::kRightEnd);
 	}
 
 	// Puts text into a field as HTML with a font tag, as the HUD's own fields

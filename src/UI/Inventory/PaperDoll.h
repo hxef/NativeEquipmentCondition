@@ -13,6 +13,9 @@
 // their own armor slot plus the underarmor beneath, which the game counts for
 // the torso and all 4 limbs.
 //
+// The doll is a Vault Boy seen from the front, as on the STAT page, so the left
+// arm and leg are on the screen's right, by the vanilla numbers for them.
+//
 // The doll is PaperDoll_mc on the inventory page, a movie of its own loaded
 // into the Pip-Boy's, and each resistance is an entry with an icon and a
 // number. The bar is a HudParts::Readout with no word, sized for the number the

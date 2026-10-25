@@ -1,5 +1,5 @@
 1.6.0
-Version 1.6.0 adds OG support.
+Version 1.6.0 adds OG support. The Pip-Boy CND bars fill from the left.
 
 OG & AE only
 

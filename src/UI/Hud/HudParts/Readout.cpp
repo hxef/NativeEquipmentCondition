@@ -119,17 +119,16 @@ namespace HudParts
 			track.SetMember("alpha"sv, Value(TRACK_ALPHA));
 		}
 
-		void SetPercent(Value& a_readout, double a_width, double a_deep, std::int32_t a_percent)
+		void SetPercent(Value& a_readout, double a_width, double a_deep, std::int32_t a_percent, Still a_still)
 		{
 			auto fill = Flash::Child(a_readout, FILL_NAME);
 			if (!fill.IsDisplayObject()) {
 				return;
 			}
 
-			// The right end stays next to the word and the left end moves in,
-			// as the AP meter does.
-			const auto left = a_width * std::clamp(a_percent, 0, 100) / 100.0;
-			PutBox(fill, -left, -a_deep / 2.0, left, a_deep);
+			const auto filled = a_width * std::clamp(a_percent, 0, 100) / 100.0;
+			const auto left = a_still == Still::kLeftEnd ? -a_width : -filled;
+			PutBox(fill, left, -a_deep / 2.0, filled, a_deep);
 		}
 	}
 }

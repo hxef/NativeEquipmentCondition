@@ -187,7 +187,10 @@ namespace SpawnCondition
 			std::optional<Aim> aim;
 			if (Settings::bSpawnCondition.GetValue() && g_links[I].Live()) {
 				if (!Loading()) {
-					aim = RollInFill(a_list, a_object, a_stack);
+					// A negative count is left unrolled, as ContainerFillHk does.
+					if (a_stack && static_cast<std::int32_t>(a_stack->count) >= 1) {
+						aim = RollInFill(a_list, a_object, a_stack);
+					}
 				} else if (a_object && Gear(*a_object)) {
 					CountApplied(a_list);
 				}

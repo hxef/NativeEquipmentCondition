@@ -84,7 +84,7 @@ namespace Mcm
 					return on;
 				}
 			}
-			for (auto* on : { &Settings::bHudBarHidesWithCounter, &Settings::bTraceLogs }) {
+			for (auto* on : { &Settings::bHudBarHidesWithCounter, &Settings::bHudBarShowsWord, &Settings::bTraceLogs }) {
 				if (IsIdOf(*on, a_id)) {
 					return on;
 				}

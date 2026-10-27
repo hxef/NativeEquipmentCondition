@@ -132,6 +132,7 @@ namespace
 		{ &Settings::fPowerArmorBarX, &Settings::bHudCondition, HUD_BARS },
 		{ &Settings::fPowerArmorBarY, &Settings::bHudCondition, HUD_BARS },
 		{ &Settings::bHudBarHidesWithCounter, &Settings::bHudCondition, HUD_BARS },
+		{ &Settings::bHudBarShowsWord, &Settings::bHudCondition, HUD_BARS },
 	};
 
 	// Every setting changes something, no list names kNone or a piece twice,

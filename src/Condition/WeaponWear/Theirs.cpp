@@ -6,6 +6,7 @@
 
 #include <algorithm>
 #include <atomic>
+#include <chrono>
 #include <cstddef>
 #include <cstdint>
 #include <format>
@@ -32,10 +33,17 @@ namespace WeaponWear
 {
 	namespace
 	{
-		// How many busy tries a wear waits through before it is dropped. A try
-		// comes at most once per shot or blow, and the engine holds an
-		// inventory for a moment, so only a lock that never frees gets here.
-		constexpr std::uint32_t MOST_TRIES = 100;
+		using Clock = std::chrono::steady_clock;
+
+		// A wear on a busy inventory is dropped only after both of these. Tries
+		// come at most once a frame, so a count alone would wait less at a high
+		// frame rate. 2 s is 100 tries at 60 fps, rounded up. Tries come only
+		// when someone fires or lands a blow, so after a quiet spell the 2 s
+		// can pass in 1 try, and the 10 tries keep 1 unlucky busy moment from
+		// dropping it. The engine holds an inventory for a moment, so only a
+		// lock that never frees gets here.
+		constexpr std::chrono::seconds MOST_WAIT{ 2 };
+		constexpr std::uint32_t        FEWEST_TRIES{ 10 };
 
 		// 1 wear waiting for a busy inventory. The same holder, weapon and
 		// source add up into 1, since the wear is the copy's rate times the
@@ -48,6 +56,7 @@ namespace WeaponWear
 			const char*         source{ nullptr };
 			float               scale{ 0.0F };
 			std::uint32_t       tries{ 0 };  // busy tries so far
+			Clock::time_point   dropAt;      // when a busy try drops it
 		};
 
 		// Taken only to add to the list or swap it out, never around a call
@@ -65,8 +74,8 @@ namespace WeaponWear
 		std::atomic<bool> g_queued{ false };
 
 		// Adds a wear to the list. The caller holds g_owedLock. A merged entry
-		// keeps the fewer tries, so a fresh wear is never dropped for the tries
-		// an older one used up.
+		// keeps the later drop time, so a fresh wear is never dropped for the
+		// time an older one waited.
 		void Owe(const Owed& a_owed)
 		{
 			const auto same = std::ranges::find_if(g_owed, [&a_owed](const Owed& a_other) {
@@ -78,6 +87,7 @@ namespace WeaponWear
 			} else {
 				same->scale += a_owed.scale;
 				same->tries = std::min(same->tries, a_owed.tries);
+				same->dropAt = std::max(same->dropAt, a_owed.dropAt);
 			}
 			g_anyOwed.store(true, std::memory_order_relaxed);
 		}
@@ -137,11 +147,12 @@ namespace WeaponWear
 				break;
 			}
 
-			if (++a_owed.tries < MOST_TRIES) {
+			++a_owed.tries;
+			if (Clock::now() < a_owed.dropAt || a_owed.tries < FEWEST_TRIES) {
 				return false;
 			}
-			REX::WARN("The inventory of {:s} stayed busy through {:d} tries, so the wear ({:s}) on {:s} [{:08X}] is dropped.",
-				TraceLog::Who{ owner }, a_owed.tries, a_owed.source, name, a_owed.weapon->formID);
+			REX::WARN("The inventory of {:s} stayed busy through {:d} tries and over {:d} seconds, so the wear ({:s}) on {:s} [{:08X}] is dropped.",
+				TraceLog::Who{ owner }, a_owed.tries, MOST_WAIT.count(), a_owed.source, name, a_owed.weapon->formID);
 			return true;
 		}
 
@@ -199,7 +210,7 @@ namespace WeaponWear
 			TraceLog::Npc::Line("wear", "their inventory is busy, so the wear waits for a later try");
 			const auto             handle = a_owner.GetHandle();
 			const std::scoped_lock l{ g_owedLock };
-			Owe({ .owner = handle, .ownerID = a_owner.formID, .weapon = &a_weapon, .source = a_source, .scale = a_scale, .tries = 1 });
+			Owe({ .owner = handle, .ownerID = a_owner.formID, .weapon = &a_weapon, .source = a_source, .scale = a_scale, .tries = 1, .dropAt = Clock::now() + MOST_WAIT });
 		}
 		SettleSoon();
 	}

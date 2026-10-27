@@ -71,8 +71,6 @@ namespace
 		{ "damage resist", { kArmorDr } },
 		{ "one piece rating", { kArmorBestMark } },
 		{ "AI desirability", { kArmorNpcRanking } },
-		{ "AI evaluate armor", { kArmorNpcRanking } },
-		{ "AI evaluate armor again", { kArmorNpcRanking } },
 		{ "typed resistances", { kArmorEnergyRad } },
 		{ "card resistances", { kCardArmorMenus } },
 		{ "card resistances compared", { kCardArmorCompare } },

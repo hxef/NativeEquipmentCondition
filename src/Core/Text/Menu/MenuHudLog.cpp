@@ -18,6 +18,7 @@ namespace Text
 			{ &Settings::fPowerArmorBarX, POWER_ARMOR_BAR_X_NAME, POWER_ARMOR_BAR_X_HELP },
 			{ &Settings::fPowerArmorBarY, POWER_ARMOR_BAR_Y_NAME, POWER_ARMOR_BAR_Y_HELP },
 			{ &Settings::bHudBarHidesWithCounter, HUD_BAR_HIDES_NAME, HUD_BAR_HIDES_HELP },
+			{ &Settings::bHudBarShowsWord, HUD_BAR_WORD_NAME, HUD_BAR_WORD_HELP },
 			{ &LOG_LEVEL, LOG_LEVEL_NAME, LOG_LEVEL_HELP },
 		};
 	}

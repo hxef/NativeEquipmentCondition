@@ -124,8 +124,9 @@ SEE IT AT A GLANCE
 * CND on the item cards, with the worn damage, resistances, fire rate,
   accuracy and range.
 * CND bars on the HUD ammo counter, the power armor dash and the Pip-Boy
-  apparel figure, and condition meters on the quick container rows. An MCM
-  switch lets the ammo counter's bar fade with the counter.
+  apparel figure, and condition meters on the quick container rows. MCM
+  switches let the ammo counter's bar fade with the counter and hide the CND
+  word beside the HUD bars.
 * Broken items fade out in the Pip-Boy lists.
 
 MAKE IT YOURS

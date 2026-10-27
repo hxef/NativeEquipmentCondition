@@ -1,3 +1,8 @@
+1.6.1
+Version 1.6.1 prevents a rare fast travel crash with other HUD mods, lists repairs from 100% down and adds an MCM switch to hide the CND word beside the HUD bars. HUD bars and NPC wear also work the same at any frame rate.
+
+OG & AE only
+
 1.6.0
 Version 1.6.0 adds OG support. Apparel with no bonus wears again, an exclusion list keeps chosen gear out of NEC, an MCM slider sets the condition needed to mod gear, the Pip-Boy CND bars fill from the left and the repair box names the item.
 

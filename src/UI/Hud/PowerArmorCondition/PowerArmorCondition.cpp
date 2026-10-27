@@ -13,6 +13,7 @@
 #include <chrono>
 #include <cmath>
 #include <cstdint>
+#include <optional>
 
 namespace PowerArmorCondition
 {
@@ -29,10 +30,6 @@ namespace PowerArmorCondition
 
 		// How long the bar fades, about as quick as the rest of the HUD.
 		constexpr double FADE_SECONDS = 0.25;
-
-		// How often the weapon's condition is checked, a few times a second.
-		// The dash is measured every frame, since it sways.
-		constexpr std::uint32_t FRAMES_PER_READING = 10;
 
 		// A value Percent never returns, so the first frame always draws.
 		constexpr std::int32_t NOT_DRAWN = -2;
@@ -66,16 +63,16 @@ namespace PowerArmorCondition
 				}
 
 				const auto now = Clock::now();
-				const auto elapsed = frames == 0 ? 0.0 : std::chrono::duration<double>(now - lastFrame).count();
+				const auto elapsed = lastFrame ? std::chrono::duration<double>(now - *lastFrame).count() : 0.0;
 				lastFrame = now;
 
-				// The dash is measured every frame. The weapon's condition
-				// costs more to check and changes slowly, so it is checked less
-				// often.
-				if (frames % FRAMES_PER_READING == 0) {
+				// The dash is measured every frame, since it sways. The
+				// weapon's condition costs more to check and changes slowly, so
+				// it is checked less often.
+				if (!lastReading || now - *lastReading >= HudParts::Weapon::READING_EVERY) {
+					lastReading = now;
 					HudParts::Weapon::Queue();
 				}
-				++frames;
 				QueueAnchor();
 
 				const auto anchor = CurrentAnchor();
@@ -147,6 +144,8 @@ namespace PowerArmorCondition
 						length, bar.size, box.x, box.y, frame.width, frame.height, frame.left, frame.top);
 				}
 
+				HudParts::Readout::FollowWordSwitch(readout, wordShown, "Power armor"sv);
+
 				if (wanted && percent != shownPercent) {
 					HudParts::Readout::SetPercent(readout, bar.width, bar.deep, percent);
 					shownPercent = percent;
@@ -169,28 +168,31 @@ namespace PowerArmorCondition
 
 			void Reset()
 			{
-				frames = 0;
+				lastFrame.reset();
+				lastReading.reset();
 				shownPercent = NOT_DRAWN;
 				shownOpacity = -1.0;
 				fade = 0.0;
 				laidOutFor = Box{};
 				bar = Bar{};
+				wordShown.reset();
 				colored = false;
 				saidOffScreen = false;
 				saidScaled = false;
 			}
 
 		private:
-			Clock::time_point lastFrame;
-			std::uint32_t     frames = 0;
-			std::int32_t      shownPercent = NOT_DRAWN;
-			double            shownOpacity = -1.0;
-			double            fade = 0.0;
-			Box               laidOutFor;
-			Bar               bar;
-			bool              colored = false;
-			bool              saidOffScreen = false;
-			bool              saidScaled = false;
+			std::optional<Clock::time_point> lastFrame;
+			std::optional<Clock::time_point> lastReading;
+			std::int32_t                     shownPercent = NOT_DRAWN;
+			double                           shownOpacity = -1.0;
+			double                           fade = 0.0;
+			Box                              laidOutFor;
+			Bar                              bar;
+			std::optional<bool>              wordShown;
+			bool                             colored = false;
+			bool                             saidOffScreen = false;
+			bool                             saidScaled = false;
 		};
 
 		// Lives as long as the plugin, see Flash.h.

@@ -1,3 +1,10 @@
+1.6.1
+* The HUD CND bars no longer do a per frame Scaleform path lookup, which crashed on OG during a fast travel load when it hit a freed HUD object, likely left by another HUD widget mod.
+* Repairs now list from 100% down at the workbench, and from the trader's highest level down at traders.
+* The HUD CND bars and NPC weapon wear now work the same at any frame rate.
+* A new MCM switch, HUD bar shows word (bHudBarShowsWord, on), can hide the CND word beside the ammo counter's bar and the power armor bar, leaving just the bars.
+* On AE, NEC now skips container entries with a negative count from another mod, as it already did on OG.
+
 1.6.0
 * NEC now runs on OG too (Fallout 4 1.10.163 with F4SE 0.6.23), with every part working as on AE.
 * Hats, bandanas, rings and other apparel with no armor rating or bonus wear again, as they did before 1.2.0, and traders sell them at 100%.

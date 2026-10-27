@@ -38,10 +38,6 @@ namespace HudCondition
 		// own fade.
 		constexpr double FADE_SECONDS = 0.25;
 
-		// A check every 10 frames is several a second, which keeps up with a
-		// weapon wearing hit by hit.
-		constexpr std::uint32_t FRAMES_PER_READING = 10;
-
 		// A value Percent never returns, so the first frame always draws.
 		constexpr std::int32_t NOT_DRAWN = -2;
 
@@ -83,7 +79,7 @@ namespace HudCondition
 
 				// The bar copies the counter's place, so it stays as last drawn
 				// while the counter is gone or not in the bar's parent.
-				auto  found = Roles::Hud::AmmoCounter(*a_params.movie);
+				auto  found = Roles::Hud::AmmoCounter(*a_params.movie, readout);
 				Value meters;
 				Value beside;
 				if (!found || !readout.GetMember("parent"sv, &meters) || !meters.IsDisplayObject() ||
@@ -93,6 +89,8 @@ namespace HudCondition
 				}
 				auto& counter = *found;
 
+				const auto now = Clock::now();
+
 				// The HUD menu is listed once it has finished being built, a
 				// frame after its movie loads. The colour is copied from a
 				// reading after the colour target is made, so the vanilla
@@ -100,7 +98,7 @@ namespace HudCondition
 				if (!colored) {
 					if (auto* menu = HudParts::MenuFor(*a_params.movie)) {
 						HudParts::AddColorTarget(*menu, readout);
-						recolorFrom = frames + FRAMES_PER_READING;
+						recolorFrom = now + HudParts::Weapon::READING_EVERY;
 						counterPart = HudParts::AmmoCounterPart(*menu);
 						colored = true;
 						TraceLog::Line("menu", "HUD CND is a HUD part of its own, in the gameplay HUD colour, {:s}",
@@ -108,12 +106,12 @@ namespace HudCondition
 					}
 				}
 
-				const auto now = Clock::now();
-				const auto elapsed = frames == 0 ? 0.0 : std::chrono::duration<double>(now - lastFrame).count();
+				const auto elapsed = lastFrame ? std::chrono::duration<double>(now - *lastFrame).count() : 0.0;
 				lastFrame = now;
 
-				const auto reading = frames++ % FRAMES_PER_READING == 0;
+				const auto reading = !lastReading || now - *lastReading >= HudParts::Weapon::READING_EVERY;
 				if (reading) {
+					lastReading = now;
 					HudParts::Weapon::Queue();
 					// The letters are measured again each reading until a line
 					// reads, so a field not laid out yet is not kept for good.
@@ -126,10 +124,12 @@ namespace HudCondition
 					if (choice) {
 						teller.Tell(*choice, now);
 					}
-					if (colored && frames > recolorFrom) {
+					if (colored && now >= recolorFrom) {
 						Recolor(readout, counter, toldTint);
 					}
 				}
+
+				HudParts::Readout::FollowWordSwitch(readout, wordShown, "HUD"sv);
 
 				const auto percent = HudParts::Weapon::Percent();
 				if (percent != shownPercent) {
@@ -207,7 +207,8 @@ namespace HudCondition
 
 			void Reset()
 			{
-				frames = 0;
+				lastFrame.reset();
+				lastReading.reset();
 				shownPercent = NOT_DRAWN;
 				shownOpacity = -1.0;
 				fade = 0.0;
@@ -221,8 +222,9 @@ namespace HudCondition
 				held = false;
 				laidOut = false;
 				labelled = false;
+				wordShown.reset();
 				colored = false;
-				recolorFrom = 0;
+				recolorFrom = {};
 				toldTint.reset();
 				dividerHidden = false;
 				ownVisible.reset();
@@ -286,20 +288,22 @@ namespace HudCondition
 				}
 			}
 
-			Clock::time_point lastFrame;
-			std::uint32_t     frames = 0;
-			std::int32_t      shownPercent = NOT_DRAWN;
-			double            shownOpacity = -1.0;
-			double            fade = 0.0;
-			Spot              spot = SHIPPED;
-			Teller            teller;
-			bool              laidOut = false;
-			bool              labelled = false;
-			bool              colored = false;
-			bool              dividerHidden = false;
+			std::optional<Clock::time_point> lastFrame;
+			std::optional<Clock::time_point> lastReading;
+			std::int32_t                     shownPercent = NOT_DRAWN;
+			double                           shownOpacity = -1.0;
+			double                           fade = 0.0;
+			Spot                             spot = SHIPPED;
+			Teller                           teller;
+			bool                             laidOut = false;
+			bool                             labelled = false;
+			bool                             colored = false;
+			bool                             dividerHidden = false;
 
-			// Where the word and its letters sit at its place past the bar.
+			// Where the word and its letters sit at its place past the bar,
+			// and whether it was last shown, see FollowWordSwitch.
 			HudParts::Readout::LabelPlace label;
+			std::optional<bool>           wordShown;
 
 			// What the bar was last placed from and where it went. placeable
 			// is false while its counter is off screen or the movie refused a
@@ -311,9 +315,9 @@ namespace HudCondition
 			bool                     onSpot = false;
 			bool                     held = false;
 
-			// The first frame count a reading may copy the counter's colour
-			// at, and the colour last traced.
-			std::uint32_t              recolorFrom = 0;
+			// When a reading may first copy the counter's colour, and the
+			// colour last traced.
+			Clock::time_point          recolorFrom;
 			std::optional<Flash::Tint> toldTint;
 
 			// The divider's own visible from before NEC's bar covered it, given
@@ -333,7 +337,11 @@ namespace HudCondition
 		// Adds the readout and its frame listener to the HUD movie.
 		void Build(Scaleform::GFx::Movie& a_movie)
 		{
-			auto  counter = Roles::Hud::AmmoCounter(a_movie);
+			// 1 path lookup per HUD load. The frame listener reads members
+			// from the readout instead, see Roles::Hud::AmmoCounter.
+			Value root;
+			a_movie.GetVariable(&root, "_root");
+			auto  counter = Roles::Hud::AmmoCounter(a_movie, root);
 			Value meters;
 			if (!counter || !counter->GetMember("parent"sv, &meters) || !meters.IsDisplayObject()) {
 				Roles::Missing(a_movie, "ammo counter"sv, "the HUD shows no CND bar outside power armor"sv);

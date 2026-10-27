@@ -69,12 +69,10 @@ namespace QuickContainer
 			// a_afterRedraw says the rows have just redrawn, which is when the
 			// render listener calls. The frame listener leaves a row still
 			// waiting to redraw alone.
-			void Update(Scaleform::GFx::Movie& a_movie, bool a_afterRedraw)
+			void Update(Scaleform::GFx::Movie& a_movie, const Value& a_widget, bool a_afterRedraw)
 			{
-				Value widget;
-				Value list;
-				if (!a_movie.GetVariable(&widget, WIDGET_PATH) || !widget.IsDisplayObject() || !Flash::Bool(widget, "visible"sv) ||
-					!widget.GetMember("ListItems_mc"sv, &list) || !list.IsDisplayObject()) {
+				auto list = Flash::Member(a_widget, "ListItems_mc"sv);
+				if (!Flash::Bool(a_widget, "visible"sv) || !list.IsDisplayObject()) {
 					return;
 				}
 
@@ -308,10 +306,10 @@ namespace QuickContainer
 		// Listening to the HUD
 		// -------------------------------------------------------------------
 
-		// The rows redraw from Flash's render event, raised before a frame is
-		// drawn whenever the widget gets new rows. The render listener lays
-		// them out as they are drawn, and the frame listener catches changes
-		// without a redraw.
+		// The rows redraw from Flash's render event before a frame is drawn,
+		// whenever the widget gets new rows. The render listener lays them out
+		// as drawn, the frame listener catches changes without a redraw, and
+		// both read the widget as members, see Roles::Hud::AmmoCounter.
 		class Listener final : public Scaleform::GFx::FunctionHandler
 		{
 		public:
@@ -321,8 +319,10 @@ namespace QuickContainer
 
 			void Call(const Params& a_params) override
 			{
+				auto       on = a_params.argCount > 0 ? Flash::Member(a_params.args[0], "currentTarget"sv) : Value{};
+				const auto widget = afterRedraw ? Flash::Member(Flash::Member(Flash::ChildAt(on, 0), "CenterGroup_mc"sv), "QuickContainerWidget_mc"sv) : Flash::Member(on, "parent"sv);
 				if (a_params.movie) {
-					g_meters.Update(*a_params.movie, afterRedraw);
+					g_meters.Update(*a_params.movie, widget, afterRedraw);
 				}
 			}
 

@@ -3,6 +3,7 @@
 #include "Core/Text/Text.h"
 #include "UI/MessageBox.h"
 
+#include <algorithm>
 #include <utility>
 
 namespace RepairPrompt
@@ -40,7 +41,8 @@ namespace RepairPrompt
 					}
 					return;
 				}
-				tasks->AddTask([run = chosen, index] { run(index); });
+				// The box lists the offers the other way round.
+				tasks->AddTask([run = chosen, index = offers - 1 - index] { run(index); });
 			}
 
 			F4_HEAP_REDEFINE_NEW(Answered);
@@ -63,6 +65,7 @@ namespace RepairPrompt
 		body += Text::RepairQuestion(a_name, a_percent);
 
 		const auto offers = a_buttons.size();
+		std::ranges::reverse(a_buttons);
 		a_buttons.emplace_back(CANCEL);
 		MessageBox::Ask(TITLE, body.c_str(), a_buttons,
 			new Answered(offers, std::move(a_chosen), std::move(a_cancelled)));

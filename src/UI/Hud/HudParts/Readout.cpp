@@ -1,5 +1,7 @@
 #include "UI/Hud/HudParts/HudParts.h"
 
+#include "Core/Settings.h"
+#include "Core/TraceLog.h"
 #include "UI/Flash.h"
 
 #include <algorithm>
@@ -106,6 +108,21 @@ namespace HudParts
 				label.SetMember("x"sv, Value(a_x));
 				label.SetMember("y"sv, Value(a_y));
 			}
+		}
+
+		void FollowWordSwitch(Value& a_readout, std::optional<bool>& a_shown, std::string_view a_bar)
+		{
+			const auto shown = Settings::bHudBarShowsWord.GetValue();
+			if (a_shown == shown) {
+				return;
+			}
+			auto label = Flash::Child(a_readout, LABEL_NAME);
+			if (!label.IsDisplayObject()) {
+				return;
+			}
+			label.SetMember("visible"sv, Value(shown));
+			a_shown = shown;
+			TraceLog::Line("menu", "{:s} CND word {:s}", a_bar, shown ? "shows" : "hides, the bar stays");
 		}
 
 		void SetTrack(Value& a_readout, double a_width, double a_deep)

@@ -5,7 +5,9 @@
 #include "Core/Settings.h"
 #include "UI/Flash.h"
 
+#include <chrono>
 #include <cstdint>
+#include <optional>
 #include <string_view>
 
 // The pieces the plugin's CND readouts are built from. CND is drawn on the HUD
@@ -59,6 +61,11 @@ namespace HudParts
 		// again while one is on its way does nothing. Also lets go of colour
 		// targets once the delete hook's place is lost.
 		void Queue();
+
+		// How often a readout asks for a fresh check, several times a second,
+		// which keeps up with a weapon wearing hit by hit. It goes by the clock,
+		// since the HUD movie's frames come faster at a high frame rate.
+		inline constexpr std::chrono::milliseconds READING_EVERY{ 300 };
 
 		// The condition of the weapon in hand as a whole percent, or NONE.
 		[[nodiscard]] std::int32_t Percent();
@@ -135,6 +142,12 @@ namespace HudParts
 		// Puts the word's field with its top left corner at a_x, a_y from the
 		// readout's origin.
 		void MoveLabel(Value& a_readout, double a_x, double a_y);
+
+		// Shows or hides the word of a HUD bar as bHudBarShowsWord says. The
+		// bar keeps its place either way. a_shown is what was last written,
+		// so a frame writes only on a change, and a_bar names the bar in the
+		// trace.
+		void FollowWordSwitch(Value& a_readout, std::optional<bool>& a_shown, std::string_view a_bar);
 
 		// Lays the track out a_width across and a_deep deep.
 		void SetTrack(Value& a_readout, double a_width, double a_deep);

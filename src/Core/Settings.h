@@ -26,9 +26,10 @@
 // A setting added here is added to publish/NEC.ini too, with a line saying
 // what it does, and to SWITCHES or NUMBERS in Settings.cpp in NEC.ini's
 // order. A setting left out of those is missing from the Settings line, and
-// the MCM page can neither read nor change it. The 2 switches outside
-// [Features], bHudBarHidesWithCounter and bTraceLogs, are named in
-// Settings.cpp's ReportLine and in UI/Mcm/Bridge.cpp's SwitchFor instead.
+// the MCM page can neither read nor change it. The 3 switches outside
+// [Features], bHudBarHidesWithCounter, bHudBarShowsWord and bTraceLogs, are
+// named in Settings.cpp's ReportLine and in UI/Mcm/Bridge.cpp's SwitchFor
+// instead.
 namespace Settings
 {
 	// Where a setting sits in NEC.ini, which is also its id on the MCM page.
@@ -259,6 +260,10 @@ namespace Settings
 	// Whether the CND bar by the ammo counter hides with the counter while
 	// the counter has rounds to count, see HudCondition.h.
 	inline Live<bool> bHudBarHidesWithCounter{ "HUD", "bHudBarHidesWithCounter", false };
+
+	// Whether the CND word shows beside the ammo counter's bar and the power
+	// armor bar. When off, only the bars show, at the same place.
+	inline Live<bool> bHudBarShowsWord{ "HUD", "bHudBarShowsWord", true };
 
 	// Log. Read once, as the log is opened. The MCM page sets the level and
 	// switches the trace logs on the spot, see SetLogLevel and

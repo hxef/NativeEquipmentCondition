@@ -14,7 +14,12 @@ namespace Roles::Hud
 	// object still on the HUD. A movie with no counter there has none the
 	// engine drives. OnScreen is not asked, since a melee weapon or the HUD
 	// mode hides the counter on purpose.
-	[[nodiscard]] std::optional<Value> AmmoCounter(Scaleform::GFx::Movie& a_movie);
+	//
+	// a_inHud is any clip of the HUD's own tree, and the counter is read as
+	// members from its root. A movie's path lookup checks every script
+	// global first, and a global another mod left freed crashed it, so code
+	// that runs every frame passes a clip it is handed by the event.
+	[[nodiscard]] std::optional<Value> AmmoCounter(Scaleform::GFx::Movie& a_movie, const Value& a_inHud);
 
 	// A place in the counter's own units, which the bar's placing expects,
 	// with its origin on its right end.

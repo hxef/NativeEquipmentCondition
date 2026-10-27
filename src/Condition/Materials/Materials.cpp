@@ -297,10 +297,10 @@ namespace Materials
 		std::vector<std::string> moved;
 		const auto built = ChangedKeys(was->mods, now->mods) + ChangedKeys(was->scrapping.recipes, now->scrapping.recipes);
 		if (built > 0) {
-			moved.push_back(std::format("what {:d} items and mods are built from", built));
+			moved.push_back(std::format("what {:d} {:s}", built, built == 1 ? "item or mod is built from" : "items and mods are built from"));
 		}
 		if (const auto spellings = ChangedKeys(was->pricedBy, now->pricedBy); spellings > 0) {
-			moved.push_back(std::format("{:d} component spellings", spellings));
+			moved.push_back(std::format("{:d} {:s}", spellings, spellings == 1 ? "component spelling" : "component spellings"));
 		}
 		const auto& before = was->scrapping;
 		const auto& after = now->scrapping;

@@ -14,9 +14,11 @@ namespace Roles::Hud
 		// Vanilla's places
 		// -------------------------------------------------------------------
 
-		// The path the engine binds its ammo counter to as the HUD loads. The
-		// counter reads its 2 numbers off the clip there.
-		constexpr const char* COUNTER_PATH = "_root.RightMeters_mc.AmmoCount_mc";
+		// Where the engine binds its ammo counter as the HUD loads, the path
+		// _root.RightMeters_mc.AmmoCount_mc. The counter reads its 2 numbers
+		// off the clip there.
+		constexpr const char* METERS_NAME = "RightMeters_mc";
+		constexpr const char* COUNTER_NAME = "AmmoCount_mc";
 
 		// The "---" the counter draws between its 2 numbers, a child of the
 		// counter.
@@ -123,13 +125,13 @@ namespace Roles::Hud
 	// The ammo counter
 	// -------------------------------------------------------------------
 
-	std::optional<Value> AmmoCounter(Scaleform::GFx::Movie& a_movie)
+	std::optional<Value> AmmoCounter(Scaleform::GFx::Movie& a_movie, const Value& a_inHud)
 	{
 		// A counter taken off the HUD keeps its path but has no parent.
-		Value counter;
-		Value parent;
-		if (!a_movie.GetVariable(&counter, COUNTER_PATH) || !counter.IsDisplayObject() ||
-			!counter.GetMember("parent"sv, &parent) || !parent.IsDisplayObject()) {
+		const auto meters = Flash::Member(Flash::Member(a_inHud, "root"sv), METERS_NAME);
+		auto       counter = Flash::Member(meters, COUNTER_NAME);
+		Value      parent;
+		if (!counter.IsDisplayObject() || !counter.GetMember("parent"sv, &parent) || !parent.IsDisplayObject()) {
 			return std::nullopt;
 		}
 		Found(a_movie, "ammo counter"sv, "where the engine binds it"sv);

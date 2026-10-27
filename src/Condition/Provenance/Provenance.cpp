@@ -157,10 +157,10 @@ namespace Provenance
 		// character that moves shifts the place of every one ranked between.
 		std::vector<std::string> moved;
 		if (const auto lists = ChangedKeys(was->supply.hauls, now->supply.hauls); lists > 0) {
-			moved.push_back(std::format("what {:d} leveled lists hand out", lists));
+			moved.push_back(std::format("what {:d} {:s}", lists, lists == 1 ? "leveled list hands out" : "leveled lists hand out"));
 		}
 		if (const auto characters = ChangedKeys(was->care.issued, now->care.issued); characters > 0) {
-			moved.push_back(std::format("what {:d} characters are issued", characters));
+			moved.push_back(std::format("what {:d} {:s}", characters, characters == 1 ? "character is issued" : "characters are issued"));
 		}
 		g_ranking.Publish(std::move(now));
 		return moved;

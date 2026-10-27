@@ -25,17 +25,15 @@ namespace ArmorRating
 		// The calls to the armor rating visitor, one per equipped piece.
 		// CalcArmorRating1 adds up the actor's own DamageResist.
 		// CalcArmorRating2 rates one item for the menus. GetDesirability rates
-		// an item an NPC might take. The 2 EvaluateArmor calls are the AI's
-		// armor search, which rates only the inventory of a power armor frame,
-		// so they change a number only when a piece that can wear sits in one.
-		// Everybody sees the same worn number. The engine's RecalcArmorRating
-		// holds the 6th call and has no callers.
+		// an item an NPC might take. Everybody sees the same worn number. The
+		// AI's armor search, EvaluateArmor, holds 2 more calls but rates only
+		// the inventory of a power armor frame, which holds only pieces NEC
+		// leaves at full, so they are left alone. The engine's
+		// RecalcArmorRating holds the 6th call and has no callers.
 		constexpr CallSite VISITOR_SITES[] = {
 			{ AE{ RE::ID::Actor::CalcArmorRating1.ae(), 0x0FC }, OG{ 1282606, 0x06A }, "damage resist" },
 			{ AE{ RE::ID::Actor::CalcArmorRating2.ae(), 0x02B }, OG{ RE::ID::Actor::CalcArmorRating2.og(), 0x02B }, "one piece rating" },
 			{ AE{ RE::ID::Actor::GetDesirability.ae(), 0x056 }, OG{ RE::ID::Actor::GetDesirability.og(), 0x054 }, "AI desirability" },
-			{ AE{ RE::ID::CombatBehaviorFindObject::EvaluateArmor.ae(), 0x4ED }, OG{ RE::ID::CombatBehaviorFindObject::EvaluateArmor.og(), 0x4DB }, "AI evaluate armor" },
-			{ AE{ RE::ID::CombatBehaviorFindObject::EvaluateArmor.ae(), 0x579 }, OG{ 153891, 0x067 }, "AI evaluate armor again" },
 		};
 
 		// The one call to SumEquippedArmorDamageTypes, inside

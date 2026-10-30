@@ -26,10 +26,10 @@
 // A setting added here is added to publish/NEC.ini too, with a line saying
 // what it does, and to SWITCHES or NUMBERS in Settings.cpp in NEC.ini's
 // order. A setting left out of those is missing from the Settings line, and
-// the MCM page can neither read nor change it. The 3 switches outside
-// [Features], bHudBarHidesWithCounter, bHudBarShowsWord and bTraceLogs, are
-// named in Settings.cpp's ReportLine and in UI/Mcm/Bridge.cpp's SwitchFor
-// instead.
+// the MCM page can neither read nor change it. The 4 switches that turn no
+// feature on, bFridgeIcon, bHudBarHidesWithCounter, bHudBarShowsWord and
+// bTraceLogs, are named in Settings.cpp's ReportLine and in
+// UI/Mcm/Bridge.cpp's SwitchFor instead.
 namespace Settings
 {
 	// Where a setting sits in NEC.ini, which is also its id on the MCM page.
@@ -161,6 +161,13 @@ namespace Settings
 	// is on, see InspectPrice.h.
 	inline Live<bool> bInspectPrice{ "Features", "bInspectPrice", true };
 
+	// Food the player or a companion carried, and food on the dead, spoils
+	// with time, see FoodSpoil.h. Off by default.
+	inline Live<bool> bFoodSpoils{ "Features", "bFoodSpoils", false };
+
+	// The fridge icon, see FoodSpoil::FridgeIconOn. On by default.
+	inline Live<bool> bFridgeIcon{ "Features", "bFridgeIcon", true };
+
 	// Balance. Each tunes a feature and is read where it is used. A floor at
 	// 1 leaves the result vanilla, so a feature with a floor has no switch.
 
@@ -236,6 +243,21 @@ namespace Settings
 	// VendorRepair/Quote.h.
 	inline Live<float> fTraderPriceMult{ "Balance", "fTraderPriceMult", 1.0F };
 
+	// How many game days raw food and crops keep before they spoil, see
+	// FoodSpoil.h. Counts as 0.25 to 30.
+	inline Live<float> fRawFoodDays{ "Balance", "fRawFoodDays", 2.0F };
+
+	// The same for cooked food.
+	inline Live<float> fCookedFoodDays{ "Balance", "fCookedFoodDays", 7.0F };
+
+	// How fast food spoils in a fridge or a cooler, 1 for as fast as
+	// anywhere. Counts as 0.01 to 1.
+	inline Live<float> fFridgeSpoilSpeed{ "Balance", "fFridgeSpoilSpeed", 0.5F };
+
+	// How much spoiled food a chemistry station takes for 1 Fertilizer, see
+	// Fertilizer.cpp. Counts as 0 to 20, and 0 removes the Fertilizer row.
+	inline Live<std::int32_t> iSpoiledPerFertilizer{ "Balance", "iSpoiledPerFertilizer", 10 };
+
 	// HUD. Where the CND bars sit and when the one by the ammo counter hides.
 	// Read every frame, so a change shows at once. The 4 numbers move a bar
 	// from its own place in units of the HUD, which is 1280 across and 720
@@ -282,7 +304,7 @@ namespace Settings
 	// setting only takes whole steps.
 	using Number = std::variant<Live<float>*, Live<std::int32_t>*>;
 
-	// The 8 switches under [Features] and the 22 numbers under [Balance] and
+	// The 9 switches under [Features] and the 26 numbers under [Balance] and
 	// [HUD], in NEC.ini's order, for Report and the MCM page.
 	[[nodiscard]] std::span<Live<bool>* const> Switches();
 	[[nodiscard]] std::span<const Number>      Numbers();

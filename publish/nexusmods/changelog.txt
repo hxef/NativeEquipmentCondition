@@ -1,3 +1,7 @@
+1.7.0
+* A new MCM switch, Food spoils (bFoodSpoils, off), makes food you carry and food on the dead spoil over game days, slower in coolers and unbroken fridges, as in Fallout 76. Spoiled food gives extra rads and makes Fertilizer at a chemistry station.
+* Little extras is now its own MCM page, with food spoiling's settings above the loading tips and both vanilla fix switches.
+
 1.6.1
 * The HUD CND bars no longer do a per frame Scaleform path lookup, which crashed on OG during a fast travel load when it hit a freed HUD object, likely left by another HUD widget mod.
 * Repairs now list from 100% down at the workbench, and from the trader's highest level down at traders.

@@ -4,13 +4,8 @@
 
 // The weapons and armor a patch tells NEC to leave alone, for a mod that gives
 // them a condition of its own. A patch ships a file in
-// Data/F4SE/Plugins/NEC/Exclude/, such as MyMod.ini, with 1 item a line:
-//
-//   MyMod.esp|0x000801
-//
-// The plugin is the one that adds the record, and the ID is as FO4Edit shows
-// it. Its top 2 digits, the load order slot, never count, and for a light
-// plugin only the last 3 do. A listed item takes no condition: NEC never
+// Data/F4SE/Plugins/NEC/Exclude/, such as MyMod.ini, with 1 item a line in
+// the form Core/ListFiles.h gives. A listed item takes no condition: NEC never
 // rolls, wears or repairs it or changes its stats or price, and never reads,
 // writes or clears a health it carries, since that may be another mod's. NEC
 // ships no file there.

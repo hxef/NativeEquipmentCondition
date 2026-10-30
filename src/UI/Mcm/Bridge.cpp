@@ -84,7 +84,7 @@ namespace Mcm
 					return on;
 				}
 			}
-			for (auto* on : { &Settings::bHudBarHidesWithCounter, &Settings::bHudBarShowsWord, &Settings::bTraceLogs }) {
+			for (auto* on : { &Settings::bFridgeIcon, &Settings::bHudBarHidesWithCounter, &Settings::bHudBarShowsWord, &Settings::bTraceLogs }) {
 				if (IsIdOf(*on, a_id)) {
 					return on;
 				}
@@ -208,6 +208,10 @@ namespace Mcm
 			// goes to full now and not only at the next load.
 			if (on == &Settings::bSpawnCondition && value) {
 				Queue(FollowUp::kCarried);
+			}
+			// Food carried while food spoiling was off starts fresh now.
+			if (on == &Settings::bFoodSpoils && value) {
+				Queue(FollowUp::kFood);
 			}
 		}
 		Answer(a_params, true);

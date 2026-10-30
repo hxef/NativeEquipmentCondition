@@ -12,6 +12,7 @@
 #include "Core/Text/Text.h"
 #include "Core/TraceLog.h"
 #include "Gameplay/FireRate/FireRate.h"
+#include "Gameplay/FoodSpoil/FoodSpoil.h"
 #include "Gameplay/InHand.h"
 #include "Gameplay/Jam.h"
 #include "Gameplay/SpawnCondition/SpawnCondition.h"
@@ -266,6 +267,7 @@ namespace
 			// move an item.
 			if (a_msg->type == F4SE::MessagingInterface::kPostLoadGame && static_cast<bool>(a_msg->data)) {
 				SpawnCondition::KeepCarriedAfterLoad();
+				FoodSpoil::StampCarriedAfterLoad();
 			}
 			// The Settings line, with what the recheck left to another mod.
 			Settings::ReportLine();

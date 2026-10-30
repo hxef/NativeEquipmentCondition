@@ -3,9 +3,11 @@
 #include "Condition/Condition.h"
 #include "Core/CallPatch/CallPatch.h"
 #include "Core/TraceLog.h"
+#include "Gameplay/FoodSpoil/FoodSpoil.h"
 
 #include <algorithm>
 #include <array>
+#include <atomic>
 #include <format>
 #include <mutex>
 #include <string_view>
@@ -160,6 +162,10 @@ namespace QuickContainer
 
 		thread_local Building* t_building = nullptr;
 
+		// What ShowsFridge says. The main thread writes it and the HUD's
+		// reads it.
+		std::atomic<bool> g_fridge{ false };
+
 		std::array<CallPatch::Link<RE::InventoryItemDisplayData*(RE::InventoryItemDisplayData*, const RE::ObjectRefHandle&, const RE::InventoryUserUIInterfaceEntry&)>, 1> g_rowLink;
 		std::array<CallPatch::Link<void(RE::HUDQuickContainerDataModel*, RE::QuickContainerStateData&)>, 1> g_rowsLink;
 
@@ -187,6 +193,10 @@ namespace QuickContainer
 			t_building = &building;
 			g_rowsLink[0](a_model, a_state);
 			t_building = nullptr;
+
+			// The game sets the container before it builds the rows, and its
+			// name only after.
+			g_fridge.store(FoodSpoil::IsFridgeRef(a_state.containerRef.get().get()), std::memory_order_relaxed);
 
 			// AddItemRows makes its item rows first, each through RowHk, then
 			// the row of dots when more entries follow. Rows are matched to
@@ -262,6 +272,11 @@ namespace QuickContainer
 			return percents;
 		}
 		return std::nullopt;
+	}
+
+	bool ShowsFridge()
+	{
+		return g_fridge.load(std::memory_order_relaxed);
 	}
 
 	bool PatchRows()

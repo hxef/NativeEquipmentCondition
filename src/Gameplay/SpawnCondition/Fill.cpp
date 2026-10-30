@@ -4,6 +4,7 @@
 #include "Core/CallPatch/CallPatch.h"
 #include "Core/Settings.h"
 #include "Core/TraceLog.h"
+#include "Gameplay/SpawnCondition/Food.h"
 #include "Gameplay/SpawnCondition/Guards.h"
 #include "Gameplay/SpawnCondition/Owners.h"
 #include "Gameplay/SpawnCondition/Roll.h"
@@ -30,6 +31,12 @@ namespace SpawnCondition
 	std::optional<Aim> RollInFill(RE::BGSInventoryList* a_list, RE::TESBoundObject* a_object, RE::ExtraDataList* a_extra,
 		std::uint32_t a_count, bool a_private)
 	{
+		if (FoodBorn(a_list, a_object, a_extra, a_count, true)) {
+			if (t_filled) {
+				++*t_filled;
+			}
+			return std::nullopt;
+		}
 		if (!t_filled) {
 			return Roll(a_list, a_object, a_extra, a_count, a_private);
 		}
@@ -66,23 +73,28 @@ namespace SpawnCondition
 		std::array<CallPatch::Link<Fill_t>, std::size(FILL_SITES)> g_fillLinks;
 		CallPatch::Held g_fill;
 
-		// Rolls each entry the fill wrote from a_first on, as AddStack's hook
-		// rolls the rest, and returns how many rolled. An entry whose item
-		// went through AddStack already holds its roll and is skipped.
+		// Rolls each entry the fill wrote from a_first on, found food too, as
+		// AddStack's hook rolls the rest, and returns how many rolled. An
+		// entry whose item went through AddStack already holds its roll and
+		// is skipped.
 		std::uint32_t RollPlainLines(RE::BGSInventoryList& a_list, std::uint32_t a_first)
 		{
 			std::uint32_t rolled = 0;
 			for (auto i = a_first; i < a_list.data.size(); i++) {
 				auto& entry = a_list.data[i];
 				auto* stack = entry.stackData.get();
-				const auto health = Condition::HealthOf(stack);
-				if (!entry.object || !stack || !stack->extra || !Gear(*entry.object) ||
-					Condition::WhyNoCondition(*entry.object) || (health >= 0.0F && !Condition::IsUnrolled(health))) {
-					continue;
-				}
 				// The fill keeps a negative count as it is, which a split would
 				// read as billions of copies, so such a line is left alone.
-				if (static_cast<std::int32_t>(stack->count) < 1) {
+				if (!entry.object || !stack || static_cast<std::int32_t>(stack->count) < 1) {
+					continue;
+				}
+				if (FoodBorn(&a_list, entry.object, stack->extra.get(), stack->count, true)) {
+					rolled++;
+					continue;
+				}
+				const auto health = Condition::HealthOf(stack);
+				if (!stack->extra || !Gear(*entry.object) || Condition::WhyNoCondition(*entry.object) ||
+					(health >= 0.0F && !Condition::IsUnrolled(health))) {
 					continue;
 				}
 				const auto aim = Roll(&a_list, entry.object, stack);

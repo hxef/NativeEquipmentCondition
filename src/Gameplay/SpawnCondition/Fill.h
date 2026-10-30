@@ -12,8 +12,9 @@
 // Private to this folder.
 namespace SpawnCondition
 {
-	// Roll, counted for the fill in progress on this thread when it aims or
-	// writes a health, see FillHk. Outside a fill it is Roll.
+	// Roll, or FoodBorn for food, counted for the fill in progress on this
+	// thread when it aims or writes a health, see FillHk. Outside a fill it
+	// is the same uncounted.
 	std::optional<Aim> RollInFill(RE::BGSInventoryList* a_list, RE::TESBoundObject* a_object, RE::ExtraDataList* a_extra,
 		std::uint32_t a_count, bool a_private);
 

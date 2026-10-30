@@ -69,7 +69,7 @@ Your weapons and armor [b]wear down as you use them[/b], the way they did in Fal
 [size=3][b][font=Georgia][color=#1AFF80]Make it yours[/color][/font][/b][/size]
 
 [list]
-[*]With MCM, NEC's page changes any setting on the spot. Switch off jamming, worn loot, trader repairs, the HUD condition bars and more, or tune wear speed for you, for NPCs and for automatic weapons, where wear starts to cost performance, how much gear keeps at 0 condition, prices, repair costs and the condition gear needs before it can be modded.
+[*]With MCM, NEC's page changes any setting on the spot. Switch off jamming, worn loot, trader repairs, the HUD condition bars and more, or tune wear speed for you, for NPCs and for automatic weapons, where wear starts to cost performance, how much gear keeps at 0 condition, prices, repair costs and the condition gear needs before it can be modded. Its Little extras page turns food spoiling on and sets how long raw and cooked food stay fresh, how much coolers and fridges slow it down, how much spoiled food makes 1 Fertilizer, and whether the fridge icon shows.
 [*]Without MCM, [b]NEC.ini[/b] in Data\F4SE\Plugins explains every setting. Copy a line into [b]NEC_custom.ini[/b] beside it, under the same section heading, change the value and restart the game.
 [*]Either way your changes go in NEC_custom.ini, and NEC.ini stays as it ships. The mod comes without a NEC_custom.ini, so an update never wipes your settings. With Mod Organizer 2, keep NEC_custom.ini in its own mod or in overwrite.
 [/list]
@@ -77,6 +77,7 @@ Your weapons and armor [b]wear down as you use them[/b], the way they did in Fal
 [size=3][b][font=Georgia][color=#1AFF80]Little extras[/color][/font][/b][/size]
 
 [list]
+[*][b]Food spoiling[/b], off until you switch it on: food you or a companion carry, and food on the dead, spoils over game days, slower in coolers and unbroken fridges, marked with a frost icon. Spoiled food shows as a separate row at 0 condition. Eating it heals only 10% as much and gives extra rads, cooking stations won't use it, and a chemistry station turns it into Fertilizer. With worn loot on, food you find is already partly spoiled, while food you buy, cook, harvest or get as a reward starts fresh.
 [*]6 loading screen tips on wear, repairs, broken gear, jams and loot, in the vanilla style and as likely to show as any ordinary loading screen. A tip about a feature you switch off never shows.
 [*]Vanilla fix: the inspect screen at a trader shows the right price for the side the item is on.
 [*]Vanilla fix: a workbench confirmation box with a long list of components shows more rows and scrolls with the mouse wheel, the arrow keys, the D-pad and W and S.
@@ -93,13 +94,14 @@ Your weapons and armor [b]wear down as you use them[/b], the way they did in Fal
 [*]The plugin's own text comes in every language the game ships in. The rest is vanilla text. Every language but English was translated by AI, not by a person, so some lines may read a little off. To fix a line or add a language, edit or copy a file in Data\F4SE\Plugins\NEC\Translations, as en.ini there explains. For Simplified Chinese, copy zhhans.ini over cn.ini.
 [*]Item stats, recipes, leveled lists and NPC outfits that a DLL mod like RobCo Patcher changes as the game starts count in wear, repair costs and loot condition, since NEC reads them again at every save load and new game.
 [*]Both vanilla fixes under Little extras can be switched off, for a load order where another mod already fixes them.
+[*]In Survival, spoiled food still fills hunger as fresh food does.
 [/list]
 
 [size=3][b][font=Georgia][color=#1AFF80]Exclusion list[/color][/font][/b][/size]
 
 To have NEC leave some weapons or armor alone, such as gear with a condition of its own, list them in a file in Data\F4SE\Plugins\NEC\Exclude, 1 item a line: the plugin that adds the item, a bar, and the item's form ID from FO4Edit. The plugin name already says where the item comes from, so the load order digits can be left out, and 0x and leading zeros are optional.
 
-[code]; MyExclusions.ini
+[spoiler][code]; MyExclusions.ini
 Gas Masks of the Wasteland.esp|002672    ; M17 Gas Mask, no load order
 Gas Masks of the Wasteland.esp|35A7      ; PMK-1 Gas Mask, no leading zeros
 Gas Masks of the Wasteland.esp|0x000F99  ; GP-5 Gas Mask, with 0x
@@ -109,7 +111,20 @@ ccbgsfo4116-heavyflamer.esl|FE000809     ; the same, whole FO4Edit ID[/code]
 
 For a light plugin (.esl or ESL flagged), write the last 3 digits or the whole ID, since those are the only digits that count.
 
-NEC.log lists what each file leaves alone and any line it skips. Repair broken gear before you list it, since the game won't let you put on an item at 0 condition.
+NEC.log lists what each file leaves alone and any line it skips. Repair broken gear before you list it, since the game won't let you put on an item at 0 condition.[/spoiler]
+
+[size=3][b][font=Georgia][color=#1AFF80]Food and fridge lists[/color][/font][/b][/size]
+
+Food spoiling sorts every food in your load order into 4 kinds from the game data: raw, crop, cooked and never spoils. For a mod whose food it sorts wrong, list the food in a file in Data\F4SE\Plugins\NEC\Food with its kind after it. List a mod's fridges and coolers in Data\F4SE\Plugins\NEC\Fridge by the container's base form, as FO4Edit shows it. Both take the exclusion list's line form.
+
+[spoiler][code]; Food\MyFood.ini
+MyFoodMod.esp|000801 = raw
+MyFoodMod.esp|000802 = never spoils
+
+; Fridge\MyKitchen.ini
+MyKitchenMod.esp|000803    ; MyKitchen_Freezer01[/code]
+
+NEC.log lists what each file sets and any line it skips. NEC ships Fridge\Fallout4.ini with the vanilla coolers and unbroken fridges.[/spoiler]
 
 [size=3][b][font=Georgia][color=#1AFF80]Requirements[/color][/font][/b][/size]
 
@@ -142,6 +157,7 @@ After that, [b]removing the mod is safe.[/b] It has no ESP and keeps no save dat
 
 [list]
 [*]Condition is stored in ExtraHealth on the item's inventory stack, the same place power armor keeps its health and a fusion core its charge. 1.0 means new and 0 means broken. An item with no ExtraHealth counts as new. Full is stored as 0.9999999, because setting ExtraHealth to 1.0 deletes it.
+[*]NEC stores the game day food started to spoil in ExtraTimeLeft on its inventory stack, which the game itself only uses for lights, and gives spoiled food an ExtraHealth just above 0, since the game won't let you use an item at 0.
 [*]Papyrus can read it with ObjectReference.GetItemHealthPercent, but only on an item lying in the world, not on one inside an inventory. It returns -1 for an item with no condition and, while Worn loot is on, for loose loot that has not rolled its condition yet.
 [/list]
 

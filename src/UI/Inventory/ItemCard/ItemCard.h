@@ -25,8 +25,8 @@
 // it hooks those calls on the cards the same way, and accuracy in the sort.
 //
 // Hooks.cpp is the CND row, Rate.cpp the fire rate and the sort's note,
-// Aim.cpp accuracy and range, Raise.cpp moves the row past Damage, and Cards.h
-// is what they share.
+// Aim.cpp accuracy and range, Raise.cpp moves the row past Damage,
+// FridgeIcon.cpp marks food in a fridge on it, and Cards.h is what they share.
 namespace ItemCard
 {
 	// Patches the calls that fill item cards.

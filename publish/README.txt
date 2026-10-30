@@ -134,7 +134,10 @@ MAKE IT YOURS
   worn loot, trader repairs, the HUD condition bars and more, or tune wear
   speed for you, for NPCs and for automatic weapons, where wear starts to cost
   performance, how much gear keeps at 0 condition, prices, repair costs and
-  the condition gear needs before it can be modded.
+  the condition gear needs before it can be modded. Its Little extras page
+  turns food spoiling on and sets how long raw and cooked food stay fresh, how
+  much coolers and fridges slow it down, how much spoiled food makes 1
+  Fertilizer, and whether the fridge icon shows.
 * Without MCM, NEC.ini in Data\F4SE\Plugins explains every setting. Copy a
   line into NEC_custom.ini beside it, under the same section heading, change
   the value and restart the game.
@@ -144,6 +147,13 @@ MAKE IT YOURS
   overwrite.
 
 LITTLE EXTRAS
+* Food spoiling, off until you switch it on: food you or a companion carry,
+  and food on the dead, spoils over game days, slower in coolers and unbroken
+  fridges, marked with a frost icon. Spoiled food shows as a separate row at 0
+  condition. Eating it heals only 10% as much and gives extra rads, cooking
+  stations won't use it, and a chemistry station turns it into Fertilizer.
+  With worn loot on, food you find is already partly spoiled, while food you
+  buy, cook, harvest or get as a reward starts fresh.
 * 6 loading screen tips on wear, repairs, broken gear, jams and loot, in
   the vanilla style and as likely to show as any ordinary loading
   screen. A tip about a feature you switch off never shows.
@@ -176,6 +186,7 @@ COMPATIBILITY
   condition, since NEC reads them again at every save load and new game.
 * Both vanilla fixes under Little extras can be switched off, for a load order
   where another mod already fixes them.
+* In Survival, spoiled food still fills hunger as fresh food does.
 
 EXCLUSION LIST
 To have NEC leave some weapons or armor alone, such as gear with a condition
@@ -198,6 +209,24 @@ ID, since those are the only digits that count.
 NEC.log lists what each file leaves alone and any line it skips. Repair
 broken gear before you list it, since the game won't let you put on an item
 at 0 condition.
+
+FOOD AND FRIDGE LISTS
+Food spoiling sorts every food in your load order into 4 kinds from the game
+data: raw, crop, cooked and never spoils. For a mod whose food it sorts wrong,
+list the food in a file in Data\F4SE\Plugins\NEC\Food with its kind after it.
+List a mod's fridges and coolers in Data\F4SE\Plugins\NEC\Fridge by the
+container's base form, as FO4Edit shows it. Both take the exclusion list's
+line form.
+
+  ; Food\MyFood.ini
+  MyFoodMod.esp|000801 = raw
+  MyFoodMod.esp|000802 = never spoils
+
+  ; Fridge\MyKitchen.ini
+  MyKitchenMod.esp|000803    ; MyKitchen_Freezer01
+
+NEC.log lists what each file sets and any line it skips. NEC ships
+Fridge\Fallout4.ini with the vanilla coolers and unbroken fridges.
 
 REQUIREMENTS
 * Fallout 4 1.11.240 (AE) or 1.10.163 (OG)

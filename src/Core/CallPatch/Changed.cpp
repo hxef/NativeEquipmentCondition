@@ -86,6 +86,9 @@ namespace CallPatch
 		} else if (a_place.part == Part::kTraderKeys) {
 			const auto off = PiecesOffTail(a_place);
 			tail += off.empty() ? " REPAIR's key may answer a UI replacer's own button combinations again, so trader repairs are not affected."sv : std::string_view{ off };
+		} else if (a_place.part == Part::kFertilizerNeeds) {
+			const auto off = PiecesOffTail(a_place);
+			tail += off.empty() ? " The Fertilizer row shows what it needs only while the call reaches NEC, so making Fertilizer is not affected."sv : std::string_view{ off };
 		} else {
 			tail += a_place.use == Use::kTraceOnly ? " It only fed the bug report logs, so play is not affected."sv :
 			        a_everyCall                    ? " NEC's change there has to run on every call, so it is off from now on."sv :

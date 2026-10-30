@@ -2,8 +2,8 @@
 
 #include "Core/Settings.h"
 
-// The help lines of the switches on the MCM page, and the name and help of the
-// bug report logs switch, see MenuLine in Text.h.
+// The help lines of the switches on the MCM page, and the names and help of
+// the fridge icon and bug report logs switches, see MenuLine in Text.h.
 namespace Text
 {
 	namespace
@@ -17,6 +17,8 @@ namespace Text
 			{ &Settings::bQuickContainer, {}, QUICK_CONTAINER_HELP },
 			{ &Settings::bConfirmScroll, {}, CONFIRM_SCROLL_HELP },
 			{ &Settings::bInspectPrice, {}, INSPECT_PRICE_HELP },
+			{ &Settings::bFoodSpoils, {}, FOOD_SPOILS_HELP },
+			{ &Settings::bFridgeIcon, FRIDGE_ICON_NAME, FRIDGE_ICON_HELP },
 			{ &Settings::bTraceLogs, TRACE_LOGS_NAME, TRACE_LOGS_HELP },
 		};
 	}

@@ -74,6 +74,13 @@ namespace
 		{ kWorldLoot, Part::kWorldLoot, Shown::kPart, { kWornLoot } },
 		{ kModlessLoot, Part::kModlessLoot, Shown::kPart, { kWornLoot } },
 		{ kGifts, Part::kGifts, Shown::kPart, { kWornLoot } },
+		// Food is stamped as it comes through Worn loot's arrival door, see
+		// FoodSpoil.h, and the bite, the station rows and the Fertilizer row
+		// read those stamps.
+		{ kFoodSpoils, Part::kFood, Shown::kPart, { kWornLoot } },
+		{ kFoodBite, Part::kFoodBite, Shown::kPart, { kFoodSpoils } },
+		{ kFoodCook, Part::kFoodCook, Shown::kPart, { kFoodSpoils } },
+		{ kFertilizer, Part::kFertilizer, Shown::kPart, { kFoodSpoils } },
 		{ kCndContainers, Part::kCardCnd, Shown::kName },
 		{ kCndWorkbench, Part::kCardCnd, Shown::kName },
 		{ kCndCooking, Part::kCardCnd, Shown::kName },

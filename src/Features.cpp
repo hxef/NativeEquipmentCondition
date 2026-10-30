@@ -13,6 +13,7 @@
 #include "Gameplay/BrokenEquip.h"
 #include "Gameplay/CritMeter.h"
 #include "Gameplay/FireRate/FireRate.h"
+#include "Gameplay/FoodSpoil/FoodSpoil.h"
 #include "Gameplay/HealthDamage/HealthDamage.h"
 #include "Gameplay/InHand.h"
 #include "Gameplay/ItemValue.h"
@@ -109,6 +110,9 @@ namespace
 		// A weapon or a piece of armor spawns at a condition that suits where
 		// it came from.
 		{ .name = "SpawnCondition", .on = &Settings::bSpawnCondition, .part = Part::kSpawn, .Install = SpawnCondition::Install },
+		// Food the player or a companion carried spoils with time. Food is
+		// stamped at Worn loot's arrival door, so it rides on Worn loot.
+		{ .name = "FoodSpoil", .on = &Settings::bFoodSpoils, .part = Part::kFood, .needs = Part::kSpawn, .Install = FoodSpoil::Install, .Load = FoodSpoil::Load, .Unload = FoodSpoil::Unload },
 
 		// UI: what is drawn into Fallout 4's own menus.
 

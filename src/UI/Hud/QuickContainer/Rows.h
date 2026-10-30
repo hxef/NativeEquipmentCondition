@@ -30,4 +30,8 @@ namespace QuickContainer
 	// The conditions for the rows on screen, from the newest kept build whose
 	// rows read the same, or nothing when none of them does.
 	std::optional<std::array<std::int32_t, MAX_ROWS>> FindConditions(const std::array<Shown, MAX_ROWS>& a_shown, std::size_t a_size);
+
+	// Whether the container of the newest build is on the fridge list. The
+	// HUD shows that build a frame or so later.
+	[[nodiscard]] bool ShowsFridge();
 }

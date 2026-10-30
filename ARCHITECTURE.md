@@ -53,6 +53,7 @@ src/
     Feature.h                the shape of a feature and its 4 moments
     IniText.h/.cpp           one key changed in an ini file's text, every other line kept
     ItemCards.h/.cpp         asking the Pip-Boy to rebuild its item cards
+    ListFiles.h/.cpp         reading the lists of forms a mod ships in a folder under NEC, such as Exclude
     LogFiles.h/.cpp          opening NEC.log and the 3 bug report logs, and keeping those of the 10 game starts before
     LogLevel.cpp             NEC.log's level, from sLogLevel or the MCM page, declared in Settings.h
     Parts.h/.cpp             every part another mod can take from NEC, and what each setting works through
@@ -71,7 +72,7 @@ src/
       Trader.cpp             what a trader says about a repair
       Tips.cpp               the loading screen's tips
       Names/
-        PartsPlay.cpp        the names of the parts that change play, up to Single shot gun jams
+        PartsPlay.cpp        the names of the parts that change play, up to Fertilizer from spoiled food
         PartsLoot.cpp        the names of the Worn loot parts, from Worn loot to Quest rewards arrive new
         PartsUi.cpp          the names of the parts drawn in menus
         PiecesPlay.cpp       the names of the pieces of the parts that change play, from Perk repair discount text to Damage shown in menus
@@ -131,6 +132,20 @@ src/
     FireRate/
       FireRate.h/.cpp        a worn automatic weapon fires slower
       Cuts.h/.cpp            a worn blade's held attack cuts less often
+    FoodSpoil/
+      FoodSpoil.h/.cpp       food that spoils with time, its 3 parts, and food carried before it was on
+      Food.h                 what the folder's files share
+      Kinds.h/.cpp           each food's kind from the game data: raw, crop, cooked or never spoils
+      FoodList.cpp           the kinds a mod gives its own food, from NEC/Food
+      FridgeList.cpp         the containers that keep food as a fridge does, from NEC/Fridge
+      Fridge.cpp             food going into or out of a fridge keeps its days spent at the fridge speed
+      Stamp.h/.cpp           the day food started to spoil, how fresh it is, found food's start, and the door that stamps it
+      Order.cpp              the stack closest to spoiling first
+      Eat.cpp                a spoiled bite heals a tenth and gives rads
+      Cook.cpp               cooking and chemistry stations leave spoiled food out and take fresh pieces only
+      Fertilizer.cpp         a chemistry station's Fertilizer row turns 10 spoiled food into 1 Fertilizer
+      Bodies.cpp             food on the dead starts to spoil
+      Sweep.cpp              food whose time ran out turns spoiled as a menu opens
     Aim/
       Aim.h                  a worn gun is less accurate and carries its damage less far
       Accuracy.cpp           every shot's spread, the crosshair and the VATS hit chance
@@ -148,6 +163,7 @@ src/
       SpawnCondition.h/.cpp  the roll at the door of every inventory
       Band.h/.cpp            the roll, either side of an item's middle or in a trader's band
       Fill.h/.cpp            a list filled from a container's record, its plain lines and its stock record
+      Food.h/.cpp            found food's starting freshness
       Guards.h/.cpp          what marks a save being applied, a game recording no change, a console command, a script's gift and a restock, the folder's scope, and what the player carries
       Handover.h/.cpp        an item changing hands, a trader's loose item and SpawnDupe's copies
       Owners.h/.cpp          who a stack goes to, and which of them get it at full condition
@@ -164,19 +180,21 @@ src/
     MessageBox.h/.cpp        a question with as many answers as it is given, kept solid under a message box mod
     LoadingTips.h/.cpp       the plugin's own tips on the loading screen
     InspectPrice.h/.cpp      the price on the inspect screen at a trader
+    FridgeIcon.h/.cpp        the fridge icon the quick container and the item card share, made and sized to a line of text
     Roles/
       Roles.h/.cpp           the tests every part shares: on screen, a part's box, a point to and from the stage, the found, noted and missing lines
       Conventions.h          the method names some menu movies share beyond the vanilla ones
       Bars.h/.cpp            every button hint list a menu draws
       Card.h/.cpp            the item card and its CND row
       Hud.h/.cpp             the ammo counter, its divider, numbers and colour, the parts beside it, where a quick container row's name starts and ends
+      ContainerName.h/.cpp   the container's name at the top of the quick container
       Boxes.h/.cpp           the parts of the bench's confirmation box, where the bench's button bar starts, the message box's background, and whether the barter screen's quantity box is open
     Mcm/
       Mcm.h/.cpp             the settings page in the Mod Configuration Menu
       Bridge.h/.cpp          the page's answers: values, changes and words
       Notes.cpp              the page's grey rows: each block's note, and the list at the top of the parts no note names
       Fit.cpp                how tall a grey row may be, and a row cut to fit
-      Layout.cpp             MCM's list in None mode while NEC's page shows, and the HUD bar sliders' live ends
+      Layout.cpp             MCM's list in None mode while NEC's main or Little extras page shows, and the HUD bar sliders' live ends
       HudBar.cpp             the HUD bar sliders: the bar's place in HUD units from the screen's top left, with the screen as their range
     Hud/
       HudParts/
@@ -195,16 +213,19 @@ src/
         Rows.h/.cpp                  the rows as the game builds them
         Meters.h/.cpp                the meters on the HUD's rows
         Draw.h/.cpp                  how one meter looks
+        FridgeIcon.h/.cpp            the icon beside a fridge's name
     Inventory/
-      Pipboy.h/.cpp          a worn out item's name faded in the Pip-Boy
+      Pipboy.h/.cpp          a worn out item's or spoiled food's name faded in the Pip-Boy
       PaperDoll.h/.cpp       a CND bar over each region of the apparel tab's paper doll
       ItemCard/
         ItemCard.h/.cpp      the feature: its install and the movies
         Cards.h              what the folder's files share
         Hooks.cpp            the CND row
+        Food.cpp             the CND row on food, 0 once spoiled
         Rate.cpp             the fire rate a card prints, and the sort's note of each stack
         Aim.cpp              the accuracy and range a card prints, and the sort by accuracy
         Raise.cpp            moving the row up past Damage
+        FridgeIcon.cpp       the icon on the CND row of food in a fridge
     Repair/
       SelectedItem.h/.cpp    the item highlighted in a menu's list
       Restore.h/.cpp         writing a repair onto one copy of an item

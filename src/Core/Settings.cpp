@@ -47,6 +47,7 @@ namespace Settings
 			&bQuickContainer,
 			&bConfirmScroll,
 			&bInspectPrice,
+			&bFoodSpoils,
 		};
 
 		const Number NUMBERS[]{
@@ -68,6 +69,10 @@ namespace Settings
 			&iFreeMendAbove,
 			&fModLockStart,
 			&fTraderPriceMult,
+			&fRawFoodDays,
+			&fCookedFoodDays,
+			&fFridgeSpoilSpeed,
+			&iSpoiledPerFertilizer,
 			&fHudBarX,
 			&fHudBarY,
 			&fPowerArmorBarX,
@@ -289,6 +294,8 @@ namespace Settings
 		for (const auto* on : SWITCHES) {
 			std::format_to(std::back_inserter(line), " {:s}={:s}", on->key, Shown(*on));
 		}
+		// SWITCHES ends in bFoodSpoils, which bFridgeIcon follows.
+		std::format_to(std::back_inserter(line), " {:s}={:s}", bFridgeIcon.key, Shown(bFridgeIcon));
 		std::string_view section;
 		for (const auto& entry : NUMBERS) {
 			std::visit([&](const auto* a_number) {

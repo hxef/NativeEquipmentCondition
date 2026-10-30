@@ -31,6 +31,8 @@ namespace Text
 			{ "Repairs", REPAIRS_TITLE },
 			{ "HUD", HUD_TITLE },
 			{ "Extras", EXTRAS_TITLE },
+			{ "Food", FOOD_TITLE },
+			{ "Menus", MENUS_TITLE },
 			{ "Log", LOG_TITLE },
 		};
 
@@ -74,6 +76,11 @@ namespace Text
 	std::string ArmorWornOut(std::string_view a_name)
 	{
 		return Say(ARMOR_WORN_OUT, a_name);
+	}
+
+	std::string SpoiledFood()
+	{
+		return Pick(SPOILED_FOOD);
 	}
 
 	std::string MenuLine(std::string_view a_id)

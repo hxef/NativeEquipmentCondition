@@ -17,7 +17,7 @@
 //
 // It uses the standard library alone, so it builds and can be tested outside
 // the game. The language files' reader, Text/Translations.cpp, trims and
-// matches names with it too, and Condition/Excluded.cpp splits its lines.
+// matches names with it too, and Core/ListFiles.cpp splits its lines.
 namespace IniText
 {
 	// a_text without the spaces and tabs at either end.

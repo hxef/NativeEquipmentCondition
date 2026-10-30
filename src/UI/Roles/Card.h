@@ -16,7 +16,7 @@ namespace Roles::Card
 	// Where one menu's movie keeps its card, vanilla's place.
 	struct Place
 	{
-		std::string_view movie;   // the movie's file, for the trace
+		std::string_view movie;   // the movie's file, for the trace and the fridge icon
 		const char*      path;
 		bool             always;  // every screen of the movie has a card
 	};
@@ -46,4 +46,8 @@ namespace Roles::Card
 	// once and no match only when a_redrawn.
 	[[nodiscard]] std::optional<Row> ConditionRow(Scaleform::GFx::Movie& a_movie, Value& a_card, std::uint32_t a_index,
 		std::string_view a_label, double a_percent, bool a_redrawn);
+
+	// The field a row prints its number in, or a value that is not a display
+	// object when the row has none.
+	[[nodiscard]] Value NumberField(Value& a_row);
 }

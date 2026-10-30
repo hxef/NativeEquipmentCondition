@@ -202,4 +202,10 @@ namespace Roles::Card
 		above.erase(end, above.end());
 		return row;
 	}
+
+	Value NumberField(Value& a_row)
+	{
+		auto field = Flash::Member(a_row, "Value_tf"sv);
+		return field.IsDisplayObject() ? field : Value{};
+	}
 }

@@ -94,6 +94,16 @@ namespace
 	// With another mod on the bench lists the lock still refuses BUILD, but
 	// no row fades and the mod slots stay open.
 	constexpr Piece MOD_LOCK_SIDE[]{ kBenchItemList, kBenchModLists };
+	// The bite, the station rows and the Fertilizer row each go off alone,
+	// and food still spoils. The 2 days and the fridge speed set only how fast
+	// it spoils.
+	constexpr Piece FOOD[]{ kFoodSpoils };
+	// What 1 Fertilizer costs counts only while the Fertilizer row is in.
+	constexpr Piece FERTILIZER[]{ kFertilizer };
+	constexpr Piece FOOD_SIDE[]{ kFoodBite, kFoodCook, kFertilizer };
+	// The fridge icon beside a fridge's name rides on the loot preview's
+	// rows, and the one on a food's card on the container screen's CND row.
+	constexpr Piece FRIDGE_ICON_SIDE[]{ kLootMeters, kCndContainers };
 
 	constexpr SettingLink SETTINGS[]{
 		{ &Settings::bJam, nullptr, JAM, JAM_SIDE },
@@ -104,6 +114,8 @@ namespace
 		{ &Settings::bQuickContainer, nullptr, LOOT_METERS },
 		{ &Settings::bConfirmScroll, nullptr, CONFIRM_SCROLL },
 		{ &Settings::bInspectPrice, nullptr, INSPECT_PRICE },
+		{ &Settings::bFoodSpoils, nullptr, FOOD, FOOD_SIDE },
+		{ &Settings::bFridgeIcon, &Settings::bFoodSpoils, FOOD, FRIDGE_ICON_SIDE },
 		{ &Settings::fWearRateMult, nullptr, {}, GUN_WEAR, {}, kMeleeWear },
 		// An NPC's gun wears through the same fire call, so it sits in the
 		// player's block and loses its guns with it.
@@ -125,6 +137,10 @@ namespace
 		{ &Settings::iFreeMendAbove, &Settings::fBenchCostMult, BENCH },
 		{ &Settings::fModLockStart, &Settings::fBenchCostMult, BENCH, MOD_LOCK_SIDE },
 		{ &Settings::fTraderPriceMult, &Settings::bVendorRepair, TRADER_REPAIRS, TRADER_PRICE_SIDE },
+		{ &Settings::fRawFoodDays, &Settings::bFoodSpoils, FOOD },
+		{ &Settings::fCookedFoodDays, &Settings::bFoodSpoils, FOOD },
+		{ &Settings::fFridgeSpoilSpeed, &Settings::bFoodSpoils, FOOD },
+		{ &Settings::iSpoiledPerFertilizer, &Settings::bFoodSpoils, FERTILIZER },
 		// The HUD bar rows share bHudCondition, so they never run once HUD
 		// condition bars is left to another mod.
 		{ &Settings::fHudBarX, &Settings::bHudCondition, HUD_BARS },

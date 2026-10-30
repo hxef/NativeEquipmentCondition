@@ -31,6 +31,27 @@ namespace ItemCard
 	// was patched.
 	bool PatchCards();
 
+	// The CND row of food that spoils, in Food.cpp: how much of its time
+	// a_stack has left as a whole percent, 100 before it is stamped and 0
+	// once spoiled. Nothing for anything else, and for all food while
+	// bFoodSpoils is off.
+	[[nodiscard]] std::optional<double> FoodPercent(const RE::BGSInventoryItem& a_item, const RE::BGSInventoryItem::Stack* a_stack);
+
+	// Whether the CND row of a_stack's food gets the fridge icon, in
+	// Food.cpp: it sits in the fridge the container screen shows, see
+	// FoodSpoil::InOpenFridge, and FoodSpoil::FridgeIconOn says so.
+	[[nodiscard]] bool InFridge(const RE::BGSInventoryItem& a_item, const RE::BGSInventoryItem::Stack* a_stack);
+
+	// What a CND entry carries in the card's data when its row gets the
+	// fridge icon. The card itself never reads it.
+	inline constexpr std::string_view FRIDGE_MARK = "necFridge";
+
+	// Shows the fridge icon left of the number on a_row, the CND row, while
+	// a_fridge says so, and hides one shown before, in FridgeIcon.cpp. The
+	// icon is the movie's own cryo damage icon, made by its exported name,
+	// so only a movie that names one gets it. a_movieFile is the movie's.
+	void MarkFridge(Scaleform::GFx::Movie& a_movie, std::string_view a_movieFile, Scaleform::GFx::Value& a_row, bool a_fridge);
+
 	// While FireRate slows worn weapons, patches the fire rate calls of the
 	// cards and of the 2 lists that weigh fire rates. Patches the sort's note
 	// of each stack's condition while fire rate or accuracy needs it, see

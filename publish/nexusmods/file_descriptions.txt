@@ -1,3 +1,8 @@
+1.7.0
+Version 1.7.0 adds optional food spoiling, as in Fallout 76. Carried food spoils over game days, slower in coolers and unbroken fridges, and spoiled food gives extra rads and makes Fertilizer at a chemistry station. Switch it on in MCM.
+
+OG & AE only
+
 1.6.1
 Version 1.6.1 prevents a rare fast travel crash with other HUD mods, lists repairs from 100% down and adds an MCM switch to hide the CND word beside the HUD bars. HUD bars and NPC wear also work the same at any frame rate.
 

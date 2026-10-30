@@ -2,8 +2,8 @@
 
 #include "Core/Parts.h"
 
-// The names of the parts of the Condition and Gameplay rows up to Single shot
-// gun jams, see Core/Parts.h. The Worn loot parts are in PartsLoot.cpp.
+// The names of the parts of the Condition and Gameplay rows, see
+// Core/Parts.h. The Worn loot parts are in PartsLoot.cpp.
 namespace Text
 {
 	namespace
@@ -27,9 +27,13 @@ namespace Text
 			{ Part::kRange, PART_RANGE },
 			{ Part::kJam, PART_JAM },
 			{ Part::kReloadJam, PART_RELOAD_JAM },
+			{ Part::kFood, PART_FOOD },
+			{ Part::kFoodBite, PART_FOOD_BITE },
+			{ Part::kFoodCook, PART_FOOD_COOK },
+			{ Part::kFertilizer, PART_FERTILIZER },
 		};
 
-		static_assert(PartsInOrder(PARTS, Part::kPerks, Part::kReloadJam));
+		static_assert(PartsInOrder(PARTS, Part::kPerks, Part::kFertilizer));
 	}
 
 	std::span<const PartRow> PlayParts()

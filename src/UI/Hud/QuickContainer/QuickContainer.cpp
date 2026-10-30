@@ -2,6 +2,7 @@
 
 #include "Core/Settings.h"
 #include "UI/Hud/HudParts/HudParts.h"
+#include "UI/Hud/QuickContainer/FridgeIcon.h"
 #include "UI/Hud/QuickContainer/Meters.h"
 #include "UI/Hud/QuickContainer/Rows.h"
 #include "UI/MenuMovies.h"
@@ -19,6 +20,10 @@ namespace QuickContainer
 		bool g_patched = false;
 
 		HudParts::Waiter g_waiter{ Settings::bQuickContainer, [](Scaleform::GFx::Movie& a_movie) { AddMeters(a_movie); } };
+
+		// The fridge icon is made only once food spoils, since it loads a file
+		// the game ships.
+		HudParts::Waiter g_iconWaiter{ Settings::bFoodSpoils, [](Scaleform::GFx::Movie& a_movie) { AddFridgeIcon(a_movie); } };
 	}
 
 	// -------------------------------------------------------------------
@@ -29,7 +34,9 @@ namespace QuickContainer
 	{
 		if (g_patched && MenuMovies::IsMovie(a_file, "HUDMenu.swf"sv)) {
 			ForgetMeters();
+			ForgetFridgeIcon();
 			g_waiter.Watch(a_movie, "the quick container's CND");
+			g_iconWaiter.Watch(a_movie, "the fridge icon");
 		}
 	}
 

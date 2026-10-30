@@ -6,8 +6,10 @@
 #include "Core/Runtime.h"
 #include "Core/Settings.h"
 #include "Core/TraceLog.h"
+#include "Gameplay/FoodSpoil/FoodSpoil.h"
 #include "Gameplay/SpawnCondition/Band.h"
 #include "Gameplay/SpawnCondition/Fill.h"
+#include "Gameplay/SpawnCondition/Food.h"
 #include "Gameplay/SpawnCondition/Guards.h"
 #include "Gameplay/SpawnCondition/Handover.h"
 #include "Gameplay/SpawnCondition/Owners.h"
@@ -143,6 +145,32 @@ namespace SpawnCondition
 		}
 
 		// -------------------------------------------------------------------
+		// Food spoiling's door
+		// -------------------------------------------------------------------
+
+		// Asks FoodSpoil whatever Worn loot says, naming the container a
+		// handover takes the food out of. It leaves alone what the sort
+		// leaves alone: a save being applied, a copy of another inventory's
+		// stack, SpawnDupe's copies and the barter screen's.
+		bool FoodArrives(RE::BGSInventoryList* a_list, RE::TESBoundObject* a_object, RE::BGSInventoryItem::Stack* a_stack)
+		{
+			if (!a_list || !a_object || !a_stack || !FoodSpoil::Spoils(*a_object)) {
+				return false;
+			}
+			if (Loading() || !Private(*a_stack) || UnderSpawnDupe() || BarterCopy(a_list)) {
+				return false;
+			}
+			return FoodSpoil::Arrive(*a_list, *a_object, *a_stack, HandedFrom(a_object, a_list));
+		}
+
+		// Whether a_stack is spoiled food copied into the list a cooking or
+		// chemistry station counts from. The list then never gets it.
+		bool LeftOut(const RE::BGSInventoryList* a_list, const RE::TESBoundObject* a_object, const RE::BGSInventoryItem::Stack* a_stack)
+		{
+			return a_list && a_object && a_stack && FoodSpoil::LeftOut(*a_list, *a_object, *a_stack);
+		}
+
+		// -------------------------------------------------------------------
 		// The AddStack hooks
 		// -------------------------------------------------------------------
 
@@ -167,12 +195,35 @@ namespace SpawnCondition
 		// data matches. Rolling first keeps 2 pipe pistols from one footlocker
 		// as 2 entries with their own health. Rolling afterwards would merge
 		// them and give the pair one condition.
+		//
+		// Food is stamped before the original too, so a merge compares the
+		// stamp, and put in order once it is in. Found food rolls its starting
+		// freshness first, so the stamp starts from it.
 		template <std::size_t I>
 		void AddItemHk(RE::BGSInventoryList* a_list, RE::TESBoundObject* a_object, RE::BGSInventoryItem::Stack* a_stack,
 			std::uint32_t* a_oldCount, std::uint32_t* a_newCount)
 		{
-			const auto aim = Settings::bSpawnCondition.GetValue() && g_links[I].Live() ? Sort(a_list, a_object, a_stack) : std::nullopt;
+			const bool live = g_links[I].Live();
+			if (live && LeftOut(a_list, a_object, a_stack)) {
+				// AddStack zeroes both counts before anything else, so a stack
+				// left out does the same.
+				if (a_oldCount) {
+					*a_oldCount = 0;
+				}
+				if (a_newCount) {
+					*a_newCount = 0;
+				}
+				return;
+			}
+			if (live) {
+				FoodFound(a_list, a_object, a_stack);
+			}
+			const bool food = live && FoodArrives(a_list, a_object, a_stack);
+			const auto aim = Settings::bSpawnCondition.GetValue() && live ? Sort(a_list, a_object, a_stack) : std::nullopt;
 			AddThenSplit<I>(aim, a_list, a_object, a_stack, a_oldCount, a_newCount);
+			if (food) {
+				FoodSpoil::Order(*a_list, *a_object);
+			}
 		}
 
 		// A list filled from its base container's record. Only ever reached for

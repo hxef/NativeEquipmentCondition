@@ -71,6 +71,14 @@ namespace ItemCard
 			a_entries.SetElement(0, last);
 		}
 
+		// The number on the CND row: a weapon's or armor's condition, or how
+		// fresh a food is.
+		std::optional<double> RowPercent(const RE::BGSInventoryItem& a_item, const RE::BGSInventoryItem::Stack* a_stack)
+		{
+			const auto gear = Condition::Percent(a_item, a_stack);
+			return gear ? gear : FoodPercent(a_item, a_stack);
+		}
+
 		// Stands in for InventoryUserUIUtils::PopulateItemCardInfo_Helper. A
 		// menu refreshing its card passes the card's array. A menu building
 		// its list passes a list entry, which gets the array as its
@@ -86,7 +94,7 @@ namespace ItemCard
 			g_helperLinks[I](a_target, a_item, a_stackID, a_compareItems, a_compareArmorWeightAndValue);
 			const auto live = std::exchange(t_building, nullptr) != nullptr;
 
-			const auto percent = live ? Condition::Percent(a_item, stack) : std::nullopt;
+			const auto percent = live ? RowPercent(a_item, stack) : std::nullopt;
 			if (!percent) {
 				return;
 			}
@@ -103,6 +111,9 @@ namespace ItemCard
 			Value entry;
 			RE::InventoryUserUIUtils::AddItemCardInfoEntry(entries, entry, CND_TEXT, Value(*percent));
 			entry.SetMember("showAsPercent"sv, Value(true));
+			if (InFridge(a_item, stack)) {
+				entry.SetMember(FRIDGE_MARK, Value(true));
+			}
 			MoveLastToFront(entries);
 		}
 
@@ -124,16 +135,17 @@ namespace ItemCard
 			a_link(a_this, a_item, a_stack, a_data);
 			const auto live = std::exchange(t_building, nullptr) != nullptr;
 
-			const auto percent = live && a_item && a_data ? Condition::Percent(*a_item, a_stack) : std::nullopt;
+			const auto percent = live && a_item && a_data ? RowPercent(*a_item, a_stack) : std::nullopt;
 			if (!percent) {
 				return;
 			}
 
 			// The item's own entry, which the Pip-Boy numbers as it builds it.
-			// Pipboy::MarkBroken keeps the number of a worn out one to fade its
-			// name. It runs either way, since a repaired item needs its number
-			// forgotten.
-			Pipboy::MarkBroken(*a_data, a_stack, a_stack && a_stack->extra && a_stack->extra->IsItemBroken());
+			// Pipboy::MarkBroken keeps the number of a worn out item or of
+			// spoiled food, which reads 0, to fade its name. It runs either
+			// way, since a repaired item needs its number forgotten.
+			const auto spent = Condition::WearsOut(*a_item->object) ? a_stack && a_stack->extra && a_stack->extra->IsItemBroken() : *percent == 0.0;
+			Pipboy::MarkBroken(*a_data, a_stack, spent);
 
 			// The call above created this array from scratch, so its order is
 			// still free to change.

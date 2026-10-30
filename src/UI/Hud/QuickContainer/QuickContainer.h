@@ -16,14 +16,15 @@
 // and each row takes its meter from the newest whose names and counts match.
 //
 // Rows.cpp is the rows as the game builds them, Meters.cpp the meters on the
-// HUD's rows, and Draw.cpp how one meter looks. Rows.h, Meters.h and Draw.h are
-// what they share.
+// HUD's rows, and Draw.cpp how one meter looks. FridgeIcon.cpp puts an icon
+// beside a fridge's name, from the container Rows.cpp sees. Rows.h, Meters.h,
+// Draw.h and FridgeIcon.h are what they share.
 namespace QuickContainer
 {
 	// Patches the calls that build the rows.
 	void Install();
 
-	// Adds the meters to the HUD movie through HudParts::Waiter. Ignores
-	// every other movie.
+	// Adds the meters and the fridge icon to the HUD movie, each through a
+	// HudParts::Waiter. Ignores every other movie.
 	void OnMovieLoaded(Scaleform::GFx::Movie& a_movie, std::string_view a_file);
 }

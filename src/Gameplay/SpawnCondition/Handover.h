@@ -12,19 +12,24 @@
 // spawn container scope. Private to this folder.
 namespace SpawnCondition
 {
-	// What a handover in progress on this thread moves: the item, who gets it
-	// and whether it comes straight from the world. Lives only for that one
-	// call to TESObjectREFR::AddInventoryItem.
+	// What a handover in progress on this thread moves: the item, who gets it,
+	// the container it leaves and whether it comes straight from the world.
+	// Lives only for that one call to TESObjectREFR::AddInventoryItem.
 	struct Handing
 	{
 		const RE::TESBoundObject* object{ nullptr };
 		const RE::TESObjectREFR*  receiver{ nullptr };
+		const RE::TESObjectREFR*  source{ nullptr };
 		bool                      fromWorld{ false };
 	};
 
 	// The handover moving a_object into a_list, or nothing. AddInventoryItem
 	// adds to its receiver's own inventory, so the list names the receiver.
 	[[nodiscard]] const Handing* HandingOver(const RE::TESBoundObject* a_object, const RE::BGSInventoryList* a_list);
+
+	// The container a handover takes a_object out of into a_list, or nothing.
+	// Kept whatever Worn loot says, for food spoiling's fridges.
+	[[nodiscard]] const RE::TESObjectREFR* HandedFrom(const RE::TESBoundObject* a_object, const RE::BGSInventoryList* a_list);
 
 	// What a stack a handover names gets, written before the original
 	// AddStack. Returns the aim of a first roll, so the caller splits a stack

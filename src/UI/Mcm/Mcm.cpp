@@ -4,6 +4,7 @@
 #include "Core/Settings.h"
 #include "Core/TraceLog.h"
 #include "Gameplay/ArmorRating.h"
+#include "Gameplay/FoodSpoil/FoodSpoil.h"
 #include "Gameplay/SpawnCondition/SpawnCondition.h"
 #include "UI/Flash.h"
 #include "UI/Mcm/Bridge.h"
@@ -135,6 +136,9 @@ namespace Mcm
 			}
 			if (Take(FollowUp::kCarried) && SpawnCondition::CanKeepCarried()) {
 				SpawnCondition::KeepCarried();
+			}
+			if (Take(FollowUp::kFood) && SpawnCondition::CanKeepCarried()) {
+				FoodSpoil::StampCarried();
 			}
 		}
 

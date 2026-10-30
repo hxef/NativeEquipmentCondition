@@ -47,6 +47,7 @@ namespace ItemCard
 		{
 			std::uint32_t index;    // the child vanilla's card draws CND as
 			double        percent;  // the number the row prints
+			bool          fridge;   // the row gets the fridge icon
 		};
 
 		// The card draws its plain rows from the last entry to the first, then
@@ -66,7 +67,7 @@ namespace ItemCard
 					continue;
 				}
 				if (HasText(entry, CND_TEXT)) {
-					return Entry{ plainRows, Flash::Number(entry, "value"sv) };
+					return Entry{ plainRows, Flash::Number(entry, "value"sv), Flash::Bool(entry, FRIDGE_MARK) };
 				}
 				plainRows++;
 			}
@@ -150,7 +151,11 @@ namespace ItemCard
 			}
 
 			auto row = Roles::Card::ConditionRow(a_movie, a_card, entry->index, look.label, entry->percent, look.redrawn);
-			if (!row || row->above.empty()) {
+			if (!row) {
+				return;
+			}
+			MarkFridge(a_movie, a_place.movie, row->clip, entry->fridge);
+			if (row->above.empty()) {
 				return;
 			}
 

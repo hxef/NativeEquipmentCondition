@@ -109,6 +109,10 @@ namespace Flash
 	// A clip's children that are display objects, from the bottom up.
 	[[nodiscard]] std::vector<Value> Children(Value& a_parent);
 
+	// The application domain the movie's own classes live in, or a value that
+	// is not an object when the movie has none to read.
+	[[nodiscard]] Value Domain(Scaleform::GFx::Movie& a_movie);
+
 	// A clip's colour as its colorTransform keeps it: what red, green and
 	// blue are each multiplied by, then what is added to each, out of 255.
 	// Alpha is left out, since NEC fades its own parts by alpha.

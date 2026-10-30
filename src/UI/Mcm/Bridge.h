@@ -16,7 +16,8 @@ namespace Mcm
 {
 	using Params = Scaleform::GFx::FunctionHandler::Params;
 
-	// config.json's modName, which MCM also puts on every entry of NEC's page.
+	// config.json's modName, which MCM also puts on every entry of NEC's 2
+	// pages.
 	inline constexpr std::string_view MOD = "NEC"sv;
 
 	// NEC's answers on root.mcm, in Bridge.cpp, each for a call that is NEC's.
@@ -69,6 +70,7 @@ namespace Mcm
 		kCards,        // the Pip-Boy's item cards
 		kResistances,  // every loaded actor's damage type resistances
 		kCarried,      // what the player carries, see SpawnCondition::KeepCarried
+		kFood,         // the food the player and companions carry, see FoodSpoil::StampCarried
 		kTotal,
 	};
 
@@ -90,8 +92,8 @@ namespace Mcm
 	[[nodiscard]] std::optional<std::int32_t> HudBarDefault(std::string_view a_id);
 	[[nodiscard]] bool                        HudBarRanges(Scaleform::GFx::Value& a_entries);
 
-	// Puts MCM's settings list in None mode while NEC's page shows, and back
-	// once another page shows, and keeps the HUD bar sliders' live ends, in
-	// Layout.cpp. Called every frame of the main or pause menu.
+	// Puts MCM's settings list in None mode while a page of NEC's shows, and
+	// back once another page shows, and keeps the HUD bar sliders' live ends,
+	// in Layout.cpp. Called every frame of the main or pause menu.
 	void Layout(Scaleform::GFx::Movie& a_movie);
 }

@@ -4,6 +4,7 @@
 
 #include <cstdint>
 #include <functional>
+#include <optional>
 #include <string>
 
 namespace SpawnCondition
@@ -40,13 +41,17 @@ namespace SpawnCondition
 	// companion's for example, arrive new, and so does the outfit the
 	// player's own record puts on them in a new game.
 	//
+	// Food that spoils rolls in the same band, as the share of its time it
+	// starts with, see FoodSpoil::SetStart. Only while food spoiling is on.
+	//
 	// Band.cpp is the roll itself, either side of an item's middle or in a
 	// trader's band, Roll.cpp a stack's first condition and its split,
-	// Handover.cpp an item changing hands, World.cpp loot lying in the world,
-	// Guards.cpp KeepCarried and what marks a save being applied, a console
-	// command, a script giving an item and a restock, Owners.cpp the owner
-	// checks, and Trace.cpp what the trace log is told about a stack. Their
-	// headers are what the folder's files share.
+	// Food.cpp food's starting freshness, Handover.cpp an item changing
+	// hands, World.cpp loot lying in the world, Guards.cpp KeepCarried and
+	// what marks a save being applied, a console command, a script giving an
+	// item and a restock, Owners.cpp the owner checks, and Trace.cpp what the
+	// trace log is told about a stack. Their headers are what the folder's
+	// files share.
 	void Install();
 
 	// Whether KeepCarried may run from the MCM: no main menu, no loading
@@ -65,6 +70,13 @@ namespace SpawnCondition
 	// load's loading screen closes, never for a new game or a coc from the
 	// main menu.
 	void KeepCarriedAfterLoad();
+
+	// The starting freshness found food a_object rolls in a_list, in the
+	// band its gear rolls in there, for food a character carried as it died,
+	// see FoodSpoil::StampHeld. Nothing unless Worn loot and food spoiling
+	// are both on. a_extra is the food's own list, a_count for the trace log.
+	[[nodiscard]] std::optional<float> FoundFreshness(const RE::BGSInventoryList& a_list, const RE::TESBoundObject& a_object,
+		const RE::ExtraDataList* a_extra, std::uint32_t a_count);
 
 	// Gives the loose items the trade on this thread bought their mark back,
 	// so a respawn puts each back to roll again, see NoteBought in

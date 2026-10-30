@@ -129,6 +129,20 @@ namespace
 		{ "console commands", { kConsoleNew } },
 		{ "script additem", { kGifts } },
 		{ "script removeitem", { kGifts } },
+		// FoodSpoil
+		{ "bite mark", { kFoodBite } },
+		{ "spoiled bite effects", { kFoodBite } },
+		{ "cook mark open", { kFoodCook } },
+		{ "cook mark", { kFoodCook } },
+		{ "fresh take", { kFoodCook } },
+		{ "fertilizer row", { kFertilizer } },
+		{ "fertilizer grey", { kFertilizer } },
+		{ "fertilizer refusal", { kFertilizer } },
+		{ "fertilizer build", { kFertilizer } },
+		// No mod takes anything here, see Part::kFertilizerNeeds. It only lets
+		// the place's line say the row's needs show nothing while Fertilizer
+		// from spoiled food is off.
+		{ "fertilizer calls", { kFertilizer } },
 		// ItemCard
 		{ "container card", { kCndContainers } },
 		{ "examine card", { kCndWorkbench } },

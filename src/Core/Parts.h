@@ -8,7 +8,9 @@
 #include <span>
 
 // Every part of NEC another mod can take from it, by the name a player reads
-// on the MCM page and in NEC.log, in Features.cpp's order. Each place NEC
+// on the MCM page and in NEC.log, in Features.cpp's order, but for food
+// spoiling's, which sit with the Gameplay parts though their row comes after
+// Worn loot's, which it rides on. Each place NEC
 // patches belongs to 1 part: its row's own, see Feature::part, or the one its
 // patch call names, see CallPatch.h. Each part has 1 or more pieces, see
 // Core/Pieces.h. The names live in Core/Text, 1 table a part, and what each
@@ -34,6 +36,10 @@ enum class Part : std::uint8_t
 	kRange,          // Shorter range when worn
 	kJam,            // Jamming
 	kReloadJam,      // Single shot gun jams
+	kFood,           // Food spoils
+	kFoodBite,       // Eating spoiled food
+	kFoodCook,       // Spoiled food kept out of recipes
+	kFertilizer,     // Fertilizer from spoiled food
 	kSpawn,          // Worn loot
 	kConsoleNew,     // Console items arrive new
 	kWorldLoot,      // Loot lying around
@@ -56,18 +62,19 @@ enum class Part : std::uint8_t
 	kTips,           // Loading screen tips
 	// From here on, places no mod takes anything from, each named after its
 	// row's part.
-	kTrace,          // a place that only feeds the trace logs
-	kBenchMessages,  // the bench place that also shows NEC's 2 messages when MODIFY opens nothing
-	kTraderKeys,     // the barter place that keeps REPAIR's key out of other buttons' combinations
+	kTrace,            // a place that only feeds the trace logs
+	kBenchMessages,    // the bench place that also shows NEC's 2 messages when MODIFY opens nothing
+	kTraderKeys,       // the barter place that keeps REPAIR's key out of other buttons' combinations
+	kFertilizerNeeds,  // the chemistry station place that shows what NEC's Fertilizer row needs
 	kTotal,
 };
 
 inline constexpr std::size_t PART_COUNT = static_cast<std::size_t>(Part::kTotal);
 
 // The 3 name files of Core/Text split the parts here: the Condition and
-// Gameplay rows from kPerks to kReloadJam, the Worn loot rows from kSpawn to
+// Gameplay rows from kPerks to kFertilizer, the Worn loot rows from kSpawn to
 // kGifts, the UI rows from kCardCnd to kTips.
-static_assert(static_cast<int>(Part::kReloadJam) + 1 == static_cast<int>(Part::kSpawn));
+static_assert(static_cast<int>(Part::kFertilizer) + 1 == static_cast<int>(Part::kSpawn));
 static_assert(static_cast<int>(Part::kGifts) + 1 == static_cast<int>(Part::kCardCnd));
 static_assert(static_cast<int>(Part::kTips) + 1 == static_cast<int>(Part::kTrace));
 

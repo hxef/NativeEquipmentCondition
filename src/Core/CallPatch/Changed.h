@@ -51,7 +51,9 @@ namespace CallPatch
 	// key rule stops with its hook, and does nothing while Trader repairs
 	// is off, whose 4 places come before it, see VendorRepair.cpp. A barter
 	// place that waits for its screen is settled after this line, so the
-	// line reads Trader repairs as on. A walk NEC could not follow to its
+	// line reads Trader repairs as on. The fertilizer calls place's needs
+	// show nothing while Fertilizer from spoiled food is off, whose 4 places
+	// come before it, see Fertilizer.cpp. A walk NEC could not follow to its
 	// end says so first, so the line never blames the DLL for a cut that
 	// comes from NEC's doubt. A set that has to run on every call is cut
 	// either way.

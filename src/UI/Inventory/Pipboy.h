@@ -9,14 +9,15 @@
 // out items as the game builds them, and the frame listener writes the name of
 // any row carrying one in half white, which the Pip-Boy's tint turns into half
 // strength Pip-Boy colour. Nothing fades while the Pip-Boy's cards are left to
-// another mod.
+// another mod. Spoiled food fades the same way.
 namespace Pipboy
 {
 	// Adds the frame listener to the Pip-Boy movie and ignores every other.
 	void OnMovieLoaded(Scaleform::GFx::Movie& a_movie, std::string_view a_file);
 
-	// Notes whether the item this Pip-Boy entry stands for has worn out, by its
-	// number, since a flag of our own would never reach the menu. ItemCard
-	// calls this while the game builds the entry for a_stack, worn out or not.
+	// Notes whether the item this Pip-Boy entry stands for has worn out or
+	// spoiled, by its number, since a flag of our own would never reach the
+	// menu. ItemCard calls this while the game builds the entry for a_stack,
+	// worn out or not.
 	void MarkBroken(const RE::PipboyObject& a_entry, const RE::BGSInventoryItem::Stack* a_stack, bool a_broken);
 }

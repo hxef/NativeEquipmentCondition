@@ -26,6 +26,13 @@ namespace SpawnCondition
 		// Each lives on the thread that raised it, for one call, so no lock is
 		// needed and nothing outlives the call.
 		thread_local const Handing* t_handing = nullptr;
+		thread_local const Handing* t_source = nullptr;
+
+		// Whether a_handing moves a_object into a_list.
+		bool Moves(const Handing* a_handing, const RE::TESBoundObject* a_object, const RE::BGSInventoryList* a_list)
+		{
+			return a_handing && a_list && a_handing->object == a_object && a_handing->receiver->inventoryList == a_list;
+		}
 		thread_local bool           t_spawnContainer = false;
 		thread_local bool           t_spawnDupe = false;
 
@@ -126,7 +133,8 @@ namespace SpawnCondition
 		// Raises the mark the AddStack hook reads. The pickup is from the
 		// world unless it moves an item placed to spawn inside a container,
 		// see ScopedSpawnContainer. The other 2 count only with an old
-		// container. The handed list is kept as a bare pointer for
+		// container, which they also keep for food spoiling whatever the
+		// switch says. The handed list is kept as a bare pointer for
 		// NoteBought, which only compares it.
 		template <std::size_t I>
 		void HandoverHk(RE::TESObjectREFR* a_receiver, RE::TESBoundObject* a_object, RE::BSTSmartPointer<RE::ExtraDataList> a_extra,
@@ -136,9 +144,11 @@ namespace SpawnCondition
 			const bool     marks = Settings::bSpawnCondition.GetValue() && g_handoverLinks[I].Live() &&
 			                   (fromWorld ? !t_spawnContainer : a_oldContainer != nullptr);
 			const auto*    handed = a_extra.get();
+			const auto*    source = fromWorld ? nullptr : a_oldContainer;
 			{
-				const Handing handing{ a_object, a_receiver, fromWorld };
+				const Handing handing{ a_object, a_receiver, source, fromWorld };
 				const Scoped  mark{ t_handing, marks ? &handing : t_handing };
+				const Scoped  from{ t_source, source && g_handoverLinks[I].Live() ? &handing : t_source };
 				g_handoverLinks[I](a_receiver, a_object, std::move(a_extra), a_count, a_oldContainer, a_filter, a_worldRef);
 			}
 			if (fromWorld && marks && a_receiver) {
@@ -176,7 +186,13 @@ namespace SpawnCondition
 	const Handing* HandingOver(const RE::TESBoundObject* a_object, const RE::BGSInventoryList* a_list)
 	{
 		const auto* handing = t_handing;
-		return handing && a_list && handing->object == a_object && handing->receiver->inventoryList == a_list ? handing : nullptr;
+		return Moves(handing, a_object, a_list) ? handing : nullptr;
+	}
+
+	const RE::TESObjectREFR* HandedFrom(const RE::TESBoundObject* a_object, const RE::BGSInventoryList* a_list)
+	{
+		const auto* handing = t_source;
+		return Moves(handing, a_object, a_list) ? handing->source : nullptr;
 	}
 
 	// Nothing here asks whether an item is older than the install. A stack

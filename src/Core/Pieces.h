@@ -81,6 +81,11 @@ enum class Piece : std::uint8_t
 	kWorldLoot,
 	kModlessLoot,
 	kGifts,
+	// Food spoils, which rides on Worn loot's arrival door, and its 3 groups
+	kFoodSpoils,
+	kFoodBite,
+	kFoodCook,
+	kFertilizer,
 	// CND on item cards
 	kCndContainers,
 	kCndWorkbench,

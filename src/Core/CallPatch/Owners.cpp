@@ -101,8 +101,8 @@ namespace CallPatch
 		if (a_place.use != Use::kTraceOnly) {
 			return ""sv;
 		}
-		// The messages and the key rule come from NEC's hooks, so a place NEC
-		// never wrote has none.
+		// The messages, the key rule and the row's needs come from NEC's hooks,
+		// so a place NEC never wrote has none.
 		if (a_place.part == Part::kBenchMessages) {
 			return a_place.size == 0 ? " NEC's 2 messages when MODIFY opens nothing stay off, so repairs are not affected."sv :
 			                           " It only shows NEC's 2 messages when MODIFY opens nothing, so repairs are not affected."sv;
@@ -110,6 +110,10 @@ namespace CallPatch
 		if (a_place.part == Part::kTraderKeys) {
 			return a_place.size == 0 ? " REPAIR's key may answer a UI replacer's own button combinations, so trader repairs are not affected."sv :
 			                           " It only keeps REPAIR's key out of a UI replacer's own button combinations, so trader repairs are not affected."sv;
+		}
+		if (a_place.part == Part::kFertilizerNeeds) {
+			return a_place.size == 0 ? " The Fertilizer row does not show what it needs, so making Fertilizer is not affected."sv :
+			                           " It only shows what the Fertilizer row needs, so making Fertilizer is not affected."sv;
 		}
 		return " It only feeds the bug report logs, so play is not affected."sv;
 	}

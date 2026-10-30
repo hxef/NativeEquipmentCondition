@@ -22,6 +22,10 @@ namespace Text
 			{ &Settings::iFreeMendAbove, FREE_MEND_NAME, FREE_MEND_HELP },
 			{ &Settings::fModLockStart, MOD_LOCK_NAME, MOD_LOCK_HELP },
 			{ &Settings::fTraderPriceMult, TRADER_PRICE_NAME, TRADER_PRICE_HELP },
+			{ &Settings::fRawFoodDays, RAW_FOOD_DAYS_NAME, RAW_FOOD_DAYS_HELP },
+			{ &Settings::fCookedFoodDays, COOKED_FOOD_DAYS_NAME, COOKED_FOOD_DAYS_HELP },
+			{ &Settings::fFridgeSpoilSpeed, FRIDGE_SPEED_NAME, FRIDGE_SPEED_HELP },
+			{ &Settings::iSpoiledPerFertilizer, SPOILED_PER_FERTILIZER_NAME, SPOILED_PER_FERTILIZER_HELP },
 		};
 	}
 

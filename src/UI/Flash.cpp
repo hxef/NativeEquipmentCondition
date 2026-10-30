@@ -122,6 +122,12 @@ namespace Flash
 		return children;
 	}
 
+	Value Domain(Scaleform::GFx::Movie& a_movie)
+	{
+		Value info;
+		return a_movie.GetVariable(&info, "_root.loaderInfo") ? Member(info, "applicationDomain"sv) : Value{};
+	}
+
 	// -------------------------------------------------------------------
 	// A clip's colour
 	// -------------------------------------------------------------------

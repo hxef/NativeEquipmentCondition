@@ -118,6 +118,11 @@ namespace Text
 	// the player wears reaches 0.
 	[[nodiscard]] std::string ArmorWornOut(std::string_view a_name);
 
+	// "Spoiled food", what a chemistry station's Fertilizer row needs, shown
+	// with its count as the station shows a component. See
+	// FoodSpoil/Fertilizer.cpp.
+	[[nodiscard]] std::string SpoiledFood();
+
 	// The tips the loading screen shows now and then, on wear, the bench, a
 	// trader's repairs, broken gear, jams and loot. See LoadingTips.h. The
 	// bench tip tells of the mod lock only where a_modifyFloor is at full.

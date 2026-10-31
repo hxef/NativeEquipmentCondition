@@ -28,10 +28,12 @@
 // at the dash's own slant on any screen, field of view or ini key. The dash
 // sways as the player breathes, so it is measured every frame and the bar
 // follows, its word anti-aliased for animation. fPowerArmorBarX and
-// fPowerArmorBarY move it off the digits, and it still follows the dash. Only
-// its size waits for a change before it is laid out again, since that means
-// measuring text. If anything fails, or the bar would fall outside the movie,
-// nothing is drawn.
+// fPowerArmorBarY move it off the digits, and it still follows the dash.
+// fPowerArmorBarLength and fPowerArmorBarThickness size the bar about its
+// right end, so the word past it stays as it is. Only its size waits for a
+// change, of the dash or of those 2, before it is laid out again, since that
+// means measuring text. If anything fails, or the bar would fall outside the
+// movie, nothing is drawn.
 //
 // Dash.cpp finds the dash through its camera, and Layout.cpp lays the bar out
 // in the movie. Dash.h and Layout.h are what they share.

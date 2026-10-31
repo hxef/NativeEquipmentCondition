@@ -26,6 +26,10 @@ namespace HudCondition
 		// HudParts::Readout.
 		constexpr double TEXT_SIZE = 20.0;
 
+		// A word this close past a side of the bar sits by that side, so
+		// rounding never moves it into the bar.
+		constexpr double SIDE_LEEWAY = 0.01;
+
 		// How long a choice holds before NEC.log says it. A HUD mod seen
 		// moved its parts for 0.3 seconds after the HUD loaded.
 		constexpr std::chrono::seconds SETTLE{ 1 };
@@ -351,6 +355,26 @@ namespace HudCondition
 	Box Filled(const Spot& a_spot, const HudParts::Readout::LabelPlace& a_label)
 	{
 		return BarAt(0.0, 0.0, a_spot.line.width, a_spot.deep).With(WholeLine(a_label).Moved(a_spot.wordX, a_spot.wordY));
+	}
+
+	Spot Sized(const Spot& a_spot, const HudParts::Readout::Size& a_size, const HudParts::Readout::LabelPlace& a_label)
+	{
+		auto sized = a_spot;
+		sized.line.width *= a_size.length;
+		sized.deep *= a_size.thickness;
+
+		// The side is told by the word's letters, as WithWord placed them.
+		const auto own = BarAt(0.0, 0.0, a_spot.line.width, a_spot.deep);
+		const auto grown = BarAt(0.0, 0.0, sized.line.width, sized.deep);
+		const auto word = a_label.letters.Moved(a_spot.wordX, a_spot.wordY);
+		if (word.top >= own.bottom - SIDE_LEEWAY) {
+			sized.wordY += grown.bottom - own.bottom;
+		} else if (word.bottom <= own.top + SIDE_LEEWAY) {
+			sized.wordY += grown.top - own.top;
+		} else if (word.right <= own.left + SIDE_LEEWAY) {
+			sized.wordX += grown.left - own.left;
+		}
+		return sized;
 	}
 
 	void Teller::Tell(const Choice& a_choice, Clock::time_point a_now)

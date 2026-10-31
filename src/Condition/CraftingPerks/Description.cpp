@@ -37,11 +37,11 @@ namespace CraftingPerks
 			return found != a_perks.told.end() ? &*found : nullptr;
 		}
 
-		// Adds the plugin's line after the words already there, so a description
-		// rewritten by another plugin or read in another language comes
-		// through. Joined with a space, never a line break: the level up chart
-		// keeps only the first 2 pieces split on newlines and would drop the
-		// whole sentence. One per site, and only while the bench repairs.
+		// Adds the plugin's line after the words already there, so a
+		// description rewritten by another plugin or read in another language
+		// comes through. Joined with a space, never a line break: the level up
+		// chart keeps only the first 2 pieces split on newlines and would drop
+		// the whole sentence. One per site, and only while the bench repairs.
 		template <std::size_t I>
 		void DescriptionHk(RE::TESDescription* a_description, RE::BSString& a_out, const RE::TESForm* a_form)
 		{

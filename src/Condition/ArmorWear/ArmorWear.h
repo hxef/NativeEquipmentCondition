@@ -57,8 +57,10 @@ namespace ArmorWear
 	// is on the piece or added by an armor mod, so the Minuteman Hat, which
 	// no tier mod fits, gives nothing, like a wedding ring or Dogmeat's
 	// bandana. Such a piece wears only in price, so traders sell it new and
-	// it takes no share of a blow from the pieces that give something. While
-	// no table is built, any slot for a mod counts.
+	// it takes no share of a blow from the pieces that give something. With
+	// Settings::bPlainApparelNeverWears on it never wears, see
+	// Condition::WhyNoCondition. While no table is built, any slot for a mod
+	// counts.
 	bool GivesAnything(const RE::TESObjectARMO& a_armor);
 
 	// Whether a piece is power armor, by the keyword the game itself finds

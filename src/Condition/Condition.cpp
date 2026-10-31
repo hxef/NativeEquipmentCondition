@@ -38,7 +38,18 @@ namespace Condition
 		if (const auto* why = KindWhyNoCondition(a_object)) {
 			return why;
 		}
-		return Excluded::Has(a_object) ? "on a list in NEC/Exclude" : nullptr;
+		if (Excluded::Has(a_object)) {
+			return "on a list in NEC/Exclude";
+		}
+		// Past the kind's rule, a piece that gives nothing is one ArmorWear
+		// lets in for being playable. The switch is tested here and not in
+		// that rule, so the measures over the load order stay the same
+		// whatever it says.
+		if (Settings::bPlainApparelNeverWears.GetValue() && a_object.Is(RE::ENUM_FORM_ID::kARMO) &&
+			!ArmorWear::GivesAnything(static_cast<const RE::TESObjectARMO&>(a_object))) {
+			return "gives nothing, and plain apparel never wears";
+		}
+		return nullptr;
 	}
 
 	bool WearsOut(const RE::TESBoundObject& a_object)

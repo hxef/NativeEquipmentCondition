@@ -105,24 +105,6 @@ namespace TraceLog
 			}
 		}
 
-		// Where NEC.log is being written, asked of the logger LogFiles made
-		// rather than worked out again.
-		std::filesystem::path MainLogPath()
-		{
-			const auto logger = spdlog::default_logger();
-			if (!logger) {
-				return {};
-			}
-
-			for (const auto& sink : logger->sinks()) {
-				if (auto path = LogFiles::FileOf(sink); !path.empty()) {
-					return path;
-				}
-			}
-
-			return {};
-		}
-
 		// The time of day to the millisecond, in the local time zone.
 		std::string ClockTime()
 		{
@@ -262,7 +244,7 @@ namespace TraceLog
 	{
 		const std::scoped_lock l{ g_switchLock };
 		if (a_on && !g_game.logger && !g_ui.logger && !g_npc.logger) {
-			const auto path = MainLogPath();
+			const auto path = LogFiles::MainFile();
 			if (path.empty()) {
 				REX::WARN("No main log file to sit beside, so there are no bug report logs this session.");
 				return;

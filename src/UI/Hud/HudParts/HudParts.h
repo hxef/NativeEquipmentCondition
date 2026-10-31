@@ -49,8 +49,8 @@ namespace HudParts
 	// It is checked through F4SE's task queue and read from an atomic a frame
 	// later, and both readouts share it. F4SE runs the task on a worker thread
 	// during play, so the check holds the inventory lock while it reads. While
-	// bHudCondition is off nothing is checked and Percent says NONE, so both
-	// readouts fade as for a weapon with no condition.
+	// both bars are switched off nothing is checked, and while one is, Percent
+	// says NONE to it, so it fades as for a weapon with no condition.
 	namespace Weapon
 	{
 		// What Percent returns when nothing in hand wears out, which hides a
@@ -67,8 +67,9 @@ namespace HudParts
 		// since the HUD movie's frames come faster at a high frame rate.
 		inline constexpr std::chrono::milliseconds READING_EVERY{ 300 };
 
-		// The condition of the weapon in hand as a whole percent, or NONE.
-		[[nodiscard]] std::int32_t Percent();
+		// The condition of the weapon in hand as a whole percent, or NONE
+		// while a_on, the asking bar's switch, is off.
+		[[nodiscard]] std::int32_t Percent(const Settings::Live<bool>& a_on);
 
 		// Whether the player has a weapon drawn. A melee weapon hides the ammo
 		// counter, so a readout beside it has to know.
@@ -92,7 +93,8 @@ namespace HudParts
 	// AP bar. The ammo counter sizes its word the same way and its bar from
 	// the counter's divider, see HudCondition.h. The power armor readout sizes
 	// its bar and its word separately to fit the dash, with the word level
-	// with the bar and anti-aliased for animation since it moves.
+	// with the bar and anti-aliased for animation since it moves. Each HUD
+	// bar's length and thickness then take the player's Size.
 	namespace Readout
 	{
 		inline constexpr double BAR_DEEP = 6.0 / 20.0;
@@ -143,11 +145,32 @@ namespace HudParts
 		// readout's origin.
 		void MoveLabel(Value& a_readout, double a_x, double a_y);
 
-		// Shows or hides the word of a HUD bar as bHudBarShowsWord says. The
-		// bar keeps its place either way. a_shown is what was last written,
-		// so a frame writes only on a change, and a_bar names the bar in the
-		// trace.
-		void FollowWordSwitch(Value& a_readout, std::optional<bool>& a_shown, std::string_view a_bar);
+		// Shows or hides the word of a HUD bar as a_shows, its own switch,
+		// says. The bar keeps its place either way. a_shown is what was last
+		// written, so a frame writes only on a change, and a_bar names the bar
+		// in the trace.
+		void FollowWordSwitch(Value& a_readout, const Settings::Live<bool>& a_shows, std::optional<bool>& a_shown, std::string_view a_bar);
+
+		// How many times its own length and thickness a HUD bar is drawn. The
+		// bar grows and shrinks about the readout's origin, so the right end
+		// it is placed by and the word past it stay where they are, and the
+		// word keeps its size so it stays readable.
+		struct Size
+		{
+			double length = 1.0;
+			double thickness = 1.0;
+
+			bool operator==(const Size&) const = default;
+		};
+
+		// The least and the most a size setting counts for, as the MCM page's
+		// sliders allow.
+		inline constexpr double LEAST_SIZE = 0.5;
+		inline constexpr double MOST_SIZE = 3.0;
+
+		// The size a bar's 2 settings ask for now, each held from LEAST_SIZE
+		// to MOST_SIZE, and 1 for one that is no number.
+		[[nodiscard]] Size SizeFrom(const Settings::Live<float>& a_length, const Settings::Live<float>& a_thickness);
 
 		// Lays the track out a_width across and a_deep deep.
 		void SetTrack(Value& a_readout, double a_width, double a_deep);

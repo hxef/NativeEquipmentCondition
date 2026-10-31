@@ -24,9 +24,9 @@ namespace CraftingPerks
 		std::vector<const RE::BGSPerk*>&              a_out);
 
 	// The slot a mod goes in, or a weapon offers. Both hold it as an index into
-	// the engine's list of attach point keywords, so the number means the same on
-	// both sides. A weapon does not store its mod association keywords the same
-	// way, so those are not used.
+	// the engine's list of attach point keywords, so the number means the same
+	// on both sides. A weapon does not store its mod association keywords the
+	// same way, so those are not used.
 	[[nodiscard]] const RE::BGSKeyword* PointOf(std::uint16_t a_index);
 
 	// What kind of weapon it is, from the instance data if the weapon was

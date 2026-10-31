@@ -26,8 +26,9 @@
 // A setting added here is added to publish/NEC.ini too, with a line saying
 // what it does, and to SWITCHES or NUMBERS in Settings.cpp in NEC.ini's
 // order. A setting left out of those is missing from the Settings line, and
-// the MCM page can neither read nor change it. The 4 switches that turn no
-// feature on, bFridgeIcon, bHudBarHidesWithCounter, bHudBarShowsWord and
+// the MCM page can neither read nor change it. The 6 switches with no row of
+// their own in Features.cpp, bPowerArmorBar, bFridgeIcon,
+// bHudBarHidesWithCounter, bHudBarShowsWord, bPowerArmorBarShowsWord and
 // bTraceLogs, are named in Settings.cpp's ReportLine and in
 // UI/Mcm/Bridge.cpp's SwitchFor instead.
 namespace Settings
@@ -136,6 +137,11 @@ namespace Settings
 	// Worn guns can jam.
 	inline Live<bool> bJam{ "Features", "bJam", true };
 
+	// Apparel that gives nothing, see ArmorWear::GivesAnything, never wears
+	// and shows no condition. No feature's row: Condition::WhyNoCondition
+	// reads it for every item it is asked about. Off by default.
+	inline Live<bool> bPlainApparelNeverWears{ "Features", "bPlainApparelNeverWears", false };
+
 	// Weapons and armor spawn already worn, see SpawnCondition.h. Provenance
 	// measures the load order for it at every data load, whatever the switch
 	// says, so it works as soon as it is switched on in play.
@@ -147,8 +153,12 @@ namespace Settings
 	// Loading screen tips about condition.
 	inline Live<bool> bLoadingTips{ "Features", "bLoadingTips", true };
 
-	// The CND bar on the HUD, in the ammo counter and on the power armor dash.
+	// The Weapon CND bar on the HUD, by the ammo counter.
 	inline Live<bool> bHudCondition{ "Features", "bHudCondition", true };
+
+	// The Power armor CND bar on the HUD, on the power armor dash. Its row
+	// goes with bHudCondition's part, see Features.cpp.
+	inline Live<bool> bPowerArmorBar{ "Features", "bPowerArmorBar", true };
 
 	// Condition meters on the rows of the quick container.
 	inline Live<bool> bQuickContainer{ "Features", "bQuickContainer", true };
@@ -258,20 +268,47 @@ namespace Settings
 	// Fertilizer.cpp. Counts as 0 to 20, and 0 removes the Fertilizer row.
 	inline Live<std::int32_t> iSpoiledPerFertilizer{ "Balance", "iSpoiledPerFertilizer", 10 };
 
-	// HUD. Where the CND bars sit and when the one by the ammo counter hides.
-	// Read every frame, so a change shows at once. The 4 numbers move a bar
-	// from its own place in units of the HUD, which is 1280 across and 720
-	// down on any screen, and 0 and 0 is its own place.
+	// The healing and bonuses spoiled food gives outside Survival, in % of the
+	// fresh food's, see FoodSpoil/Eat.cpp. Counts as 0 to 100. In Survival it
+	// gives none.
+	inline Live<std::int32_t> iSpoiledHealing{ "Balance", "iSpoiledHealing", 10 };
 
-	// How far right of its own spot by the ammo counter the CND bar sits,
-	// below 0 to the left. Off its spot, the divider shows again.
+	// The hunger and thirst spoiled food fills in Survival, in % of the fresh
+	// food's, see FoodSpoil/Hunger.cpp. Counts as 0 to 100.
+	inline Live<std::int32_t> iSpoiledHunger{ "Balance", "iSpoiledHunger", 10 };
+
+	// How many extra rads spoiled food gives, see FoodSpoil/Rads.cpp. Counts
+	// as 0 to 5, and 1 gives 15 for raw food and 5 for the rest.
+	inline Live<float> fSpoiledRadsMult{ "Balance", "fSpoiledRadsMult", 1.0F };
+
+	// HUD. Where the CND bars sit, how big they are drawn and when the one by
+	// the ammo counter hides. Read every frame, so a change shows at once. The
+	// 4 place numbers move a bar from its own place in units of the HUD, which
+	// is 1280 across and 720 down on any screen, and 0 and 0 is its own place.
+	// The 4 size numbers count from 0.5 to 3 times a bar's own length or
+	// thickness, see HudParts::Readout::Size.
+
+	// How far right of its own spot by the ammo counter the Weapon CND bar
+	// sits, below 0 to the left. Off its spot, the divider shows again.
 	// HudCondition.h says how it stays on screen and what the MCM page shows.
 	inline Live<float> fHudBarX{ "HUD", "fHudBarX", 0.0F };
 
-	// How far up from its own spot the CND bar sits, below 0 down.
+	// How far up from its own spot the Weapon CND bar sits, below 0 down.
 	inline Live<float> fHudBarY{ "HUD", "fHudBarY", 0.0F };
 
-	// How far right of the dash's ammo digits the power armor CND bar sits,
+	// How long and how thick the Weapon CND bar is drawn.
+	inline Live<float> fHudBarLength{ "HUD", "fHudBarLength", 1.0F };
+	inline Live<float> fHudBarThickness{ "HUD", "fHudBarThickness", 1.0F };
+
+	// Whether the Weapon CND bar hides with the ammo counter while the counter
+	// has rounds to count, see HudCondition.h.
+	inline Live<bool> bHudBarHidesWithCounter{ "HUD", "bHudBarHidesWithCounter", false };
+
+	// Whether the CND word shows beside the Weapon CND bar. When off, only the
+	// bar shows, at the same place.
+	inline Live<bool> bHudBarShowsWord{ "HUD", "bHudBarShowsWord", true };
+
+	// How far right of the dash's ammo digits the Power armor CND bar sits,
 	// below 0 to the left. It still sways with the dash, see
 	// PowerArmorCondition.h.
 	inline Live<float> fPowerArmorBarX{ "HUD", "fPowerArmorBarX", 0.0F };
@@ -279,13 +316,13 @@ namespace Settings
 	// How far up from the dash's ammo digits it sits, below 0 down.
 	inline Live<float> fPowerArmorBarY{ "HUD", "fPowerArmorBarY", 0.0F };
 
-	// Whether the CND bar by the ammo counter hides with the counter while
-	// the counter has rounds to count, see HudCondition.h.
-	inline Live<bool> bHudBarHidesWithCounter{ "HUD", "bHudBarHidesWithCounter", false };
+	// How long and how thick the Power armor CND bar is drawn.
+	inline Live<float> fPowerArmorBarLength{ "HUD", "fPowerArmorBarLength", 1.0F };
+	inline Live<float> fPowerArmorBarThickness{ "HUD", "fPowerArmorBarThickness", 1.0F };
 
-	// Whether the CND word shows beside the ammo counter's bar and the power
-	// armor bar. When off, only the bars show, at the same place.
-	inline Live<bool> bHudBarShowsWord{ "HUD", "bHudBarShowsWord", true };
+	// Whether the CND word shows beside the Power armor CND bar. When off,
+	// only the bar shows, at the same place.
+	inline Live<bool> bPowerArmorBarShowsWord{ "HUD", "bPowerArmorBarShowsWord", true };
 
 	// Log. Read once, as the log is opened. The MCM page sets the level and
 	// switches the trace logs on the spot, see SetLogLevel and
@@ -304,7 +341,7 @@ namespace Settings
 	// setting only takes whole steps.
 	using Number = std::variant<Live<float>*, Live<std::int32_t>*>;
 
-	// The 9 switches under [Features] and the 26 numbers under [Balance] and
+	// The 9 switches under [Features] and the 30 numbers under [Balance] and
 	// [HUD], in NEC.ini's order, for Report and the MCM page.
 	[[nodiscard]] std::span<Live<bool>* const> Switches();
 	[[nodiscard]] std::span<const Number>      Numbers();

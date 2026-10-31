@@ -44,6 +44,7 @@ namespace Mcm
 		};
 
 		constexpr Owes OWES[]{
+			{ &Settings::bPlainApparelNeverWears, FollowUp::kCards },
 			{ &Settings::fDamageFloor, FollowUp::kCards },
 			{ &Settings::fWeaponPenaltyStart, FollowUp::kCards },
 			{ &Settings::fArmorFloor, FollowUp::kCards },
@@ -84,7 +85,7 @@ namespace Mcm
 					return on;
 				}
 			}
-			for (auto* on : { &Settings::bFridgeIcon, &Settings::bHudBarHidesWithCounter, &Settings::bHudBarShowsWord, &Settings::bTraceLogs }) {
+			for (auto* on : { &Settings::bPlainApparelNeverWears, &Settings::bPowerArmorBar, &Settings::bFridgeIcon, &Settings::bHudBarHidesWithCounter, &Settings::bHudBarShowsWord, &Settings::bPowerArmorBarShowsWord, &Settings::bTraceLogs }) {
 				if (IsIdOf(*on, a_id)) {
 					return on;
 				}

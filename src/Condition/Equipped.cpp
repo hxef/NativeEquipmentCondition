@@ -174,7 +174,7 @@ namespace Equipped
 	std::vector<ArmorPiece> LeftoverPieces(RE::Actor* a_actor)
 	{
 		const auto takes = [](const RE::TESObjectARMO& a_armor) {
-			return !Condition::WearsOut(a_armor) && !ArmorWear::IsPowerArmor(a_armor) && !Excluded::Has(a_armor);
+			return !Condition::KindWearsOut(a_armor) && !ArmorWear::IsPowerArmor(a_armor) && !Excluded::Has(a_armor);
 		};
 		auto       found = Pieces(a_actor, takes, true);
 		// -1 is a piece with no health, which stays as it is.

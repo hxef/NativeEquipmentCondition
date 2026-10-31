@@ -1,3 +1,11 @@
+1.7.1
+* NEC's MCM page splits into the Weapons, Armor, Loot and repairs, UI and Little extras sub pages. The main page keeps Log and the list of parts another mod took over, and shows NEC's version and the game it runs on.
+* The Weapon CND bar and the Power armor CND bar each have their own MCM switch, place, length, thickness and CND word switch, on the UI page.
+* A new MCM switch, Plain apparel never wears (bPlainApparelNeverWears, off), stops apparel with no armor rating or bonus from wearing and hides its CND.
+* A spoiled food's card shows its own healing and rads, Lead Belly cuts its extra rads, and in Survival it heals nothing and barely fills you up. 3 new MCM sliders on the Little extras page set its healing, hunger and extra rads.
+* With food spoiling on, NEC.food.log names every food and the kind NEC gave it.
+* The shipped fridge list is now Fridge\NEC_Default.ini.
+
 1.7.0
 * A new MCM switch, Food spoils (bFoodSpoils, off), makes food you carry and food on the dead spoil over game days, slower in coolers and unbroken fridges, as in Fallout 76. Spoiled food gives extra rads and makes Fertilizer at a chemistry station.
 * Little extras is now its own MCM page, with food spoiling's settings above the loading tips and both vanilla fix switches.

@@ -9,7 +9,7 @@ end
 
 -- set project constants
 set_project("NativeEquipmentCondition")
-set_version("1.7.0")
+set_version("1.7.1")
 set_license("GPL-3.0")
 set_languages("c++23")
 set_warnings("allextra")
@@ -110,14 +110,18 @@ target("NEC")
         cprint("${bright green}deployed${clear} to %s", dir)
     end)
 
--- Builds the plugin and packs build/NativeEquipmentCondition-<version>.zip, for
--- any site. The archive holds F4SE/Plugins with NEC.dll, NEC.pdb and NEC.ini,
+-- Packs build/NativeEquipmentCondition-<version>.zip, for any site, from the
+-- last build. The archive holds F4SE/Plugins with NEC.dll, NEC.pdb and NEC.ini,
 -- F4SE/Plugins/NEC/Translations with the 12 language files,
 -- F4SE/Plugins/NEC/Fridge with the vanilla fridge list, MCM/Config/NEC
 -- with the MCM page's config.json, and README.txt at the root, so Mod
 -- Organizer 2 installs it as it is. The PDB lets a player's crash log name the
 -- file and line in NEC.dll. It stops before building on any fault of a
 -- language file, which a plain build only warns about.
+--
+-- It builds first only when a file the DLL is made from changed since the
+-- last build, so a repack that changes only texts ships the DLL and PDB the
+-- last build made, byte for byte.
 --
 -- With --nexus it packs build/nexusmods/NativeEquipmentCondition-<version>.zip
 -- instead, without README.txt, since Nexus Mods shows the readme in a section
@@ -131,7 +135,7 @@ task("release")
     set_category("plugin")
     set_menu({
         usage = "xmake release [--nexus]",
-        description = "Build NEC and pack the release archive",
+        description = "Pack the release archive, building NEC first when a source changed",
         options = {
             { nil, "nexus", "k", nil, "Pack it for Nexus Mods, without README.txt, and check the texts in publish/nexusmods" },
         },
@@ -190,7 +194,33 @@ task("release")
         import("texts", { rootdir = path.join(os.projectdir(), "xmake") })
         texts.check()
 
-        task.run("build", { target = "NEC" })
+        -- The first file the DLL is made from that is newer than the last
+        -- build's DLL or PDB, or the DLL when there is no build yet. en.ini
+        -- counts, since its English is compiled in.
+        local target = project.target("NEC")
+        local function changed()
+            local dll, pdb = target:targetfile(), target:symbolfile()
+            if not os.isfile(dll) or not os.isfile(pdb) then
+                return dll
+            end
+            local built = math.min(os.mtime(dll), os.mtime(pdb))
+            local sources = { "xmake.lua", "xmake/*.lua", "publish/Translations/en.ini", "src/**", "lib/commonlibf4/xmake.lua",
+                "lib/commonlibf4/include/**", "lib/commonlibf4/src/**", "lib/commonlibf4/lib/**" }
+            for _, pattern in ipairs(sources) do
+                for _, file in ipairs(os.files(path.join(os.projectdir(), pattern))) do
+                    if os.mtime(file) >= built then
+                        return file
+                    end
+                end
+            end
+        end
+        local newer = changed()
+        if newer then
+            cprint("building first, since %s is newer than the last build", path.relative(newer, os.projectdir()))
+            task.run("build", { target = "NEC" })
+        else
+            cprint("packing the DLL and PDB of the last build, since no source changed after it")
+        end
 
         local stage = path.join(config.builddir(), "release")
         local plugins = path.join(stage, "F4SE", "Plugins")
@@ -198,7 +228,6 @@ task("release")
         os.tryrm(stage)
         os.mkdir(plugins)
         os.mkdir(mcm)
-        local target = project.target("NEC")
         os.cp(target:targetfile(), plugins)
         os.cp(target:symbolfile(), plugins)
         os.cp(path.join(os.projectdir(), "publish", "NEC.ini"), plugins)

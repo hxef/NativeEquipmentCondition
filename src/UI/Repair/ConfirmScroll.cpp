@@ -53,7 +53,7 @@ namespace ConfirmScroll
 		constexpr auto FORWARD = "Forward"sv;
 		constexpr auto BACK = "Back"sv;
 
-		// The pace a held key repeats at in the vanilla lists, the engine's
+		// The pace a held key repeats at in the vanilla lists, Fallout 4's
 		// fKeyboardRepeatDelay and fKeyboardRepeatRate, read each time a key is
 		// held, or 0.3 and 0.05 seconds where a setting is missing.
 		[[nodiscard]] float Pace(std::string_view a_name, float a_missing)

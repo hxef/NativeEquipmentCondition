@@ -17,16 +17,18 @@
 // spent, see SetStart. A stack whose time ran out turns spoiled as
 // it arrives anywhere, and in Sweep.cpp as a menu that lists it opens.
 // Order.cpp keeps the stack closest to spoiling first, so it is the one a
-// row shows and eats. Eat.cpp makes a spoiled bite heal a tenth and give
-// rads. Cook.cpp keeps spoiled food out of cooking and chemistry, and
+// row shows and eats. Eat.cpp makes spoiled food heal iSpoiledHealing %,
+// nothing in Survival, and give more rads, which Rads.cpp works out by
+// fSpoiledRadsMult. Hunger.cpp makes it fill iSpoiledHunger % of the hunger
+// in Survival. Cook.cpp keeps spoiled food out of cooking and chemistry, and
 // Fertilizer.cpp turns it into fertilizer at a chemistry station.
 //
 // Kinds.cpp sorts the food, FoodList.cpp reads a mod's kinds on top, and
 // FridgeList.cpp reads the fridge list. Food.h is what they share.
 //
-// The bite, the station rows and the Fertilizer row are 3 parts of their own,
-// see Core/Parts.h. Another mod on a place of one turns off only that part,
-// and food still spoils.
+// Eating, Survival's hunger, the station rows and the Fertilizer row are 4
+// parts of their own, see Core/Parts.h. Another mod on a place of one turns
+// off only that part, and food still spoils.
 namespace FoodSpoil
 {
 	// Patches eating, cooking and chemistry stations, each part on its own.
@@ -53,6 +55,47 @@ namespace FoodSpoil
 
 	// Whether a_object spoils now: the switch is on and its kind spoils.
 	[[nodiscard]] bool Spoils(const RE::TESBoundObject& a_object);
+
+	// What eating spoiled food is like, for the menus that show it. Each is
+	// read live, so a change of difficulty shows at once.
+
+	// Whether Survival is on: the difficulty setting, as its Survival
+	// script reads it.
+	[[nodiscard]] bool InSurvival();
+
+	// What spoiled food gives of the food's own healing and bonuses:
+	// iSpoiledHealing %, and none in Survival.
+	[[nodiscard]] float SpoiledShare();
+
+	// Whether eating's places run, in Eat.cpp, so spoiled food gives
+	// SpoiledShare and more rads.
+	[[nodiscard]] bool EatingRuns();
+
+	// Whether a_extra's stack of a_object would be eaten as spoiled food: it
+	// Spoils, and it is spoiled or its time ran out, as FreshnessOf reads it.
+	[[nodiscard]] bool SpoiledStack(const RE::TESBoundObject& a_object, RE::ExtraDataList* a_extra);
+
+	// The rads eating spoiled a_food adds on top of its own, as the player
+	// would take them now, in Rads.cpp. They go through the food's own
+	// harmful Rads effect, or through the one most food uses when it has
+	// none, so they follow whatever the food's own rads follow: Lead Belly,
+	// the player's rad resistance from food, perks and the difficulty. 0
+	// while that effect's conditions keep the rads off or fSpoiledRadsMult
+	// is 0.
+	[[nodiscard]] float ExtraRads(const RE::MagicItem& a_food);
+
+	// The Rads actor value, found by its editor ID once game data loaded.
+	[[nodiscard]] const RE::ActorValueInfo* RadsValue();
+
+	// The share of their strength the player's running effects of a_food
+	// give, when the player last ate it spoiled, in Eat.cpp. A meal of the
+	// same food takes the place of the effects of the one before. Nothing
+	// once the player ate it fresh, after a load or a new game, and while
+	// EatingRuns is false.
+	[[nodiscard]] std::optional<float> EatenShare(const RE::MagicItem& a_food);
+
+	// Forgets what the player ate, for a load or a new game.
+	void ForgetPlay();
 
 	// How much of its time the food a_extra belongs to has left, for its
 	// card: 1 before it is stamped, 0 once spoiled or once its time ran out.

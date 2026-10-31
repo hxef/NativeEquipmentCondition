@@ -79,6 +79,12 @@ namespace
 		// read those stamps.
 		{ kFoodSpoils, Part::kFood, Shown::kPart, { kWornLoot } },
 		{ kFoodBite, Part::kFoodBite, Shown::kPart, { kFoodSpoils } },
+		// What spoiled food gives, in the menus that show a food's effects.
+		// Each place works by itself and shows only what eating gives, see
+		// UI/Inventory/ItemCard/Effects.cpp.
+		{ kFoodRows, Part::kFoodBite, Shown::kHidden, { kFoodBite }, true },
+		// Survival reads the notes eating spoiled food leaves.
+		{ kFoodHunger, Part::kFoodHunger, Shown::kPart, { kFoodBite } },
 		{ kFoodCook, Part::kFoodCook, Shown::kPart, { kFoodSpoils } },
 		{ kFertilizer, Part::kFertilizer, Shown::kPart, { kFoodSpoils } },
 		{ kCndContainers, Part::kCardCnd, Shown::kName },

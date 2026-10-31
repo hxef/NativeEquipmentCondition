@@ -204,7 +204,7 @@ namespace HudParts
 		void Queue()
 		{
 			DropTargets();
-			if (!Settings::bHudCondition.GetValue() || g_queued.exchange(true)) {
+			if ((!Settings::bHudCondition.GetValue() && !Settings::bPowerArmorBar.GetValue()) || g_queued.exchange(true)) {
 				return;
 			}
 
@@ -232,9 +232,9 @@ namespace HudParts
 			});
 		}
 
-		std::int32_t Percent()
+		std::int32_t Percent(const Settings::Live<bool>& a_on)
 		{
-			return Settings::bHudCondition.GetValue() ? g_percent.load() : NONE;
+			return a_on.GetValue() ? g_percent.load() : NONE;
 		}
 
 		bool Drawn()

@@ -76,6 +76,7 @@ namespace
 		InHand::Unload();
 		HudParts::Weapon::Forget();
 		WeaponWear::ForgetOwed();
+		FoodSpoil::ForgetPlay();
 	}
 
 	// -------------------------------------------------------------------

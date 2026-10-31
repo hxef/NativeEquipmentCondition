@@ -1,5 +1,6 @@
 #include "Gameplay/FoodSpoil/Kinds.h"
 
+#include "Core/Settings.h"
 #include "Core/Snapshot.h"
 
 #include <algorithm>
@@ -121,29 +122,32 @@ namespace FoodSpoil
 		};
 
 		// a_food's kind by rules 2 to 6.
-		Kind Rules(const RE::AlchemyItem& a_food, const Sources& a_sources)
+		Sorted Rules(const RE::AlchemyItem& a_food, const Sources& a_sources)
 		{
 			const auto& keywords = a_sources.keywords;
 			const auto  has = [&a_food](const RE::BGSKeyword* a_keyword) { return Has(a_food, a_keyword); };
 			if (std::ranges::any_of(keywords.drinks, has) || (has(keywords.thirst) && !has(keywords.food))) {
-				return Kind::kNever;
+				return { Kind::kNever, Why::kDrink };
 			}
 			if (a_sources.cooked.contains(a_food.formID)) {
-				return Kind::kCooked;
+				return { Kind::kCooked, Why::kCooked };
 			}
-			if (a_sources.crops.contains(a_food.formID) || has(keywords.plant)) {
-				return Kind::kCrop;
+			if (a_sources.crops.contains(a_food.formID)) {
+				return { Kind::kCrop, Why::kHarvested };
 			}
-			return std::ranges::any_of(keywords.risks, has) ? Kind::kRaw : Kind::kNever;
+			if (has(keywords.plant)) {
+				return { Kind::kCrop, Why::kFruitOrVegetable };
+			}
+			return std::ranges::any_of(keywords.risks, has) ? Sorted{ Kind::kRaw, Why::kDiseaseRisk } : Sorted{ Kind::kNever, Why::kRest };
 		}
 
 		// The kind of every food.
-		std::unordered_map<RE::TESFormID, Kind> Sort()
+		std::unordered_map<RE::TESFormID, Sorted> Sort()
 		{
 			const auto    keywords = FindKeywords();
 			const Sources sources{ keywords, Cooked(keywords), Harvests() };
 
-			std::unordered_map<RE::TESFormID, Kind> kinds;
+			std::unordered_map<RE::TESFormID, Sorted> kinds;
 			for (const auto* food : g_dataHandler->GetFormArray<RE::AlchemyItem>()) {
 				if (food && (food->data.flags & FOOD_FLAG) != 0 && !Has(*food, sources.keywords.chem)) {
 					kinds.emplace(food->formID, Rules(*food, sources));
@@ -153,19 +157,19 @@ namespace FoodSpoil
 		}
 
 		// "Food spoiling sorts 280 foods: 42 raw, 39 crops, 47 cooked and 152
-		// that never spoil."
-		void Report(const std::unordered_map<RE::TESFormID, Kind>& a_kinds)
+		// that never spoil.", and "The list is in NEC.food.log." when a_listed.
+		void Report(const std::unordered_map<RE::TESFormID, Sorted>& a_kinds, bool a_listed)
 		{
 			std::array<std::size_t, 4> counts{};
-			for (const auto& [id, kind] : a_kinds) {
-				counts[static_cast<std::size_t>(kind)]++;
+			for (const auto& [id, food] : a_kinds) {
+				counts[static_cast<std::size_t>(food.kind)]++;
 			}
 			const auto crops = counts[static_cast<std::size_t>(Kind::kCrop)];
 			const auto never = counts[static_cast<std::size_t>(Kind::kNever)];
-			REX::INFO("Food spoiling sorts {:d} {:s}: {:d} raw, {:d} {:s}, {:d} cooked and {:d} that never {:s}.", a_kinds.size(),
+			REX::INFO("Food spoiling sorts {:d} {:s}: {:d} raw, {:d} {:s}, {:d} cooked and {:d} that never {:s}.{:s}", a_kinds.size(),
 				a_kinds.size() == 1 ? "food" : "foods", counts[static_cast<std::size_t>(Kind::kRaw)], crops,
 				crops == 1 ? "crop" : "crops", counts[static_cast<std::size_t>(Kind::kCooked)], never,
-				never == 1 ? "spoils" : "spoil");
+				never == 1 ? "spoils" : "spoil", a_listed ? " The list is in NEC.food.log." : "");
 		}
 
 		// -------------------------------------------------------------------
@@ -185,12 +189,12 @@ namespace FoodSpoil
 		}
 		auto kinds = Sort();
 		ReadFoodList(kinds);
-		Report(kinds);
+		Report(kinds, Settings::bFoodSpoils.GetValue() && WriteFoodLog(kinds));
 
 		Table table;
-		for (const auto& [id, kind] : kinds) {
-			if (kind != Kind::kNever) {
-				table.emplace_back(id, kind);
+		for (const auto& [id, food] : kinds) {
+			if (food.kind != Kind::kNever) {
+				table.emplace_back(id, food.kind);
 			}
 		}
 		std::ranges::sort(table);

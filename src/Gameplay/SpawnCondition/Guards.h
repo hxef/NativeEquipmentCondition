@@ -34,9 +34,9 @@ namespace SpawnCondition
 		const T _was;
 	};
 
-	// Whether a save is being applied: the engine's loading flag, up for a whole
-	// load, or this thread's bit, up while a form the save holds is read in
-	// play. What arrives then is what the save holds, so nothing rolls. Read
+	// Whether a save is being applied: the engine's loading flag, up for a
+	// whole load, or this thread's bit, up while a form the save holds is read
+	// in play. What arrives then is what the save holds, so nothing rolls. Read
 	// live, 2 plain reads.
 	bool Loading();
 
@@ -55,7 +55,7 @@ namespace SpawnCondition
 	// placeatme builds a whole character and its loadout in the same call,
 	// and that loadout is ordinary loot. A character the console has clicked
 	// counts as the player's pick, so gear resurrect or recycleactor gives it
-	// again arrives new. Only reached while a command runs, on the engine's own
+	// again arrives new. Only reached while a command runs, on the engine's
 	// thread, so reading the console's selection is safe.
 	bool ConsoleTarget(const RE::BGSInventoryList* a_list);
 

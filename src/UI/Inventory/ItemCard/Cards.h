@@ -27,6 +27,34 @@ namespace ItemCard
 
 	inline thread_local const Building* t_building = nullptr;
 
+	// The food on the card the game is building on this thread, set while
+	// its builder runs, so the rows of its effects show what eating it gives,
+	// see Effects.cpp. Set on every card, with food nullptr for anything but
+	// spoiled food, so a card never reads what the player ate.
+	struct FoodCard
+	{
+		const RE::MagicItem* food = nullptr;
+		float                share = 1.0F;       // of the strength of each effect that is not harmful
+		float                rads = 0.0F;        // more than the food's own
+		bool                 radsShown = false;  // a Rads row of the food's own shows them
+	};
+
+	inline thread_local FoodCard* t_foodCard = nullptr;
+
+	// The FoodCard of a_stack of a_item, in Effects.cpp.
+	[[nodiscard]] FoodCard FoodCardOf(const RE::BGSInventoryItem& a_item, const RE::BGSInventoryItem::Stack* a_stack);
+
+	// The Rads row a_card still needs once the game built it, when no Rads
+	// row of the food's own showed its rads, in Effects.cpp.
+	[[nodiscard]] std::optional<float> RadsRow(const FoodCard& a_card);
+
+	// The text of a Rads row, the vanilla short name for Rads.
+	[[nodiscard]] const char* RadsText();
+
+	// The game ends a card with its weight and value rows. A Rads row NEC
+	// adds goes just before them, under the food's other effects.
+	inline constexpr std::uint32_t CLOSING_ROWS = 2;
+
 	// Patches the calls that fill item cards. Returns whether either CND call
 	// was patched.
 	bool PatchCards();

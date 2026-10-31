@@ -2,6 +2,7 @@
 
 #include "Core/Plugin.h"
 
+#include "UI/Hud/HudParts/HudParts.h"
 #include "UI/Hud/PowerArmorCondition/Dash.h"
 
 #include <numbers>
@@ -20,7 +21,7 @@ namespace PowerArmorCondition
 	// and D to the width of its letters.
 	inline constexpr double LABEL_WIDE = 0.9;
 
-	// How deep the bar is, in rows. The lit digits of the 2 rows leave 0.3 of
+	// How deep the bar is at its own size, in rows. The lit digits of the 2 rows leave 0.3 of
 	// a row between them at the least, a 2, 3 or 4 over a 4. The bar and the
 	// dark shadow the HUD draws under it, 0.05 of a row, keep about 0.04 clear
 	// of each. It covers the ends of the tubes' glass.
@@ -91,8 +92,9 @@ namespace PowerArmorCondition
 	};
 
 	// How the bar and its word came out, worked out at layout and wanted every
-	// frame. The readout's origin is the right end of the bar, so it sits the
-	// bar's width along from the bar's left end.
+	// frame. The readout's origin is the right end of the bar, which stays at
+	// the box's right end whatever the bar's length, so the bar grows and
+	// shrinks to the left of it.
 	struct Bar
 	{
 		double width = 0.0;  // how far back to the left the bar runs
@@ -107,8 +109,8 @@ namespace PowerArmorCondition
 	// out: the dash sways every frame and the bar is moved, not laid out again.
 	[[nodiscard]] bool SameSize(const Box& a_box, const Box& a_other);
 
-	// Lays the bar out for a size of dash and returns how it came out. Called
-	// again only when the dash is drawn at a different size, since it measures
-	// text.
-	Bar Layout(Scaleform::GFx::Value& a_readout, const Box& a_box);
+	// Lays the bar out for a size of dash and the player's size of bar and
+	// returns how it came out. Called again only when either changes, since
+	// it measures text.
+	Bar Layout(Scaleform::GFx::Value& a_readout, const Box& a_box, const HudParts::Readout::Size& a_size);
 }

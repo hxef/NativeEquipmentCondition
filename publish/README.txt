@@ -8,8 +8,8 @@ base game.
 
 Fallout 4 shipped a fairly deep crafting system, with scrap, components and
 weapon mods, and still left out repair, a missed chance if there ever was one.
-Wear and repair add another layer to the vanilla economy, giving all that junk
-and those caps a real use, and they go hand in hand with Survival, where every
+Wear and repair add another layer to the game economy, giving all that junk and
+those caps a real use, and they go hand in hand with Survival, where every
 bullet and every scrap already counts.
 
 In 2026, the game finally got the condition system it should've shipped with,
@@ -38,6 +38,8 @@ WEAR AND TEAR
 * Every hit that lands wears the armor and clothing on the limb it struck,
   yours and NPCs' alike. Explosions wear every piece. Pieces that cover no
   limb, like a mask or a super mutant's armor, share each hit between them.
+  Switch on Plain apparel never wears on MCM's Armor page, and apparel with no
+  armor rating or bonus, like hats and rings, never wears and shows no CND.
 * NPC weapons wear too, shot by shot and blow by blow, by default a third as
   fast as yours. A weapon worn out to 0 stays in their hands.
 * The weapons and armor that companions and other essential NPCs come with
@@ -123,21 +125,16 @@ REPAIR AT A TRADER
 SEE IT AT A GLANCE
 * CND on the item cards, with the worn damage, resistances, fire rate,
   accuracy and range.
-* CND bars on the HUD ammo counter, the power armor dash and the Pip-Boy
-  apparel figure, and condition meters on the quick container rows. MCM
-  switches let the ammo counter's bar fade with the counter and hide the CND
-  word beside the HUD bars.
+* CND bars on the HUD ammo counter, the power armor dash and the Pip-Boy apparel
+  figure, and condition meters on the quick container rows. Each HUD bar has its
+  own switch, place and size in MCM.
 * Broken items fade out in the Pip-Boy lists.
 
 MAKE IT YOURS
-* With MCM, NEC's page changes any setting on the spot. Switch off jamming,
-  worn loot, trader repairs, the HUD condition bars and more, or tune wear
-  speed for you, for NPCs and for automatic weapons, where wear starts to cost
-  performance, how much gear keeps at 0 condition, prices, repair costs and
-  the condition gear needs before it can be modded. Its Little extras page
-  turns food spoiling on and sets how long raw and cooked food stay fresh, how
-  much coolers and fridges slow it down, how much spoiled food makes 1
-  Fertilizer, and whether the fridge icon shows.
+* With MCM, every setting changes on the spot. The main page shows NEC's
+  version, Log and any part another mod took over. The Weapons, Armor, Loot and
+  repairs, UI and Little extras pages hold the rest: switch features off, or
+  tune wear, penalties, prices and repair costs.
 * Without MCM, NEC.ini in Data\F4SE\Plugins explains every setting. Copy a
   line into NEC_custom.ini beside it, under the same section heading, change
   the value and restart the game.
@@ -147,13 +144,24 @@ MAKE IT YOURS
   overwrite.
 
 LITTLE EXTRAS
-* Food spoiling, off until you switch it on: food you or a companion carry,
-  and food on the dead, spoils over game days, slower in coolers and unbroken
-  fridges, marked with a frost icon. Spoiled food shows as a separate row at 0
-  condition. Eating it heals only 10% as much and gives extra rads, cooking
-  stations won't use it, and a chemistry station turns it into Fertilizer.
-  With worn loot on, food you find is already partly spoiled, while food you
-  buy, cook, harvest or get as a reward starts fresh.
+* Food spoiling, off until you switch it on: food you or a companion carry, and
+  food on the dead, spoils over game days, slower in coolers and unbroken
+  fridges, marked with a frost icon, as in Fallout 76. Spoiled food is its own
+  row at 0 condition, and its card shows its own healing and rads. Eating it
+  heals only 10% as much and gives more rads, which Lead Belly cuts as it cuts
+  the food's own. In Survival it heals nothing and fills hunger or thirst only a
+  tenth as much as the fresh food would. Survival has a minimum that every meal
+  fills, and spoiled food still gets that minimum. Cooking stations won't take
+  it, and a chemistry station turns it into Fertilizer. With worn loot on, food
+  you find is already partly spoiled, while food you buy, cook, harvest or get
+  as a reward starts fresh. NEC.food.log, beside NEC.log, names every food and
+  the kind NEC gave it.
+* MCM's Little extras page turns food spoiling on and sets how long raw and
+  cooked food stay fresh, how much coolers and fridges slow it down, how much
+  spoiled food makes 1 Fertilizer, its healing outside Survival and its hunger
+  in Survival (Spoiled food healing and Spoiled food hunger, from 0 to 100% of
+  the fresh food's), its extra rads (Spoiled food rads, from 0 to 5, where 1
+  is 15 for meat and 5 for other food) and whether the fridge icon shows.
 * 6 loading screen tips on wear, repairs, broken gear, jams and loot, in
   the vanilla style and as likely to show as any ordinary loading
   screen. A tip about a feature you switch off never shows.
@@ -169,12 +177,12 @@ LITTLE EXTRAS
 COMPATIBILITY
 * Runs on Fallout 4 1.11.240 (AE) and 1.10.163 (OG).
 * No ESP, so it takes no plugin slot.
-* Works with UI replacers like FallUI and DEF_UI. The HUD CND bar finds a free
-  spot by the ammo counter on any HUD layout and stays on screen at any
+* Works with UI replacers like FallUI and DEF_UI. The Weapon CND bar finds a
+  free spot by the ammo counter on any HUD layout and stays on screen at any
   resolution. A part NEC can't find is skipped and named in NEC.log or the bug
   report logs, while wear, damage and prices work as ever.
 * NEC works alongside other DLL mods that change the same things. When one
-  takes over one of NEC's features, NEC lets it, and NEC's MCM page and
+  takes over one of NEC's features, NEC lets it, and NEC's main MCM page and
   NEC.log name that mod and what is off.
 * The plugin's own text comes in every language the game ships in. The rest is
   vanilla text. Every language but English was translated by AI, not
@@ -186,7 +194,6 @@ COMPATIBILITY
   condition, since NEC reads them again at every save load and new game.
 * Both vanilla fixes under Little extras can be switched off, for a load order
   where another mod already fixes them.
-* In Survival, spoiled food still fills hunger as fresh food does.
 
 EXCLUSION LIST
 To have NEC leave some weapons or armor alone, such as gear with a condition
@@ -213,10 +220,10 @@ at 0 condition.
 FOOD AND FRIDGE LISTS
 Food spoiling sorts every food in your load order into 4 kinds from the game
 data: raw, crop, cooked and never spoils. For a mod whose food it sorts wrong,
-list the food in a file in Data\F4SE\Plugins\NEC\Food with its kind after it.
-List a mod's fridges and coolers in Data\F4SE\Plugins\NEC\Fridge by the
-container's base form, as FO4Edit shows it. Both take the exclusion list's
-line form.
+copy the food's line from NEC.food.log into a file in
+Data\F4SE\Plugins\NEC\Food and change its kind. List a mod's fridges and
+coolers in Data\F4SE\Plugins\NEC\Fridge by the container's base form, as
+FO4Edit shows it. Both take the exclusion list's line form.
 
   ; Food\MyFood.ini
   MyFoodMod.esp|000801 = raw
@@ -226,7 +233,7 @@ line form.
   MyKitchenMod.esp|000803    ; MyKitchen_Freezer01
 
 NEC.log lists what each file sets and any line it skips. NEC ships
-Fridge\Fallout4.ini with the vanilla coolers and unbroken fridges.
+Fridge\NEC_Default.ini with the vanilla coolers and unbroken fridges.
 
 REQUIREMENTS
 * Fallout 4 1.11.240 (AE) or 1.10.163 (OG)
@@ -270,13 +277,13 @@ and price, so what is left behind does nothing there, except that identical
 items at different conditions stay in separate stacks in your inventory.
 
 FOUND A BUG?
-If a feature seems to do nothing, another DLL mod may have taken it over.
-Load a save, then look at NEC's MCM page. It names that mod.
+If a feature seems to do nothing, another DLL mod may have taken it over. Load
+a save, then look at NEC's main page in MCM. It names that mod.
 
 For anything else, share NEC's logs:
 1. Turn on the full logs:
-   * With MCM: on NEC's page, under Log, set Log detail to debug and switch
-     Bug report logs on.
+   * With MCM: on NEC's main page, under Log, set Log detail to debug and
+     switch Bug report logs on.
    * Without MCM: add these lines to NEC_custom.ini in Data\F4SE\Plugins,
      then restart the game:
        [Log]

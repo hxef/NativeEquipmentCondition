@@ -331,10 +331,18 @@ namespace LogFiles
 		return std::move(file.sink);
 	}
 
-	std::filesystem::path FileOf(const spdlog::sink_ptr& a_sink)
+	std::filesystem::path MainFile()
 	{
-		const auto* file = dynamic_cast<const FileSink*>(a_sink.get());
-		return file ? file->Path() : std::filesystem::path{};
+		const auto logger = spdlog::default_logger();
+		if (!logger) {
+			return {};
+		}
+		for (const auto& sink : logger->sinks()) {
+			if (const auto* file = dynamic_cast<const FileSink*>(sink.get())) {
+				return file->Path();
+			}
+		}
+		return {};
 	}
 
 	std::string Shown(const std::filesystem::path& a_path)

@@ -11,11 +11,11 @@
 // 1 over the gun's share, a straight line from fAccuracyFloor at 0 to 1 at
 // fWeaponPenaltyStart, so at 0.75 a cone is a third wider. Sneaking, sights,
 // crippled arms, barrels and the cone perks are already inside the vanilla
-// answer. No cone grows past the vanilla caps, read from the loaded game,
-// and a cone of 0 or less, an NPC aiming true, stays as it is. The shot's
-// condition comes from WeaponEvents' fire call, see Fired, so a shot the game
-// fires without that call, a fire queued as a task or a throw, keeps the
-// vanilla spread, and so does an NPC's shot while its inventory is busy.
+// answer. No cone grows past the cone caps from the load order, and a cone of 0
+// or less, an NPC aiming true, stays as it is. The shot's condition comes from
+// WeaponEvents' fire call, see Fired, so a shot the game fires without that
+// call, a fire queued as a task or a throw, keeps the vanilla spread, and so
+// does an NPC's shot while its inventory is busy.
 //
 // The crosshair asks the same function for its min and max and for its size
 // right now, and both calls widen by the share measured once a frame, see
@@ -43,9 +43,9 @@ namespace Aim
 	// Patches the spread, the crosshair pair and VATS.
 	void InstallAccuracy();
 
-	// Finds the vanilla caps on the cone, fAimModelFireConeAngleLimitMax and
-	// Min. The settings are built into the game, so they live through a full
-	// reset, but a plugin can change their values, which are read on every
+	// Finds the cone caps from the load order, fAimModelFireConeAngleLimitMax
+	// and Min. The settings are built into the game, so they live through a
+	// full reset, but a plugin can change their values, which are read on every
 	// call.
 	void LoadAccuracy();
 

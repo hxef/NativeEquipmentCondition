@@ -146,8 +146,9 @@ namespace CallPatch
 				a_lines.push_back({ REX::ELogLevel::Warning, ClashLine(place) });
 				g_whole[set] = false;
 			} else if (place.free) {
-				// The vanilla function is handed on to, or none for a call through a
-				// vtable, which the hook makes itself, or a DLL's plain hook.
+				// The vanilla function is handed on to, or none for a call
+				// through a vtable, which the hook makes itself, or a DLL's
+				// plain hook.
 				place.next = place.kind == Kind::kVirtualCall ? 0 : LeadsTo(place.where, place.kind);
 			} else if (auto found = BuildableAt(a_ask); found.why == Why::kNone) {
 				place.free = true;

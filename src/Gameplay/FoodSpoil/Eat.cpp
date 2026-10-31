@@ -1,6 +1,7 @@
 #include "Gameplay/FoodSpoil/Food.h"
 
 #include "Core/CallPatch/CallPatch.h"
+#include "Core/Settings.h"
 #include "Core/TraceLog.h"
 #include "Gameplay/FoodSpoil/FoodSpoil.h"
 #include "Gameplay/FoodSpoil/Kinds.h"
@@ -8,8 +9,10 @@
 
 #include <cstdint>
 #include <limits>
+#include <mutex>
 #include <optional>
-#include <string_view>
+#include <utility>
+#include <vector>
 
 namespace FoodSpoil
 {
@@ -33,23 +36,34 @@ namespace FoodSpoil
 		// The 1 call that casts the food eaten and then removes the piece.
 		constexpr CallPatch::CallSite BITE_SITE{ CallPatch::AE{ RE::ID::TaskQueueInterface::TaskUnpackFunc.ae(), 0x167F }, CallPatch::OG{ RE::ID::TaskQueueInterface::TaskUnpackFunc.og(), 0x16FA }, "bite mark" };
 
-		// What a spoiled bite gives of the food's own healing and bonuses.
-		constexpr float SPOILED_SHARE = 0.1F;
-
-		// The rads a spoiled bite adds on top of the food's own, as in
-		// Fallout 76: meat and dishes made with raw food 15, crops and other
-		// dishes 5.
-		constexpr float MEAT_RADS = 15.0F;
-		constexpr float PLANT_RADS = 5.0F;
-
 		CallPatch::Held                                                                  g_bite;
 		CallPatch::Link<void (*)(RE::MagicCaster*, const DrinkTask*)>                    g_biteLink;
 		CallPatch::Link<void (*)(RE::ActorMagicCaster*, RE::ActiveEffect*, float, bool)> g_adjustLink;
 		REL::Relocation<void (*)(RE::ActorMagicCaster*, RE::ActiveEffect*, float, bool)> _AdjustActiveEffect;
 
-		// The food of a spoiled bite while its cast runs, on the thread that
-		// casts it. The cast makes every effect inside the call.
+		// The spoiled food being eaten while its cast runs, and the share of
+		// its strength each effect keeps, on the thread that casts it. The
+		// cast makes every effect inside the call.
 		thread_local const RE::MagicItem* t_spoiledBite = nullptr;
+		thread_local float                t_share = 0.0F;
+
+		// The food the player last ate spoiled, each with the share its
+		// effects kept, for the menus that show them, see EatenShare.
+		std::mutex                                             g_eatenLock;
+		std::vector<std::pair<const RE::MagicItem*, float>> g_eaten;
+
+		void NoteEaten(const RE::MagicItem& a_food, float a_share)
+		{
+			const std::scoped_lock l{ g_eatenLock };
+			std::erase_if(g_eaten, [&](const auto& a_eaten) { return a_eaten.first == &a_food; });
+			g_eaten.emplace_back(&a_food, a_share);
+		}
+
+		void ForgetEaten(const RE::MagicItem& a_food)
+		{
+			const std::scoped_lock l{ g_eatenLock };
+			std::erase_if(g_eaten, [&](const auto& a_eaten) { return a_eaten.first == &a_food; });
+		}
 
 		// How many pieces a_item's stacks hold together.
 		std::uint32_t Pieces(const RE::BGSInventoryItem& a_item)
@@ -102,76 +116,43 @@ namespace FoodSpoil
 			return pieces;
 		}
 
-		// Whether a_dish is made from raw food by any recipe.
-		bool MadeWithRaw(const RE::TESBoundObject& a_dish)
-		{
-			for (const auto* recipe : g_dataHandler->GetFormArray<RE::BGSConstructibleObject>()) {
-				if (!recipe || recipe->createdItem != &a_dish || !recipe->requiredItems) {
-					continue;
-				}
-				for (const auto& part : *recipe->requiredItems) {
-					if (part.first && KindOf(*part.first) == Kind::kRaw) {
-						return true;
-					}
-				}
-			}
-			return false;
-		}
-
-		// The rads a spoiled bite of a_food adds.
-		float RadsOf(const RE::TESBoundObject& a_food)
-		{
-			switch (KindOf(a_food)) {
-			case Kind::kRaw:
-				return MEAT_RADS;
-			case Kind::kCooked:
-				return MadeWithRaw(a_food) ? MEAT_RADS : PLANT_RADS;
-			default:
-				return PLANT_RADS;
-			}
-		}
-
-		// Rads, found by editor ID. The game keeps an actor value's editor ID.
-		const RE::ActorValueInfo* Rads()
-		{
-			for (const auto* value : g_dataHandler->GetFormArray<RE::ActorValueInfo>()) {
-				if (value && std::string_view{ value->GetFormEditorIDString().c_str() } == "Rads") {
-					return value;
-				}
-			}
-			return nullptr;
-		}
-
 		// Adds a_rads as the food's own rad effect does: as damage, which on
 		// Rads counts up.
 		void AddRads(RE::Actor& a_player, float a_rads)
 		{
-			if (const auto* rads = Rads()) {
+			if (const auto* rads = RadsValue(); rads && a_rads > 0.0F) {
 				a_player.ModActorValue(RE::ACTOR_VALUE_MODIFIER::kDamage, *rads, a_rads);
 			}
 		}
 
-		// The cast of food anybody eats. Marks a spoiled bite of the player's
+		// The cast of food anybody eats. Marks spoiled food the player eats
 		// for the effects the cast makes, then adds its rads once the piece is
 		// gone. Writes nothing to the stack: the sweep and the door turn it
 		// spoiled later.
 		void BiteHk(RE::MagicCaster* a_caster, const DrinkTask* a_task)
 		{
-			auto* player = RE::PlayerCharacter::GetSingleton();
-			if (!g_bite.Runs(g_biteLink) || !a_task || !a_task->food || !player || a_task->eater != player ||
-				a_task->stackID == std::numeric_limits<std::uint32_t>::max() ||
-				a_task->callback != RE::ID::Actor::DrinkPotionCallback.address() || !Spoils(*a_task->food)) {
+			auto*      player = RE::PlayerCharacter::GetSingleton();
+			const bool playerEats = g_bite.Runs(g_biteLink) && a_task && a_task->food && player && a_task->eater == player &&
+			                        a_task->callback == RE::ID::Actor::DrinkPotionCallback.address();
+			const auto before = playerEats && a_task->stackID != std::numeric_limits<std::uint32_t>::max() && Spoils(*a_task->food) ?
+			                        SpoiledHeld(*player, *a_task->food, a_task->stackID) :
+			                        std::nullopt;
+			if (!before) {
+				// Fresh food's effects take the place of the spoiled ones.
+				if (playerEats) {
+					ForgetEaten(*a_task->food);
+				}
 				g_biteLink(a_caster, a_task);
 				return;
 			}
 			const auto& food = *a_task->food;
-			const auto  before = SpoiledHeld(*player, food, a_task->stackID);
-			if (!before) {
-				g_biteLink(a_caster, a_task);
-				return;
-			}
+
+			// Read before the cast, as the food's own rads are.
+			const auto share = SpoiledShare();
+			const auto rads = ExtraRads(food);
 
 			t_spoiledBite = &food;
+			t_share = share;
 			g_biteLink(a_caster, a_task);
 			t_spoiledBite = nullptr;
 
@@ -179,14 +160,16 @@ namespace FoodSpoil
 			if (PiecesHeld(*player, food) >= *before) {
 				return;
 			}
-			const auto rads = RadsOf(food);
 			AddRads(*player, rads);
-			TraceLog::Line("food", "ate spoiled {:s} [{:08X}] from stack {:d}: a tenth of its healing and +{:.0f} rads",
-				RE::TESFullName::GetFullName(food), food.formID, a_task->stackID, rads);
+			NoteEaten(food, share);
+			const auto noted = InSurvival() && NoteSpoiledMeal(food);
+			TraceLog::Line("food", "ate spoiled {:s} [{:08X}] from stack {:d}: {:.0f}% of its healing and +{:.0f} rads{:s}",
+				RE::TESFullName::GetFullName(food), food.formID, a_task->stackID, share * 100.0F, rads,
+				noted ? ", noted for Survival's hunger" : "");
 		}
 
 		// Each effect a cast makes, for every actor. Under the mark, an effect
-		// of the spoiled food that is not harmful keeps a tenth of its
+		// of the spoiled food that is not harmful keeps t_share of its
 		// strength. The food's own rads are harmful, so they stay in full.
 		void AdjustHk(RE::ActorMagicCaster* a_this, RE::ActiveEffect* a_effect, float a_power, bool a_hostileOnly)
 		{
@@ -197,15 +180,51 @@ namespace FoodSpoil
 			const auto* effect = a_effect->effect;
 			const auto* setting = effect ? effect->effectSetting : nullptr;
 			if (setting && !setting->data.flags.any(RE::EffectSetting::EffectSettingData::Flag::kDetrimental)) {
-				a_effect->magnitude *= SPOILED_SHARE;
+				a_effect->magnitude *= t_share;
 			}
 		}
 	}
 
+	bool InSurvival()
+	{
+		auto* player = RE::PlayerCharacter::GetSingleton();
+		return player && player->GetDifficultyLevel() == RE::DifficultyLevel::kTrueSurvival;
+	}
+
+	float SpoiledShare()
+	{
+		return InSurvival() ? 0.0F : ShareOf(Settings::iSpoiledHealing.GetValue());
+	}
+
+	bool EatingRuns()
+	{
+		return g_bite.Intact();
+	}
+
+	std::optional<float> EatenShare(const RE::MagicItem& a_food)
+	{
+		if (!EatingRuns()) {
+			return std::nullopt;
+		}
+		const std::scoped_lock l{ g_eatenLock };
+		for (const auto& [food, share] : g_eaten) {
+			if (food == &a_food) {
+				return share;
+			}
+		}
+		return std::nullopt;
+	}
+
+	void ForgetEaten()
+	{
+		const std::scoped_lock l{ g_eatenLock };
+		g_eaten.clear();
+	}
+
 	void InstallEat(Part a_group)
 	{
-		// Both or neither: the tenth needs the mark, and a mark with no tenth
-		// would add the rads to a bite that heals in full.
+		// Both or neither: the share needs the mark, and a mark with no share
+		// would add the rads to food that heals in full.
 		const CallPatch::Together bite{ a_group };
 		CallPatch::PatchCall(BITE_SITE, RE::ID::MagicCaster::CastWithCallback, reinterpret_cast<std::uintptr_t>(&BiteHk), g_biteLink);
 		_AdjustActiveEffect = CallPatch::PatchSlot(RE::ActorMagicCaster::VTABLE[0], { 0x1D, 0x1D }, AdjustHk, "spoiled bite effects",

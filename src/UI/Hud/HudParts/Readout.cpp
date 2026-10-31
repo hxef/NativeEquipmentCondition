@@ -5,6 +5,7 @@
 #include "UI/Flash.h"
 
 #include <algorithm>
+#include <cmath>
 #include <cstdint>
 
 namespace HudParts
@@ -110,9 +111,9 @@ namespace HudParts
 			}
 		}
 
-		void FollowWordSwitch(Value& a_readout, std::optional<bool>& a_shown, std::string_view a_bar)
+		void FollowWordSwitch(Value& a_readout, const Settings::Live<bool>& a_shows, std::optional<bool>& a_shown, std::string_view a_bar)
 		{
-			const auto shown = Settings::bHudBarShowsWord.GetValue();
+			const auto shown = a_shows.GetValue();
 			if (a_shown == shown) {
 				return;
 			}
@@ -146,6 +147,12 @@ namespace HudParts
 			const auto filled = a_width * std::clamp(a_percent, 0, 100) / 100.0;
 			const auto left = a_still == Still::kLeftEnd ? -a_width : -filled;
 			PutBox(fill, left, -a_deep / 2.0, filled, a_deep);
+		}
+
+		Size SizeFrom(const Settings::Live<float>& a_length, const Settings::Live<float>& a_thickness)
+		{
+			const auto held = [](float a_value) { return std::isfinite(a_value) ? std::clamp(static_cast<double>(a_value), LEAST_SIZE, MOST_SIZE) : 1.0; };
+			return Size{ held(a_length.GetValue()), held(a_thickness.GetValue()) };
 		}
 	}
 }

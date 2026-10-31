@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <cstddef>
 #include <mutex>
 #include <numbers>
 
@@ -31,10 +32,21 @@ namespace HudCondition
 			return Point{ a_counter.x + (across * std::cos(turn)) - (down * std::sin(turn)), a_counter.y + (across * std::sin(turn)) + (down * std::cos(turn)) };
 		}
 
+		// What the place kept for the MCM page was worked out from, so the
+		// box can be worked out again at another size.
+		struct Kept
+		{
+			Measure                       measure;
+			std::optional<Staging>        staging;
+			Spot                          spot;
+			HudParts::Readout::Size       size;
+			HudParts::Readout::LabelPlace label;
+		};
+
 		// The place kept for the MCM page, and the whole HUD units the trace
 		// last said it in.
 		std::mutex                         g_lock;
-		std::optional<Measure>             g_measured;
+		std::optional<Kept>                g_kept;
 		std::optional<std::array<long, 8>> g_told;
 
 		[[nodiscard]] std::array<long, 8> Whole(const Measure& a_measure)
@@ -44,6 +56,33 @@ namespace HudCondition
 			return { std::lround(box.left), std::lround(box.top), std::lround(box.right), std::lround(box.bottom),
 				std::lround(frame.left), std::lround(frame.top), std::lround(frame.right), std::lround(frame.bottom) };
 		}
+
+		// The staging of a box from its corners as Place stages them: top
+		// left, top right, bottom left, bottom right.
+		[[nodiscard]] std::optional<Staging> StagingOf(const Flash::Box& a_box, const std::array<Point, 4>& a_staged)
+		{
+			const auto wide = a_box.right - a_box.left;
+			const auto high = a_box.bottom - a_box.top;
+			if (!(wide > 0.0) || !(high > 0.0)) {
+				return std::nullopt;
+			}
+			const Point across{ (a_staged[1].x - a_staged[0].x) / wide, (a_staged[1].y - a_staged[0].y) / wide };
+			const Point down{ (a_staged[2].x - a_staged[0].x) / high, (a_staged[2].y - a_staged[0].y) / high };
+			const Point origin{ a_staged[0].x - (across.x * a_box.left) - (down.x * a_box.top), a_staged[0].y - (across.y * a_box.left) - (down.y * a_box.top) };
+			return Staging{ origin, across, down };
+		}
+	}
+
+	Flash::Box Staging::Holding(const Flash::Box& a_box) const
+	{
+		std::optional<Flash::Box> held;
+		for (const auto& corner : { Point{ a_box.left, a_box.top }, Point{ a_box.right, a_box.top }, Point{ a_box.left, a_box.bottom }, Point{ a_box.right, a_box.bottom } }) {
+			const auto x = origin.x + (across.x * corner.x) + (down.x * corner.y);
+			const auto y = origin.y + (across.y * corner.x) + (down.y * corner.y);
+			const Flash::Box dot{ x, y, x, y };
+			held = held ? held->With(dot) : dot;
+		}
+		return *held;
 	}
 
 	// -------------------------------------------------------------------
@@ -65,6 +104,11 @@ namespace HudCondition
 	Shift ShiftNow()
 	{
 		return Shift{ Finite(Settings::fHudBarX.GetValue()), Finite(Settings::fHudBarY.GetValue()) };
+	}
+
+	HudParts::Readout::Size SizeNow()
+	{
+		return HudParts::Readout::SizeFrom(Settings::fHudBarLength, Settings::fHudBarThickness);
 	}
 
 	Transform TransformOf(const Value& a_clip)
@@ -99,12 +143,14 @@ namespace HudCondition
 		std::optional<Flash::Box> box;
 		const std::array corners{ Point{ a_filled.left, a_filled.top }, Point{ a_filled.right, a_filled.top }, Point{ a_filled.left, a_filled.bottom },
 			Point{ a_filled.right, a_filled.bottom } };
-		for (const auto& corner : corners) {
-			const auto staged = Roles::ToStage(a_movie, a_meters, InParent(counter, Point{ a_spot.x + corner.x, a_spot.y + corner.y }));
-			if (!staged) {
+		std::array<Point, 4> staged{};
+		for (std::size_t i = 0; i < corners.size(); i++) {
+			const auto at = Roles::ToStage(a_movie, a_meters, InParent(counter, Point{ a_spot.x + corners[i].x, a_spot.y + corners[i].y }));
+			if (!at) {
 				return std::nullopt;
 			}
-			const Flash::Box dot{ staged->x, staged->y, staged->x, staged->y };
+			staged[i] = *at;
+			const Flash::Box dot{ at->x, at->y, at->x, at->y };
 			box = box ? box->With(dot) : dot;
 		}
 
@@ -114,7 +160,7 @@ namespace HudCondition
 		const auto  held = std::abs(move.x - want.x) > LEEWAY || std::abs(move.y - want.y) > LEEWAY;
 
 		const auto spot = InParent(counter, Point{ a_spot.x, a_spot.y });
-		Placed     placed{ Transform{ spot.x, spot.y, counter.scaleX, counter.scaleY, counter.rotation }, *box,
+		Placed     placed{ Transform{ spot.x, spot.y, counter.scaleX, counter.scaleY, counter.rotation }, *box, StagingOf(a_filled, staged),
 			Shift{ want.x - move.x, move.y - want.y }, shift == Shift{} && !held, held };
 
 		// With no move the readout sits on the spot itself, with no trip
@@ -145,14 +191,15 @@ namespace HudCondition
 	// The MCM page's numbers
 	// -------------------------------------------------------------------
 
-	void Keep(const Flash::Box& a_box, const Flash::Box& a_frame)
+	void Keep(const Placed& a_placed, const Spot& a_spot, const HudParts::Readout::Size& a_size, const HudParts::Readout::LabelPlace& a_label,
+		const Flash::Box& a_frame)
 	{
-		const Measure now{ a_box, a_frame };
+		const Measure now{ a_placed.box, a_frame };
 		const auto    whole = Whole(now);
 		bool          tell = false;
 		{
 			const std::scoped_lock lock{ g_lock };
-			g_measured = now;
+			g_kept = Kept{ now, a_placed.staging, a_spot, a_size, a_label };
 			tell = whole != g_told;
 			g_told = whole;
 		}
@@ -165,13 +212,25 @@ namespace HudCondition
 	void Forget()
 	{
 		const std::scoped_lock lock{ g_lock };
-		g_measured.reset();
+		g_kept.reset();
 		g_told.reset();
 	}
 
 	std::optional<Measure> Measured()
 	{
-		const std::scoped_lock lock{ g_lock };
-		return g_measured;
+		std::optional<Kept> kept;
+		{
+			const std::scoped_lock lock{ g_lock };
+			kept = g_kept;
+		}
+		if (!kept) {
+			return std::nullopt;
+		}
+		const auto size = SizeNow();
+		if (size == kept->size || !kept->staging) {
+			return kept->measure;
+		}
+		const auto& label = kept->label;
+		return Measure{ kept->staging->Holding(Filled(Sized(kept->spot, size, label), label)), kept->measure.frame };
 	}
 }

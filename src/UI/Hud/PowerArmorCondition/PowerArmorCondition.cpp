@@ -77,24 +77,29 @@ namespace PowerArmorCondition
 
 				const auto anchor = CurrentAnchor();
 				const auto measured = anchor.miss == Miss::kNone;
-				const auto percent = HudParts::Weapon::Percent();
+				const auto percent = HudParts::Weapon::Percent(Settings::bPowerArmorBar);
 				const auto frame = FrameOf(*a_params.movie);
 				auto       box = measured ? Place(frame, anchor) : Box{};
 
 				// The MCM page can move the bar off the digits. It still sways
-				// with the dash, and only its place changes, never its size.
-				// The movie's y runs down, so above 0 is taken off to go up. A
-				// nan typed into the ini counts as 0, as for the HUD's bar.
+				// with the dash, and only its place changes. The movie's y
+				// runs down, so above 0 is taken off to go up. A nan typed
+				// into the ini counts as 0, as for the HUD's bar.
 				const auto offset = [](float a_value) { return std::isfinite(a_value) ? a_value : 0.0F; };
 				box.x += offset(Settings::fPowerArmorBarX.GetValue());
 				box.y -= offset(Settings::fPowerArmorBarY.GetValue());
 
 				// Laying out again means measuring text, so it waits for the
-				// dash to be drawn at a different size. Moving and turning is 3
-				// numbers, every frame.
-				if (measured && !SameSize(box, laidOutFor)) {
-					bar = Layout(readout, box);
+				// dash to be drawn at a different size, or for the player to
+				// size the bar. Moving and turning is 3 numbers, every frame.
+				const auto size = HudParts::Readout::SizeFrom(Settings::fPowerArmorBarLength, Settings::fPowerArmorBarThickness);
+				if (measured && (!SameSize(box, laidOutFor) || size != laidOutSize)) {
+					bar = Layout(readout, box, size);
 					laidOutFor = box;
+					if (size != laidOutSize) {
+						TraceLog::Line("menu", "Power armor CND bar sized to {:g} times its length and {:g} times its thickness", size.length, size.thickness);
+					}
+					laidOutSize = size;
 					shownPercent = NOT_DRAWN;
 					TraceLog::Line("menu", "Power armor CND bar is {:.0f} across and {:.1f} deep, its word at size {:.1f} and ending {:.1f} past it of the {:.1f} the box leaves, a row of the dash being {:.1f}, turned {:.2f} degrees from level",
 						bar.width, bar.deep, bar.size, bar.reach, box.room, box.row, box.turn * DEGREES);
@@ -102,22 +107,24 @@ namespace PowerArmorCondition
 
 				// Everything has to hold: the dash on screen and measured, a
 				// weapon that wears, and room in the movie for all 4 corners
-				// around the bar and its word. A readout that would go past the
-				// edge is not drawn.
-				const auto length = bar.width + bar.reach;
-				const auto half = bar.size / 2.0;
+				// around the bar and its word, from the bar's left end to the
+				// word's end and as deep as the deeper of the 2. A readout that
+				// would go past the edge is not drawn.
+				const auto from = box.width - bar.width;
+				const auto to = box.width + bar.reach;
+				const auto half = std::max(bar.size, bar.deep) / 2.0;
 				const auto fits = measured &&
-				                  frame.Holds(box.At(0.0, -half)) &&
-				                  frame.Holds(box.At(0.0, half)) &&
-				                  frame.Holds(box.At(length, -half)) &&
-				                  frame.Holds(box.At(length, half));
+				                  frame.Holds(box.At(from, -half)) &&
+				                  frame.Holds(box.At(from, half)) &&
+				                  frame.Holds(box.At(to, -half)) &&
+				                  frame.Holds(box.At(to, half));
 				const auto wanted = InPowerArmor() && DashAllowed() && percent >= 0 && fits;
 
 				if (fits) {
-					// The readout's origin is the right end of its bar, so it
-					// goes the bar's width along from the bar's left end,
+					// The readout's origin is the right end of its bar, which
+					// stays at the box's right end whatever the bar's length,
 					// turned the way the bar runs.
-					const auto origin = box.At(bar.width, 0.0);
+					const auto origin = box.At(box.width, 0.0);
 					readout.SetMember("x"sv, Value(origin.x));
 					readout.SetMember("y"sv, Value(origin.y));
 					readout.SetMember("rotation"sv, Value(box.turn * DEGREES));
@@ -141,10 +148,10 @@ namespace PowerArmorCondition
 				if (!fits && measured && !saidOffScreen) {
 					saidOffScreen = true;
 					TraceLog::Line("menu", "Power armor CND would fall outside the HUD, {:.0f} across and {:.0f} deep at {:.0f},{:.0f} in a movie {:.0f} by {:.0f} at {:.0f},{:.0f}",
-						length, bar.size, box.x, box.y, frame.width, frame.height, frame.left, frame.top);
+						to - from, half * 2.0, box.x, box.y, frame.width, frame.height, frame.left, frame.top);
 				}
 
-				HudParts::Readout::FollowWordSwitch(readout, wordShown, "Power armor"sv);
+				HudParts::Readout::FollowWordSwitch(readout, Settings::bPowerArmorBarShowsWord, wordShown, "Power armor"sv);
 
 				if (wanted && percent != shownPercent) {
 					HudParts::Readout::SetPercent(readout, bar.width, bar.deep, percent);
@@ -174,6 +181,7 @@ namespace PowerArmorCondition
 				shownOpacity = -1.0;
 				fade = 0.0;
 				laidOutFor = Box{};
+				laidOutSize = HudParts::Readout::Size{};
 				bar = Bar{};
 				wordShown.reset();
 				colored = false;
@@ -188,6 +196,7 @@ namespace PowerArmorCondition
 			double                           shownOpacity = -1.0;
 			double                           fade = 0.0;
 			Box                              laidOutFor;
+			HudParts::Readout::Size          laidOutSize;
 			Bar                              bar;
 			std::optional<bool>              wordShown;
 			bool                             colored = false;
@@ -261,7 +270,7 @@ namespace PowerArmorCondition
 			TraceLog::Line("menu", "HUDMenu.swf loaded, power armor CND will follow the dash's ammo box");
 		}
 
-		HudParts::Waiter g_waiter{ Settings::bHudCondition, &Build };
+		HudParts::Waiter g_waiter{ Settings::bPowerArmorBar, &Build };
 	}
 
 	void Load()

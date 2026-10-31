@@ -29,8 +29,9 @@ namespace FoodSpoil
 			F4_HEAP_REDEFINE_NEW(DeathSink);
 
 		private:
-			// Queued, so the body's inventory lock is taken on the engine's own
-			// thread with none of the engine's locks held, as the menu sweep does.
+			// Queued, so the body's inventory lock is taken on the engine's
+			// thread with none of the engine's locks held, as the menu sweep
+			// does.
 			RE::BSEventNotifyControl ProcessEvent(const RE::TESDeathEvent& a_event, RE::BSTEventSource<RE::TESDeathEvent>*) override
 			{
 				if (!a_event.actorDying || !Settings::bFoodSpoils.GetValue()) {

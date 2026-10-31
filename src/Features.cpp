@@ -45,6 +45,15 @@ namespace
 	// The features
 	// -------------------------------------------------------------------
 
+	// The menus show what spoiled food gives through places of the part for
+	// eating it, and a part belongs to 1 row, so FoodSpoil's turn installs
+	// both.
+	void InstallFoodSpoil()
+	{
+		FoodSpoil::Install();
+		ItemCard::PatchFoodEffects();
+	}
+
 	// Every feature, in the order they run. Install and Load run top to bottom
 	// and Unload bottom to top, so a row that reads what a row above kept sits
 	// below it.
@@ -112,7 +121,7 @@ namespace
 		{ .name = "SpawnCondition", .on = &Settings::bSpawnCondition, .part = Part::kSpawn, .Install = SpawnCondition::Install },
 		// Food the player or a companion carried spoils with time. Food is
 		// stamped at Worn loot's arrival door, so it rides on Worn loot.
-		{ .name = "FoodSpoil", .on = &Settings::bFoodSpoils, .part = Part::kFood, .needs = Part::kSpawn, .Install = FoodSpoil::Install, .Load = FoodSpoil::Load, .Unload = FoodSpoil::Unload },
+		{ .name = "FoodSpoil", .on = &Settings::bFoodSpoils, .part = Part::kFood, .needs = Part::kSpawn, .Install = InstallFoodSpoil, .Load = FoodSpoil::Load, .Unload = FoodSpoil::Unload },
 
 		// UI: what is drawn into Fallout 4's own menus.
 
@@ -124,12 +133,13 @@ namespace
 		{ .name = "Pipboy", .OnMovieLoaded = Pipboy::OnMovieLoaded },
 		// A CND bar over each body region of the Pip-Boy's paper doll.
 		{ .name = "PaperDoll", .OnMovieLoaded = PaperDoll::OnMovieLoaded },
-		// What both HUD readouts share, on their switch. Their colour targets
-		// go with the HUD menu they were made for.
+		// What both CND bars on the HUD share, on the switch of their part.
+		// Their colour targets go with the HUD menu they were made for.
 		{ .name = "HudParts", .on = &Settings::bHudCondition, .part = Part::kHudBar, .Install = HudParts::Install, .Load = HudParts::Load },
-		// A CND bar in the HUD's ammo counter.
+		// The Weapon CND bar by the HUD's ammo counter.
 		{ .name = "HudCondition", .on = &Settings::bHudCondition, .OnMovieLoaded = HudCondition::OnMovieLoaded },
-		// The same bar on the power armor dash, on the same switch.
+		// The Power armor CND bar on the dash. It goes with the same part,
+		// and bPowerArmorBar switches the bar itself, see HudParts::Waiter.
 		{ .name = "PowerArmorCondition", .on = &Settings::bHudCondition, .Load = PowerArmorCondition::Load, .OnMovieLoaded = PowerArmorCondition::OnMovieLoaded },
 		// Condition meters on the rows of the HUD's quick container.
 		{ .name = "QuickContainer", .on = &Settings::bQuickContainer, .part = Part::kQuick, .Install = QuickContainer::Install, .OnMovieLoaded = QuickContainer::OnMovieLoaded },

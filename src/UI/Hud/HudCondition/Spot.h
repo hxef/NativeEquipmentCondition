@@ -81,6 +81,13 @@ namespace HudCondition
 	// the baseline.
 	[[nodiscard]] Flash::Box Filled(const Spot& a_spot, const HudParts::Readout::LabelPlace& a_label);
 
+	// a_spot with its bar a_size times its own length and thickness, about
+	// the bar's right end and middle, so the spot and the shift keep their
+	// meaning. Choose works at the bar's own size, so a size never moves the
+	// spot. A word past the bar's end stays where it is, and a word moved
+	// above, below or left of the bar keeps its gap from that side.
+	[[nodiscard]] Spot Sized(const Spot& a_spot, const HudParts::Readout::Size& a_size, const HudParts::Readout::LabelPlace& a_label);
+
 	// Says a choice in NEC.log once it has held for a second, so a HUD mod
 	// still laying its parts out after a load writes nothing. Each key is
 	// said once a game start, since every save load builds the HUD again.

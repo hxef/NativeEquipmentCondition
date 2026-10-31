@@ -12,7 +12,7 @@ namespace MenuMovies
 	// plugin loads.
 	void Install();
 
-	// Whether a movie's file name is a_name, ignoring case, since vanilla's
+	// Whether a movie's file name is a_name, ignoring case, since Fallout 4's
 	// own file names are not consistent about it.
 	bool IsMovie(std::string_view a_file, std::string_view a_name);
 

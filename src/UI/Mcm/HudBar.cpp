@@ -15,14 +15,16 @@
 #include <string_view>
 #include <utility>
 
-// The HUD bar sliders. NEC.ini keeps how far the bar moved from its spot in
-// HUD units, see HudCondition.h. The page shows where the bar and its word's
-// letters start instead, also in HUD units, from the left and top edges of
-// the visible frame, rounded to the rows' step. The game stretches the HUD
-// over the part of the screen it draws in, so that frame and a number's
-// place stay the same when the screen size changes. Each slider runs from 0
-// to the frame's width or height less the bar, so the HUD never has to hold
-// a value the page sets. MCM copies a slider's ends from config.json once a
+// The Weapon CND bar's 2 place sliders. NEC.ini keeps how far the bar moved
+// from its spot in HUD units, see HudCondition.h. The page shows where the
+// bar and its word's letters start instead, also in HUD units, from the left
+// and top edges of the visible frame, rounded to the rows' step. The game
+// stretches the HUD over the part of the screen it draws in, so that frame
+// and a number's place stay the same when the screen size changes. Each
+// slider runs from 0 to the frame's width or height less the bar, so the HUD
+// never has to hold a value the page sets. A new length or thickness moves
+// where the bar starts, and the 2 sliders follow it on the same visit, see
+// HudCondition::Measured. MCM copies a slider's ends from config.json once a
 // visit, so Layout.cpp writes the live ones. config.json's 0 to 1280 and 0
 // to 720 serve only an MCM whose list NEC cannot read, and HudBarShift still
 // keeps a value on screen there. The number the help names as the default

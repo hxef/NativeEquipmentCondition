@@ -59,6 +59,7 @@ namespace FoodSpoil
 	void Install()
 	{
 		InstallEat(Part::kFoodBite);
+		InstallHunger(Part::kFoodHunger);
 		InstallCook(Part::kFoodCook);
 		InstallFertilizer(Part::kFertilizer);
 	}
@@ -66,6 +67,7 @@ namespace FoodSpoil
 	void Load()
 	{
 		LoadKinds();
+		LoadRads();
 		LoadFridges();
 		WatchBodies();
 		WatchMenus();
@@ -78,8 +80,16 @@ namespace FoodSpoil
 
 	void Unload()
 	{
+		ForgetPlay();
 		UnloadFridges();
+		UnloadRads();
 		UnloadKinds();
+	}
+
+	void ForgetPlay()
+	{
+		ForgetEaten();
+		ForgetMeals();
 	}
 
 	void StampCarried()
@@ -95,7 +105,7 @@ namespace FoodSpoil
 		if (!Settings::bFoodSpoils.GetValue() || (main && main->resetGame)) {
 			return;
 		}
-		// A task, so the companions are read on the engine's own thread.
+		// A task, so the companions are read on the engine's thread.
 		if (const auto* tasks = F4SE::GetTaskInterface()) {
 			tasks->AddTask([] { StampAndSay(true); });
 		}
@@ -104,5 +114,11 @@ namespace FoodSpoil
 	bool Spoils(const RE::TESBoundObject& a_object)
 	{
 		return Settings::bFoodSpoils.GetValue() && KindOf(a_object) != Kind::kNever;
+	}
+
+	bool SpoiledStack(const RE::TESBoundObject& a_object, RE::ExtraDataList* a_extra)
+	{
+		const auto freshness = FreshnessOf(a_object, a_extra);
+		return freshness && *freshness <= 0.0F;
 	}
 }

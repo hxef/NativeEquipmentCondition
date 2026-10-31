@@ -26,10 +26,10 @@ namespace SpawnCondition
 		// freeze. A flag on the working thread costs one read.
 		thread_local bool g_runningConsoleCommand = false;
 
-		// The one call to Console::RunQueuedCommands in the engine's update loop.
-		// Typing a command only puts a Script in a queue, and this call is what
-		// runs it, so it covers a typed command, a batch file and ForEachRef
-		// alike.
+		// The one call to Console::RunQueuedCommands in the engine's update
+		// loop. Typing a command only puts a Script in a queue, and this call
+		// is what runs it, so it covers a typed command, a batch file and
+		// ForEachRef alike.
 		constexpr CallPatch::CallSite RUN_CONSOLE_COMMANDS_SITE[] = {
 			{ CallPatch::AE{ 2228917, 0xDC4 }, CallPatch::OG{ 633524, 0x7D4 }, "console commands" },
 		};

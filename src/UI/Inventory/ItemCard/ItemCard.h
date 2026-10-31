@@ -24,9 +24,14 @@
 // better mark and a container's sort. While worn guns lose accuracy or range,
 // it hooks those calls on the cards the same way, and accuracy in the sort.
 //
+// The card of spoiled food shows what eating it gives: its HP and bonus rows
+// as eating it heals and boosts, and its rads with the ones it adds. The same
+// patches show it on the Pip-Boy's HP bar and STAT Effects list after eating.
+//
 // Hooks.cpp is the CND row, Rate.cpp the fire rate and the sort's note,
 // Aim.cpp accuracy and range, Raise.cpp moves the row past Damage,
-// FridgeIcon.cpp marks food in a fridge on it, and Cards.h is what they share.
+// FridgeIcon.cpp marks food in a fridge on it, Effects.cpp shows what spoiled
+// food gives, and Cards.h is what they share.
 namespace ItemCard
 {
 	// Patches the calls that fill item cards.
@@ -40,4 +45,10 @@ namespace ItemCard
 	// faded name. False while either Pip-Boy site is left to another mod or
 	// waits.
 	[[nodiscard]] bool PipboyCards();
+
+	// Patches the calls that give the numbers of a food's effects, on the
+	// cards, the Pip-Boy's HP bar and its STAT Effects list, in Effects.cpp.
+	// Their places are part of eating spoiled food, so FoodSpoil's row
+	// installs them, see Features.cpp.
+	void PatchFoodEffects();
 }

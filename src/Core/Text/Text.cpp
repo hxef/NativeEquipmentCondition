@@ -1,17 +1,20 @@
 #include "Core/Text/Text.h"
 
 #include "Core/Feature.h"
+#include "Core/Runtime.h"
 #include "Core/Text/Lines.h"
 
 #include <cstddef>
+#include <format>
 #include <initializer_list>
 #include <optional>
 #include <string>
 #include <string_view>
 
 // The sentences shown outside a repair: the perk page, the corner of the
-// screen, and the section titles of the MCM page. Text.h says where the other
-// functions are, and Translations.cpp picks the player's language.
+// screen, and the section titles and version line of the MCM page. Text.h
+// says where the other functions are, and Translations.cpp picks the
+// player's language.
 namespace Text
 {
 	namespace
@@ -26,15 +29,20 @@ namespace Text
 
 		constexpr Section SECTIONS[]{
 			{ "Wear", WEAR_TITLE },
-			{ "Weapons", WEAPONS_TITLE },
+			{ "Penalties", PENALTIES_TITLE },
+			{ "Jams", JAMS_TITLE },
 			{ "Loot", LOOT_TITLE },
 			{ "Repairs", REPAIRS_TITLE },
-			{ "HUD", HUD_TITLE },
+			{ "HudBar", HUD_BAR_TITLE },
+			{ "PowerArmorBar", POWER_ARMOR_BAR_TITLE },
 			{ "Extras", EXTRAS_TITLE },
 			{ "Food", FOOD_TITLE },
 			{ "Menus", MENUS_TITLE },
 			{ "Log", LOG_TITLE },
 		};
+
+		// The id of the first line of NEC's main page.
+		constexpr std::string_view VERSION = "version";
 
 		// A part's name, from PartsPlay.cpp, PartsLoot.cpp or PartsUi.cpp.
 		// Nothing for kNone and from kTrace on.
@@ -102,6 +110,10 @@ namespace Text
 			if (!help && section.id == a_id) {
 				return Pick(section.title);
 			}
+		}
+		if (a_id == VERSION) {
+			const auto nec = F4SE::GetPluginVersion();
+			return Say(NEC_VERSION, std::format("{:d}.{:d}.{:d}", nec.major(), nec.minor(), nec.patch()), Runtime::GameVersion());
 		}
 		return {};
 	}

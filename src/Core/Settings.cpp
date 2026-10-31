@@ -73,11 +73,46 @@ namespace Settings
 			&fCookedFoodDays,
 			&fFridgeSpoilSpeed,
 			&iSpoiledPerFertilizer,
+			&iSpoiledHealing,
+			&iSpoiledHunger,
+			&fSpoiledRadsMult,
 			&fHudBarX,
 			&fHudBarY,
+			&fHudBarLength,
+			&fHudBarThickness,
 			&fPowerArmorBarX,
 			&fPowerArmorBarY,
+			&fPowerArmorBarLength,
+			&fPowerArmorBarThickness,
 		};
+
+		// The switches neither list holds, each after the setting NEC.ini has
+		// it after, for the Settings line.
+		Live<bool>* const AFTER_JAM[]{ &bPlainApparelNeverWears };
+		Live<bool>* const AFTER_HUD_CONDITION[]{ &bPowerArmorBar };
+		Live<bool>* const AFTER_FOOD_SPOILS[]{ &bFridgeIcon };
+		Live<bool>* const AFTER_HUD_BAR[]{ &bHudBarHidesWithCounter, &bHudBarShowsWord };
+		Live<bool>* const AFTER_POWER_ARMOR_BAR[]{ &bPowerArmorBarShowsWord };
+
+		[[nodiscard]] std::span<Live<bool>* const> SwitchesAfter(const Named& a_setting)
+		{
+			if (&a_setting == &bJam) {
+				return AFTER_JAM;
+			}
+			if (&a_setting == &bHudCondition) {
+				return AFTER_HUD_CONDITION;
+			}
+			if (&a_setting == &bFoodSpoils) {
+				return AFTER_FOOD_SPOILS;
+			}
+			if (&a_setting == &fHudBarThickness) {
+				return AFTER_HUD_BAR;
+			}
+			if (&a_setting == &fPowerArmorBarThickness) {
+				return AFTER_POWER_ARMOR_BAR;
+			}
+			return {};
+		}
 
 		bool Exists(const char* a_file)
 		{
@@ -293,9 +328,10 @@ namespace Settings
 		std::string line = "Settings: [Features]";
 		for (const auto* on : SWITCHES) {
 			std::format_to(std::back_inserter(line), " {:s}={:s}", on->key, Shown(*on));
+			for (const auto* after : SwitchesAfter(*on)) {
+				std::format_to(std::back_inserter(line), " {:s}={:s}", after->key, Shown(*after));
+			}
 		}
-		// SWITCHES ends in bFoodSpoils, which bFridgeIcon follows.
-		std::format_to(std::back_inserter(line), " {:s}={:s}", bFridgeIcon.key, Shown(bFridgeIcon));
 		std::string_view section;
 		for (const auto& entry : NUMBERS) {
 			std::visit([&](const auto* a_number) {
@@ -304,11 +340,10 @@ namespace Settings
 					std::format_to(std::back_inserter(line), " [{:s}]", section);
 				}
 				std::format_to(std::back_inserter(line), " {:s}={:s}{:s}", a_number->key, Shown(a_number->GetValue()), Mark(*a_number));
+				for (const auto* after : SwitchesAfter(*a_number)) {
+					std::format_to(std::back_inserter(line), " {:s}={:s}", after->key, Shown(*after));
+				}
 			}, entry);
-		}
-		// NUMBERS ends in [HUD], where these switches follow them.
-		for (const auto* on : { &bHudBarHidesWithCounter, &bHudBarShowsWord }) {
-			std::format_to(std::back_inserter(line), " {:s}={:s}", on->key, Shown(*on));
 		}
 		std::format_to(std::back_inserter(line), " [Log] sLogLevel={:s} bTraceLogs={}", LogLevelWord(), bTraceLogs.GetValue());
 		REX::INFO("{:s}", line);

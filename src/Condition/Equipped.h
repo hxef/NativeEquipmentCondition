@@ -104,7 +104,9 @@ namespace Equipped
 	// out, in inventory order. One at 0 cannot go back on, so carried ones
 	// count too, also while the actor is in power armor. Power armor pieces
 	// and listed ones never count, since their health stays vanilla or is
-	// another mod's. For the console repair, which takes that health off.
+	// another mod's, and nor does apparel the plain apparel switch keeps out,
+	// which keeps its health for when the switch goes off. For the console
+	// repair, which takes that health off.
 	std::vector<ArmorPiece> LeftoverPieces(RE::Actor* a_actor);
 
 	// ArmorPieces for a caller outside the engine's own code path, see

@@ -3,7 +3,7 @@
 #include "Core/Plugin.h"
 
 // The Pip-Boy keeps an item's card until it lists the item again, so an item
-// whose condition changed could keep printing what it had. Vanilla's own
+// whose condition changed could keep printing what it had. Vanilla's
 // equip handler rebuilds a whole category, and this calls that rebuild.
 //
 // Wear needs none. Equipped::WriteStack tells the game the player's

@@ -15,10 +15,15 @@ namespace Text
 		constexpr MenuRow ROWS[]{
 			{ &Settings::fHudBarX, HUD_BAR_X_NAME, HUD_BAR_X_HELP },
 			{ &Settings::fHudBarY, HUD_BAR_Y_NAME, HUD_BAR_Y_HELP },
-			{ &Settings::fPowerArmorBarX, POWER_ARMOR_BAR_X_NAME, POWER_ARMOR_BAR_X_HELP },
-			{ &Settings::fPowerArmorBarY, POWER_ARMOR_BAR_Y_NAME, POWER_ARMOR_BAR_Y_HELP },
+			{ &Settings::fHudBarLength, HUD_BAR_LENGTH_NAME, HUD_BAR_LENGTH_HELP },
+			{ &Settings::fHudBarThickness, HUD_BAR_THICKNESS_NAME, HUD_BAR_THICKNESS_HELP },
 			{ &Settings::bHudBarHidesWithCounter, HUD_BAR_HIDES_NAME, HUD_BAR_HIDES_HELP },
 			{ &Settings::bHudBarShowsWord, HUD_BAR_WORD_NAME, HUD_BAR_WORD_HELP },
+			{ &Settings::fPowerArmorBarX, POWER_ARMOR_BAR_X_NAME, POWER_ARMOR_BAR_X_HELP },
+			{ &Settings::fPowerArmorBarY, POWER_ARMOR_BAR_Y_NAME, POWER_ARMOR_BAR_Y_HELP },
+			{ &Settings::fPowerArmorBarLength, POWER_ARMOR_BAR_LENGTH_NAME, POWER_ARMOR_BAR_LENGTH_HELP },
+			{ &Settings::fPowerArmorBarThickness, POWER_ARMOR_BAR_THICKNESS_NAME, POWER_ARMOR_BAR_THICKNESS_HELP },
+			{ &Settings::bPowerArmorBarShowsWord, POWER_ARMOR_BAR_WORD_NAME, POWER_ARMOR_BAR_WORD_HELP },
 			{ &LOG_LEVEL, LOG_LEVEL_NAME, LOG_LEVEL_HELP },
 		};
 	}

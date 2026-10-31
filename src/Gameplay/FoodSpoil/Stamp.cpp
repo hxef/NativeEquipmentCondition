@@ -196,7 +196,7 @@ namespace FoodSpoil
 		auto*      extra = a_stack.extra.get();
 		const auto today = Today();
 		if (!extra) {
-			// Vanilla adds and a container's fill give each stack a list
+			// Vanilla's item adds and a container's fill give each stack a list
 			// of its own, so none is known to come here.
 			TraceLog::Line("food", "{:s} [{:08X}] x{:d} left alone, no extra data list to stamp", RE::TESFullName::GetFullName(a_object),
 				a_object.formID, a_stack.count);

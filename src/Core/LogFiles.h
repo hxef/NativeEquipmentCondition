@@ -54,8 +54,9 @@ namespace LogFiles
 	// open.
 	[[nodiscard]] spdlog::sink_ptr OpenFile(const std::filesystem::path& a_path, std::size_t a_maxSize);
 
-	// The file a_sink writes to, empty for a sink this file did not open.
-	[[nodiscard]] std::filesystem::path FileOf(const spdlog::sink_ptr& a_sink);
+	// Where NEC.log is being written, asked of the logger OpenMain made, or
+	// empty while there is none.
+	[[nodiscard]] std::filesystem::path MainFile();
 
 	// a_path as NEC's logs print it, from My Games on, so a log a player posts
 	// never names their Windows user. In UTF-8, as every log line is written.

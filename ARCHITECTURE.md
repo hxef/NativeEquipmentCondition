@@ -133,15 +133,17 @@ src/
       FireRate.h/.cpp        a worn automatic weapon fires slower
       Cuts.h/.cpp            a worn blade's held attack cuts less often
     FoodSpoil/
-      FoodSpoil.h/.cpp       food that spoils with time, its 3 parts, and food carried before it was on
+      FoodSpoil.h/.cpp       food that spoils with time, its 4 parts, and food carried before it was on
       Food.h                 what the folder's files share
       Kinds.h/.cpp           each food's kind from the game data: raw, crop, cooked or never spoils
-      FoodList.cpp           the kinds a mod gives its own food, from NEC/Food
+      FoodList.cpp           the kinds a mod gives its own food, from NEC/Food, and NEC.food.log, every food as a line of that list
       FridgeList.cpp         the containers that keep food as a fridge does, from NEC/Fridge
       Fridge.cpp             food going into or out of a fridge keeps its days spent at the fridge speed
       Stamp.h/.cpp           the day food started to spoil, how fresh it is, found food's start, and the door that stamps it
       Order.cpp              the stack closest to spoiling first
-      Eat.cpp                a spoiled bite heals a tenth and gives rads
+      Eat.cpp                spoiled food heals a tenth, nothing in Survival, and gives more rads
+      Rads.cpp               the rads spoiled food adds, through the food's own rads effect
+      Hunger.cpp             spoiled food fills a tenth of the hunger in Survival
       Cook.cpp               cooking and chemistry stations leave spoiled food out and take fresh pieces only
       Fertilizer.cpp         a chemistry station's Fertilizer row turns 10 spoiled food into 1 Fertilizer
       Bodies.cpp             food on the dead starts to spoil
@@ -194,15 +196,16 @@ src/
       Bridge.h/.cpp          the page's answers: values, changes and words
       Notes.cpp              the page's grey rows: each block's note, and the list at the top of the parts no note names
       Fit.cpp                how tall a grey row may be, and a row cut to fit
-      Layout.cpp             MCM's list in None mode while NEC's main or Little extras page shows, and the HUD bar sliders' live ends
+      Layout.cpp             MCM's list in None mode while one of NEC's pages shows, and the HUD bar sliders' live ends
       HudBar.cpp             the HUD bar sliders: the bar's place in HUD units from the screen's top left, with the screen as their range
     Hud/
       HudParts/
         HudParts.h/.cpp      what the HUD readouts share
         Readout.cpp          the readout itself, a bar and the word CND
       HudCondition/
-        HudCondition.h/.cpp          the CND bar by the ammo counter: the frame listener and the movie
-        Spot.h/.cpp                  where the bar and its word go, the divider's place or the nearest free spot, and the NEC.log line
+        HudCondition.h/.cpp          the Weapon CND bar by the ammo counter: the movie
+        Frame.h/.cpp                 the frame listener, which lays the bar out at its spot and size, places it, draws its level and fades it
+        Spot.h/.cpp                  where the bar and its word go, the divider's place or the nearest free spot, the NEC.log line, and the bar at its size
         Place.h/.cpp                 where the readout sits in the counter's parent, moved by fHudBarX and fHudBarY and held whole on screen, and that place kept for the MCM page
       PowerArmorCondition/
         PowerArmorCondition.h/.cpp   the frame listener and the movie
@@ -226,6 +229,7 @@ src/
         Aim.cpp              the accuracy and range a card prints, and the sort by accuracy
         Raise.cpp            moving the row up past Damage
         FridgeIcon.cpp       the icon on the CND row of food in a fridge
+        Effects.cpp          what spoiled food gives, on its card, the HP bar and STAT Effects
     Repair/
       SelectedItem.h/.cpp    the item highlighted in a menu's list
       Restore.h/.cpp         writing a repair onto one copy of an item

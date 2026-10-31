@@ -38,6 +38,7 @@ enum class Part : std::uint8_t
 	kReloadJam,      // Single shot gun jams
 	kFood,           // Food spoils
 	kFoodBite,       // Eating spoiled food
+	kFoodHunger,     // Spoiled food in Survival
 	kFoodCook,       // Spoiled food kept out of recipes
 	kFertilizer,     // Fertilizer from spoiled food
 	kSpawn,          // Worn loot

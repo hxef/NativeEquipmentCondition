@@ -26,6 +26,9 @@ namespace Text
 			{ &Settings::fCookedFoodDays, COOKED_FOOD_DAYS_NAME, COOKED_FOOD_DAYS_HELP },
 			{ &Settings::fFridgeSpoilSpeed, FRIDGE_SPEED_NAME, FRIDGE_SPEED_HELP },
 			{ &Settings::iSpoiledPerFertilizer, SPOILED_PER_FERTILIZER_NAME, SPOILED_PER_FERTILIZER_HELP },
+			{ &Settings::iSpoiledHealing, SPOILED_HEALING_NAME, SPOILED_HEALING_HELP },
+			{ &Settings::iSpoiledHunger, SPOILED_HUNGER_NAME, SPOILED_HUNGER_HELP },
+			{ &Settings::fSpoiledRadsMult, SPOILED_RADS_NAME, SPOILED_RADS_HELP },
 		};
 	}
 

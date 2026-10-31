@@ -10,7 +10,6 @@
 #include <cstdint>
 #include <format>
 #include <optional>
-#include <utility>
 
 namespace ItemCard
 {
@@ -50,25 +49,32 @@ namespace ItemCard
 		std::array<CallPatch::Link<Helper_t>, std::size(HELPER_SITES)> g_helperLinks;
 		std::array<CallPatch::Link<Pipboy_t>, std::size(PIPBOY_SITES)> g_pipboyLinks;
 
+		// Moves the entry just appended to a_index, and the entries from there
+		// on 1 place back.
+		void MoveLastTo(Value& a_entries, std::uint32_t a_index)
+		{
+			const auto size = a_entries.GetArraySize();
+			if (size < 2 || a_index >= size - 1) {
+				return;
+			}
+
+			Value last;
+			a_entries.GetElement(size - 1, &last);
+			for (auto i = size - 1; i > a_index; i--) {
+				Value previous;
+				a_entries.GetElement(i - 1, &previous);
+				a_entries.SetElement(i, previous);
+			}
+			a_entries.SetElement(a_index, last);
+		}
+
 		// Moves the entry just appended to the front. The card turns entries
 		// into rows from last to first, so the first entry becomes the highest
 		// plain row, directly under Damage, where it stays in a menu the
 		// render listener in Raise.cpp cannot reach.
 		void MoveLastToFront(Value& a_entries)
 		{
-			const auto size = a_entries.GetArraySize();
-			if (size < 2) {
-				return;
-			}
-
-			Value last;
-			a_entries.GetElement(size - 1, &last);
-			for (auto i = size - 1; i > 0; i--) {
-				Value previous;
-				a_entries.GetElement(i - 1, &previous);
-				a_entries.SetElement(i, previous);
-			}
-			a_entries.SetElement(0, last);
+			MoveLastTo(a_entries, 0);
 		}
 
 		// The number on the CND row: a weapon's or armor's condition, or how
@@ -89,13 +95,18 @@ namespace ItemCard
 		{
 			const auto*    stack = a_item.GetStackByID(a_stackID);
 			const Building building{ Condition::HealthOf(stack), &a_compareItems };
+			const auto     live = g_helperLinks[I].Live();
+			auto           food = live ? FoodCardOf(a_item, stack) : FoodCard{};
 
-			t_building = g_helperLinks[I].Live() ? &building : nullptr;
+			t_building = live ? &building : nullptr;
+			t_foodCard = live ? &food : nullptr;
 			g_helperLinks[I](a_target, a_item, a_stackID, a_compareItems, a_compareArmorWeightAndValue);
-			const auto live = std::exchange(t_building, nullptr) != nullptr;
+			t_building = nullptr;
+			t_foodCard = nullptr;
 
 			const auto percent = live ? RowPercent(a_item, stack) : std::nullopt;
-			if (!percent) {
+			const auto rads = RadsRow(food);
+			if (!percent && !rads) {
 				return;
 			}
 
@@ -103,6 +114,16 @@ namespace ItemCard
 			if (a_target.IsArray()) {
 				entries = a_target;
 			} else if (!a_target.GetMember("ItemCardInfoList"sv, &entries) || !entries.IsArray()) {
+				return;
+			}
+
+			if (rads) {
+				Value row;
+				RE::InventoryUserUIUtils::AddItemCardInfoEntry(entries, row, RadsText(), Value(static_cast<double>(*rads)));
+				const auto size = entries.GetArraySize();
+				MoveLastTo(entries, size > CLOSING_ROWS ? size - 1 - CLOSING_ROWS : size - 1);
+			}
+			if (!percent) {
 				return;
 			}
 
@@ -115,6 +136,22 @@ namespace ItemCard
 				entry.SetMember(FRIDGE_MARK, Value(true));
 			}
 			MoveLastToFront(entries);
+		}
+
+		// Adds the Rads row a card of spoiled food needs to a_data, the
+		// Pip-Boy's card, just before its closing rows.
+		void AddRadsRow(RE::PipboyInventoryData& a_this, RE::PipboyObject& a_data, float a_rads)
+		{
+			auto* entries = a_data.GetMember<RE::PipboyArray*>(RE::BSFixedString("itemCardInfoList"));
+			if (!entries) {
+				return;
+			}
+			const RE::BSFixedStringCS text{ RadsText() };
+			a_this.AddItemCardInfoEntry(&text, a_rads, entries);
+			auto& elements = entries->elements;
+			if (elements.size() > CLOSING_ROWS + 1) {
+				std::rotate(elements.end() - 1 - CLOSING_ROWS, elements.end() - 1, elements.end());
+			}
 		}
 
 		// Stands in for PipboyInventoryData::PopulateItemCardInfo. The Pip-Boy
@@ -130,11 +167,18 @@ namespace ItemCard
 			const RE::BGSInventoryItem::Stack* a_stack, RE::PipboyObject* a_data, const CallPatch::Link<Pipboy_t>& a_link)
 		{
 			const Building building{ Condition::HealthOf(a_stack), nullptr };
+			const auto     live = g_pipboy.Runs(a_link);
+			auto           food = live && a_item ? FoodCardOf(*a_item, a_stack) : FoodCard{};
 
-			t_building = g_pipboy.Runs(a_link) ? &building : nullptr;
+			t_building = live ? &building : nullptr;
+			t_foodCard = live ? &food : nullptr;
 			a_link(a_this, a_item, a_stack, a_data);
-			const auto live = std::exchange(t_building, nullptr) != nullptr;
+			t_building = nullptr;
+			t_foodCard = nullptr;
 
+			if (const auto rads = a_data ? RadsRow(food) : std::nullopt) {
+				AddRadsRow(*a_this, *a_data, *rads);
+			}
 			const auto percent = live && a_item && a_data ? RowPercent(*a_item, a_stack) : std::nullopt;
 			if (!percent) {
 				return;

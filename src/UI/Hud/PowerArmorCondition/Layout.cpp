@@ -62,11 +62,11 @@ namespace PowerArmorCondition
 		       std::abs(a_box.row - a_other.row) < CLOSE_ENOUGH;
 	}
 
-	Bar Layout(Value& a_readout, const Box& a_box)
+	Bar Layout(Value& a_readout, const Box& a_box, const HudParts::Readout::Size& a_size)
 	{
 		Bar bar;
-		bar.width = a_box.width;
-		bar.deep = a_box.row * BAR_DEEP;
+		bar.width = a_box.width * a_size.length;
+		bar.deep = a_box.row * BAR_DEEP * a_size.thickness;
 
 		// The word is written at its largest, then again smaller when it runs
 		// past the room in the box. Its field is scaled to its size, so its

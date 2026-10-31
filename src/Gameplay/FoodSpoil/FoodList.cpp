@@ -2,11 +2,14 @@
 
 #include "Core/IniText.h"
 #include "Core/ListFiles.h"
+#include "Core/LogFiles.h"
 
 #include <algorithm>
 #include <array>
 #include <cstddef>
 #include <format>
+#include <fstream>
+#include <ios>
 #include <string>
 #include <string_view>
 #include <unordered_map>
@@ -21,6 +24,9 @@
 //
 // The kinds are raw, crop, cooked and never spoils, and a listed kind
 // replaces the rules' pick. NEC ships no file there.
+//
+// NEC.food.log lists every food in that form with the kind it ended up with,
+// so a player can copy a line into a file there and change the kind.
 namespace FoodSpoil
 {
 	namespace
@@ -49,6 +55,11 @@ namespace FoodSpoil
 		{
 			const auto at = std::ranges::find_if(WORDS, [a_text](const Word& a_word) { return IniText::SameName(a_word.text, a_text); });
 			return at != std::end(WORDS) ? &*at : nullptr;
+		}
+
+		std::string_view WordOf(Kind a_kind)
+		{
+			return std::ranges::find(WORDS, a_kind, &Word::kind)->text;
 		}
 
 		// "1 raw", "2 crops", "1 cooked" or "3 that never spoil".
@@ -98,9 +109,9 @@ namespace FoodSpoil
 		// What the files set so far.
 		struct Reading
 		{
-			std::unordered_map<RE::TESFormID, Kind>&  kinds;
-			std::unordered_map<RE::TESFormID, First>  firsts{};
-			std::array<std::size_t, std::size(WORDS)> counts{};
+			std::unordered_map<RE::TESFormID, Sorted>& kinds;
+			std::unordered_map<RE::TESFormID, First>   firsts{};
+			std::array<std::size_t, std::size(WORDS)>  counts{};
 		};
 
 		// 1 line into a_reading, said in NEC.log.
@@ -127,12 +138,76 @@ namespace FoodSpoil
 				REX::INFO("{:s} line {:d}: {:s} [{:08X}] is listed again, so NEC keeps {:s}.", a_line.file, a_line.number, name, id, where);
 				return;
 			}
-			food->second = word->kind;
+			food->second = { word->kind, Why::kList, std::string{ a_line.file } };
 			a_reading.counts[static_cast<std::size_t>(word - std::begin(WORDS))]++;
+		}
+
+		// -------------------------------------------------------------------
+		// NEC.food.log
+		// -------------------------------------------------------------------
+
+		constexpr std::string_view FOOD_LOG = "NEC.food.log";
+
+		constexpr std::string_view FOOD_LOG_HEAD =
+			"; Every food and its kind, as a food list line. Copy a line into a file in\n"
+			"; Data\\F4SE\\Plugins\\NEC\\Food to change its kind.\n";
+
+		// A kind's word with the spaces after it, so the comments line up:
+		// never spoils and 3 spaces.
+		constexpr std::size_t WORD_WIDTH = 15;
+
+		// Why a_food has its kind, in the words of the rules in Kinds.h.
+		std::string WhyOf(const Sorted& a_food)
+		{
+			switch (a_food.why) {
+				case Why::kDrink:
+					return "a drink";
+				case Why::kCooked:
+					return "made at a cooking station";
+				case Why::kHarvested:
+					return "harvested from a plant";
+				case Why::kFruitOrVegetable:
+					return "fruit or vegetable";
+				case Why::kDiseaseRisk:
+					return "a disease risk";
+				case Why::kList:
+					{
+						// In Windows' spelling, as the head names the folder.
+						auto file = a_food.list;
+						std::ranges::replace(file, '/', '\\');
+						return "set by " + file;
+					}
+				default:
+					return "none of the above";
+			}
+		}
+
+		// The plugin of a_plugins that adds the record a_id names, by its
+		// load order slot.
+		const RE::TESFile* PluginOf(RE::TESFormID a_id, const std::vector<const RE::TESFile*>& a_plugins)
+		{
+			const auto at = std::ranges::find_if(a_plugins, [a_id](const RE::TESFile* a_file) { return a_file->GetLoadOrderFormID(a_id) == a_id; });
+			return at != a_plugins.end() ? *at : nullptr;
+		}
+
+		// "MyFoodMod.esp|000801 = raw            ; Radstag Jerky, a disease
+		// risk", or nothing for a form no plugin adds.
+		std::string LineOf(RE::TESFormID a_id, const Sorted& a_food, const std::vector<const RE::TESFile*>& a_plugins)
+		{
+			const auto* plugin = PluginOf(a_id, a_plugins);
+			const auto* form = RE::TESForm::GetFormByID(a_id);
+			if (!plugin || !form) {
+				return {};
+			}
+			const auto local = plugin->IsLight() ? a_id & 0xFFF : a_id & 0xFFFFFF;
+			const auto name = RE::TESFullName::GetFullName(*form);
+			const auto why = WhyOf(a_food);
+			return std::format("{:s}|{:06X} = {:<{}s}; {:s}\n", plugin->GetFilename(), local, WordOf(a_food.kind), WORD_WIDTH,
+				name.empty() ? why : std::format("{:s}, {:s}", name, why));
 		}
 	}
 
-	void ReadFoodList(std::unordered_map<RE::TESFormID, Kind>& a_kinds)
+	void ReadFoodList(std::unordered_map<RE::TESFormID, Sorted>& a_kinds)
 	{
 		Reading reading{ a_kinds };
 		ListFiles::Read(LIST, [&reading](const ListFiles::Line& a_line, ListFiles::Faults& a_faults) { Take(a_line, a_faults, reading); },
@@ -140,5 +215,39 @@ namespace FoodSpoil
 				Report(a_file, reading.counts);
 				reading.counts = {};
 			});
+	}
+
+	bool WriteFoodLog(const std::unordered_map<RE::TESFormID, Sorted>& a_kinds)
+	{
+		auto path = LogFiles::MainFile();
+		if (path.empty()) {
+			return false;
+		}
+		path.replace_filename(FOOD_LOG);
+
+		std::vector<const RE::TESFile*> plugins;
+		for (const auto* plugin : g_dataHandler->files) {
+			if (plugin && plugin->IsActive()) {
+				plugins.push_back(plugin);
+			}
+		}
+		std::vector<RE::TESFormID> ids;
+		for (const auto& [id, food] : a_kinds) {
+			ids.push_back(id);
+		}
+		std::ranges::sort(ids);
+
+		std::string text{ FOOD_LOG_HEAD };
+		for (const auto id : ids) {
+			text += LineOf(id, a_kinds.at(id), plugins);
+		}
+		std::ofstream file{ path, std::ios::binary | std::ios::trunc };
+		file.write(text.data(), static_cast<std::streamsize>(text.size()));
+		file.close();
+		if (file.fail()) {
+			REX::WARN("Could not write {:s}.", LogFiles::Shown(path));
+			return false;
+		}
+		return true;
 	}
 }

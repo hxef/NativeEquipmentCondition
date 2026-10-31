@@ -132,6 +132,7 @@ namespace
 		// FoodSpoil
 		{ "bite mark", { kFoodBite } },
 		{ "spoiled bite effects", { kFoodBite } },
+		{ "survival hunger", { kFoodHunger } },
 		{ "cook mark open", { kFoodCook } },
 		{ "cook mark", { kFoodCook } },
 		{ "fresh take", { kFoodCook } },
@@ -165,6 +166,12 @@ namespace
 		{ "card range", { kRangeCards } },
 		{ "card range compared", { kRangeCards } },
 		{ "pipboy card range", { kRangeCards } },
+		{ "food card effects", { kFoodRows } },
+		{ "food pipboy effects", { kFoodRows } },
+		{ "food health bar", { kFoodRows } },
+		{ "food stat effects", { kFoodRows } },
+		{ "food stat effect", { kFoodRows } },
+		{ "food health to come", { kFoodRows } },
 		// HudParts
 		{ "HUD menu delete", { kHudBars } },
 		// QuickContainer

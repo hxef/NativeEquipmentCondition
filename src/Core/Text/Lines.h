@@ -63,8 +63,8 @@ namespace Text
 	// One option of the MCM page: the setting it changes, its name and the
 	// help line under it. The key is read from the setting when asked, so a
 	// table does not depend on which file is set up first. A feature switch
-	// has no name of its own, it takes the name of the part it stands for,
-	// see PartOf in Core/Feature.h. A name has no comma, since the grey lines
+	// with no name of its own takes the name of the part it stands for, see
+	// PartOf in Core/Feature.h. A name has no comma, since the grey lines
 	// list names.
 	struct MenuRow
 	{
@@ -73,10 +73,11 @@ namespace Text
 		Key                    help;
 	};
 
-	// The 9 switches and bTraceLogs, in MenuSwitches.cpp, the 5 wear speeds,
-	// in MenuWear.cpp, the 17 other Balance numbers, in MenuNumbers.cpp, and
-	// the 4 HUD numbers, the 2 HUD bar switches and sLogLevel, in
-	// MenuHudLog.cpp, each in NEC.ini's order.
+	// The 9 switches, bPlainApparelNeverWears, bPowerArmorBar, bFridgeIcon
+	// and bTraceLogs, in MenuSwitches.cpp, the 5 wear speeds, in MenuWear.cpp,
+	// the 17 other Balance numbers, in MenuNumbers.cpp, and the 8 HUD numbers,
+	// the 3 HUD bar switches and sLogLevel, in MenuHudLog.cpp, each in
+	// NEC.ini's order.
 	[[nodiscard]] std::span<const MenuRow> MenuSwitches();
 	[[nodiscard]] std::span<const MenuRow> MenuWear();
 	[[nodiscard]] std::span<const MenuRow> MenuNumbers();

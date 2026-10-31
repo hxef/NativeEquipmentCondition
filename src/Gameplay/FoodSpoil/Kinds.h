@@ -3,6 +3,7 @@
 #include "Core/Plugin.h"
 
 #include <cstdint>
+#include <string>
 #include <unordered_map>
 
 // How fast each food spoils, sorted from the game data at every data load.
@@ -30,7 +31,29 @@ namespace FoodSpoil
 		kCooked,
 	};
 
-	// Sorts every food and logs how many of each kind. Reads the food list.
+	// Which rule or file gave a food its kind, for NEC.food.log.
+	enum class Why : std::uint8_t
+	{
+		kDrink,
+		kCooked,
+		kHarvested,
+		kFruitOrVegetable,
+		kDiseaseRisk,
+		kRest,
+		kList,
+	};
+
+	// A food's kind, why it has it, and the food list file that set it, as
+	// NEC.log names it, when one did.
+	struct Sorted
+	{
+		Kind        kind;
+		Why         why;
+		std::string list{};
+	};
+
+	// Sorts every food and logs how many of each kind. Reads the food list,
+	// and writes NEC.food.log while food spoiling is on.
 	void LoadKinds();
 
 	// Forgets every kind, so no food spoils until LoadKinds runs.
@@ -43,5 +66,9 @@ namespace FoodSpoil
 	// Reads the food list into a_kinds, which holds the kind of every food
 	// by the rules, and says in NEC.log what each file sets. A form a_kinds
 	// lacks is not food. In FoodList.cpp.
-	void ReadFoodList(std::unordered_map<RE::TESFormID, Kind>& a_kinds);
+	void ReadFoodList(std::unordered_map<RE::TESFormID, Sorted>& a_kinds);
+
+	// Writes every food of a_kinds to NEC.food.log beside NEC.log, 1 food
+	// list line each, and returns whether it did. In FoodList.cpp.
+	bool WriteFoodLog(const std::unordered_map<RE::TESFormID, Sorted>& a_kinds);
 }

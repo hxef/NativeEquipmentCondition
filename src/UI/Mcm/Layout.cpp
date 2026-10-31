@@ -12,10 +12,10 @@
 // inside the list is drawn whole, however far it runs past the bottom, over
 // the help line and the frame. In None mode a row is as tall as its words,
 // and a row that does not fit is left out until a scroll makes it fit. So
-// while NEC's main page or its Little extras page shows, NEC puts the list in
-// None mode, and back in Multi-Line once another page shows. Only a name
-// would wrap differently, and no name on NEC's pages is wider than 1 line. On
-// NEC's pages it also writes the HUD bar sliders' live ends, see HudBar.cpp.
+// while one of NEC's pages shows, NEC puts the list in None mode, and back in
+// Multi-Line once another page shows. Only a name would wrap differently, and
+// no name on NEC's pages is wider than 1 line. On NEC's pages it also writes
+// the HUD bar sliders' live ends, see HudBar.cpp.
 //
 // MCM's menu is a child of _root.Menu_mc, its list is configPanel_mc's
 // configList_mc, and the list holds the shown page's entries in entryList.

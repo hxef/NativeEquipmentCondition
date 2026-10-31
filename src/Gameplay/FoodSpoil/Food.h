@@ -4,6 +4,7 @@
 
 #include "Core/Parts.h"
 
+#include <algorithm>
 #include <cstdint>
 #include <vector>
 
@@ -13,7 +14,7 @@ namespace FoodSpoil
 	// The fridge list, in FridgeList.cpp. Containers named in a file in
 	// Data/F4SE/Plugins/NEC/Fridge/, 1 base form a line in the form
 	// Core/ListFiles.h gives. Food in them spoils at fFridgeSpoilSpeed. NEC
-	// ships Fallout4.ini there with the vanilla fridges and coolers.
+	// ships NEC_Default.ini there with the vanilla fridges and coolers.
 	void LoadFridges();
 
 	// Forgets the list, so no container is a fridge until LoadFridges runs.
@@ -53,10 +54,40 @@ namespace FoodSpoil
 	// trade opens, in Sweep.cpp. Once, since UI lasts as long as the game.
 	void WatchMenus();
 
-	// Patches eating, in Eat.cpp: a spoiled bite gives a tenth of the food's
-	// healing and bonuses, and rads on top of the food's own. a_group is the
-	// part of its places, which go in together.
+	// a_percent as a share from 0 to 1, kept from 0 to 100 first. For
+	// iSpoiledHealing and iSpoiledHunger.
+	[[nodiscard]] inline float ShareOf(std::int32_t a_percent)
+	{
+		return static_cast<float>(std::clamp(a_percent, 0, 100)) / 100.0F;
+	}
+
+	// Patches eating, in Eat.cpp: spoiled food gives SpoiledShare of the
+	// food's healing and bonuses, and more rads than the food's own. a_group
+	// is the part of its places, which go in together.
 	void InstallEat(Part a_group);
+
+	// Forgets which food the player last ate spoiled, in Eat.cpp.
+	void ForgetEaten();
+
+	// Patches Survival's read of a food's caps value, in Hunger.cpp: spoiled
+	// food the player eats in Survival fills iSpoiledHunger % of the hunger
+	// and thirst its fresh food fills. a_group is the part of its place.
+	void InstallHunger(Part a_group);
+
+	// Notes that the player just ate spoiled a_food in Survival, for
+	// Survival's read of its value. Returns whether Hunger.cpp's place runs.
+	bool NoteSpoiledMeal(const RE::TESBoundObject& a_food);
+
+	// Forgets every note, for a load or a new game.
+	void ForgetMeals();
+
+	// Measures what the rads of spoiled food go through, in Rads.cpp, once
+	// LoadKinds ran.
+	void LoadRads();
+
+	// Forgets it, so spoiled food adds no rads until LoadRads runs.
+	void UnloadRads();
+
 
 	// Patches cooking and chemistry stations, in Cook.cpp: their rows leave
 	// spoiled food out, and a build takes fresh pieces only. a_group is the

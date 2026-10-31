@@ -5,7 +5,7 @@
 
 #include <optional>
 
-// A CND bar on the HUD, by the ammo counter. The counter,
+// The Weapon CND bar on the HUD, by the ammo counter. The counter,
 // RightMeters_mc.AmmoCount_mc in HUDMenu.swf, shows the rounds in the gun, the
 // rounds in reserve and a divider line between them. The bar replaces the
 // divider, 3 times as thick so its level is easy to read, shrinks from the
@@ -34,10 +34,12 @@
 //
 // fHudBarX and fHudBarY move the bar and its word from wherever they sit,
 // along the screen in HUD units, and off its spot the divider shows again.
-// Whatever they say, the bar and its word stay whole on screen, checked a few
-// times a second and on every change, and the bar hides while its counter is
-// off screen. The MCM page shows that place from the screen's top left
-// corner, also in HUD units, see Mcm/HudBar.cpp.
+// fHudBarLength and fHudBarThickness size the bar about its right end, after
+// the spot is chosen at the bar's own size, see Sized in Spot.h. Whatever
+// they say, the bar and its word stay whole on screen, checked a few times a
+// second and on every change, and the bar hides while its counter is off
+// screen. The MCM page shows that place from the screen's top left corner,
+// also in HUD units, see Mcm/HudBar.cpp.
 //
 // The bar is a HUD part of its own, with the native object the game gives each
 // part, so the HUD tints it with its colour. It then takes the colour the
@@ -81,7 +83,10 @@ namespace HudCondition
 		Flash::Box frame;
 	};
 
-	// From the HUD's last place with its counter on screen. Nothing before
-	// the first since HUDMenu.swf loaded. Safe from any thread.
+	// From the HUD's last place with its counter on screen, with the box
+	// worked out again for the size fHudBarLength and fHudBarThickness ask
+	// for now, since the HUD stands still under the pause menu, where the MCM
+	// page changes them. Nothing before the first since HUDMenu.swf loaded.
+	// Safe from any thread.
 	[[nodiscard]] std::optional<Measure> Measured();
 }

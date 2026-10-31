@@ -174,8 +174,8 @@ namespace WeaponWear
 		// has no rule for one that breaks while held, so the shot that breaks a
 		// weapon puts it away and the vanilla refusal keeps it away. Queued,
 		// since this runs in the middle of a shot the engine has not finished
-		// firing. F4SE runs the task a moment later from the engine's task queue,
-		// on a worker thread during play.
+		// firing. F4SE runs the task a moment later from the engine's task
+		// queue, on a worker thread during play.
 		void PutAway(RE::TESObjectREFR& a_owner, RE::TESObjectWEAP& a_weapon)
 		{
 			auto*       actor = a_owner.As<RE::Actor>();

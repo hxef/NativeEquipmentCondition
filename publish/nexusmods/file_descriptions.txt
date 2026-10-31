@@ -1,3 +1,8 @@
+1.7.1
+Version 1.7.1 splits NEC's MCM page into sub pages, lets you switch, size and move each HUD CND bar, and adds a switch so plain apparel never wears. Spoiled food's card shows its own healing and rads, and in Survival it barely fills you up.
+
+OG & AE only
+
 1.7.0
 Version 1.7.0 adds optional food spoiling, as in Fallout 76. Carried food spoils over game days, slower in coolers and unbroken fridges, and spoiled food gives extra rads and makes Fertilizer at a chemistry station. Switch it on in MCM.
 

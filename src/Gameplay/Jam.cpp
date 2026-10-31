@@ -245,8 +245,8 @@ namespace Jam
 		constexpr CallPatch::Slot     RELOAD_WEAPON_SLOT{ 0xEF, 0xEF };
 
 		// Set when NEC runs on top of a mod's hook at this vtable call, so the
-		// reload goes on to that mod. Empty for the vanilla reload, which the hook
-		// reaches through the actor's table itself.
+		// reload goes on to that mod. Empty for the vanilla reload, which the
+		// hook reaches through the actor's table itself.
 		CallPatch::Link<bool(RE::Actor*, const RE::BGSObjectInstanceT<RE::TESObjectWEAP>&, std::uint32_t)> g_reloadLink;
 
 		// Stands in for the actor's ReloadWeapon when the reloadComplete

@@ -9,7 +9,7 @@ namespace VendorRepair
 {
 	namespace
 	{
-		// Caps, where the engine's list of default objects fails to name them. A
+		// Caps, where Fallout 4's list of default objects fails to name them. A
 		// load order that replaces the currency says so in that list.
 		constexpr RE::TESFormID CAPS_FORM = 0x0000000F;
 

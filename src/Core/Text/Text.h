@@ -16,8 +16,8 @@
 // The sentences the plugin puts on the screen itself. Most of what it draws is
 // a $KEY the game translates. The rest has no key, so NEC brings its own: 1
 // file per language in F4SE/Plugins/NEC/Translations, picked by sLanguage in
-// Fallout4.ini, with the English compiled in for any line a file lacks, see
-// Translations.cpp.
+// the player's Fallout4.ini, with the English compiled in for any line a file
+// lacks, see Translations.cpp.
 //
 // A new sentence is 1 line in each of the 12 files of publish/Translations,
 // with its note in en.ini, and 1 function in Repair.cpp, for the repair
@@ -137,10 +137,11 @@ namespace Text
 	inline constexpr std::string_view MENU_HELP = ".help";
 
 	// A line of the MCM page by its id: a setting's key for its name, the key
-	// and MENU_HELP for its help, or a section's id, Wear, Weapons, Loot,
-	// Repairs, HUD, Extras or Log, for its title. Empty for an id it does not
-	// know. Each row of the word tables points at its setting and takes the
-	// key from it.
+	// and MENU_HELP for its help, a section's id from SECTIONS in Text.cpp,
+	// such as Wear, for its title, or version for the first line of NEC's main
+	// page, "NEC 1.7.1 on Fallout 4 1.11.240". Empty for an id it does not
+	// know. Each row of the word tables points at its setting and takes the key
+	// from it.
 	[[nodiscard]] std::string MenuLine(std::string_view a_id);
 
 	// a_help, a HUD bar slider's help, then "Default: 1170." with the bar's
@@ -193,10 +194,10 @@ namespace Text
 	[[nodiscard]] std::string MenuNoEffect(std::span<const std::string> a_names, Out a_out = Out::kPage);
 	[[nodiscard]] std::string SettingLogName(const Settings::Named& a_setting);
 
-	// The list at the top of the page: its first line, shown while a mod has
-	// a part, 1 line per mod with the parts it has, "Left to NECClashTest.dll:
-	// CND on item cards (containers and traders), Workbench repairs.", and the
-	// line that ends a list too long to show whole.
+	// The list at the top of NEC's main page: its first line, shown while a
+	// mod has a part, 1 line per mod with the parts it has, "Left to
+	// NECClashTest.dll: CND on item cards (containers and traders), Workbench
+	// repairs.", and the line that ends a list too long to show whole.
 	[[nodiscard]] std::string MenuTopIntro();
 	[[nodiscard]] std::string MenuTopOwner(const CallPatch::Owner& a_owner, std::span<const std::string> a_parts);
 	[[nodiscard]] std::string MenuTopMore(std::size_t a_count);

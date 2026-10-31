@@ -29,6 +29,7 @@ namespace Text
 			{ Part::kReloadJam, PART_RELOAD_JAM },
 			{ Part::kFood, PART_FOOD },
 			{ Part::kFoodBite, PART_FOOD_BITE },
+			{ Part::kFoodHunger, PART_FOOD_HUNGER },
 			{ Part::kFoodCook, PART_FOOD_COOK },
 			{ Part::kFertilizer, PART_FERTILIZER },
 		};

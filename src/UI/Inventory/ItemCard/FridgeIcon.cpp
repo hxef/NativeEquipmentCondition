@@ -21,8 +21,8 @@ namespace ItemCard
 		constexpr std::string_view ICONS_MOVIE = "ContainerMenu.swf";
 		constexpr const char*      ICONS_CLASS = "ContainerMenu_fla.DamageIcons_47";
 
-		// A timed row, such as a food's HP, shows the vanilla clock icon left of its
-		// number. The fridge icon takes the clock's size and place.
+		// A timed row, such as a food's HP, shows the vanilla clock icon left
+		// of its number. The fridge icon takes the clock's size and place.
 		constexpr const char* TIMED_CLASS = "Components.ItemCard_TimedEntry";
 
 		// The game puts the clock 10 left of the x the number's line reports,

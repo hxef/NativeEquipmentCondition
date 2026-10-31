@@ -100,7 +100,11 @@ namespace
 	constexpr Piece FOOD[]{ kFoodSpoils };
 	// What 1 Fertilizer costs counts only while the Fertilizer row is in.
 	constexpr Piece FERTILIZER[]{ kFertilizer };
-	constexpr Piece FOOD_SIDE[]{ kFoodBite, kFoodCook, kFertilizer };
+	constexpr Piece FOOD_SIDE[]{ kFoodBite, kFoodHunger, kFoodCook, kFertilizer };
+	// What spoiled food gives comes through eating and the menus that show
+	// it, and in Survival its hunger through Survival's read too.
+	constexpr Piece FOOD_BITE[]{ kFoodBite };
+	constexpr Piece FOOD_HUNGER[]{ kFoodHunger };
 	// The fridge icon beside a fridge's name rides on the loot preview's
 	// rows, and the one on a food's card on the container screen's CND row.
 	constexpr Piece FRIDGE_ICON_SIDE[]{ kLootMeters, kCndContainers };
@@ -111,6 +115,9 @@ namespace
 		{ &Settings::bVendorRepair, nullptr, TRADER_REPAIRS, TRADER_REPAIRS_SIDE },
 		{ &Settings::bLoadingTips, nullptr, TIPS },
 		{ &Settings::bHudCondition, nullptr, HUD_BARS },
+		// The power armor bar's switch rides on HUD condition bars as the
+		// rows below do, so it sits in bHudCondition's block.
+		{ &Settings::bPowerArmorBar, &Settings::bHudCondition, HUD_BARS },
 		{ &Settings::bQuickContainer, nullptr, LOOT_METERS },
 		{ &Settings::bConfirmScroll, nullptr, CONFIRM_SCROLL },
 		{ &Settings::bInspectPrice, nullptr, INSPECT_PRICE },
@@ -141,14 +148,22 @@ namespace
 		{ &Settings::fCookedFoodDays, &Settings::bFoodSpoils, FOOD },
 		{ &Settings::fFridgeSpoilSpeed, &Settings::bFoodSpoils, FOOD },
 		{ &Settings::iSpoiledPerFertilizer, &Settings::bFoodSpoils, FERTILIZER },
-		// The HUD bar rows share bHudCondition, so they never run once HUD
+		{ &Settings::iSpoiledHealing, &Settings::bFoodSpoils, FOOD_BITE },
+		{ &Settings::iSpoiledHunger, &Settings::bFoodSpoils, FOOD_HUNGER, FOOD_BITE },
+		{ &Settings::fSpoiledRadsMult, &Settings::bFoodSpoils, FOOD_BITE },
+		// Both CND bars' rows share bHudCondition, so they never run once HUD
 		// condition bars is left to another mod.
 		{ &Settings::fHudBarX, &Settings::bHudCondition, HUD_BARS },
 		{ &Settings::fHudBarY, &Settings::bHudCondition, HUD_BARS },
-		{ &Settings::fPowerArmorBarX, &Settings::bHudCondition, HUD_BARS },
-		{ &Settings::fPowerArmorBarY, &Settings::bHudCondition, HUD_BARS },
+		{ &Settings::fHudBarLength, &Settings::bHudCondition, HUD_BARS },
+		{ &Settings::fHudBarThickness, &Settings::bHudCondition, HUD_BARS },
 		{ &Settings::bHudBarHidesWithCounter, &Settings::bHudCondition, HUD_BARS },
 		{ &Settings::bHudBarShowsWord, &Settings::bHudCondition, HUD_BARS },
+		{ &Settings::fPowerArmorBarX, &Settings::bHudCondition, HUD_BARS },
+		{ &Settings::fPowerArmorBarY, &Settings::bHudCondition, HUD_BARS },
+		{ &Settings::fPowerArmorBarLength, &Settings::bHudCondition, HUD_BARS },
+		{ &Settings::fPowerArmorBarThickness, &Settings::bHudCondition, HUD_BARS },
+		{ &Settings::bPowerArmorBarShowsWord, &Settings::bHudCondition, HUD_BARS },
 	};
 
 	// Every setting changes something, no list names kNone or a piece twice,

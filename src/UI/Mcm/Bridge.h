@@ -16,8 +16,7 @@ namespace Mcm
 {
 	using Params = Scaleform::GFx::FunctionHandler::Params;
 
-	// config.json's modName, which MCM also puts on every entry of NEC's 2
-	// pages.
+	// config.json's modName, which MCM also puts on every entry of NEC's pages.
 	inline constexpr std::string_view MOD = "NEC"sv;
 
 	// NEC's answers on root.mcm, in Bridge.cpp, each for a call that is NEC's.

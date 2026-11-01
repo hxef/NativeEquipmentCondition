@@ -1,3 +1,10 @@
+1.7.2
+* A new Pickup CND bar (bPickupBar, on) under the name of a weapon, armor or food lying around. With food spoiling on it shows how fresh the food is. Its place, size and CND word are on the UI page.
+* Loose gear with no condition yet gets one the first time you look at it.
+* A new MCM slider, Spoiled food sickness (iSpoiledSicknessMult, 5), sets how many times likelier spoiled food is than fresh food to make you sick in Survival.
+* NEC.food.log now starts with the food settings, fridge files, food files and rads in force, and with Log on, NEC.food.trace.log records the food events. NEC.log keeps 1 line for food spoiling.
+* A new loading screen tip tells how food spoils, shown only with Food spoils on.
+
 1.7.1
 * NEC's MCM page splits into the Weapons, Armor, Loot and repairs, UI and Little extras sub pages. The main page keeps Log and the list of parts another mod took over, and shows NEC's version and the game it runs on.
 * The Weapon CND bar and the Power armor CND bar each have their own MCM switch, place, length, thickness and CND word switch, on the UI page.

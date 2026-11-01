@@ -1,3 +1,8 @@
+1.7.2
+Version 1.7.2 adds a CND bar under the name of loose gear and food you look at, and an MCM slider for spoiled food's chance to make you sick in Survival. NEC.food.log shows the food settings, and a loading screen tip tells how food spoils.
+
+OG & AE only
+
 1.7.1
 Version 1.7.1 splits NEC's MCM page into sub pages, lets you switch, size and move each HUD CND bar, and adds a switch so plain apparel never wears. Spoiled food's card shows its own healing and rads, and in Survival it barely fills you up.
 

@@ -127,8 +127,7 @@ SEE IT AT A GLANCE
   accuracy and range.
 * CND bars on the HUD ammo counter, the power armor dash, the pickup prompt and
   the Pip-Boy apparel figure, and condition meters on the quick container rows.
-  With food spoiling on, the pickup prompt's bar shows how fresh food is. Each
-  HUD bar has its own switch, place and size in MCM.
+  Each HUD bar has its own switch, place and size in MCM.
 * Broken items fade out in the Pip-Boy lists.
 
 MAKE IT YOURS
@@ -152,8 +151,8 @@ LITTLE EXTRAS
   heals only 10% as much and gives more rads, which Lead Belly cuts as it cuts
   the food's own. In Survival it heals nothing and fills hunger or thirst only a
   tenth as much as the fresh food would. Survival has a minimum that every meal
-  fills, and spoiled food still gets that minimum. In Survival it is also 5
-  times as likely to make you sick as the fresh food, and food that never makes
+  fills, and spoiled food still gets that minimum. In Survival, spoiled food is
+  5 times as likely to make you sick as the fresh food. Food that never makes
   you sick, such as cooked food, takes the smallest chance any food in your load
   order has. Cooking stations won't take it, and a chemistry station turns it
   into Fertilizer. With worn loot on, food you find is already partly spoiled,

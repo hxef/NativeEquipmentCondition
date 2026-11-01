@@ -116,33 +116,38 @@ target("NEC")
 -- F4SE/Plugins/NEC/Fridge with the vanilla fridge list, MCM/Config/NEC
 -- with the MCM page's config.json, and README.txt at the root, so Mod
 -- Organizer 2 installs it as it is. The PDB lets a player's crash log name the
--- file and line in NEC.dll. It stops before building on any fault of a
+-- file and line in NEC.dll. It stops before packing on any fault of a
 -- language file, which a plain build only warns about.
 --
--- It builds first only when a file the DLL is made from changed since the
--- last build, so a repack that changes only texts ships the DLL and PDB the
--- last build made, byte for byte.
+-- It never builds. It ships the DLL and PDB the last build made, byte for
+-- byte, and stops when they are missing or a file the DLL is made from
+-- changed after them, so build first. --lastbuild packs them anyway, for a
+-- change that never reaches the DLL, like a comment or this task.
 --
 -- With --nexus it packs build/nexusmods/NativeEquipmentCondition-<version>.zip
 -- instead, without README.txt, since Nexus Mods shows the readme in a section
 -- of its own. It also checks this version's file description and changelog in
 -- publish/nexusmods and prints both, ready to paste into the upload form.
+-- --outputdir writes the zip into another folder, so a second pack leaves the
+-- one in build alone.
 --
 --     xmake release
 --     xmake release --nexus
+--     xmake release --nexus --outputdir=../spare
 --
 task("release")
     set_category("plugin")
     set_menu({
-        usage = "xmake release [--nexus]",
-        description = "Pack the release archive, building NEC first when a source changed",
+        usage = "xmake release [--nexus] [--lastbuild] [--outputdir=DIR]",
+        description = "Pack the release archive from the last build",
         options = {
             { nil, "nexus", "k", nil, "Pack it for Nexus Mods, without README.txt, and check the texts in publish/nexusmods" },
+            { nil, "lastbuild", "k", nil, "Pack the last build even when a source changed after it" },
+            { nil, "outputdir", "kv", nil, "Write the zip into this folder instead of build or build/nexusmods" },
         },
     })
     on_run(function ()
         import("core.base.option")
-        import("core.base.task")
         import("core.project.config")
         import("core.project.project")
         import("utils.archive")
@@ -174,9 +179,9 @@ task("release")
         local nexus = option.get("nexus")
         local description, changelog
         if nexus then
-            -- Checked before the build, so a text to fix stops the release
-            -- early. Nexus Mods takes at most 255 characters for a file's
-            -- description, and every text here is plain ASCII, 1 byte each.
+            -- Checked first, so a text to fix stops the release early. Nexus
+            -- Mods takes at most 255 characters for a file's description,
+            -- and every text here is plain ASCII, 1 byte each.
             local texts = path.join(os.projectdir(), "publish", "nexusmods")
             description = block(path.join(texts, "file_descriptions.txt"), version)
             changelog = block(path.join(texts, "changelog.txt"), version)
@@ -194,15 +199,22 @@ task("release")
         import("texts", { rootdir = path.join(os.projectdir(), "xmake") })
         texts.check()
 
-        -- The first file the DLL is made from that is newer than the last
-        -- build's DLL or PDB, or the DLL when there is no build yet. en.ini
-        -- counts, since its English is compiled in.
+        -- The rule that makes NEC a DLL sets its kind only when a build
+        -- configures it, so here target:targetfile() still reads NEC.exe.
+        -- The last build's files are found by path in the target's folder.
         local target = project.target("NEC")
+        local dll = path.join(target:targetdir(), target:basename() .. ".dll")
+        local pdb = path.join(target:targetdir(), target:basename() .. ".pdb")
+
+        -- A build run from inside this task fails, since the task has loaded
+        -- the project already, so it asks for one instead.
+        if not os.isfile(dll) or not os.isfile(pdb) then
+            raise("%s and its PDB are missing, run xmake to build NEC first", path.relative(dll, os.projectdir()))
+        end
+
+        -- The first file the DLL is made from that is newer than the last
+        -- build's DLL or PDB. en.ini counts, since its English is compiled in.
         local function changed()
-            local dll, pdb = target:targetfile(), target:symbolfile()
-            if not os.isfile(dll) or not os.isfile(pdb) then
-                return dll
-            end
             local built = math.min(os.mtime(dll), os.mtime(pdb))
             local sources = { "xmake.lua", "xmake/*.lua", "publish/Translations/en.ini", "src/**", "lib/commonlibf4/xmake.lua",
                 "lib/commonlibf4/include/**", "lib/commonlibf4/src/**", "lib/commonlibf4/lib/**" }
@@ -215,21 +227,25 @@ task("release")
             end
         end
         local newer = changed()
+        if newer and not option.get("lastbuild") then
+            raise("%s is newer than the last build, run xmake to build NEC first, or pass --lastbuild when the change never reaches the DLL",
+                path.relative(newer, os.projectdir()))
+        end
         if newer then
-            cprint("building first, since %s is newer than the last build", path.relative(newer, os.projectdir()))
-            task.run("build", { target = "NEC" })
+            cprint("packing the DLL and PDB of the last build, although %s is newer", path.relative(newer, os.projectdir()))
         else
             cprint("packing the DLL and PDB of the last build, since no source changed after it")
         end
 
-        local stage = path.join(config.builddir(), "release")
+        -- Staged in a fresh temporary folder, so nothing under build changes
+        -- but the zip.
+        local stage = os.tmpfile() .. ".dir"
         local plugins = path.join(stage, "F4SE", "Plugins")
         local mcm = path.join(stage, "MCM", "Config", "NEC")
-        os.tryrm(stage)
         os.mkdir(plugins)
         os.mkdir(mcm)
-        os.cp(target:targetfile(), plugins)
-        os.cp(target:symbolfile(), plugins)
+        os.cp(dll, plugins)
+        os.cp(pdb, plugins)
         os.cp(path.join(os.projectdir(), "publish", "NEC.ini"), plugins)
         os.mkdir(path.join(plugins, "NEC", "Translations"))
         os.cp(path.join(os.projectdir(), "publish", "Translations", "*.ini"), path.join(plugins, "NEC", "Translations"))
@@ -237,10 +253,11 @@ task("release")
         os.cp(path.join(os.projectdir(), "publish", "Fridge", "*.ini"), path.join(plugins, "NEC", "Fridge"))
         os.cp(path.join(os.projectdir(), "publish", "MCM", "Config", "NEC", "config.json"), mcm)
         local packed = { "F4SE", "MCM" }
-        local into = config.builddir()
-        if nexus then
-            into = path.join(into, "nexusmods")
-        else
+        local into = option.get("outputdir")
+        if not into then
+            into = nexus and path.join(config.builddir(), "nexusmods") or config.builddir()
+        end
+        if not nexus then
             os.cp(path.join(os.projectdir(), "publish", "README.txt"), stage)
             table.insert(packed, "README.txt")
         end

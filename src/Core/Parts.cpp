@@ -41,6 +41,7 @@ namespace
 	// else.
 	constexpr Piece TIPS[]{ kTips };
 	constexpr Piece HUD_BARS[]{ kHudBars };
+	constexpr Piece PICKUP_BAR[]{ kPickupBar };
 	constexpr Piece LOOT_METERS[]{ kLootMeters };
 	constexpr Piece CONFIRM_SCROLL[]{ kConfirmScroll };
 	constexpr Piece INSPECT_PRICE[]{ kInspectPrice };
@@ -165,6 +166,15 @@ namespace
 		{ &Settings::fPowerArmorBarLength, &Settings::bHudCondition, HUD_BARS },
 		{ &Settings::fPowerArmorBarThickness, &Settings::bHudCondition, HUD_BARS },
 		{ &Settings::bPowerArmorBarShowsWord, &Settings::bHudCondition, HUD_BARS },
+		// The Pickup CND bar works through a place of its own and runs
+		// whatever HUD condition bars does. Its rows sit in bHudCondition's
+		// block, since MCM has no group left for a note of its own.
+		{ &Settings::bPickupBar, &Settings::bHudCondition, PICKUP_BAR },
+		{ &Settings::fPickupBarX, &Settings::bHudCondition, PICKUP_BAR },
+		{ &Settings::fPickupBarY, &Settings::bHudCondition, PICKUP_BAR },
+		{ &Settings::fPickupBarLength, &Settings::bHudCondition, PICKUP_BAR },
+		{ &Settings::fPickupBarThickness, &Settings::bHudCondition, PICKUP_BAR },
+		{ &Settings::bPickupBarShowsWord, &Settings::bHudCondition, PICKUP_BAR },
 	};
 
 	// Every setting changes something, no list names kNone or a piece twice,

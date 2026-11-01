@@ -174,6 +174,8 @@ namespace
 		{ "food health to come", { kFoodRows } },
 		// HudParts
 		{ "HUD menu delete", { kHudBars } },
+		// PickupBar
+		{ "pickup prompt state", { kPickupBar } },
 		// QuickContainer
 		{ "quick container row", { kLootMeters } },
 		{ "quick container rows", { kLootMeters } },

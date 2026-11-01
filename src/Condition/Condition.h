@@ -96,6 +96,10 @@ namespace Condition
 	// at full reads 100 and only a broken one reads 0.
 	std::optional<double> Percent(const RE::BGSInventoryItem& a_item, const RE::BGSInventoryItem::Stack* a_stack);
 
+	// The same for a_object with a_extra as its health's list, an item lying
+	// in the world for one. a_extra can be null.
+	std::optional<double> Percent(const RE::TESBoundObject& a_object, RE::ExtraDataList* a_extra);
+
 	// a_health rounded to a whole percent, 0 to 100, where any health above 0
 	// reads 1 at least. Percent and the HUD and Pip-Boy bars share it, so a
 	// nearly broken item reads 1 on all of them.

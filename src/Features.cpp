@@ -22,6 +22,7 @@
 #include "Gameplay/WeaponEvents/WeaponEvents.h"
 #include "UI/Hud/HudCondition/HudCondition.h"
 #include "UI/Hud/HudParts/HudParts.h"
+#include "UI/Hud/PickupBar/PickupBar.h"
 #include "UI/Hud/PowerArmorCondition/PowerArmorCondition.h"
 #include "UI/Hud/QuickContainer/QuickContainer.h"
 #include "UI/InspectPrice.h"
@@ -141,6 +142,10 @@ namespace
 		// The Power armor CND bar on the dash. It goes with the same part,
 		// and bPowerArmorBar switches the bar itself, see HudParts::Waiter.
 		{ .name = "PowerArmorCondition", .on = &Settings::bHudCondition, .Load = PowerArmorCondition::Load, .OnMovieLoaded = PowerArmorCondition::OnMovieLoaded },
+		// A CND bar under the name in the prompt of a weapon, armor or food
+		// lying around. Its hook asks bPickupBar itself, as the power armor
+		// bar asks bPowerArmorBar, so the row has no switch.
+		{ .name = "PickupBar", .part = Part::kPickup, .Install = PickupBar::Install, .OnMovieLoaded = PickupBar::OnMovieLoaded },
 		// Condition meters on the rows of the HUD's quick container.
 		{ .name = "QuickContainer", .on = &Settings::bQuickContainer, .part = Part::kQuick, .Install = QuickContainer::Install, .OnMovieLoaded = QuickContainer::OnMovieLoaded },
 		// NEC's own question box stays solid under a message box mod's style

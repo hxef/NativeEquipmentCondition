@@ -144,6 +144,18 @@ namespace HudParts
 				return RE::BSEventNotifyControl::kContinue;
 			}
 		};
+
+		// The first thing in any HUD part is its vtable, which says what kind
+		// of part it is.
+		const RE::HUDComponentBase* PartOfKind(const RE::HUDMenu& a_menu, std::uintptr_t a_vtable)
+		{
+			for (const auto& component : a_menu.hudObjects) {
+				if (component && *reinterpret_cast<const std::uintptr_t*>(component.get()) == a_vtable) {
+					return component.get();
+				}
+			}
+			return nullptr;
+		}
 	}
 
 	void ForgetOldTargets()
@@ -338,11 +350,11 @@ namespace HudParts
 		registered = true;
 	}
 
-	void AddColorTarget(RE::HUDMenu& a_menu, const Value& a_clip)
+	const RE::BSGFxShaderFXTarget* AddColorTarget(RE::HUDMenu& a_menu, const Value& a_clip)
 	{
 		// Nothing would delete it as its menu goes.
 		if (!g_deleteLink.Live()) {
-			return;
+			return nullptr;
 		}
 		auto target = std::make_unique<RE::BSGFxShaderFXTarget>(a_clip);
 		target->SetToHUDColor(false);
@@ -351,20 +363,31 @@ namespace HudParts
 			a_menu.shaderFXObjects.push_back(target.get());
 		}
 
+		const auto*            made = target.get();
 		const std::scoped_lock l(g_colorTargetsLock);
 		g_colorTargets.push_back({ &a_menu, std::move(target) });
+		return made;
+	}
+
+	bool SetWarningColor(const RE::BSGFxShaderFXTarget* a_target, bool a_warning)
+	{
+		const std::scoped_lock l(g_colorTargetsLock);
+		const auto             it = std::ranges::find(g_colorTargets, a_target, [](const ColorTarget& a_made) { return a_made.target.get(); });
+		if (it == g_colorTargets.end()) {
+			return false;
+		}
+		it->target->SetToHUDColor(a_warning);
+		return true;
 	}
 
 	const RE::HUDAmmoCounter* AmmoCounterPart(const RE::HUDMenu& a_menu)
 	{
-		// The first thing in any HUD part is its vtable, which says what kind
-		// of part it is.
-		for (const auto& component : a_menu.hudObjects) {
-			if (component && *reinterpret_cast<const std::uintptr_t*>(component.get()) == RE::HUDAmmoCounter::VTABLE[0].address()) {
-				return static_cast<const RE::HUDAmmoCounter*>(component.get());
-			}
-		}
-		return nullptr;
+		return static_cast<const RE::HUDAmmoCounter*>(PartOfKind(a_menu, RE::HUDAmmoCounter::VTABLE[0].address()));
+	}
+
+	const RE::HUDComponentBase* RolloverPart(const RE::HUDMenu& a_menu)
+	{
+		return PartOfKind(a_menu, RE::VTABLE::HUDRollover[0].address());
 	}
 
 	void Waiter::Watch(Scaleform::GFx::Movie& a_movie, const char* a_what)

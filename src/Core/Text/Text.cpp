@@ -35,6 +35,7 @@ namespace Text
 			{ "Repairs", REPAIRS_TITLE },
 			{ "HudBar", HUD_BAR_TITLE },
 			{ "PowerArmorBar", POWER_ARMOR_BAR_TITLE },
+			{ "PickupBar", PICKUP_BAR_TITLE },
 			{ "Extras", EXTRAS_TITLE },
 			{ "Food", FOOD_TITLE },
 			{ "Menus", MENUS_TITLE },

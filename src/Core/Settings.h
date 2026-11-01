@@ -26,11 +26,11 @@
 // A setting added here is added to publish/NEC.ini too, with a line saying
 // what it does, and to SWITCHES or NUMBERS in Settings.cpp in NEC.ini's
 // order. A setting left out of those is missing from the Settings line, and
-// the MCM page can neither read nor change it. The 6 switches with no row of
+// the MCM page can neither read nor change it. The 8 switches with no row of
 // their own in Features.cpp, bPowerArmorBar, bFridgeIcon,
-// bHudBarHidesWithCounter, bHudBarShowsWord, bPowerArmorBarShowsWord and
-// bTraceLogs, are named in Settings.cpp's ReportLine and in
-// UI/Mcm/Bridge.cpp's SwitchFor instead.
+// bHudBarHidesWithCounter, bHudBarShowsWord, bPowerArmorBarShowsWord,
+// bPickupBar, bPickupBarShowsWord and bTraceLogs, are named in Settings.cpp's
+// ReportLine and in UI/Mcm/Bridge.cpp's SwitchFor instead.
 namespace Settings
 {
 	// Where a setting sits in NEC.ini, which is also its id on the MCM page.
@@ -288,9 +288,9 @@ namespace Settings
 
 	// HUD. Where the CND bars sit, how big they are drawn and when the one by
 	// the ammo counter hides. Read every frame, so a change shows at once. The
-	// 4 place numbers move a bar from its own place in units of the HUD, which
+	// 6 place numbers move a bar from its own place in units of the HUD, which
 	// is 1280 across and 720 down on any screen, and 0 and 0 is its own place.
-	// The 4 size numbers count from 0.5 to 3 times a bar's own length or
+	// The 6 size numbers count from 0.5 to 3 times a bar's own length or
 	// thickness, see HudParts::Readout::Size.
 
 	// How far right of its own spot by the ammo counter the Weapon CND bar
@@ -328,6 +328,25 @@ namespace Settings
 	// Whether the CND word shows beside the Power armor CND bar. When off,
 	// only the bar shows, at the same place.
 	inline Live<bool> bPowerArmorBarShowsWord{ "HUD", "bPowerArmorBarShowsWord", true };
+
+	// Whether the Pickup CND bar shows under the name in the prompt of a
+	// weapon, armor or food lying around, see PickupBar.h.
+	inline Live<bool> bPickupBar{ "HUD", "bPickupBar", true };
+
+	// How far right of its own place under the name the Pickup CND bar sits,
+	// below 0 to the left.
+	inline Live<float> fPickupBarX{ "HUD", "fPickupBarX", 0.0F };
+
+	// How far up from its own place it sits, below 0 down.
+	inline Live<float> fPickupBarY{ "HUD", "fPickupBarY", 0.0F };
+
+	// How long and how thick the Pickup CND bar is drawn.
+	inline Live<float> fPickupBarLength{ "HUD", "fPickupBarLength", 1.0F };
+	inline Live<float> fPickupBarThickness{ "HUD", "fPickupBarThickness", 1.0F };
+
+	// Whether the CND word shows beside the Pickup CND bar. When off, only
+	// the bar shows, at the same place.
+	inline Live<bool> bPickupBarShowsWord{ "HUD", "bPickupBarShowsWord", true };
 
 	// Log. Read once, as the log is opened. The MCM page sets the level and
 	// switches the trace logs on the spot, see SetLogLevel and

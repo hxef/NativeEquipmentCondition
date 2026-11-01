@@ -3,6 +3,7 @@
 #include "Core/Plugin.h"
 
 #include <cstdint>
+#include <string_view>
 
 // Found food's starting freshness, see FoodSpoil::SetStart, rolled where gear
 // rolls: in a container's fill, as food is added to a box or a character,
@@ -10,6 +11,12 @@
 // are both on. Private to this folder.
 namespace SpawnCondition
 {
+	// Rolls a_object's starting freshness in the band its gear rolls in in
+	// a_list, and says where, a_how. a_listed gives the roll a food line of
+	// its own in the trace.
+	float RollIn(const RE::BGSInventoryList& a_list, const RE::TESBoundObject& a_object, const RE::ExtraDataList* a_extra,
+		std::uint32_t a_count, std::string_view a_how, bool a_listed);
+
 	// For a_count of a_object born into a_list holding a_extra, in a
 	// container's fill when a_fill: rolls the food's starting freshness, or
 	// marks it fresh when a trader restocks it or a script or the console

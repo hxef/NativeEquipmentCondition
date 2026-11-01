@@ -47,11 +47,11 @@ namespace SpawnCondition
 	// Band.cpp is the roll itself, either side of an item's middle or in a
 	// trader's band, Roll.cpp a stack's first condition and its split,
 	// Food.cpp food's starting freshness, Handover.cpp an item changing
-	// hands, World.cpp loot lying in the world, Guards.cpp KeepCarried and
-	// what marks a save being applied, a console command, a script giving an
-	// item and a restock, Owners.cpp the owner checks, and Trace.cpp what the
-	// trace log is told about a stack. Their headers are what the folder's
-	// files share.
+	// hands, World.cpp loot lying in the world, Look.cpp the first look at it,
+	// Guards.cpp KeepCarried and what marks a save being applied, a console
+	// command, a script giving an item and a restock, Owners.cpp the owner
+	// checks, and Trace.cpp what the trace log is told about a stack. Their
+	// headers are what the folder's files share.
 	void Install();
 
 	// Whether KeepCarried may run from the MCM: no main menu, no loading
@@ -77,6 +77,19 @@ namespace SpawnCondition
 	// are both on. a_extra is the food's own list, a_count for the trace log.
 	[[nodiscard]] std::optional<float> FoundFreshness(const RE::BGSInventoryList& a_list, const RE::TESBoundObject& a_object,
 		const RE::ExtraDataList* a_extra, std::uint32_t a_count);
+
+	// Rolls a weapon, a piece of armor or a food lying in the world as the
+	// player's pickup would roll it, the first time the player looks at it,
+	// and keeps the roll in the save. The pickup then finds it set and keeps
+	// it. Only a piece still marked for its first holder, or found food with
+	// no starting freshness, and only while Worn loot is on. Returns whether
+	// it wrote. Call it from F4SE's task queue, never under a lock. An item
+	// that waits for its taker is left alone.
+	bool RollOnLook(RE::TESObjectREFR& a_ref);
+
+	// Whether a loose item rolls only when it is taken or bought: a trader's
+	// stock, an item a faction owns. One an NPC owns rolls on the first look.
+	[[nodiscard]] bool WaitsForTaker(const RE::TESObjectREFR& a_ref);
 
 	// Gives the loose items the trade on this thread bought their mark back,
 	// so a respawn puts each back to roll again, see NoteBought in

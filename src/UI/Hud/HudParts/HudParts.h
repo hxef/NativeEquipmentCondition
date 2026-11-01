@@ -225,12 +225,23 @@ namespace HudParts
 	// theirs, so the plugin keeps this one and deletes it when the menu is
 	// deleted, see Install, or lets go of it once the menu is gone, see
 	// ForgetOldTargets. One left listening would still be sent the next HUD's
-	// colour, into a movie that no longer exists.
-	void AddColorTarget(RE::HUDMenu& a_menu, const Value& a_clip);
+	// colour, into a movie that no longer exists. Returns the target to name
+	// to SetWarningColor, or null when none was made.
+	const RE::BSGFxShaderFXTarget* AddColorTarget(RE::HUDMenu& a_menu, const Value& a_clip);
+
+	// Paints a target AddColorTarget made in the warning colour, or back in
+	// the gameplay HUD colour, as the game paints its own parts. The target is
+	// looked up first, since all of them are deleted at once if another DLL
+	// takes the HUD menu's delete hook from NEC. Returns false once it is gone.
+	bool SetWarningColor(const RE::BSGFxShaderFXTarget* a_target, bool a_warning);
 
 	// The vanilla ammo counter part in this HUD menu, or null. Its
 	// canBeVisible says whether the HUD mode now lets the counter be seen.
 	[[nodiscard]] const RE::HUDAmmoCounter* AmmoCounterPart(const RE::HUDMenu& a_menu);
+
+	// The vanilla pickup prompt part in this HUD menu, or null. Its
+	// displayWarningColor says whether taking the item it shows is stealing.
+	[[nodiscard]] const RE::HUDComponentBase* RolloverPart(const RE::HUDMenu& a_menu);
 
 	// Whether the counter has rounds to count. NEC reads them on the HUD's
 	// thread without the lock the game takes for them, so a read is a frame

@@ -121,6 +121,7 @@ namespace
 		{ kRangeCardsCooking, Part::kCardRange, Shown::kName, { kRangeCards, kCndCooking } },
 		{ kRangeCardsPipboy, Part::kCardRange, Shown::kName, { kRangeCards, kCndPipboy } },
 		{ kHudBars, Part::kHudBar, Shown::kPart },
+		{ kPickupBar, Part::kPickup, Shown::kPart },
 		{ kLootMeters, Part::kQuick, Shown::kPart },
 		// The list hooks ask whether the bench repairs, see
 		// UI/Repair/Workbench/Lists.cpp. The item list's hook marks the

@@ -64,13 +64,18 @@ namespace Condition
 
 	std::optional<double> Percent(const RE::BGSInventoryItem& a_item, const RE::BGSInventoryItem::Stack* a_stack)
 	{
-		if (!a_item.object || !WearsOut(*a_item.object)) {
+		return a_item.object ? Percent(*a_item.object, a_stack ? a_stack->extra.get() : nullptr) : std::nullopt;
+	}
+
+	std::optional<double> Percent(const RE::TESBoundObject& a_object, RE::ExtraDataList* a_extra)
+	{
+		if (!WearsOut(a_object)) {
 			return std::nullopt;
 		}
 
 		// Below 0, not at it. -1 is a stack with no health extra data, which
 		// counts as new. 0 is broken and shows as 0%.
-		auto health = HealthOf(a_stack);
+		auto health = HealthOf(a_extra);
 		if (health < 0.0F) {
 			health = 1.0F;
 		}

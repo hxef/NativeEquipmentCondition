@@ -14,6 +14,7 @@ namespace Text
 			{ Part::kCardRange, PART_CARD_RANGE },
 			{ Part::kSort, PART_SORT },
 			{ Part::kHudBar, PART_HUD_BAR },
+			{ Part::kPickup, PART_PICKUP_BAR },
 			{ Part::kQuick, PART_QUICK },
 			{ Part::kBench, PART_BENCH },
 			{ Part::kBenchLists, PART_BENCH_LISTS },

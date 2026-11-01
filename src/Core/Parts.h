@@ -52,6 +52,7 @@ enum class Part : std::uint8_t
 	kCardRange,      // Range shown in menus
 	kSort,           // Inventory sorting
 	kHudBar,         // HUD condition bars
+	kPickup,         // Pickup CND bar
 	kQuick,          // Loot preview meters
 	kBench,          // Workbench repairs
 	kBenchLists,     // Worn items in workbench lists

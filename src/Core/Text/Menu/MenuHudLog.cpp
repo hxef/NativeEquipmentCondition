@@ -24,6 +24,12 @@ namespace Text
 			{ &Settings::fPowerArmorBarLength, POWER_ARMOR_BAR_LENGTH_NAME, POWER_ARMOR_BAR_LENGTH_HELP },
 			{ &Settings::fPowerArmorBarThickness, POWER_ARMOR_BAR_THICKNESS_NAME, POWER_ARMOR_BAR_THICKNESS_HELP },
 			{ &Settings::bPowerArmorBarShowsWord, POWER_ARMOR_BAR_WORD_NAME, POWER_ARMOR_BAR_WORD_HELP },
+			{ &Settings::bPickupBar, PICKUP_BAR_NAME, PICKUP_BAR_HELP },
+			{ &Settings::fPickupBarX, PICKUP_BAR_X_NAME, PICKUP_BAR_X_HELP },
+			{ &Settings::fPickupBarY, PICKUP_BAR_Y_NAME, PICKUP_BAR_Y_HELP },
+			{ &Settings::fPickupBarLength, PICKUP_BAR_LENGTH_NAME, PICKUP_BAR_LENGTH_HELP },
+			{ &Settings::fPickupBarThickness, PICKUP_BAR_THICKNESS_NAME, PICKUP_BAR_THICKNESS_HELP },
+			{ &Settings::bPickupBarShowsWord, PICKUP_BAR_WORD_NAME, PICKUP_BAR_WORD_HELP },
 			{ &LOG_LEVEL, LOG_LEVEL_NAME, LOG_LEVEL_HELP },
 		};
 	}

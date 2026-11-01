@@ -85,6 +85,10 @@ namespace Settings
 			&fPowerArmorBarY,
 			&fPowerArmorBarLength,
 			&fPowerArmorBarThickness,
+			&fPickupBarX,
+			&fPickupBarY,
+			&fPickupBarLength,
+			&fPickupBarThickness,
 		};
 
 		// The switches neither list holds, each after the setting NEC.ini has
@@ -93,7 +97,8 @@ namespace Settings
 		Live<bool>* const AFTER_HUD_CONDITION[]{ &bPowerArmorBar };
 		Live<bool>* const AFTER_FOOD_SPOILS[]{ &bFridgeIcon };
 		Live<bool>* const AFTER_HUD_BAR[]{ &bHudBarHidesWithCounter, &bHudBarShowsWord };
-		Live<bool>* const AFTER_POWER_ARMOR_BAR[]{ &bPowerArmorBarShowsWord };
+		Live<bool>* const AFTER_POWER_ARMOR_BAR[]{ &bPowerArmorBarShowsWord, &bPickupBar };
+		Live<bool>* const AFTER_PICKUP_BAR[]{ &bPickupBarShowsWord };
 
 		[[nodiscard]] std::span<Live<bool>* const> SwitchesAfter(const Named& a_setting)
 		{
@@ -111,6 +116,9 @@ namespace Settings
 			}
 			if (&a_setting == &fPowerArmorBarThickness) {
 				return AFTER_POWER_ARMOR_BAR;
+			}
+			if (&a_setting == &fPickupBarThickness) {
+				return AFTER_PICKUP_BAR;
 			}
 			return {};
 		}

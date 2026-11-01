@@ -170,6 +170,7 @@ src/
       Food.h/.cpp            found food's starting freshness
       Guards.h/.cpp          what marks a save being applied, a game recording no change, a console command, a script's gift and a restock, the folder's scope, and what the player carries
       Handover.h/.cpp        an item changing hands, a trader's loose item and SpawnDupe's copies
+      Look.cpp               the first look at loot lying in the world, rolled as the player's pickup would roll it
       Owners.h/.cpp          who a stack goes to, and which of them get it at full condition
       Roll.h/.cpp            a stack's first condition, and splitting a stack that arrived several at once
       Trace.h/.cpp           what the trace log is told about a stack
@@ -192,6 +193,7 @@ src/
       Card.h/.cpp            the item card and its CND row
       Hud.h/.cpp             the ammo counter, its divider, numbers and colour, the parts beside it, where a quick container row's name starts and ends
       ContainerName.h/.cpp   the container's name at the top of the quick container
+      Rollover.h/.cpp        the pickup prompt: the name and the button hints under it
       Boxes.h/.cpp           the parts of the bench's confirmation box, where the bench's button bar starts, the message box's background, and whether the barter screen's quantity box is open
     Mcm/
       Mcm.h/.cpp             the settings page in the Mod Configuration Menu
@@ -213,6 +215,10 @@ src/
         PowerArmorCondition.h/.cpp   the frame listener and the movie
         Dash.h/.cpp                  finding the dash through its own camera
         Layout.h/.cpp                laying the bar out in the movie
+      PickupBar/
+        PickupBar.h/.cpp             the Pickup CND bar under the name in the pickup prompt: its install and the movie
+        Look.h/.cpp                  the item the prompt stands for, as the game builds it, and its roll on the first look
+        Bar.h/.cpp                   the bar in the HUD's prompt
       QuickContainer/
         QuickContainer.h/.cpp        the feature: its install and the movie
         Rows.h/.cpp                  the rows as the game builds them

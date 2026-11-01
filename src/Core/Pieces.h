@@ -121,6 +121,7 @@ enum class Piece : std::uint8_t
 	// each 1 piece but Worn items in workbench lists and Trader stock
 	// condition, which have 2 each
 	kHudBars,
+	kPickupBar,
 	kLootMeters,
 	kBenchItemList,
 	kBenchModLists,

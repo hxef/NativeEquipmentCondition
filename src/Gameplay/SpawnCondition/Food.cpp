@@ -72,28 +72,26 @@ namespace SpawnCondition
 		{
 			TraceLog::Line(a_listed ? "food" : "loot", a_fmt, std::forward<T>(a_args)...);
 		}
+	}
 
-		// -------------------------------------------------------------------
-		// The roll
-		// -------------------------------------------------------------------
+	// -------------------------------------------------------------------
+	// The roll
+	// -------------------------------------------------------------------
 
-		// Rolls a_object's starting freshness in the band its gear rolls in
-		// in a_list, and says where, a_how.
-		float RollIn(const RE::BGSInventoryList& a_list, const RE::TESBoundObject& a_object, const RE::ExtraDataList* a_extra,
-			std::uint32_t a_count, std::string_view a_how, bool a_listed)
-		{
-			// Food has no scale of its own, so its list counts by its weapons,
-			// which only a list mixing food and weapons has.
-			const auto origin = Provenance::Of(a_list, a_extra, Condition::Kind::kWeapon);
-			const Aim  aim{ origin.Centre(), std::nullopt };
-			const auto rolled = RollHealth(aim);
-			if (TraceLog::IsOpen()) {
-				Tell(a_listed, "{:<30s} [{:08X}] x{:<3d} starts at {:.4f}, {:s}, band around {:.2f}, {:s}{:s}",
-					NameOf(a_object, "unnamed food"), a_object.formID, a_count, rolled.health, a_how, aim.centre, Describe(origin),
-					rolled.upset ? ", ignored its band" : "");
-			}
-			return rolled.health;
+	float RollIn(const RE::BGSInventoryList& a_list, const RE::TESBoundObject& a_object, const RE::ExtraDataList* a_extra,
+		std::uint32_t a_count, std::string_view a_how, bool a_listed)
+	{
+		// Food has no scale of its own, so its list counts by its weapons,
+		// which only a list mixing food and weapons has.
+		const auto origin = Provenance::Of(a_list, a_extra, Condition::Kind::kWeapon);
+		const Aim  aim{ origin.Centre(), std::nullopt };
+		const auto rolled = RollHealth(aim);
+		if (TraceLog::IsOpen()) {
+			Tell(a_listed, "{:<30s} [{:08X}] x{:<3d} starts at {:.4f}, {:s}, band around {:.2f}, {:s}{:s}",
+				NameOf(a_object, "unnamed food"), a_object.formID, a_count, rolled.health, a_how, aim.centre, Describe(origin),
+				rolled.upset ? ", ignored its band" : "");
 		}
+		return rolled.health;
 	}
 
 	// -------------------------------------------------------------------

@@ -7,6 +7,7 @@
 
 #include <algorithm>
 #include <cstddef>
+#include <format>
 #include <map>
 #include <memory>
 #include <string_view>
@@ -138,10 +139,11 @@ namespace FoodSpoil
 		table->foodRads = MostUsedRads(table->rads);
 		table->madeWithRaw = MadeWithRaw();
 		if (table->foodRads) {
-			REX::INFO("Spoiled food with no rads of its own gives them through {:s} [{:08X}], the rads effect most food that spoils has.",
-				RE::TESFullName::GetFullName(*table->foodRads), table->foodRads->formID);
+			Note(LogPart::kRads,
+				std::format("Spoiled food with no rads of its own gives them through {:s} [{:08X}], the rads effect most food that spoils has.",
+					RE::TESFullName::GetFullName(*table->foodRads), table->foodRads->formID));
 		} else {
-			REX::INFO("No food that spoils gives rads, so spoiled food adds its rads as they are.");
+			Note(LogPart::kRads, "No food that spoils gives rads, so spoiled food adds its rads as they are.");
 		}
 		g_table.Publish(std::move(table));
 	}

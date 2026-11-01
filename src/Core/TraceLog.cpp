@@ -88,6 +88,7 @@ namespace TraceLog
 		File g_game;
 		File g_ui;
 		File g_npc;
+		File g_food;
 
 		// Whether lines go through, set by Switch under the lock.
 		std::mutex        g_switchLock;
@@ -100,6 +101,8 @@ namespace TraceLog
 				return g_ui;
 			case detail::Target::kNpc:
 				return g_npc;
+			case detail::Target::kFood:
+				return g_food;
 			default:
 				return g_game;
 			}
@@ -203,7 +206,7 @@ namespace TraceLog
 		}
 
 		// Opens one file beside NEC.log by replacing its extension:
-		// NEC.trace.log, NEC.ui.trace.log, NEC.npc.trace.log.
+		// NEC.trace.log, NEC.ui.trace.log, NEC.npc.trace.log, NEC.food.trace.log.
 		std::shared_ptr<spdlog::logger> OpenFile(std::filesystem::path a_path, const char* a_extension, const char* a_name, std::size_t a_maxSize)
 		{
 			a_path.replace_extension(a_extension);
@@ -243,7 +246,7 @@ namespace TraceLog
 	void Switch(bool a_on)
 	{
 		const std::scoped_lock l{ g_switchLock };
-		if (a_on && !g_game.logger && !g_ui.logger && !g_npc.logger) {
+		if (a_on && !g_game.logger && !g_ui.logger && !g_npc.logger && !g_food.logger) {
 			const auto path = LogFiles::MainFile();
 			if (path.empty()) {
 				REX::WARN("No main log file to sit beside, so there are no bug report logs this session.");
@@ -252,10 +255,11 @@ namespace TraceLog
 			g_game.logger = OpenFile(path, "trace.log", "trace", LogFiles::GAME_TRACE_SIZE);
 			g_ui.logger = OpenFile(path, "ui.trace.log", "ui trace", LogFiles::UI_TRACE_SIZE);
 			g_npc.logger = OpenFile(path, "npc.trace.log", "npc trace", LogFiles::NPC_TRACE_SIZE);
+			g_food.logger = OpenFile(path, "food.trace.log", "food trace", LogFiles::FOOD_TRACE_SIZE);
 		}
 		// Released after the loggers are in place, so a thread that reads the
 		// gate open finds them.
-		g_open.store(a_on && (g_game.logger || g_ui.logger || g_npc.logger), std::memory_order_release);
+		g_open.store(a_on && (g_game.logger || g_ui.logger || g_npc.logger || g_food.logger), std::memory_order_release);
 	}
 
 	bool IsOpen()

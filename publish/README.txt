@@ -154,7 +154,8 @@ LITTLE EXTRAS
   fills, and spoiled food still gets that minimum. Cooking stations won't take
   it, and a chemistry station turns it into Fertilizer. With worn loot on, food
   you find is already partly spoiled, while food you buy, cook, harvest or get
-  as a reward starts fresh. NEC.food.log, beside NEC.log, names every food and
+  as a reward starts fresh. NEC.food.log, beside NEC.log, shows the food
+  settings in force, what each food and fridge file does, and every food with
   the kind NEC gave it.
 * MCM's Little extras page turns food spoiling on and sets how long raw and
   cooked food stay fresh, how much coolers and fridges slow it down, how much
@@ -162,9 +163,9 @@ LITTLE EXTRAS
   in Survival (Spoiled food healing and Spoiled food hunger, from 0 to 100% of
   the fresh food's), its extra rads (Spoiled food rads, from 0 to 5, where 1
   is 15 for meat and 5 for other food) and whether the fridge icon shows.
-* 6 loading screen tips on wear, repairs, broken gear, jams and loot, in
-  the vanilla style and as likely to show as any ordinary loading
-  screen. A tip about a feature you switch off never shows.
+* 7 loading screen tips on wear, repairs, broken gear, jams, loot and food
+  spoiling, in the vanilla style and as likely to show as any ordinary
+  loading screen. A tip about a feature you switch off never shows.
 * Vanilla fix: the inspect screen at a trader shows the right price for the
   side the item is on.
 * Vanilla fix: a workbench confirmation box with a long list of components
@@ -232,7 +233,7 @@ FO4Edit shows it. Both take the exclusion list's line form.
   ; Fridge\MyKitchen.ini
   MyKitchenMod.esp|000803    ; MyKitchen_Freezer01
 
-NEC.log lists what each file sets and any line it skips. NEC ships
+NEC.food.log lists what each file sets and any line it skips. NEC ships
 Fridge\NEC_Default.ini with the vanilla coolers and unbroken fridges.
 
 REQUIREMENTS
@@ -291,8 +292,9 @@ For anything else, share NEC's logs:
        bTraceLogs=true
 2. Play until the bug happens again.
 3. Open the folder Documents\My Games\Fallout4\F4SE and share these files:
-   * NEC.log, NEC.trace.log, NEC.ui.trace.log and NEC.npc.trace.log.
-   * If the game crashed and you started it again, also the 4 files with a
+   * NEC.log, NEC.trace.log, NEC.ui.trace.log, NEC.npc.trace.log and
+     NEC.food.trace.log, and NEC.food.log with food spoiling on.
+   * If the game crashed and you started it again, also the 5 files with a
      1 in the name, like NEC.1.log. They are from the game that crashed.
      NEC keeps your last 10 games this way, and a higher number is older.
    * The crash log, if the game crashed, like

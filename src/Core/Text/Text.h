@@ -124,14 +124,15 @@ namespace Text
 	[[nodiscard]] std::string SpoiledFood();
 
 	// The tips the loading screen shows now and then, on wear, the bench, a
-	// trader's repairs, broken gear, jams and loot. See LoadingTips.h. The
-	// bench tip tells of the mod lock only where a_modifyFloor is at full.
+	// trader's repairs, broken gear, jams, loot and food. See LoadingTips.h.
+	// The bench tip tells of the mod lock only where a_modifyFloor is at full.
 	[[nodiscard]] std::string WearTip();
 	[[nodiscard]] std::string BenchTip(std::uint32_t a_modifyFloor);
 	[[nodiscard]] std::string TraderTip();
 	[[nodiscard]] std::string BrokenTip();
 	[[nodiscard]] std::string JamTip();
 	[[nodiscard]] std::string LootTip();
+	[[nodiscard]] std::string FoodTip();
 
 	// What a help line's id adds to its setting's key on the MCM page.
 	inline constexpr std::string_view MENU_HELP = ".help";

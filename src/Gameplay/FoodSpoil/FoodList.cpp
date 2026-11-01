@@ -2,14 +2,12 @@
 
 #include "Core/IniText.h"
 #include "Core/ListFiles.h"
-#include "Core/LogFiles.h"
+#include "Gameplay/FoodSpoil/Food.h"
 
 #include <algorithm>
 #include <array>
 #include <cstddef>
 #include <format>
-#include <fstream>
-#include <ios>
 #include <string>
 #include <string_view>
 #include <unordered_map>
@@ -35,7 +33,12 @@ namespace FoodSpoil
 		// The words
 		// -------------------------------------------------------------------
 
-		constexpr ListFiles::List LIST{ "Food", "keeps every food's kind as the game data gives it", "kind" };
+		void Say(const std::string& a_line)
+		{
+			Note(LogPart::kFoodFiles, a_line);
+		}
+
+		constexpr ListFiles::List LIST{ "Food", "keeps every food's kind as the game data gives it", "kind", Say };
 
 		struct Word
 		{
@@ -43,7 +46,7 @@ namespace FoodSpoil
 			Kind             kind;
 		};
 
-		// In the order NEC.log counts them.
+		// In the order NEC.food.log counts them.
 		constexpr Word WORDS[]{
 			{ "raw", Kind::kRaw },
 			{ "crop", Kind::kCrop },
@@ -77,7 +80,7 @@ namespace FoodSpoil
 			}
 		}
 
-		// "Food/MyFood.ini sets 2 foods: 1 raw and 1 that never spoils."
+		// "Food\MyFood.ini sets 2 foods: 1 raw and 1 that never spoils."
 		void Report(std::string_view a_file, const std::array<std::size_t, std::size(WORDS)>& a_counts)
 		{
 			std::vector<std::string> parts;
@@ -92,7 +95,7 @@ namespace FoodSpoil
 			for (std::size_t i = 0; i < parts.size(); i++) {
 				text += (i == 0 ? ": " : i + 1 == parts.size() ? " and " : ", ") + parts[i];
 			}
-			REX::INFO("{:s} sets {:d} {:s}{:s}.", a_file, total, total == 1 ? "food" : "foods", text);
+			NoteFile(LogPart::kFoodFiles, std::format("{:s} sets {:d} {:s}{:s}.", a_file, total, total == 1 ? "food" : "foods", text));
 		}
 
 		// -------------------------------------------------------------------
@@ -114,7 +117,7 @@ namespace FoodSpoil
 			std::array<std::size_t, std::size(WORDS)>  counts{};
 		};
 
-		// 1 line into a_reading, said in NEC.log.
+		// 1 line into a_reading, said in NEC.food.log.
 		void Take(const ListFiles::Line& a_line, ListFiles::Faults& a_faults, Reading& a_reading)
 		{
 			const auto* word = WordOf(a_line.word);
@@ -127,7 +130,7 @@ namespace FoodSpoil
 			const auto name = RE::TESFullName::GetFullName(a_line.form);
 			const auto food = a_reading.kinds.find(id);
 			if (food == a_reading.kinds.end()) {
-				REX::INFO("{:s} line {:d}: {:s} [{:08X}] is not food, so NEC skips it.", a_line.file, a_line.number, name, id);
+				Say(std::format("{:s} line {:d}: {:s} [{:08X}] is not food, so NEC skips it.", a_line.file, a_line.number, name, id));
 				return;
 			}
 			const auto [first, added] = a_reading.firsts.try_emplace(id, std::string{ a_line.file }, a_line.number);
@@ -135,7 +138,7 @@ namespace FoodSpoil
 				const auto& kept = first->second;
 				const auto  where = kept.file == a_line.file ? std::format("line {:d}", kept.line) :
 				                                               std::format("{:s} line {:d}", kept.file, kept.line);
-				REX::INFO("{:s} line {:d}: {:s} [{:08X}] is listed again, so NEC keeps {:s}.", a_line.file, a_line.number, name, id, where);
+				Say(std::format("{:s} line {:d}: {:s} [{:08X}] is listed again, so NEC keeps {:s}.", a_line.file, a_line.number, name, id, where));
 				return;
 			}
 			food->second = { word->kind, Why::kList, std::string{ a_line.file } };
@@ -143,14 +146,13 @@ namespace FoodSpoil
 		}
 
 		// -------------------------------------------------------------------
-		// NEC.food.log
+		// NEC.food.log's foods
 		// -------------------------------------------------------------------
 
-		constexpr std::string_view FOOD_LOG = "NEC.food.log";
-
-		constexpr std::string_view FOOD_LOG_HEAD =
-			"; Every food and its kind, as a food list line. Copy a line into a file in\n"
-			"; Data\\F4SE\\Plugins\\NEC\\Food to change its kind.\n";
+		constexpr std::string_view FOODS_HEAD[]{
+			"; Every food and its kind, as a food list line. Copy a line into a file in",
+			"; Data\\F4SE\\Plugins\\NEC\\Food to change its kind.",
+		};
 
 		// A kind's word with the spaces after it, so the comments line up:
 		// never spoils and 3 spaces.
@@ -171,12 +173,7 @@ namespace FoodSpoil
 				case Why::kDiseaseRisk:
 					return "a disease risk";
 				case Why::kList:
-					{
-						// In Windows' spelling, as the head names the folder.
-						auto file = a_food.list;
-						std::ranges::replace(file, '/', '\\');
-						return "set by " + file;
-					}
+					return "set by " + a_food.list;
 				default:
 					return "none of the above";
 			}
@@ -202,7 +199,7 @@ namespace FoodSpoil
 			const auto local = plugin->IsLight() ? a_id & 0xFFF : a_id & 0xFFFFFF;
 			const auto name = RE::TESFullName::GetFullName(*form);
 			const auto why = WhyOf(a_food);
-			return std::format("{:s}|{:06X} = {:<{}s}; {:s}\n", plugin->GetFilename(), local, WordOf(a_food.kind), WORD_WIDTH,
+			return std::format("{:s}|{:06X} = {:<{}s}; {:s}", plugin->GetFilename(), local, WordOf(a_food.kind), WORD_WIDTH,
 				name.empty() ? why : std::format("{:s}, {:s}", name, why));
 		}
 	}
@@ -217,14 +214,8 @@ namespace FoodSpoil
 			});
 	}
 
-	bool WriteFoodLog(const std::unordered_map<RE::TESFormID, Sorted>& a_kinds)
+	void NoteFoods(const std::unordered_map<RE::TESFormID, Sorted>& a_kinds)
 	{
-		auto path = LogFiles::MainFile();
-		if (path.empty()) {
-			return false;
-		}
-		path.replace_filename(FOOD_LOG);
-
 		std::vector<const RE::TESFile*> plugins;
 		for (const auto* plugin : g_dataHandler->files) {
 			if (plugin && plugin->IsActive()) {
@@ -237,17 +228,13 @@ namespace FoodSpoil
 		}
 		std::ranges::sort(ids);
 
-		std::string text{ FOOD_LOG_HEAD };
+		for (const auto line : FOODS_HEAD) {
+			Note(LogPart::kFoods, line);
+		}
 		for (const auto id : ids) {
-			text += LineOf(id, a_kinds.at(id), plugins);
+			if (const auto line = LineOf(id, a_kinds.at(id), plugins); !line.empty()) {
+				Note(LogPart::kFoods, line);
+			}
 		}
-		std::ofstream file{ path, std::ios::binary | std::ios::trunc };
-		file.write(text.data(), static_cast<std::streamsize>(text.size()));
-		file.close();
-		if (file.fail()) {
-			REX::WARN("Could not write {:s}.", LogFiles::Shown(path));
-			return false;
-		}
-		return true;
 	}
 }

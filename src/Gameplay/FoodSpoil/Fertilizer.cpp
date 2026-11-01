@@ -382,20 +382,19 @@ namespace FoodSpoil
 		_Call = CallPatch::PatchSlot(menu, { 0x01, 0x01 }, CallHk, "fertilizer calls", Part::kFertilizerNeeds).value_or(0);
 	}
 
-	void SayFertilizer()
+	std::string FertilizerSentence()
 	{
 		if (!g_fertilizer) {
-			return;
+			return {};
 		}
 		const auto* item = FertilizerItem();
 		if (!item) {
-			REX::WARN("Fallout4.esm's c_Fertilizer has no scrap item, so chemistry stations make no Fertilizer.");
-			return;
+			return "Chemistry stations make no Fertilizer, since Fallout4.esm's c_Fertilizer has no scrap item.";
 		}
+		const auto name = RE::TESFullName::GetFullName(*item);
 		if (const auto needed = Needed(); needed > 0) {
-			REX::INFO("Chemistry stations make {:s} [{:08X}] from {:d} spoiled food.", RE::TESFullName::GetFullName(*item), item->formID, needed);
-		} else {
-			REX::INFO("Chemistry stations make no {:s}, since iSpoiledPerFertilizer is 0.", RE::TESFullName::GetFullName(*item));
+			return std::format("{:d} spoiled food {:s} 1 {:s}.", needed, needed == 1 ? "makes" : "make", name);
 		}
+		return std::format("Spoiled food makes no {:s}.", name);
 	}
 }

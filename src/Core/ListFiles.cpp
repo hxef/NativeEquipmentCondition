@@ -34,8 +34,27 @@ namespace ListFiles
 		// A bigger file is no list.
 		constexpr std::uintmax_t MOST_BYTES = 1024 * 1024;
 
-		// The warnings NEC.log writes for 1 file. The rest are only counted.
+		// The warnings the log writes for 1 file. The rest are only counted.
 		constexpr std::size_t MOST_FAULTS = 10;
+
+		// A line about a_list's files, into its own log or else NEC.log.
+		void Warn(const List& a_list, const std::string& a_line)
+		{
+			if (a_list.say) {
+				a_list.say(a_line);
+			} else {
+				REX::WARN("{:s}", a_line);
+			}
+		}
+
+		void Info(const List& a_list, const std::string& a_line)
+		{
+			if (a_list.say) {
+				a_list.say(a_line);
+			} else {
+				REX::INFO("{:s}", a_line);
+			}
+		}
 
 		// The mark Notepad puts before a file saved as UTF-8, skipped.
 		constexpr std::string_view BOM = "\xEF\xBB\xBF";
@@ -57,7 +76,7 @@ namespace ListFiles
 		{
 			std::filesystem::path path;
 			std::wstring          order;  // its name in lower case
-			std::string           name;   // <folder>/<its name> in UTF-8, for NEC.log
+			std::string           name;   // <folder>/<its name> in UTF-8, for the log
 		};
 
 		File FileOf(const List& a_list, const std::filesystem::path& a_path)
@@ -68,7 +87,7 @@ namespace ListFiles
 			if (!REX::UTF16_TO_UTF8(wide, text)) {
 				text = "?";
 			}
-			return { a_path, Lowered(wide), std::format("{:s}/{:s}", a_list.folder, text) };
+			return { a_path, Lowered(wide), std::format("{:s}{:c}{:s}", a_list.folder, a_list.say ? '\\' : '/', text) };
 		}
 
 		// The files in the folder in name order, in any case, and none when
@@ -95,32 +114,32 @@ namespace ListFiles
 			// The error's number, since its message comes in the system's
 			// language and NEC.log is in English.
 			if (ec) {
-				REX::WARN("{:s} could not be read (error {:d}), so NEC {:s}.", a_list.folder, ec.value(), a_list.unread);
+				Warn(a_list, std::format("{:s} could not be read (error {:d}), so NEC {:s}.", a_list.folder, ec.value(), a_list.unread));
 				return {};
 			}
 			std::ranges::sort(files, {}, &File::order);
 			return files;
 		}
 
-		// a_file's text without its byte order mark, or nothing once NEC.log
+		// a_file's text without its byte order mark, or nothing once the log
 		// says why it skips the file.
-		std::optional<std::string> TextOf(const File& a_file)
+		std::optional<std::string> TextOf(const List& a_list, const File& a_file)
 		{
 			std::error_code ec;
 			const auto      size = std::filesystem::file_size(a_file.path, ec);
 			if (!ec && size > MOST_BYTES) {
-				REX::WARN("{:s} is bigger than 1 MB, so NEC skips it.", a_file.name);
+				Warn(a_list, std::format("{:s} is bigger than 1 MB, so NEC skips it.", a_file.name));
 				return std::nullopt;
 			}
 			std::string   bytes(ec ? 0 : static_cast<std::size_t>(size), '\0');
 			std::ifstream in{ a_file.path, std::ios::binary };
 			if (ec || !in || !in.read(bytes.data(), static_cast<std::streamsize>(bytes.size()))) {
-				REX::WARN("{:s} could not be read, so NEC skips it.", a_file.name);
+				Warn(a_list, std::format("{:s} could not be read, so NEC skips it.", a_file.name));
 				return std::nullopt;
 			}
 			// A file saved as UTF-16 holds a NUL byte in every ASCII letter.
 			if (bytes.find('\0') != std::string::npos) {
-				REX::WARN("{:s} is not plain text, as a file saved as UTF-16 is, so NEC skips it. Save it as UTF-8.", a_file.name);
+				Warn(a_list, std::format("{:s} is not plain text, as a file saved as UTF-16 is, so NEC skips it. Save it as UTF-8.", a_file.name));
 				return std::nullopt;
 			}
 			if (bytes.starts_with(BOM)) {
@@ -218,7 +237,7 @@ namespace ListFiles
 		void ReadLines(const List& a_list, const File& a_file, std::string_view a_text,
 			const std::function<void(const Line&, Faults&)>& a_take)
 		{
-			Faults                                                faults;
+			Faults                                                faults{ a_list };
 			std::vector<std::pair<std::string_view, std::size_t>> missing;
 			const auto                                            lines = IniText::Lines(a_text);
 			for (std::size_t i = 0; i < lines.size(); i++) {
@@ -239,11 +258,11 @@ namespace ListFiles
 			}
 
 			if (faults.Count() > MOST_FAULTS) {
-				REX::WARN("{:s} has {:d} more faults, which NEC.log leaves out.", a_file.name, faults.Count() - MOST_FAULTS);
+				Warn(a_list, std::format("{:s} has {:d} more faults, which the log leaves out.", a_file.name, faults.Count() - MOST_FAULTS));
 			}
 			for (const auto& [plugin, count] : missing) {
-				REX::INFO("{:s}: {:s} is not in the load order, so its {:d} {:s} nothing.", a_file.name, plugin, count,
-					count == 1 ? "line changes" : "lines change");
+				Info(a_list, std::format("{:s}: {:s} is not in the load order, so its {:d} {:s} nothing.", a_file.name, plugin, count,
+					count == 1 ? "line changes" : "lines change"));
 			}
 		}
 	}
@@ -251,7 +270,7 @@ namespace ListFiles
 	void Faults::Add(const std::string& a_line)
 	{
 		if (_count++ < MOST_FAULTS) {
-			REX::WARN("{:s}", a_line);
+			Warn(_list, a_line);
 		}
 	}
 
@@ -263,8 +282,8 @@ namespace ListFiles
 		}
 		for (const auto& file : Files(a_list)) {
 			if (Lowered(file.path.extension().native()) != L".ini") {
-				REX::INFO("{:s} is not an .ini file, so NEC does not read it.", file.name);
-			} else if (const auto text = TextOf(file)) {
+				Info(a_list, std::format("{:s} is not an .ini file, so NEC does not read it.", file.name));
+			} else if (const auto text = TextOf(a_list, file)) {
 				ReadLines(a_list, file, *text, a_line);
 				a_done(file.name);
 			}

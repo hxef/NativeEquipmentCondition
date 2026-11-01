@@ -1,12 +1,13 @@
 #include "Gameplay/FoodSpoil/Kinds.h"
 
-#include "Core/Settings.h"
 #include "Core/Snapshot.h"
+#include "Gameplay/FoodSpoil/Food.h"
 
 #include <algorithm>
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <format>
 #include <memory>
 #include <unordered_map>
 #include <unordered_set>
@@ -157,8 +158,8 @@ namespace FoodSpoil
 		}
 
 		// "Food spoiling sorts 280 foods: 42 raw, 39 crops, 47 cooked and 152
-		// that never spoil.", and "The list is in NEC.food.log." when a_listed.
-		void Report(const std::unordered_map<RE::TESFormID, Sorted>& a_kinds, bool a_listed)
+		// that never spoil."
+		void Report(const std::unordered_map<RE::TESFormID, Sorted>& a_kinds)
 		{
 			std::array<std::size_t, 4> counts{};
 			for (const auto& [id, food] : a_kinds) {
@@ -166,10 +167,9 @@ namespace FoodSpoil
 			}
 			const auto crops = counts[static_cast<std::size_t>(Kind::kCrop)];
 			const auto never = counts[static_cast<std::size_t>(Kind::kNever)];
-			REX::INFO("Food spoiling sorts {:d} {:s}: {:d} raw, {:d} {:s}, {:d} cooked and {:d} that never {:s}.{:s}", a_kinds.size(),
-				a_kinds.size() == 1 ? "food" : "foods", counts[static_cast<std::size_t>(Kind::kRaw)], crops,
-				crops == 1 ? "crop" : "crops", counts[static_cast<std::size_t>(Kind::kCooked)], never,
-				never == 1 ? "spoils" : "spoil", a_listed ? " The list is in NEC.food.log." : "");
+			Note(LogPart::kFoods, std::format("Food spoiling sorts {:d} {:s}: {:d} raw, {:d} {:s}, {:d} cooked and {:d} that never {:s}.",
+				a_kinds.size(), a_kinds.size() == 1 ? "food" : "foods", counts[static_cast<std::size_t>(Kind::kRaw)], crops,
+				crops == 1 ? "crop" : "crops", counts[static_cast<std::size_t>(Kind::kCooked)], never, never == 1 ? "spoils" : "spoil"));
 		}
 
 		// -------------------------------------------------------------------
@@ -189,7 +189,8 @@ namespace FoodSpoil
 		}
 		auto kinds = Sort();
 		ReadFoodList(kinds);
-		Report(kinds, Settings::bFoodSpoils.GetValue() && WriteFoodLog(kinds));
+		Report(kinds);
+		NoteFoods(kinds);
 
 		Table table;
 		for (const auto& [id, food] : kinds) {

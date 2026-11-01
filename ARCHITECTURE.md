@@ -136,8 +136,9 @@ src/
       FoodSpoil.h/.cpp       food that spoils with time, its 4 parts, and food carried before it was on
       Food.h                 what the folder's files share
       Kinds.h/.cpp           each food's kind from the game data: raw, crop, cooked or never spoils
-      FoodList.cpp           the kinds a mod gives its own food, from NEC/Food, and NEC.food.log, every food as a line of that list
+      FoodList.cpp           the kinds a mod gives its own food, from NEC/Food, and every food as a line of that list
       FridgeList.cpp         the containers that keep food as a fridge does, from NEC/Fridge
+      FoodLog.cpp            NEC.food.log: the settings in force, what each list file does, and every food's kind
       Fridge.cpp             food going into or out of a fridge keeps its days spent at the fridge speed
       Stamp.h/.cpp           the day food started to spoil, how fresh it is, found food's start, and the door that stamps it
       Order.cpp              the stack closest to spoiling first

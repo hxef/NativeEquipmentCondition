@@ -38,6 +38,11 @@ namespace Runtime
 		return Short(g_game);
 	}
 
+	std::string F4seVersion()
+	{
+		return Short(g_f4se);
+	}
+
 	std::string Line()
 	{
 		if (RE::GetRuntime() == RE::Runtime::kUnknown) {

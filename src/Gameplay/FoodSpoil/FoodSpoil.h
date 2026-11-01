@@ -24,7 +24,8 @@
 // Fertilizer.cpp turns it into fertilizer at a chemistry station.
 //
 // Kinds.cpp sorts the food, FoodList.cpp reads a mod's kinds on top, and
-// FridgeList.cpp reads the fridge list. Food.h is what they share.
+// FridgeList.cpp reads the fridge list. FoodLog.cpp writes what they found
+// to NEC.food.log. Food.h is what they share.
 //
 // Eating, Survival's hunger, the station rows and the Fertilizer row are 4
 // parts of their own, see Core/Parts.h. Another mod on a place of one turns
@@ -36,21 +37,23 @@ namespace FoodSpoil
 
 	// Sorts every food and reads the fridge list, whatever the switch says,
 	// so food spoils as soon as the switch is turned on in play. Starts
-	// listening for deaths and menus.
+	// listening for deaths and menus. Writes NEC.food.log while the switch
+	// is on, see FoodLog.cpp.
 	void Load();
 
-	// Forgets the kinds and the fridges.
+	// Forgets the kinds, the fridges and what NEC.food.log says.
 	void Unload();
 
 	// Stamps the food the player and every loaded companion carry with no
 	// stamp yet, so it starts fresh now. Called on the engine's task queue as
 	// the switch is turned on, after SpawnCondition::CanKeepCarried. Takes
 	// each inventory lock and waits for it, so the caller holds none of
-	// the engine's locks.
+	// the engine's locks. Writes NEC.food.log again first.
 	void StampCarried();
 
 	// The same on the engine's task queue once a save has loaded, for food
-	// carried while the switch was off or before NEC had food spoiling.
+	// carried while the switch was off or before NEC had food spoiling. Writes
+	// NEC.food.log only when it was not written since the data load.
 	void StampCarriedAfterLoad();
 
 	// Whether a_object spoils now: the switch is on and its kind spoils.

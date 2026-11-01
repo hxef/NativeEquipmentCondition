@@ -6,6 +6,8 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <string>
+#include <string_view>
 #include <vector>
 
 // What the folder's files share. Private to this folder.
@@ -132,14 +134,42 @@ namespace FoodSpoil
 	// together.
 	void InstallFertilizer(Part a_group);
 
-	// Says in NEC.log what the Fertilizer row makes, once game data has
-	// loaded and while its places are in. Keeps nothing.
-	void SayFertilizer();
+	// What the Fertilizer row makes, as a sentence for NEC.food.log, once
+	// game data has loaded. Empty while its places are out.
+	[[nodiscard]] std::string FertilizerSentence();
 
 	// Puts the stamped stack of a_item with the earliest day first, in
 	// Order.cpp. The caller holds the inventory's write lock. Returns whether
 	// a stack moved.
 	bool OrderStacks(RE::BGSInventoryItem& a_item);
+
+	// NEC.food.log, in FoodLog.cpp: what food spoiling does in this game.
+	// The lists add their lines as they load, into these parts, and
+	// WriteFoodLog writes the parts under the settings in force.
+	enum class LogPart : std::uint8_t
+	{
+		kFridges,
+		kFoodFiles,
+		kRads,
+		kFoods,
+	};
+
+	// 1 line into a_part.
+	void Note(LogPart a_part, std::string_view a_line);
+
+	// A file's summary into a_part, ahead of the lines Note gave it since
+	// the last summary, so the file's skipped lines follow it.
+	void NoteFile(LogPart a_part, std::string_view a_line);
+
+	// Writes NEC.food.log whole beside NEC.log, and returns whether it did.
+	// On the engine's thread, as the lists load there.
+	bool WriteFoodLog();
+
+	// Whether WriteFoodLog wrote the file since the lists last loaded.
+	[[nodiscard]] bool FoodLogWritten();
+
+	// Forgets every part, before the lists load again.
+	void ForgetFoodLog();
 
 	// Has the Pip-Boy list a_food again with its CND as of now, through a
 	// write that changes nothing on the player's 1st stamped stack of it, in

@@ -68,6 +68,8 @@ namespace LoadingTips
 			{ .words = &Text::JamTip, .picture = 0x001F6DB9, .on = &Settings::bJam },
 			// CreatureRaider, a raider.
 			{ .words = &Text::LootTip, .picture = 0x001CEDB8, .on = &Settings::bSpawnCondition },
+			// GeneralGameplay10CookingStation, a cooking station.
+			{ .words = &Text::FoodTip, .picture = 0x001F9608, .on = &Settings::bFoodSpoils },
 		};
 
 		// The numbers the tips take. FF numbers are the engine's dynamic ones,

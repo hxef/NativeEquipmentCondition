@@ -84,10 +84,10 @@ Your weapons and armor [b]wear down as you use them[/b], the way they did in Fal
 [*]The card of a spoiled food shows its own healing and rads. Eating it heals only 10% as much and gives more rads, which Lead Belly cuts as it cuts the food's own. In Survival it heals nothing and fills hunger or thirst only a tenth as much as the fresh food would. Survival has a minimum that every meal fills, and spoiled food still gets that minimum.
 [*]With worn loot on, food you find is already partly spoiled, while food you buy, cook, harvest or get as a reward starts fresh.
 [*]MCM's Little extras page sets how long raw and cooked food stay fresh, how much coolers and fridges slow it down, how much spoiled food makes 1 Fertilizer, its healing, its hunger in Survival and its extra rads, and whether the fridge icon shows.
-[*]NEC.food.log, beside NEC.log, names every food and the kind NEC gave it.
+[*]NEC.food.log, beside NEC.log, shows the food settings in force, what each food and fridge file does, and every food with the kind NEC gave it.
 [/list]
 [/spoiler]
-[*]6 loading screen tips on wear, repairs, broken gear, jams and loot, in the vanilla style and as likely to show as any ordinary loading screen. A tip about a feature you switch off never shows.
+[*]7 loading screen tips on wear, repairs, broken gear, jams, loot and food spoiling, in the vanilla style and as likely to show as any ordinary loading screen. A tip about a feature you switch off never shows.
 [*]Vanilla fix: the inspect screen at a trader shows the right price for the side the item is on.
 [*]Vanilla fix: a workbench confirmation box with a long list of components shows more rows and scrolls with the mouse wheel, the arrow keys, the D-pad and W and S.
 [*]A console command for testing: [font=Courier New]srm[/font] brings the weapon in hand back to full, and [font=Courier New]srm 25[/font] sets it to 25%, any number from 0 to 100. Add armor, as in [font=Courier New]srm armor[/font] or [font=Courier New]srm 25 armor[/font], for every piece you have on that wears.
@@ -132,7 +132,7 @@ MyFoodMod.esp|000802 = never spoils
 ; Fridge\MyKitchen.ini
 MyKitchenMod.esp|000803    ; MyKitchen_Freezer01[/code]
 
-NEC.log lists what each file sets and any line it skips. NEC ships Fridge\NEC_Default.ini with the vanilla coolers and unbroken fridges.[/spoiler]
+NEC.food.log lists what each file sets and any line it skips. NEC ships Fridge\NEC_Default.ini with the vanilla coolers and unbroken fridges.[/spoiler]
 
 [size=3][b][font=Georgia][color=#1AFF80]Requirements[/color][/font][/b][/size]
 
@@ -275,8 +275,8 @@ bTraceLogs=true[/code]
 [*]Play until the bug happens again.
 [*]Open the folder Documents\My Games\Fallout4\F4SE and share these files:
 [list]
-[*]NEC.log, NEC.trace.log, NEC.ui.trace.log and NEC.npc.trace.log.
-[*]If the game crashed and you started it again, also the 4 files with a 1 in the name, like NEC.1.log. They are from the game that crashed. NEC keeps your last 10 games this way, and a higher number is older.
+[*]NEC.log, NEC.trace.log, NEC.ui.trace.log, NEC.npc.trace.log and NEC.food.trace.log, and NEC.food.log with food spoiling on.
+[*]If the game crashed and you started it again, also the 5 files with a 1 in the name, like NEC.1.log. They are from the game that crashed. NEC keeps your last 10 games this way, and a higher number is older.
 [*]The crash log, if the game crashed, like crash-2026-10-01-21-15-31.log from [url=https://www.nexusmods.com/fallout4/mods/84214]Addictol[/url]
 [/list]
 [*]Say what you did right before it went wrong, and post it all on the Bugs tab here or [url=https://github.com/hxef/NativeEquipmentCondition/issues]as an issue on GitHub[/url].

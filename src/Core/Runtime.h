@@ -23,6 +23,9 @@ namespace Runtime
 	// The game version as text, such as 1.11.191.
 	[[nodiscard]] std::string GameVersion();
 
+	// The F4SE version as text, such as 0.7.9.
+	[[nodiscard]] std::string F4seVersion();
+
 	// NEC.log's line about the game and F4SE: "Game version 1.11.240 with
 	// F4SE 0.7.9.", with "(OG)" after the version on 1.10.163. On a game
 	// the runtime check does not know, it also says NEC stays off.

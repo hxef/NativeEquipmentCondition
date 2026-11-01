@@ -35,4 +35,9 @@ namespace Text
 	{
 		return Pick(TIP_LOOT);
 	}
+
+	std::string FoodTip()
+	{
+		return Pick(TIP_FOOD);
+	}
 }

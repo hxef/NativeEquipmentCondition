@@ -44,7 +44,7 @@ namespace FoodSpoil
 	};
 
 	// A food's kind, why it has it, and the food list file that set it, as
-	// NEC.log names it, when one did.
+	// NEC.food.log names it, when one did.
 	struct Sorted
 	{
 		Kind        kind;
@@ -52,8 +52,8 @@ namespace FoodSpoil
 		std::string list{};
 	};
 
-	// Sorts every food and logs how many of each kind. Reads the food list,
-	// and writes NEC.food.log while food spoiling is on.
+	// Sorts every food and reads the food list, and gives NEC.food.log how
+	// many of each kind and every food, see Food.h.
 	void LoadKinds();
 
 	// Forgets every kind, so no food spoils until LoadKinds runs.
@@ -64,11 +64,11 @@ namespace FoodSpoil
 	[[nodiscard]] Kind KindOf(const RE::TESForm& a_form);
 
 	// Reads the food list into a_kinds, which holds the kind of every food
-	// by the rules, and says in NEC.log what each file sets. A form a_kinds
-	// lacks is not food. In FoodList.cpp.
+	// by the rules, and says in NEC.food.log what each file sets. A form
+	// a_kinds lacks is not food. In FoodList.cpp.
 	void ReadFoodList(std::unordered_map<RE::TESFormID, Sorted>& a_kinds);
 
-	// Writes every food of a_kinds to NEC.food.log beside NEC.log, 1 food
-	// list line each, and returns whether it did. In FoodList.cpp.
-	bool WriteFoodLog(const std::unordered_map<RE::TESFormID, Sorted>& a_kinds);
+	// Gives NEC.food.log every food of a_kinds, 1 food list line each. In
+	// FoodList.cpp.
+	void NoteFoods(const std::unordered_map<RE::TESFormID, Sorted>& a_kinds);
 }

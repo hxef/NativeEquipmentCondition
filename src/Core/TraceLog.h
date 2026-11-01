@@ -8,19 +8,21 @@
 #include <string_view>
 #include <utility>
 
-// 3 more log files, for lines that arrive in floods: one per shot, per hit and
+// 4 more log files, for lines that arrive in floods: one per shot, per hit and
 // per item spawned, thousands a minute in a fight. NEC.log keeps what was
 // patched and what went wrong. The rest goes to:
 //
-//   NEC.trace.log      the player's game: shots, wear, damage, spawns
-//   NEC.ui.trace.log   the menus: what was drawn, where, from what
-//   NEC.npc.trace.log  everybody else's fighting
+//   NEC.trace.log       the player's game: shots, wear, damage, spawns
+//   NEC.ui.trace.log    the menus: what was drawn, where, from what
+//   NEC.npc.trace.log   everybody else's fighting
+//   NEC.food.trace.log  food spoiling: stacks stamped, spoiled and eaten
 //
-// All 4 sit in Documents\My Games\<save folder>\F4SE, see LogFiles.h.
-// bTraceLogs switches the 3 on together, see Settings.h. Anything that can
-// happen more than once in a session goes here, not in NEC.log. UI_TAGS decides
-// between the first 2 files. The NPC file is asked for by name through Npc
-// below, since a damage line reads the same whoever struck the blow.
+// All 5 sit in Documents\My Games\<save folder>\F4SE, see LogFiles.h.
+// bTraceLogs switches the 4 on together, see Settings.h. Anything that can
+// happen more than once in a session goes here, not in NEC.log. UI_TAGS and
+// FOOD_TAG decide between the first 2 files and the food file. The NPC file is
+// asked for by name through Npc below, since a damage line reads the same
+// whoever struck the blow.
 //
 // A file reads as blocks. A header line with a tag in capitals opens one, SHOT
 // or MELEE, with the clock time and the thread. The lines below carry a
@@ -33,15 +35,15 @@
 //
 // A line with no block open becomes a header of its own. A line names its
 // thread only when it differs from the header's. Each Mark opens a block in
-// all 3 files at once: the plugin starting, the main menu, a save loading
+// all 4 files at once: the plugin starting, the main menu, a save loading
 // and loaded, a new game, a full reset and every file loaded.
 namespace TraceLog
 {
-	// Opens the 3 files beside NEC.log when bTraceLogs is on. Call it after
+	// Opens the 4 files beside NEC.log when bTraceLogs is on. Call it after
 	// LogFiles::OpenMain, which opens NEC.log.
 	void Open();
 
-	// Lets lines through to the 3 files, or stops them. The files open the
+	// Lets lines through to the 4 files, or stops them. The files open the
 	// first time and stay open, since another thread may be part way into a
 	// line. Open calls it with bTraceLogs as the game starts.
 	void Switch(bool a_on);
@@ -62,6 +64,9 @@ namespace TraceLog
 	// because what a menu prints is often worked out in gameplay code, such as
 	// the item card's damage in HealthDamage/Card.cpp.
 	inline constexpr std::string_view UI_TAGS[]{ "menu", "cnd", "card", "price" };
+
+	// The tag whose lines go to the food file.
+	inline constexpr std::string_view FOOD_TAG = "food";
 
 	[[nodiscard]] constexpr bool IsUI(std::string_view a_tag)
 	{
@@ -85,17 +90,21 @@ namespace TraceLog
 
 	namespace detail
 	{
-		// Which of the 3 files a line goes to.
+		// Which of the 4 files a line goes to.
 		enum class Target
 		{
 			kGame,
 			kUI,
 			kNpc,
+			kFood,
 		};
 
 		// Where a tag's lines go when nobody asked for the NPC file.
 		[[nodiscard]] constexpr Target ByTag(std::string_view a_tag)
 		{
+			if (a_tag == FOOD_TAG) {
+				return Target::kFood;
+			}
 			return IsUI(a_tag) ? Target::kUI : Target::kGame;
 		}
 
@@ -171,7 +180,7 @@ namespace TraceLog
 		}
 	}
 
-	// Opens a block in all 3 files at once. Every line First wrote may come
+	// Opens a block in all 4 files at once. Every line First wrote may come
 	// again after it.
 	template <class... T>
 	void Mark(std::string_view a_tag, std::format_string<T...> a_fmt, T&&... a_args)
@@ -181,6 +190,7 @@ namespace TraceLog
 			detail::Mark(detail::Target::kGame, a_tag, text);
 			detail::Mark(detail::Target::kUI, a_tag, text);
 			detail::Mark(detail::Target::kNpc, a_tag, text);
+			detail::Mark(detail::Target::kFood, a_tag, text);
 		}
 	}
 

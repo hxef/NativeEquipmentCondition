@@ -44,6 +44,12 @@ namespace FoodSpoil
 			if (!Settings::bFoodSpoils.GetValue() || !today) {
 				return;
 			}
+			// Turned on in play, NEC.food.log is written again with the
+			// settings of the moment. Turned on at the main menu, it is
+			// written at the first load.
+			if (!a_afterLoad || !FoodLogWritten()) {
+				WriteFoodLog();
+			}
 			std::uint32_t stamped = 0;
 			for (const auto& carrier : Carriers()) {
 				stamped += StampHeld(*carrier, *today, false);
@@ -66,15 +72,18 @@ namespace FoodSpoil
 
 	void Load()
 	{
+		ForgetFoodLog();
 		LoadKinds();
 		LoadRads();
 		LoadFridges();
 		WatchBodies();
 		WatchMenus();
-		if (Settings::bFoodSpoils.GetValue()) {
-			SayFertilizer();
-		} else {
+		if (!Settings::bFoodSpoils.GetValue()) {
 			REX::INFO("Food spoiling is off.");
+		} else if (WriteFoodLog()) {
+			REX::INFO("Food spoiling is on, see NEC.food.log.");
+		} else {
+			REX::INFO("Food spoiling is on.");
 		}
 	}
 
@@ -84,6 +93,7 @@ namespace FoodSpoil
 		UnloadFridges();
 		UnloadRads();
 		UnloadKinds();
+		ForgetFoodLog();
 	}
 
 	void ForgetPlay()

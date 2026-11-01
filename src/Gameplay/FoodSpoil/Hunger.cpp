@@ -17,7 +17,8 @@
 // smallest meal of each hunger level, the most 1 meal fills, Ravenous Hunger
 // and disease. Food that quenches thirst fills thirst from the same number.
 // NEC answers that 1 read with iSpoiledHunger % of the value after the player
-// ate the food spoiled, and leaves every other read vanilla.
+// ate the food spoiled, and leaves every other read vanilla. The same read
+// adds the spoiled meal's disease risk, see Sickness.cpp.
 //
 // Survival raises any value from 0 up to the smallest meal of the player's
 // hunger level, so spoiled food fills at least that meal even at 0. A value
@@ -37,6 +38,7 @@ namespace FoodSpoil
 
 		struct Note
 		{
+			const RE::TESBoundObject*             food;
 			std::int32_t                          value;
 			std::chrono::steady_clock::time_point at;
 		};
@@ -44,21 +46,22 @@ namespace FoodSpoil
 		std::mutex        g_notesLock;
 		std::vector<Note> g_notes;
 
-		// Takes the oldest note for food worth a_value, and returns whether
-		// there was one. The share is worked out from the value alone, so 2
-		// spoiled meals of equal value are alike.
-		bool TakeNote(std::int32_t a_value)
+		// Takes the oldest note for food worth a_value, and returns its food,
+		// or none when there was no note. The share is worked out from the
+		// value alone, so 2 spoiled meals of equal value are alike.
+		const RE::TESBoundObject* TakeNote(std::int32_t a_value)
 		{
 			const auto             now = std::chrono::steady_clock::now();
 			const std::scoped_lock l{ g_notesLock };
 			std::erase_if(g_notes, [&](const Note& a_note) { return now - a_note.at > NOTE_LIFE; });
 			for (auto it = g_notes.begin(); it != g_notes.end(); ++it) {
 				if (it->value == a_value) {
+					const auto* food = it->food;
 					g_notes.erase(it);
-					return true;
+					return food;
 				}
 			}
-			return false;
+			return nullptr;
 		}
 
 		// -------------------------------------------------------------------
@@ -95,14 +98,16 @@ namespace FoodSpoil
 				!InSurvivalMeal(a_frame.previousFrame)) {
 				return done;
 			}
-			const auto value = RE::BSScript::get<std::int32_t>(a_result);
-			if (!TakeNote(value)) {
+			const auto  value = RE::BSScript::get<std::int32_t>(a_result);
+			const auto* food = TakeNote(value);
+			if (!food) {
 				return done;
 			}
 			const auto share =
 				static_cast<std::int32_t>(std::lround(static_cast<float>(value) * ShareOf(Settings::iSpoiledHunger.GetValue())));
 			a_result = share;
 			TraceLog::Line("food", "Survival reads {:d} of the {:d} caps value of the spoiled food eaten", share, value);
+			AddSickness(a_vm, *a_frame.previousFrame, *food);
 			return done;
 		}
 	}
@@ -114,7 +119,7 @@ namespace FoodSpoil
 		}
 		const auto             value = static_cast<std::int32_t>(RE::TESValueForm::GetFormValue(&a_food, nullptr));
 		const std::scoped_lock l{ g_notesLock };
-		g_notes.push_back({ value, std::chrono::steady_clock::now() });
+		g_notes.push_back({ &a_food, value, std::chrono::steady_clock::now() });
 		return true;
 	}
 

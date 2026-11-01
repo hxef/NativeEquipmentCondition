@@ -281,6 +281,11 @@ namespace Settings
 	// as 0 to 5, and 1 gives 15 for raw food and 5 for the rest.
 	inline Live<float> fSpoiledRadsMult{ "Balance", "fSpoiledRadsMult", 1.0F };
 
+	// How many times the fresh food's chance of making the player sick
+	// spoiled food has in Survival, see FoodSpoil/Sickness.cpp. Counts as 1
+	// to 20. Food with no chance of its own takes the smallest any food has.
+	inline Live<std::int32_t> iSpoiledSicknessMult{ "Balance", "iSpoiledSicknessMult", 5 };
+
 	// HUD. Where the CND bars sit, how big they are drawn and when the one by
 	// the ammo counter hides. Read every frame, so a change shows at once. The
 	// 4 place numbers move a bar from its own place in units of the HUD, which

@@ -102,7 +102,7 @@ namespace
 	constexpr Piece FERTILIZER[]{ kFertilizer };
 	constexpr Piece FOOD_SIDE[]{ kFoodBite, kFoodHunger, kFoodCook, kFertilizer };
 	// What spoiled food gives comes through eating and the menus that show
-	// it, and in Survival its hunger through Survival's read too.
+	// it, and in Survival its hunger and sickness through Survival's read too.
 	constexpr Piece FOOD_BITE[]{ kFoodBite };
 	constexpr Piece FOOD_HUNGER[]{ kFoodHunger };
 	// The fridge icon beside a fridge's name rides on the loot preview's
@@ -151,6 +151,7 @@ namespace
 		{ &Settings::iSpoiledHealing, &Settings::bFoodSpoils, FOOD_BITE },
 		{ &Settings::iSpoiledHunger, &Settings::bFoodSpoils, FOOD_HUNGER, FOOD_BITE },
 		{ &Settings::fSpoiledRadsMult, &Settings::bFoodSpoils, FOOD_BITE },
+		{ &Settings::iSpoiledSicknessMult, &Settings::bFoodSpoils, FOOD_HUNGER, FOOD_BITE },
 		// Both CND bars' rows share bHudCondition, so they never run once HUD
 		// condition bars is left to another mod.
 		{ &Settings::fHudBarX, &Settings::bHudCondition, HUD_BARS },

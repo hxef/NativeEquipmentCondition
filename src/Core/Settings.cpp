@@ -76,6 +76,7 @@ namespace Settings
 			&iSpoiledHealing,
 			&iSpoiledHunger,
 			&fSpoiledRadsMult,
+			&iSpoiledSicknessMult,
 			&fHudBarX,
 			&fHudBarY,
 			&fHudBarLength,

@@ -151,18 +151,22 @@ LITTLE EXTRAS
   heals only 10% as much and gives more rads, which Lead Belly cuts as it cuts
   the food's own. In Survival it heals nothing and fills hunger or thirst only a
   tenth as much as the fresh food would. Survival has a minimum that every meal
-  fills, and spoiled food still gets that minimum. Cooking stations won't take
-  it, and a chemistry station turns it into Fertilizer. With worn loot on, food
-  you find is already partly spoiled, while food you buy, cook, harvest or get
-  as a reward starts fresh. NEC.food.log, beside NEC.log, shows the food
-  settings in force, what each food and fridge file does, and every food with
-  the kind NEC gave it.
+  fills, and spoiled food still gets that minimum. In Survival it is also 5
+  times as likely to make you sick as the fresh food, and food that never makes
+  you sick, such as cooked food, takes the smallest chance any food in your load
+  order has. Cooking stations won't take it, and a chemistry station turns it
+  into Fertilizer. With worn loot on, food you find is already partly spoiled,
+  while food you buy, cook, harvest or get as a reward starts fresh.
+  NEC.food.log, beside NEC.log, shows the food settings in force, what each food
+  and fridge file does, and every food with the kind NEC gave it.
 * MCM's Little extras page turns food spoiling on and sets how long raw and
   cooked food stay fresh, how much coolers and fridges slow it down, how much
   spoiled food makes 1 Fertilizer, its healing outside Survival and its hunger
   in Survival (Spoiled food healing and Spoiled food hunger, from 0 to 100% of
-  the fresh food's), its extra rads (Spoiled food rads, from 0 to 5, where 1
-  is 15 for meat and 5 for other food) and whether the fridge icon shows.
+  the fresh food's), its extra rads (Spoiled food rads, from 0 to 5, where 1 is
+  15 for meat and 5 for other food), its sickness in Survival (Spoiled food
+  sickness, from 1 to 20 times the fresh food's chance) and whether the fridge
+  icon shows.
 * 7 loading screen tips on wear, repairs, broken gear, jams, loot and food
   spoiling, in the vanilla style and as likely to show as any ordinary
   loading screen. A tip about a feature you switch off never shows.

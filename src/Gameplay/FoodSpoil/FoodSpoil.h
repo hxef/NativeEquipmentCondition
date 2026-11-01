@@ -20,8 +20,10 @@
 // row shows and eats. Eat.cpp makes spoiled food heal iSpoiledHealing %,
 // nothing in Survival, and give more rads, which Rads.cpp works out by
 // fSpoiledRadsMult. Hunger.cpp makes it fill iSpoiledHunger % of the hunger
-// in Survival. Cook.cpp keeps spoiled food out of cooking and chemistry, and
-// Fertilizer.cpp turns it into fertilizer at a chemistry station.
+// in Survival, and Sickness.cpp makes it iSpoiledSicknessMult times as likely
+// to make the player sick there. Cook.cpp keeps spoiled food out of cooking
+// and chemistry, and Fertilizer.cpp turns it into fertilizer at a chemistry
+// station.
 //
 // Kinds.cpp sorts the food, FoodList.cpp reads a mod's kinds on top, and
 // FridgeList.cpp reads the fridge list. FoodLog.cpp writes what they found

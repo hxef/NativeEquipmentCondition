@@ -92,6 +92,7 @@ namespace FoodSpoil
 		ForgetPlay();
 		UnloadFridges();
 		UnloadRads();
+		UnloadSickness();
 		UnloadKinds();
 		ForgetFoodLog();
 	}

@@ -29,6 +29,7 @@ namespace Text
 			{ &Settings::iSpoiledHealing, SPOILED_HEALING_NAME, SPOILED_HEALING_HELP },
 			{ &Settings::iSpoiledHunger, SPOILED_HUNGER_NAME, SPOILED_HUNGER_HELP },
 			{ &Settings::fSpoiledRadsMult, SPOILED_RADS_NAME, SPOILED_RADS_HELP },
+			{ &Settings::iSpoiledSicknessMult, SPOILED_SICKNESS_NAME, SPOILED_SICKNESS_HELP },
 		};
 	}
 

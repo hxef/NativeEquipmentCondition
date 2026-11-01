@@ -83,6 +83,17 @@ namespace FoodSpoil
 	// Forgets every note, for a load or a new game.
 	void ForgetMeals();
 
+	// Adds Survival's disease risk for spoiled a_food, in Sickness.cpp, at
+	// Survival's read of the meal: a_meal is the frame of its script's
+	// ProcessSingleFoodItem. The meal's risk becomes iSpoiledSicknessMult
+	// times the fresh food's, and that many times the smallest any food has
+	// for food with none of its own.
+	void AddSickness(RE::BSScript::IVirtualMachine& a_vm, const RE::BSScript::StackFrame& a_meal, const RE::TESBoundObject& a_food);
+
+	// Forgets which disease risks the load order's food carries, so the next
+	// spoiled meal measures them again.
+	void UnloadSickness();
+
 	// Measures what the rads of spoiled food go through, in Rads.cpp, once
 	// LoadKinds ran.
 	void LoadRads();

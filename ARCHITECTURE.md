@@ -145,6 +145,7 @@ src/
       Eat.cpp                spoiled food heals a tenth, nothing in Survival, and gives more rads
       Rads.cpp               the rads spoiled food adds, through the food's own rads effect
       Hunger.cpp             spoiled food fills a tenth of the hunger in Survival
+      Sickness.cpp           spoiled food makes you sick 5 times as often in Survival
       Cook.cpp               cooking and chemistry stations leave spoiled food out and take fresh pieces only
       Fertilizer.cpp         a chemistry station's Fertilizer row turns 10 spoiled food into 1 Fertilizer
       Bodies.cpp             food on the dead starts to spoil

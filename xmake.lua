@@ -67,13 +67,16 @@ target("NEC")
     end)
 
     -- NEC.ini ships beside the DLL, the language files in NEC/Translations
-    -- beside it, the vanilla fridge list in NEC/Fridge, and the MCM page's
-    -- config.json in the folder MCM reads, all kept in publish with the rest
-    -- of what the archive carries.
+    -- beside it, the vanilla fridge list in NEC/Fridge, an example file in
+    -- NEC/Exclude, NEC/Food and NEC/Fridge, and the MCM page's config.json in
+    -- the folder MCM reads, all kept in publish with the rest of what the
+    -- archive carries.
     -- NEC_custom.ini is the player's own, and NEC writes a key there only when
     -- the MCM page changes it.
     add_installfiles("publish/NEC.ini", { prefixdir = "F4SE/Plugins" })
     add_installfiles("publish/Translations/*.ini", { prefixdir = "F4SE/Plugins/NEC/Translations" })
+    add_installfiles("publish/Exclude/*.ini", { prefixdir = "F4SE/Plugins/NEC/Exclude" })
+    add_installfiles("publish/Food/*.ini", { prefixdir = "F4SE/Plugins/NEC/Food" })
     add_installfiles("publish/Fridge/*.ini", { prefixdir = "F4SE/Plugins/NEC/Fridge" })
     add_installfiles("publish/MCM/Config/NEC/config.json", { prefixdir = "MCM/Config/NEC" })
 
@@ -91,7 +94,7 @@ target("NEC")
             { path.join(publish, "NEC.ini"), plugins },
             { path.join(publish, "MCM", "Config", "NEC", "config.json"), mcm },
         }
-        for _, folder in ipairs({ "Translations", "Fridge" }) do
+        for _, folder in ipairs({ "Translations", "Exclude", "Food", "Fridge" }) do
             for _, file in ipairs(os.files(path.join(publish, folder, "*.ini"))) do
                 table.insert(files, { file, path.join(plugins, "NEC", folder) })
             end
@@ -113,7 +116,8 @@ target("NEC")
 -- Packs build/NativeEquipmentCondition-<version>.zip, for any site, from the
 -- last build. The archive holds F4SE/Plugins with NEC.dll, NEC.pdb and NEC.ini,
 -- F4SE/Plugins/NEC/Translations with the 12 language files,
--- F4SE/Plugins/NEC/Fridge with the vanilla fridge list, MCM/Config/NEC
+-- F4SE/Plugins/NEC/Fridge with the vanilla fridge list, an example file in
+-- F4SE/Plugins/NEC/Exclude, NEC/Food and NEC/Fridge, MCM/Config/NEC
 -- with the MCM page's config.json, and README.txt at the root, so Mod
 -- Organizer 2 installs it as it is. The PDB lets a player's crash log name the
 -- file and line in NEC.dll. It stops before packing on any fault of a
@@ -249,8 +253,10 @@ task("release")
         os.cp(path.join(os.projectdir(), "publish", "NEC.ini"), plugins)
         os.mkdir(path.join(plugins, "NEC", "Translations"))
         os.cp(path.join(os.projectdir(), "publish", "Translations", "*.ini"), path.join(plugins, "NEC", "Translations"))
-        os.mkdir(path.join(plugins, "NEC", "Fridge"))
-        os.cp(path.join(os.projectdir(), "publish", "Fridge", "*.ini"), path.join(plugins, "NEC", "Fridge"))
+        for _, folder in ipairs({ "Exclude", "Food", "Fridge" }) do
+            os.mkdir(path.join(plugins, "NEC", folder))
+            os.cp(path.join(os.projectdir(), "publish", folder, "*.ini"), path.join(plugins, "NEC", folder))
+        end
         os.cp(path.join(os.projectdir(), "publish", "MCM", "Config", "NEC", "config.json"), mcm)
         local packed = { "F4SE", "MCM" }
         local into = option.get("outputdir")

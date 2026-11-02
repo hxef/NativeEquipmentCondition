@@ -221,7 +221,8 @@ ID, since those are the only digits that count.
 
 NEC.log lists what each file leaves alone and any line it skips. Repair
 broken gear before you list it, since the game won't let you put on an item
-at 0 condition.
+at 0 condition. NEC ships Exclude\NEC_Example.ini, an example that changes
+nothing as it is.
 
 FOOD AND FRIDGE LISTS
 Food spoiling sorts every food in your load order into 4 kinds from the game
@@ -246,6 +247,8 @@ spoils. A line you add overrides these rules.
 
 NEC.food.log lists what each file sets and any line it skips. NEC ships
 Fridge\NEC_Default.ini with the vanilla coolers and unbroken fridges.
+Food\NEC_Example.ini and Fridge\NEC_Example.ini are examples that change
+nothing as they are.
 
 REQUIREMENTS
 * Fallout 4 1.11.240 (AE) or 1.10.163 (OG)

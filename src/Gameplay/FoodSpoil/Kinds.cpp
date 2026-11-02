@@ -10,7 +10,6 @@
 #include <format>
 #include <memory>
 #include <unordered_map>
-#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -65,27 +64,33 @@ namespace FoodSpoil
 			return a_keyword && a_food.HasKeyword(a_keyword);
 		}
 
+		// Each ALCH a recipe or plant gives, and the plugin that last changed
+		// the first such record. Records come in load order, so a vanilla food
+		// a mod adds a 2nd recipe for keeps the vanilla recipe's plugin.
+		using Givers = std::unordered_map<RE::TESFormID, const RE::TESFile*>;
+
 		// Every ALCH a cooking station's recipe makes.
-		std::unordered_set<RE::TESFormID> Cooked(const Keywords& a_keywords)
+		Givers Cooked(const Keywords& a_keywords)
 		{
-			std::unordered_set<RE::TESFormID> cooked;
+			Givers cooked;
 			for (const auto* recipe : g_dataHandler->GetFormArray<RE::BGSConstructibleObject>()) {
 				const auto* made = recipe ? recipe->createdItem : nullptr;
 				if (made && a_keywords.cooking && recipe->benchKeyword == a_keywords.cooking && made->Is(RE::ENUM_FORM_ID::kALCH)) {
-					cooked.insert(made->formID);
+					cooked.try_emplace(made->formID, recipe->GetFile(-1));
 				}
 			}
 			return cooked;
 		}
 
-		// Adds every ALCH a_form gives, itself or through its leveled lists.
-		void AddHarvest(const RE::TESForm* a_form, std::size_t a_depth, std::unordered_set<RE::TESFormID>& a_crops)
+		// Adds every ALCH a_form gives, itself or through its leveled lists,
+		// with a_plant's plugin.
+		void AddHarvest(const RE::TESForm* a_form, const RE::TESFile* a_plant, std::size_t a_depth, Givers& a_crops)
 		{
 			if (!a_form || a_depth > MOST_DEPTH) {
 				return;
 			}
 			if (a_form->Is(RE::ENUM_FORM_ID::kALCH)) {
-				a_crops.insert(a_form->formID);
+				a_crops.try_emplace(a_form->formID, a_plant);
 				return;
 			}
 			if (!a_form->Is(RE::ENUM_FORM_ID::kLVLI)) {
@@ -94,17 +99,17 @@ namespace FoodSpoil
 			const auto& list = static_cast<const RE::TESLevItem&>(*a_form);
 			const auto  entries = static_cast<std::size_t>(list.baseListCount);
 			for (std::size_t i = 0; list.leveledLists && i < entries; i++) {
-				AddHarvest(list.leveledLists[i].form, a_depth + 1, a_crops);
+				AddHarvest(list.leveledLists[i].form, a_plant, a_depth + 1, a_crops);
 			}
 		}
 
 		// Every ALCH a plant gives when harvested.
-		std::unordered_set<RE::TESFormID> Harvests()
+		Givers Harvests()
 		{
-			std::unordered_set<RE::TESFormID> crops;
+			Givers crops;
 			for (const auto* plant : g_dataHandler->GetFormArray<RE::TESFlora>()) {
 				if (plant) {
-					AddHarvest(plant->produceItem, 0, crops);
+					AddHarvest(plant->produceItem, plant->GetFile(-1), 0, crops);
 				}
 			}
 			return crops;
@@ -117,9 +122,9 @@ namespace FoodSpoil
 		// What rules 3 and 4 read, gathered once for every food.
 		struct Sources
 		{
-			Keywords                          keywords;
-			std::unordered_set<RE::TESFormID> cooked;
-			std::unordered_set<RE::TESFormID> crops;
+			Keywords keywords;
+			Givers   cooked;
+			Givers   crops;
 		};
 
 		// a_food's kind by rules 2 to 6.
@@ -130,16 +135,19 @@ namespace FoodSpoil
 			if (std::ranges::any_of(keywords.drinks, has) || (has(keywords.thirst) && !has(keywords.food))) {
 				return { Kind::kNever, Why::kDrink };
 			}
-			if (a_sources.cooked.contains(a_food.formID)) {
-				return { Kind::kCooked, Why::kCooked };
+			if (const auto cooked = a_sources.cooked.find(a_food.formID); cooked != a_sources.cooked.end()) {
+				return { Kind::kCooked, Why::kCooked, {}, cooked->second };
 			}
-			if (a_sources.crops.contains(a_food.formID)) {
-				return { Kind::kCrop, Why::kHarvested };
+			if (const auto crop = a_sources.crops.find(a_food.formID); crop != a_sources.crops.end()) {
+				return { Kind::kCrop, Why::kHarvested, {}, crop->second };
 			}
 			if (has(keywords.plant)) {
-				return { Kind::kCrop, Why::kFruitOrVegetable };
+				return { Kind::kCrop, Why::kFruitOrVegetable, {}, a_food.GetFile(-1) };
 			}
-			return std::ranges::any_of(keywords.risks, has) ? Sorted{ Kind::kRaw, Why::kDiseaseRisk } : Sorted{ Kind::kNever, Why::kRest };
+			if (std::ranges::any_of(keywords.risks, has)) {
+				return { Kind::kRaw, Why::kDiseaseRisk, {}, a_food.GetFile(-1) };
+			}
+			return { Kind::kNever, Why::kRest };
 		}
 
 		// The kind of every food.

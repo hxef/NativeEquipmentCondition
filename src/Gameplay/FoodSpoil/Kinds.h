@@ -43,13 +43,17 @@ namespace FoodSpoil
 		kList,
 	};
 
-	// A food's kind, why it has it, and the food list file that set it, as
-	// NEC.food.log names it, when one did.
+	// A food's kind, why it has it, and who did it, as NEC.food.log names
+	// them: the food list file that set it, or the plugin behind a rule. That
+	// plugin is the last to change the record the rule read: the recipe for
+	// cooked, the plant for harvested, the food itself for FruitOrVegetable
+	// or a disease risk.
 	struct Sorted
 	{
-		Kind        kind;
-		Why         why;
-		std::string list{};
+		Kind               kind;
+		Why                why;
+		std::string        list{};
+		const RE::TESFile* by{};
 	};
 
 	// Sorts every food and reads the food list, and gives NEC.food.log how

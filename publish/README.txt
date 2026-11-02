@@ -230,6 +230,12 @@ Data\F4SE\Plugins\NEC\Food and change its kind. List a mod's fridges and
 coolers in Data\F4SE\Plugins\NEC\Fridge by the container's base form, as
 FO4Edit shows it. Both take the exclusion list's line form.
 
+NEC sorts a food by the first rule that fits. A drink never spoils. Food a
+cooking station recipe makes is cooked. Food harvested from a plant, or with
+the FruitOrVegetable keyword, is a crop. Food with one of Survival's disease
+risk keywords is raw. Everything else, such as canned and boxed food, never
+spoils. A line you add overrides these rules.
+
   ; Food\MyFood.ini
   MyFoodMod.esp|000801 = raw
   MyFoodMod.esp|000802 = never spoils

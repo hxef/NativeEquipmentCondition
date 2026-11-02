@@ -188,7 +188,9 @@ namespace FoodSpoil
 		}
 
 		// "MyFoodMod.esp|000801 = raw            ; Radstag Jerky, a disease
-		// risk", or nothing for a form no plugin adds.
+		// risk", or nothing for a form no plugin adds. The plugin behind the
+		// rule follows when it is not the one that adds the food, as in "a
+		// disease risk by SomeMod.esp", so a vanilla line names none.
 		std::string LineOf(RE::TESFormID a_id, const Sorted& a_food, const std::vector<const RE::TESFile*>& a_plugins)
 		{
 			const auto* plugin = PluginOf(a_id, a_plugins);
@@ -198,7 +200,10 @@ namespace FoodSpoil
 			}
 			const auto local = plugin->IsLight() ? a_id & 0xFFF : a_id & 0xFFFFFF;
 			const auto name = RE::TESFullName::GetFullName(*form);
-			const auto why = WhyOf(a_food);
+			auto       why = WhyOf(a_food);
+			if (a_food.by && a_food.by != plugin) {
+				why += std::format(" by {:s}", a_food.by->GetFilename());
+			}
 			return std::format("{:s}|{:06X} = {:<{}s}; {:s}", plugin->GetFilename(), local, WordOf(a_food.kind), WORD_WIDTH,
 				name.empty() ? why : std::format("{:s}, {:s}", name, why));
 		}

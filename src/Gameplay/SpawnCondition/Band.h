@@ -3,6 +3,7 @@
 #include "Core/Plugin.h"
 #include "Gameplay/SpawnCondition/SpawnCondition.h"
 
+#include <cstdint>
 #include <optional>
 
 // The roll itself, either side of an item's middle or in a trader's band.
@@ -31,15 +32,30 @@ namespace SpawnCondition
 
 	// The limits the ordinary roll stays between, in order, since the 4 numbers
 	// they come from live in different files and a clamp with its limits
-	// crossed is undefined behaviour. Worked out in one place, because Install
-	// prints them and RollHealth rolls inside them.
+	// crossed is undefined behaviour.
 	struct Ends
 	{
 		float floor{ 0.0F };
 		float ceiling{ 0.0F };
 	};
 
-	Ends OrdinaryEnds();
+	// The Loot condition shift slider, -100 to 100. Read at each roll and
+	// never kept, so a change on the MCM page counts from the next roll.
+	std::int32_t LootShift();
+
+	// Where the ordinary roll lands for an item whose middle is a_centre, with
+	// the slider at a_shift: the middle the slider moved it to, the ends and
+	// the band inside them. Worked out in one place, because Install prints
+	// it and RollHealth rolls inside it.
+	struct Band
+	{
+		float centre{ 0.0F };
+		Ends  ends;
+		float low{ 0.0F };
+		float high{ 0.0F };
+	};
+
+	Band OrdinaryBand(float a_centre, std::int32_t a_shift);
 
 	// What a roll aims at: the middle of its band, or for a trader's own stock
 	// the trader's band, which takes its place.
@@ -49,11 +65,15 @@ namespace SpawnCondition
 		std::optional<StockBand> stock;
 	};
 
-	// What one roll came out as, and whether it was one of the rare ones.
+	// What one roll came out as, and whether it was one of the rare ones. An
+	// ordinary roll the slider moved keeps the slider and the middle it aimed
+	// at, for the trace log.
 	struct Rolled
 	{
-		float health{ 0.0F };
-		bool  upset{ false };
+		float        health{ 0.0F };
+		bool         upset{ false };
+		std::int32_t shift{ 0 };
+		float        centre{ 0.0F };
 	};
 
 	Rolled RollHealth(const Aim& a_aim);

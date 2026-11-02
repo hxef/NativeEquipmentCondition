@@ -47,6 +47,14 @@ namespace SpawnCondition
 			a_band.low * 100.0F, a_band.high * 100.0F);
 	}
 
+	std::string Shifted(const Aim& a_aim, const Rolled& a_rolled)
+	{
+		if (a_rolled.shift == 0) {
+			return {};
+		}
+		return std::format(", loot shift {:d} moved its middle {:.4f} to {:.4f}", a_rolled.shift, a_aim.centre, a_rolled.centre);
+	}
+
 	void OpenBlock(const Restock* a_restock)
 	{
 		if (!a_restock) {

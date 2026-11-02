@@ -4,6 +4,7 @@
 
 #include "Condition/Provenance/Provenance.h"
 #include "Core/TraceLog.h"
+#include "Gameplay/SpawnCondition/Band.h"
 #include "Gameplay/SpawnCondition/SpawnCondition.h"
 
 #include <format>
@@ -27,6 +28,10 @@ namespace SpawnCondition
 
 	// Whose stock an item is and the band it rolled in, for the trace log.
 	std::string Stocked(const Restock& a_restock, const StockBand& a_band);
+
+	// The Loot condition shift a roll was moved by and the middle it moved,
+	// for the trace log, or nothing when the slider moved nothing.
+	std::string Shifted(const Aim& a_aim, const Rolled& a_rolled);
 
 	// Opens the trace log's spawn block. Items arrive in bursts, a whole area
 	// at once, so they share one block. A restock opens a block of its own

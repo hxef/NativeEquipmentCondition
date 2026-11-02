@@ -87,8 +87,11 @@ namespace SpawnCondition
 	// that waits for its taker is left alone.
 	bool RollOnLook(RE::TESObjectREFR& a_ref);
 
-	// Whether a loose item rolls only when it is taken or bought: a trader's
-	// stock, an item a faction owns. One an NPC owns rolls on the first look.
+	// Whether a loose item waits for its taker instead of rolling on the
+	// first look: a trader's stock, an item a faction owns. The trader's copy
+	// rolls when the shop lists it, so the barter card shows the condition
+	// before the purchase, and a take rolls it as a pickup. One an NPC owns
+	// rolls on the first look.
 	[[nodiscard]] bool WaitsForTaker(const RE::TESObjectREFR& a_ref);
 
 	// Gives the loose items the trade on this thread bought their mark back,

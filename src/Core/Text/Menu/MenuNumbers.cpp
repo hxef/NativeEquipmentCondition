@@ -2,7 +2,7 @@
 
 #include "Core/Settings.h"
 
-// The names and help lines of the Balance numbers on the MCM page after the
+// The names and help lines of the numbers on the MCM page other than the
 // wear speeds, which are in MenuWear.cpp, see MenuLine in Text.h.
 namespace Text
 {
@@ -13,6 +13,7 @@ namespace Text
 			{ &Settings::fWeaponPenaltyStart, WEAPON_START_NAME, WEAPON_START_HELP },
 			{ &Settings::fArmorFloor, ARMOR_FLOOR_NAME, ARMOR_FLOOR_HELP },
 			{ &Settings::fArmorPenaltyStart, ARMOR_START_NAME, ARMOR_START_HELP },
+			{ &Settings::iLootShift, LOOT_SHIFT_NAME, LOOT_SHIFT_HELP },
 			{ &Settings::fValueExponent, VALUE_EXPONENT_NAME, VALUE_EXPONENT_HELP },
 			{ &Settings::fFireRateFloor, FIRE_RATE_FLOOR_NAME, FIRE_RATE_FLOOR_HELP },
 			{ &Settings::fCritMeterFloor, CRIT_METER_FLOOR_NAME, CRIT_METER_FLOOR_HELP },

@@ -51,6 +51,7 @@ namespace Settings
 		};
 
 		const Number NUMBERS[]{
+			&iLootShift,
 			&fWearRateMult,
 			&fNpcWearRateMult,
 			&fAutoWearRateMult,

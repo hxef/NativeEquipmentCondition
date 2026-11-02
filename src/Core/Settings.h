@@ -179,6 +179,13 @@ namespace Settings
 	// The fridge icon, see FoodSpoil::FridgeIconOn. On by default.
 	inline Live<bool> bFridgeIcon{ "Features", "bFridgeIcon", true };
 
+	// Loot. Tunes Worn loot and is read at each roll.
+
+	// How far every ordinary loot roll moves toward worn, below 0, or toward
+	// new, above 0, as a share of the way from -100 to 100, see
+	// SpawnCondition/Band.cpp. 0 is the plain roll.
+	inline Live<std::int32_t> iLootShift{ "Loot", "iLootShift", 0 };
+
 	// Balance. Each tunes a feature and is read where it is used. A floor at
 	// 1 leaves the result vanilla, so a feature with a floor has no switch.
 
@@ -367,12 +374,12 @@ namespace Settings
 	// they are off unless a bug is being reported.
 	inline Live<bool> bTraceLogs{ "Log", "bTraceLogs", false };
 
-	// A number under [Balance] or [HUD]: a float, or a whole number where the
-	// setting only takes whole steps.
+	// A number under [Loot], [Balance] or [HUD]: a float, or a whole number
+	// where the setting only takes whole steps.
 	using Number = std::variant<Live<float>*, Live<std::int32_t>*>;
 
-	// The 9 switches under [Features] and the 30 numbers under [Balance] and
-	// [HUD], in NEC.ini's order, for Report and the MCM page.
+	// The 9 switches under [Features] and the 39 numbers under [Loot],
+	// [Balance] and [HUD], in NEC.ini's order, for Report and the MCM page.
 	[[nodiscard]] std::span<Live<bool>* const> Switches();
 	[[nodiscard]] std::span<const Number>      Numbers();
 }

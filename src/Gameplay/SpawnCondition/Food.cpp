@@ -87,9 +87,9 @@ namespace SpawnCondition
 		const Aim  aim{ origin.Centre(), std::nullopt };
 		const auto rolled = RollHealth(aim);
 		if (TraceLog::IsOpen()) {
-			Tell(a_listed, "{:<30s} [{:08X}] x{:<3d} starts at {:.4f}, {:s}, band around {:.2f}, {:s}{:s}",
+			Tell(a_listed, "{:<30s} [{:08X}] x{:<3d} starts at {:.4f}, {:s}, band around {:.2f}, {:s}{:s}{:s}",
 				NameOf(a_object, "unnamed food"), a_object.formID, a_count, rolled.health, a_how, aim.centre, Describe(origin),
-				rolled.upset ? ", ignored its band" : "");
+				Shifted(aim, rolled), rolled.upset ? ", ignored its band" : "");
 		}
 		return rolled.health;
 	}

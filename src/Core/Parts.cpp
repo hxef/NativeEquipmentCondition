@@ -136,6 +136,7 @@ namespace
 		{ &Settings::fWeaponPenaltyStart, &Settings::fDamageFloor, WEAPON_PENALTIES, WEAPON_PENALTIES_SIDE },
 		{ &Settings::fArmorFloor, nullptr, ARMOR },
 		{ &Settings::fArmorPenaltyStart, &Settings::fArmorFloor, ARMOR },
+		{ &Settings::iLootShift, &Settings::bSpawnCondition, WORN_LOOT },
 		{ &Settings::fValueExponent, nullptr, PRICES },
 		{ &Settings::fFireRateFloor, nullptr, FIRE_RATE, FIRE_RATE_SIDE },
 		{ &Settings::fCritMeterFloor, nullptr, CRIT_METER },

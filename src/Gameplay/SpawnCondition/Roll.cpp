@@ -168,8 +168,8 @@ namespace SpawnCondition
 		// Spelled out only where a trace file takes it, since a cell
 		// loading hands dozens of stacks through here.
 		if (TraceLog::IsOpen()) {
-			Report(listed, "rolled", "{:<30s} [{:08X}] x{:<3d} starts at {:.4f}, {:s}{:s}",
-				name, id, count, rolled.health, stock ? Stocked(*restock, *stock) : Describe(origin),
+			Report(listed, "rolled", "{:<30s} [{:08X}] x{:<3d} starts at {:.4f}, {:s}{:s}{:s}",
+				name, id, count, rolled.health, stock ? Stocked(*restock, *stock) : Describe(origin), Shifted(aim, rolled),
 				rolled.upset ? ", ignored its band" : "");
 			// The list the health went on, to match against the one the
 			// Pip-Boy reads, see ItemCard/Hooks.cpp.

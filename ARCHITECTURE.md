@@ -206,11 +206,12 @@ src/
       HudParts/
         HudParts.h/.cpp      what the HUD readouts share
         Readout.cpp          the readout itself, a bar and the word CND
+        Draw.cpp             the boxes and text fields a readout is built from
       HudCondition/
         HudCondition.h/.cpp          the Weapon CND bar by the ammo counter: the movie
         Frame.h/.cpp                 the frame listener, which lays the bar out at its spot and size, places it, draws its level and fades it
         Spot.h/.cpp                  where the bar and its word go, the divider's place or the nearest free spot, the NEC.log line, and the bar at its size
-        Place.h/.cpp                 where the readout sits in the counter's parent, moved by fHudBarX and fHudBarY and held whole on screen, and that place kept for the MCM page
+        Place.h/.cpp                 where the readout sits in the counter's parent, by the counter or standing alone from the screen's top left corner, moved by fHudBarX and fHudBarY and held whole on screen, and that place kept for the MCM page
       PowerArmorCondition/
         PowerArmorCondition.h/.cpp   the frame listener and the movie
         Dash.h/.cpp                  finding the dash through its own camera

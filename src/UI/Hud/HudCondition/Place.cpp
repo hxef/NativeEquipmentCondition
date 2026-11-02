@@ -41,6 +41,7 @@ namespace HudCondition
 			Spot                          spot;
 			HudParts::Readout::Size       size;
 			HudParts::Readout::LabelPlace label;
+			bool                          alone = false;
 		};
 
 		// The place kept for the MCM page, and the whole HUD units the trace
@@ -70,6 +71,52 @@ namespace HudCondition
 			const Point down{ (a_staged[2].x - a_staged[0].x) / high, (a_staged[2].y - a_staged[0].y) / high };
 			const Point origin{ a_staged[0].x - (across.x * a_box.left) - (down.x * a_box.top), a_staged[0].y - (across.y * a_box.left) - (down.y * a_box.top) };
 			return Staging{ origin, across, down };
+		}
+
+		// a_box's corners on the stage in StagingOf's order, a_toParent taking
+		// each from the readout's units to the parent's. Nothing when the
+		// movie refuses a point.
+		template <class ToParent>
+		[[nodiscard]] std::optional<std::array<Point, 4>> Staged(Scaleform::GFx::Movie& a_movie, Value& a_meters, const Flash::Box& a_box, ToParent a_toParent)
+		{
+			const std::array corners{ Point{ a_box.left, a_box.top }, Point{ a_box.right, a_box.top }, Point{ a_box.left, a_box.bottom }, Point{ a_box.right, a_box.bottom } };
+			std::array<Point, 4> staged{};
+			for (std::size_t i = 0; i < corners.size(); i++) {
+				const auto at = Roles::ToStage(a_movie, a_meters, a_toParent(corners[i]));
+				if (!at) {
+					return std::nullopt;
+				}
+				staged[i] = *at;
+			}
+			return staged;
+		}
+
+		// The box around 4 points, so a turned box is held whole.
+		[[nodiscard]] Flash::Box Around(const std::array<Point, 4>& a_points)
+		{
+			Flash::Box box{ a_points[0].x, a_points[0].y, a_points[0].x, a_points[0].y };
+			for (const auto& point : a_points) {
+				box = box.With(Flash::Box{ point.x, point.y, point.x, point.y });
+			}
+			return box;
+		}
+
+		// How far a box on the stage moves for a_shift, held whole in
+		// a_frame, how far short of the shift that is in the shift's units,
+		// and whether the frame held it.
+		struct Move
+		{
+			Point by;
+			Shift shortBy;
+			bool  held = false;
+		};
+
+		[[nodiscard]] Move MoveFor(const Shift& a_shift, const Flash::Box& a_box, const Flash::Box& a_frame)
+		{
+			// The stage's y runs down, so the shift's y is taken off.
+			const Point want{ a_shift.x, -a_shift.y };
+			const Point by{ Held(want.x, a_box.left, a_box.right, a_frame.left, a_frame.right), Held(want.y, a_box.top, a_box.bottom, a_frame.top, a_frame.bottom) };
+			return Move{ by, Shift{ want.x - by.x, by.y - want.y }, std::abs(by.x - want.x) > LEEWAY || std::abs(by.y - want.y) > LEEWAY };
 		}
 	}
 
@@ -138,44 +185,62 @@ namespace HudCondition
 		const auto& shift = a_basis.shift;
 		const auto& frame = a_basis.frame;
 
-		// The box's 4 corners go to the stage, and the box holding them is
+		// The box's 4 corners go to the stage, and the box around them is
 		// held, so a turned counter is held too.
-		std::optional<Flash::Box> box;
-		const std::array corners{ Point{ a_filled.left, a_filled.top }, Point{ a_filled.right, a_filled.top }, Point{ a_filled.left, a_filled.bottom },
-			Point{ a_filled.right, a_filled.bottom } };
-		std::array<Point, 4> staged{};
-		for (std::size_t i = 0; i < corners.size(); i++) {
-			const auto at = Roles::ToStage(a_movie, a_meters, InParent(counter, Point{ a_spot.x + corners[i].x, a_spot.y + corners[i].y }));
-			if (!at) {
-				return std::nullopt;
-			}
-			staged[i] = *at;
-			const Flash::Box dot{ at->x, at->y, at->x, at->y };
-			box = box ? box->With(dot) : dot;
+		const auto staged = Staged(a_movie, a_meters, a_filled, [&](const Point& a_corner) { return InParent(counter, Point{ a_spot.x + a_corner.x, a_spot.y + a_corner.y }); });
+		if (!staged) {
+			return std::nullopt;
 		}
-
-		// The stage's y runs down, so the shift's y is taken off.
-		const Point want{ shift.x, -shift.y };
-		const Point move{ Held(want.x, box->left, box->right, frame.left, frame.right), Held(want.y, box->top, box->bottom, frame.top, frame.bottom) };
-		const auto  held = std::abs(move.x - want.x) > LEEWAY || std::abs(move.y - want.y) > LEEWAY;
+		const auto box = Around(*staged);
+		const auto move = MoveFor(shift, box, frame);
 
 		const auto spot = InParent(counter, Point{ a_spot.x, a_spot.y });
-		Placed     placed{ Transform{ spot.x, spot.y, counter.scaleX, counter.scaleY, counter.rotation }, *box, StagingOf(a_filled, staged),
-			Shift{ want.x - move.x, move.y - want.y }, shift == Shift{} && !held, held };
+		Placed     placed{ Transform{ spot.x, spot.y, counter.scaleX, counter.scaleY, counter.rotation }, box, StagingOf(a_filled, *staged),
+			move.shortBy, shift == Shift{} && !move.held, move.held };
 
 		// With no move the readout sits on the spot itself, with no trip
 		// through the stage to round it.
-		if (move.x == 0.0 && move.y == 0.0) {
+		if (move.by.x == 0.0 && move.by.y == 0.0) {
 			return placed;
 		}
 		const auto from = Roles::ToStage(a_movie, a_meters, spot);
-		const auto to = from ? Roles::FromStage(a_movie, a_meters, Point{ from->x + move.x, from->y + move.y }) : std::nullopt;
+		const auto to = from ? Roles::FromStage(a_movie, a_meters, Point{ from->x + move.by.x, from->y + move.by.y }) : std::nullopt;
 		if (!to) {
 			return std::nullopt;
 		}
 		placed.at.x = to->x;
 		placed.at.y = to->y;
 		return placed;
+	}
+
+	std::optional<Placed> PlaceAlone(Scaleform::GFx::Movie& a_movie, Value& a_meters, const Basis& a_basis, const Flash::Box& a_filled)
+	{
+		const auto& frame = a_basis.frame;
+
+		// The corners as staged with the readout upright on the parent's
+		// origin, where a point of the readout is the same point of the
+		// parent.
+		auto staged = Staged(a_movie, a_meters, a_filled, [](const Point& a_corner) { return a_corner; });
+		const auto origin = Roles::ToStage(a_movie, a_meters, Point{});
+		if (!staged || !origin) {
+			return std::nullopt;
+		}
+
+		// The spot puts the box's top left on the frame's. Every point of the
+		// readout moves by the same step on the stage, whatever the clips
+		// above it do, so the spot and the shift add up there.
+		const auto  around = Around(*staged);
+		const Point toSpot{ frame.left - around.left, frame.top - around.top };
+		for (auto& corner : *staged) {
+			corner = Point{ corner.x + toSpot.x, corner.y + toSpot.y };
+		}
+		const auto box = Around(*staged);
+		const auto move = MoveFor(a_basis.shift, box, frame);
+		const auto to = Roles::FromStage(a_movie, a_meters, Point{ origin->x + toSpot.x + move.by.x, origin->y + toSpot.y + move.by.y });
+		if (!to) {
+			return std::nullopt;
+		}
+		return Placed{ Transform{ to->x, to->y }, box, StagingOf(a_filled, *staged), move.shortBy, false, move.held, true };
 	}
 
 	void Put(Value& a_readout, const Transform& a_at)
@@ -199,7 +264,7 @@ namespace HudCondition
 		bool          tell = false;
 		{
 			const std::scoped_lock lock{ g_lock };
-			g_kept = Kept{ now, a_placed.staging, a_spot, a_size, a_label };
+			g_kept = Kept{ now, a_placed.staging, a_spot, a_size, a_label, a_placed.alone };
 			tell = whole != g_told;
 			g_told = whole;
 		}
@@ -231,6 +296,13 @@ namespace HudCondition
 			return kept->measure;
 		}
 		const auto& label = kept->label;
-		return Measure{ kept->staging->Holding(Filled(Sized(kept->spot, size, label), label)), kept->measure.frame };
+		const auto  box = kept->staging->Holding(Filled(Sized(kept->spot, size, label), label));
+		if (!kept->alone) {
+			return Measure{ box, kept->measure.frame };
+		}
+
+		// A bar that stands alone keeps its top left corner, see PlaceAlone.
+		const auto& corner = kept->measure.box;
+		return Measure{ Flash::Box{ corner.left, corner.top, corner.left + (box.right - box.left), corner.top + (box.bottom - box.top) }, kept->measure.frame };
 	}
 }

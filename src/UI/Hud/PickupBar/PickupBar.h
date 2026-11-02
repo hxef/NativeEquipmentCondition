@@ -16,9 +16,11 @@
 // which item the prompt stands for. A loose item no holder has rolled yet
 // rolls on that first look, as the player's pickup would roll it, see
 // SpawnCondition::RollOnLook, so the bar shows what the pickup gives. A
-// trader's stock, gear a faction owns, rolls when it is bought and shows no
-// bar until then. The HUD draws the bar a frame later, and only while the
-// prompt prints the name that was built.
+// trader's stock, gear a faction owns, shows no bar until it rolls. It rolls
+// when the shop lists it, so the barter card shows its condition before the
+// purchase, and a take rolls it as a pickup, see
+// SpawnCondition::WaitsForTaker. The HUD draws the bar a frame later, and
+// only while the prompt prints the name that was built.
 //
 // Look.cpp is the prompt as the game builds it, Bar.cpp the bar in the HUD's
 // prompt. Look.h and Bar.h are what they share.

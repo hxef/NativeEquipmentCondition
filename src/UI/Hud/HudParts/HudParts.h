@@ -11,10 +11,13 @@
 #include <string_view>
 
 // The pieces the plugin's CND readouts are built from. CND is drawn on the HUD
-// twice, in the ammo counter out of power armor and on the dash in it.
-// HudCondition.cpp and PowerArmorCondition.cpp each place it by their own
-// rules, and both share the readout, the colour and the condition of the weapon
-// in hand kept here. Readout.cpp draws the readout, HudParts.cpp the rest.
+// 3 times: in the ammo counter out of power armor, on the dash in it, and in
+// the pickup prompt. The HudCondition, PowerArmorCondition and PickupBar
+// folders each place it by their own rules, and all 3 share the readout, the
+// HUD menu lookup and the colour kept here. The 2 weapon bars also share the
+// condition of the weapon in hand, and the pickup bar follows the prompt's
+// warning colour. Readout.cpp draws the readout, Draw.cpp the boxes and text
+// fields it is built from, HudParts.cpp the rest.
 namespace HudParts
 {
 	using Value = Scaleform::GFx::Value;
@@ -239,10 +242,6 @@ namespace HudParts
 	// canBeVisible says whether the HUD mode now lets the counter be seen.
 	[[nodiscard]] const RE::HUDAmmoCounter* AmmoCounterPart(const RE::HUDMenu& a_menu);
 
-	// The vanilla pickup prompt part in this HUD menu, or null. Its
-	// displayWarningColor says whether taking the item it shows is stealing.
-	[[nodiscard]] const RE::HUDComponentBase* RolloverPart(const RE::HUDMenu& a_menu);
-
 	// Whether the counter has rounds to count. NEC reads them on the HUD's
 	// thread without the lock the game takes for them, so a read is a frame
 	// old at worst.
@@ -250,6 +249,10 @@ namespace HudParts
 	{
 		return a_counter.nextAmmoCount.eventDataStruct.optionalValue.has_value();
 	}
+
+	// The vanilla pickup prompt part in this HUD menu, or null. Its
+	// displayWarningColor says whether taking the item it shows is stealing.
+	[[nodiscard]] const RE::HUDComponentBase* RolloverPart(const RE::HUDMenu& a_menu);
 
 	// Builds a HUD part of NEC's the first frame its switch reads on, so while
 	// it is off the HUD movie gets nothing of NEC's but this listener on its

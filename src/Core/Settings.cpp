@@ -96,7 +96,7 @@ namespace Settings
 		Live<bool>* const AFTER_JAM[]{ &bPlainApparelNeverWears };
 		Live<bool>* const AFTER_HUD_CONDITION[]{ &bPowerArmorBar };
 		Live<bool>* const AFTER_FOOD_SPOILS[]{ &bFridgeIcon };
-		Live<bool>* const AFTER_HUD_BAR[]{ &bHudBarHidesWithCounter, &bHudBarShowsWord };
+		Live<bool>* const AFTER_HUD_BAR[]{ &bHudBarHidesWithCounter, &bHudBarStandsAlone, &bHudBarShowsWord };
 		Live<bool>* const AFTER_POWER_ARMOR_BAR[]{ &bPowerArmorBarShowsWord, &bPickupBar };
 		Live<bool>* const AFTER_PICKUP_BAR[]{ &bPickupBarShowsWord };
 

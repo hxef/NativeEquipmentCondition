@@ -26,11 +26,12 @@
 // A setting added here is added to publish/NEC.ini too, with a line saying
 // what it does, and to SWITCHES or NUMBERS in Settings.cpp in NEC.ini's
 // order. A setting left out of those is missing from the Settings line, and
-// the MCM page can neither read nor change it. The 8 switches with no row of
+// the MCM page can neither read nor change it. The 9 switches with no row of
 // their own in Features.cpp, bPowerArmorBar, bFridgeIcon,
-// bHudBarHidesWithCounter, bHudBarShowsWord, bPowerArmorBarShowsWord,
-// bPickupBar, bPickupBarShowsWord and bTraceLogs, are named in Settings.cpp's
-// ReportLine and in UI/Mcm/Bridge.cpp's SwitchFor instead.
+// bHudBarHidesWithCounter, bHudBarStandsAlone, bHudBarShowsWord,
+// bPowerArmorBarShowsWord, bPickupBar, bPickupBarShowsWord and bTraceLogs, are
+// named in Settings.cpp's ReportLine and in UI/Mcm/Bridge.cpp's SwitchFor
+// instead.
 namespace Settings
 {
 	// Where a setting sits in NEC.ini, which is also its id on the MCM page.
@@ -308,6 +309,11 @@ namespace Settings
 	// Whether the Weapon CND bar hides with the ammo counter while the counter
 	// has rounds to count, see HudCondition.h.
 	inline Live<bool> bHudBarHidesWithCounter{ "HUD", "bHudBarHidesWithCounter", false };
+
+	// Whether the Weapon CND bar stands alone at the place the MCM page shows
+	// while a HUD mod hides the ammo counter, see HudCondition.h. When off, it
+	// hides with the counter.
+	inline Live<bool> bHudBarStandsAlone{ "HUD", "bHudBarStandsAlone", false };
 
 	// Whether the CND word shows beside the Weapon CND bar. When off, only the
 	// bar shows, at the same place.

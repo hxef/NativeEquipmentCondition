@@ -205,8 +205,11 @@ namespace PickupBar
 			// Only a name for HudParts to look the target up by, see
 			// HudParts::SetWarningColor.
 			const RE::BSGFxShaderFXTarget* target = nullptr;
-			const RE::HUDComponentBase*    rolloverPart = nullptr;
-			bool                           warned = false;
+
+			// The vanilla pickup prompt part, whose warning colour the bar
+			// follows, and whether the bar is in that colour now.
+			const RE::HUDComponentBase* rolloverPart = nullptr;
+			bool                        warned = false;
 		};
 
 		FrameListener g_frameListener;

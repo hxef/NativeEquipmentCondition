@@ -9,7 +9,9 @@
 #include "Core/TraceLog.h"
 
 #include <algorithm>
+#include <array>
 #include <chrono>
+#include <cmath>
 #include <cstdint>
 #include <optional>
 #include <string_view>
@@ -161,12 +163,14 @@ namespace HudCondition
 				// in the Pip-Boy for example, the bar fades too, even with a
 				// weapon out. A hidden counter with rounds to count keeps the
 				// bar hidden while bHudBarHidesWithCounter is on. While it is
-				// off, a bar that stays never dips as the counter fades out.
+				// off, a bar that stays never dips as the counter fades out. A
+				// bar that stands alone has no counter to fade with, so it
+				// shows while the weapon is out, as a melee weapon's does.
 				const auto hudAllows = !counterPart || counterPart->hudModes.canBeVisible;
 				const auto alone = hudAllows && HudParts::Weapon::Drawn();
-				const auto hidesWithCounter = counterPart && Settings::bHudBarHidesWithCounter.GetValue() && HudParts::HasRounds(*counterPart);
+				const auto hidesWithCounter = !standsAlone && counterPart && Settings::bHudBarHidesWithCounter.GetValue() && HudParts::HasRounds(*counterPart);
 				const auto counterOpacity = Flash::Opacity(counter);
-				const auto counterShows = counterOpacity > 0.0;
+				const auto counterShows = !standsAlone && counterOpacity > 0.0;
 				const auto stays = alone && !hidesWithCounter;
 
 				auto opacity = 0.0;
@@ -223,6 +227,8 @@ namespace HudCondition
 				placeable = false;
 				onSpot = false;
 				held = false;
+				standsAlone = false;
+				aloneAt.reset();
 				followed = false;
 				laidOut.reset();
 				laidOutSize = HudParts::Readout::Size{};
@@ -238,20 +244,30 @@ namespace HudCondition
 
 		private:
 			// Places the bar on screen, as drawn at a_size, and keeps that
-			// place for the MCM page. The bar hides while its counter is
-			// wholly off screen, which is how HUD mods hide the counter, and
-			// while the movie refuses a point, so it is never drawn where NEC
-			// cannot tell it is on screen.
+			// place for the MCM page. While its counter is wholly off screen,
+			// which is how HUD mods hide the counter, the bar hides, or with
+			// bHudBarStandsAlone on stands alone. It hides while the movie
+			// refuses a point, so it is never drawn where NEC cannot tell it
+			// is on screen.
 			void PlaceOnScreen(Scaleform::GFx::Movie& a_movie, Value& a_meters, Value& a_counter, Value& a_readout, const Basis& a_basis, const Spot& a_drawn,
 				const HudParts::Readout::Size& a_size)
 			{
 				const auto counterIn = Roles::InFrame(a_movie, a_counter);
-				const auto placed = counterIn ? Place(a_movie, a_meters, a_basis, a_drawn.line, Filled(a_drawn, label)) : std::nullopt;
+				const auto standing = !counterIn && Settings::bHudBarStandsAlone.GetValue();
+				const auto filled = Filled(a_drawn, label);
+				std::optional<Placed> placed;
+				if (counterIn) {
+					placed = Place(a_movie, a_meters, a_basis, a_drawn.line, filled);
+				} else if (standing) {
+					placed = PlaceAlone(a_movie, a_meters, a_basis, filled);
+				}
 				placeable = placed.has_value();
 				onSpot = placed && placed->onSpot;
+				standsAlone = placed && placed->alone;
+				TellAlone(placed, a_basis);
 				if (!placed) {
-					Roles::Noted(a_movie, counterIn ? "stage place for the CND bar"sv : "on screen ammo counter"sv,
-						counterIn ? "the bar hides"sv : "the CND bar hides with it"sv);
+					Roles::Noted(a_movie, counterIn || standing ? "stage place for the CND bar"sv : "on screen ammo counter"sv,
+						counterIn || standing ? "the bar hides"sv : "the CND bar hides with it"sv);
 					return;
 				}
 				if (placed->at != placedAt) {
@@ -266,6 +282,24 @@ namespace HudCondition
 					} else {
 						TraceLog::Line("menu", "HUD CND bar sits where fHudBarX and fHudBarY put it");
 					}
+				}
+			}
+
+			// Says where a bar that stands alone starts, from the screen's top
+			// left in HUD units as the MCM page shows it, each time a whole
+			// unit changes.
+			void TellAlone(const std::optional<Placed>& a_placed, const Basis& a_basis)
+			{
+				std::optional<std::array<long, 2>> at;
+				if (a_placed && a_placed->alone) {
+					at = std::array{ std::lround(a_basis.shift.x - a_placed->shortBy.x), std::lround(a_placed->shortBy.y - a_basis.shift.y) };
+				}
+				if (at == aloneAt) {
+					return;
+				}
+				aloneAt = at;
+				if (at) {
+					TraceLog::Line("menu", "HUD CND bar stands alone {:d},{:d} from the screen's top left in HUD units, with no ammo counter on screen to follow", (*at)[0], (*at)[1]);
 				}
 			}
 
@@ -329,14 +363,18 @@ namespace HudCondition
 			HudParts::Readout::Size laidOutSize;
 
 			// What the bar was last placed from and where it went. placeable
-			// is false while its counter is off screen or the movie refused a
-			// point, onSpot while it sits on its spot, and held while the
-			// screen's edge holds it short of the shift.
-			std::optional<Basis>     placedFrom;
-			std::optional<Transform> placedAt;
-			bool                     placeable = false;
-			bool                     onSpot = false;
-			bool                     held = false;
+			// is false while it has no place, its counter off screen with no
+			// standing alone or the movie refusing a point, onSpot while it
+			// sits on its spot, held while the screen's edge holds it short of
+			// the shift, and standsAlone while it stands alone, at aloneAt as
+			// last traced.
+			std::optional<Basis>               placedFrom;
+			std::optional<Transform>           placedAt;
+			bool                               placeable = false;
+			bool                               onSpot = false;
+			bool                               held = false;
+			bool                               standsAlone = false;
+			std::optional<std::array<long, 2>> aloneAt;
 
 			// When a reading may first copy the counter's colour, and the
 			// colour last traced.

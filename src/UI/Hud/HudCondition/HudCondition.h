@@ -41,6 +41,14 @@
 // screen. The MCM page shows that place from the screen's top left corner,
 // also in HUD units, see Mcm/HudBar.cpp.
 //
+// A HUD mod can hide the counter for good for an ammo display of its own,
+// by moving it off screen. The bar then hides with it, since no
+// bar shows without a part to sit by. With bHudBarStandsAlone on it stands
+// alone instead, shown while the weapon is out and the HUD mode allows, as a
+// melee weapon's bar is. It sits upright at its own size in the counter's
+// parent, its spot the screen's top left corner, so it starts at the place
+// the MCM page shows, with no counter to follow and no divider to cover.
+//
 // The bar is a HUD part of its own, with the native object the game gives each
 // part, so the HUD tints it with its colour. It then takes the colour the
 // divider is drawn in, so a HUD mod that colours the counter or the divider
@@ -83,10 +91,10 @@ namespace HudCondition
 		Flash::Box frame;
 	};
 
-	// From the HUD's last place with its counter on screen, with the box
-	// worked out again for the size fHudBarLength and fHudBarThickness ask
-	// for now, since the HUD stands still under the pause menu, where the MCM
-	// page changes them. Nothing before the first since HUDMenu.swf loaded.
-	// Safe from any thread.
+	// From the HUD's last place with its counter on screen or the bar
+	// standing alone, with the box worked out again for the size
+	// fHudBarLength and fHudBarThickness ask for now, since the HUD stands
+	// still under the pause menu, where the MCM page changes them. Nothing
+	// before the first since HUDMenu.swf loaded. Safe from any thread.
 	[[nodiscard]] std::optional<Measure> Measured();
 }

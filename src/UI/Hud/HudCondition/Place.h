@@ -68,7 +68,8 @@ namespace HudCondition
 	// came from, nothing for a box with no width or height. shortBy is how
 	// far the screen's edge held it short of the shift, in the shift's units.
 	// onSpot is true while the shift is 0 and 0 and nothing held it, held
-	// while the edge held it.
+	// while the edge held it, and alone while it stands alone, see
+	// PlaceAlone.
 	struct Placed
 	{
 		Transform              at;
@@ -77,6 +78,7 @@ namespace HudCondition
 		Shift                  shortBy;
 		bool                   onSpot = false;
 		bool                   held = false;
+		bool                   alone = false;
 	};
 
 	// Where the readout's spot goes in a_meters, the counter's parent, with
@@ -86,6 +88,13 @@ namespace HudCondition
 	// refuses a point.
 	[[nodiscard]] std::optional<Placed> Place(Scaleform::GFx::Movie& a_movie, Roles::Value& a_meters, const Basis& a_basis,
 		const Roles::Hud::Line& a_spot, const Flash::Box& a_filled);
+
+	// Where the readout goes in a_meters with no counter to follow: upright
+	// at its own size, on a spot that puts a_filled's top left corner on the
+	// visible frame's, then moved by the shift, so fHudBarY below 0 moves it
+	// down, and held whole in the frame. A new length or thickness keeps
+	// that corner. Nothing when the movie refuses a point.
+	[[nodiscard]] std::optional<Placed> PlaceAlone(Scaleform::GFx::Movie& a_movie, Roles::Value& a_meters, const Basis& a_basis, const Flash::Box& a_filled);
 
 	void Put(Roles::Value& a_readout, const Transform& a_at);
 

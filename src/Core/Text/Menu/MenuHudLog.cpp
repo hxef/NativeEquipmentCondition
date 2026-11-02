@@ -18,6 +18,7 @@ namespace Text
 			{ &Settings::fHudBarLength, HUD_BAR_LENGTH_NAME, HUD_BAR_LENGTH_HELP },
 			{ &Settings::fHudBarThickness, HUD_BAR_THICKNESS_NAME, HUD_BAR_THICKNESS_HELP },
 			{ &Settings::bHudBarHidesWithCounter, HUD_BAR_HIDES_NAME, HUD_BAR_HIDES_HELP },
+			{ &Settings::bHudBarStandsAlone, HUD_BAR_ALONE_NAME, HUD_BAR_ALONE_HELP },
 			{ &Settings::bHudBarShowsWord, HUD_BAR_WORD_NAME, HUD_BAR_WORD_HELP },
 			{ &Settings::fPowerArmorBarX, POWER_ARMOR_BAR_X_NAME, POWER_ARMOR_BAR_X_HELP },
 			{ &Settings::fPowerArmorBarY, POWER_ARMOR_BAR_Y_NAME, POWER_ARMOR_BAR_Y_HELP },

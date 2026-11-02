@@ -53,7 +53,8 @@ namespace PickupBar
 		// freshness of a food that spoils now, or nothing for anything else.
 		// A piece with no condition yet reads full, as its pickup would give
 		// it with Worn loot off. With Worn loot on, an item that waits for its
-		// taker reads nothing until the take or the purchase rolls it.
+		// taker reads nothing until the shop lists it or a take rolls it, see
+		// SpawnCondition::WaitsForTaker.
 		std::optional<Reading> Read(RE::TESObjectREFR& a_ref)
 		{
 			auto* base = a_ref.GetObjectReference();

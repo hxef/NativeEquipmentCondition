@@ -160,6 +160,7 @@ namespace
 		{ &Settings::fHudBarLength, &Settings::bHudCondition, HUD_BARS },
 		{ &Settings::fHudBarThickness, &Settings::bHudCondition, HUD_BARS },
 		{ &Settings::bHudBarHidesWithCounter, &Settings::bHudCondition, HUD_BARS },
+		{ &Settings::bHudBarStandsAlone, &Settings::bHudCondition, HUD_BARS },
 		{ &Settings::bHudBarShowsWord, &Settings::bHudCondition, HUD_BARS },
 		{ &Settings::fPowerArmorBarX, &Settings::bHudCondition, HUD_BARS },
 		{ &Settings::fPowerArmorBarY, &Settings::bHudCondition, HUD_BARS },

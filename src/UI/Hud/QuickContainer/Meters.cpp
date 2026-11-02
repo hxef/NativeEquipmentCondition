@@ -64,6 +64,7 @@ namespace QuickContainer
 			void Reset()
 			{
 				drawn.fill({});
+				tints.fill({});
 			}
 
 			// a_afterRedraw says the rows have just redrawn, which is when the
@@ -159,6 +160,29 @@ namespace QuickContainer
 					a_meter.SetMember("visible"sv, Value(false));
 					a_drawn.visible = false;
 				}
+			}
+
+			// -----------------------------------------------------------------
+			// A meter's colour
+			// -----------------------------------------------------------------
+
+			// The meter takes the colour its row's name has of its own, so both
+			// show alike under whatever colours the list above them. The vanilla
+			// HUD colours the whole list, the warning colour too, so the name has
+			// none of its own and nothing is written. A HUD mod that clears the
+			// list's colour and colours each part of a row itself would leave
+			// the meter white. A HUD colours a row as it redraws, so the caller
+			// asks then.
+			void Recolor(Value& a_meter, const Value& a_name, std::size_t a_index)
+			{
+				const auto wanted = Flash::TintOf(a_name);
+				auto&      carried = tints[a_index];
+				if (!wanted || wanted->Near(carried) || !Flash::SetTint(a_meter, *wanted)) {
+					return;
+				}
+				carried = *wanted;
+				TraceLog::Line("menu", "Quick container row {:d} CND meter takes its name's colour, times {:.3f} {:.3f} {:.3f} plus {:.0f} {:.0f} {:.0f}",
+					a_index, carried.red, carried.green, carried.blue, carried.redAdd, carried.greenAdd, carried.blueAdd);
 			}
 
 			// -----------------------------------------------------------------
@@ -274,10 +298,14 @@ namespace QuickContainer
 				last.written = wanted;
 
 				const auto selected = Flash::Bool(a_row, "selected"sv);
-				if (last.percent != *a_percent || last.selected != selected) {
+				const auto changed = last.percent != *a_percent || last.selected != selected;
+				if (changed) {
 					Draw(meter, *a_percent, selected);
 					last.percent = *a_percent;
 					last.selected = selected;
+				}
+				if (changed || a_afterRedraw) {
+					Recolor(meter, field, a_index);
 				}
 
 				// The first icon sits 4 past the name's end, counted in
@@ -298,6 +326,11 @@ namespace QuickContainer
 			}
 
 			std::array<Drawn, MAX_ROWS> drawn{};
+
+			// The colour each meter carries, as Recolor last wrote it. A meter
+			// keeps it while hidden, so only a new HUD movie, with new meters
+			// in no colour of their own, forgets it.
+			std::array<Flash::Tint, MAX_ROWS> tints{};
 		};
 
 		Meters g_meters;

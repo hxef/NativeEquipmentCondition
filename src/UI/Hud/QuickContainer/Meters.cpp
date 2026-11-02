@@ -197,9 +197,11 @@ namespace QuickContainer
 
 			// Writes the name's width. A centred name's text moves when its
 			// field narrows, so the parts the movie placed against the text's
-			// start move as far. The row then lays its icons out again after
-			// the name's new end.
-			void WriteWidth(Scaleform::GFx::Movie& a_movie, Value& a_row, Value& a_field, const Value& a_meter, double a_width)
+			// start move as far, and the row lays its icons out again after
+			// the name's new end. A HUD mod may paint the row's text fields
+			// plain on that call, so each shown text field gets back the
+			// colour it had.
+			void WriteWidth(Scaleform::GFx::Movie& a_movie, Value& a_row, std::size_t a_index, Value& a_field, const Value& a_meter, double a_width)
 			{
 				auto before = Roles::Hud::TextStart(a_movie, a_row, a_field, a_meter);
 				a_field.SetMember("width"sv, Value(a_width));
@@ -209,7 +211,11 @@ namespace QuickContainer
 						Flash::Set(part, "x"sv, Value(Flash::Number(part, "x"sv) + after->x - before->x));
 					}
 				}
+				auto kept = Flash::TextTints(a_row);
 				a_row.Invoke("AddIconsToEntry");
+				if (const auto back = Flash::PutBackTints(kept); back > 0) {
+					TraceLog::Line("menu", "Quick container row {:d} text colour put back on {:d} of {:d} shown text fields after its icon layout", a_index, back, kept.size());
+				}
 			}
 
 			// Hides the meter of a row NEC drew into, and gives the name back
@@ -233,7 +239,7 @@ namespace QuickContainer
 
 				Value data;
 				if (a_row.GetMember("data"sv, &data) && data.IsObject() && HoldsWrite(field, last)) {
-					WriteWidth(a_movie, a_row, field, meter, last.base);
+					WriteWidth(a_movie, a_row, a_index, field, meter, last.base);
 				}
 				last = Drawn{};
 			}
@@ -264,7 +270,7 @@ namespace QuickContainer
 				// still at NEC's write is NEC's and goes back first.
 				if (last.item.text != a_shown.text || last.item.count != a_shown.count || last.icons != icons) {
 					if (!a_afterRedraw && HoldsWrite(field, last)) {
-						WriteWidth(a_movie, a_row, field, meter, last.base);
+						WriteWidth(a_movie, a_row, a_index, field, meter, last.base);
 					}
 					last.item = a_shown;
 					last.icons = icons;
@@ -288,7 +294,7 @@ namespace QuickContainer
 
 				const auto wanted = *a_percent >= 0 ? last.base - METER_GAP - METER_WIDTH : last.base;
 				if (std::abs(width - wanted) >= SAME_WIDTH) {
-					WriteWidth(a_movie, a_row, field, meter, wanted);
+					WriteWidth(a_movie, a_row, a_index, field, meter, wanted);
 				}
 				if (*a_percent < 0) {
 					last.written.reset();

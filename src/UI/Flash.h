@@ -141,6 +141,19 @@ namespace Flash
 	// or the movie refuses a write.
 	bool SetTint(Value& a_clip, const Tint& a_tint);
 
+	// The colour of each shown text field among a clip's children, kept so
+	// PutBackTints can undo a call that colours them.
+	struct KeptTint
+	{
+		Value field;
+		Tint  tint;
+	};
+	[[nodiscard]] std::vector<KeptTint> TextTints(Value& a_parent);
+
+	// Gives each kept field its colour back where it changed. How many fields
+	// it gave back.
+	std::size_t PutBackTints(std::span<KeptTint> a_kept);
+
 	// A clip's bounds in the stage's units, with x, y, width and height.
 	// Nothing for a clip outside the display list, which has no stage.
 	[[nodiscard]] std::optional<Value> StageBounds(Value& a_clip);

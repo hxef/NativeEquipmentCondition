@@ -174,6 +174,30 @@ namespace Flash
 		       Set(transform, "colorTransform"sv, colors);
 	}
 
+	std::vector<KeptTint> TextTints(Value& a_parent)
+	{
+		std::vector<KeptTint> kept;
+		for (auto& child : Children(a_parent)) {
+			const auto tint = Opacity(child) > 0.0 && Member(child, "text"sv).IsString() ? TintOf(child) : std::nullopt;
+			if (tint) {
+				kept.push_back({ child, *tint });
+			}
+		}
+		return kept;
+	}
+
+	std::size_t PutBackTints(std::span<KeptTint> a_kept)
+	{
+		std::size_t back = 0;
+		for (auto& [field, tint] : a_kept) {
+			const auto now = TintOf(field);
+			if ((!now || !now->Near(tint)) && SetTint(field, tint)) {
+				back++;
+			}
+		}
+		return back;
+	}
+
 	// -------------------------------------------------------------------
 	// Where a clip is
 	// -------------------------------------------------------------------

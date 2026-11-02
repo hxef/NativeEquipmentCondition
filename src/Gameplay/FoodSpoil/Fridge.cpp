@@ -85,23 +85,28 @@ namespace FoodSpoil
 	}
 
 	// -------------------------------------------------------------------
-	// The card
+	// The card and the quick container
 	// -------------------------------------------------------------------
 
 	// A take can hand the player a stack that shares its extra data with the
 	// fridge's while the fridge still lists its own, and the door has written
 	// the plain stamp on it. So a stack the player holds too reads as out of
 	// the fridge.
+	bool InFridge(const RE::TESObjectREFR* a_holder, const RE::ExtraDataList* a_extra)
+	{
+		if (!a_extra || !IsFridgeRef(a_holder) || !Holds(*a_holder, a_extra)) {
+			return false;
+		}
+		const auto* player = RE::PlayerCharacter::GetSingleton();
+		return !player || !Holds(*player, a_extra);
+	}
+
 	bool InOpenFridge(const RE::ExtraDataList* a_extra)
 	{
 		const auto* ui = a_extra ? RE::UI::GetSingleton() : nullptr;
 		const auto  menu = ui ? ui->GetMenu<RE::ContainerMenu>() : nullptr;
 		const auto  fridge = menu ? menu->containerRef.get() : RE::NiPointer<RE::TESObjectREFR>{};
-		if (!IsFridgeRef(fridge.get()) || !Holds(*fridge, a_extra)) {
-			return false;
-		}
-		const auto* player = RE::PlayerCharacter::GetSingleton();
-		return !player || !Holds(*player, a_extra);
+		return InFridge(fridge.get(), a_extra);
 	}
 
 	bool FridgeIconOn()

@@ -126,8 +126,9 @@ SEE IT AT A GLANCE
 * CND on the item cards, with the worn damage, resistances, fire rate,
   accuracy and range.
 * CND bars on the HUD ammo counter, the power armor dash, the pickup prompt and
-  the Pip-Boy apparel figure, and condition meters on the quick container rows.
-  Each HUD bar has its own switch, place and size in MCM.
+  the Pip-Boy apparel figure, and condition meters on the quick container rows
+  and a food's freshness. Each HUD bar has its own switch, place and size in
+  MCM.
 * Broken items fade out in the Pip-Boy lists.
 
 MAKE IT YOURS

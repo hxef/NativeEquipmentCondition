@@ -170,20 +170,36 @@ namespace FoodSpoil
 		return Freshness(a_kind, a_fridge ? Thaw(*stamp, a_today) : *stamp, a_today);
 	}
 
+	namespace
+	{
+		// What FreshnessOf reads, where a_inFridge says whether the food sits in
+		// a fridge. It is asked last, since it searches the fridge's stacks.
+		template <class FridgeCheck>
+		std::optional<float> ReadFreshness(const RE::TESBoundObject& a_object, RE::ExtraDataList* a_extra, FridgeCheck a_inFridge)
+		{
+			if (!Spoils(a_object)) {
+				return std::nullopt;
+			}
+			const auto today = Today();
+			if (!today) {
+				return IsSpoiled(a_extra) ? 0.0F : 1.0F;
+			}
+			// A trade shows the trader's food fresh, as buying starts it so.
+			if (RE::TESDataHandler::GetBarterContainer() && !StampOf(a_extra) && !IsSpoiled(a_extra)) {
+				return 1.0F;
+			}
+			return std::max(0.0F, FreshnessIn(KindOf(a_object), a_extra, a_inFridge(), *today));
+		}
+	}
+
 	std::optional<float> FreshnessOf(const RE::TESBoundObject& a_object, RE::ExtraDataList* a_extra)
 	{
-		if (!Spoils(a_object)) {
-			return std::nullopt;
-		}
-		const auto today = Today();
-		if (!today) {
-			return IsSpoiled(a_extra) ? 0.0F : 1.0F;
-		}
-		// A trade shows the trader's food fresh, as buying starts it so.
-		if (RE::TESDataHandler::GetBarterContainer() && !StampOf(a_extra) && !IsSpoiled(a_extra)) {
-			return 1.0F;
-		}
-		return std::max(0.0F, FreshnessIn(KindOf(a_object), a_extra, InOpenFridge(a_extra), *today));
+		return ReadFreshness(a_object, a_extra, [&] { return InOpenFridge(a_extra); });
+	}
+
+	std::optional<float> FreshnessOf(const RE::TESBoundObject& a_object, RE::ExtraDataList* a_extra, const RE::TESObjectREFR* a_holder)
+	{
+		return ReadFreshness(a_object, a_extra, [&] { return InFridge(a_holder, a_extra); });
 	}
 
 	// -------------------------------------------------------------------

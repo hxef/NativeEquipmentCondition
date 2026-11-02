@@ -33,6 +33,10 @@ namespace FoodSpoil
 	// stored food read more or fewer days spent. IsFridgeRef and InOpenFridge
 	// are in FoodSpoil.h, since the fridge icon asks them too.
 
+	// Whether a_extra's stack is in a_holder and a_holder is a fridge. A
+	// stack the player holds too reads as out of it.
+	[[nodiscard]] bool InFridge(const RE::TESObjectREFR* a_holder, const RE::ExtraDataList* a_extra);
+
 	// The plain stamp of food stamped a_stamp in a fridge, on a_today.
 	[[nodiscard]] float Thaw(float a_stamp, float a_today);
 

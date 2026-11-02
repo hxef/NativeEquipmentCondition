@@ -108,6 +108,12 @@ namespace FoodSpoil
 	// Nothing for a_object when it does not Spoil.
 	[[nodiscard]] std::optional<float> FreshnessOf(const RE::TESBoundObject& a_object, RE::ExtraDataList* a_extra);
 
+	// The same for the food in a_holder's stack a_extra, read at the fridge
+	// speed when a_holder is a fridge, for the quick container's rows, which
+	// show with no container screen open.
+	[[nodiscard]] std::optional<float> FreshnessOf(const RE::TESBoundObject& a_object, RE::ExtraDataList* a_extra,
+		const RE::TESObjectREFR* a_holder);
+
 	// Whether food arriving in a_list starts to spoil there: the player's, a
 	// companion's or a dead body's.
 	[[nodiscard]] bool Starts(const RE::BGSInventoryList& a_list);

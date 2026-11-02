@@ -6,7 +6,8 @@
 // while the crosshair rests on a container, a companion, a power armor frame or
 // a workbench. Each row is a name, a count and a few icons. A row for an item
 // that wears gets a meter after its icons, drawn like the HUD's HP meter, a
-// thin frame around a bar, black on the highlighted row.
+// thin frame around a bar, black on the highlighted row. Food that spoils gets
+// one too, its freshness, while Food spoils is on.
 //
 // The hard part is which stack a row stands for, since 3 rows can all read 10mm
 // Pistol. What the game sends to the HUD keeps only the name, the count and the

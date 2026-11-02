@@ -14,7 +14,7 @@ namespace QuickContainer
 	// The widget has 5 rows.
 	inline constexpr std::size_t MAX_ROWS = 5;
 
-	// The condition a row holds for an item that does not wear out.
+	// The condition a row holds for an item that neither wears out nor spoils.
 	inline constexpr std::int32_t NO_CONDITION = -1;
 
 	// Patches the calls that build the rows. Returns whether both succeeded.

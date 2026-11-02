@@ -8,6 +8,7 @@
 #include <algorithm>
 #include <array>
 #include <atomic>
+#include <cmath>
 #include <format>
 #include <mutex>
 #include <string_view>
@@ -141,14 +142,21 @@ namespace QuickContainer
 
 		// The condition of the item an entry stands for, or NO_CONDITION. The
 		// entry names its item by inventory handle and its stacks by index, and
-		// the first stack is where the row's name comes from.
-		std::int32_t ConditionOf(const RE::InventoryUserUIInterfaceEntry& a_entry)
+		// the first stack is where the row's name comes from. Food that spoils
+		// reads its freshness in a_holder instead, as the pickup bar does.
+		std::int32_t ConditionOf(const RE::InventoryUserUIInterfaceEntry& a_entry, const RE::TESObjectREFR* a_holder)
 		{
 			const auto* inventory = RE::BGSInventoryInterface::GetSingleton();
 			const auto* item = inventory && !a_entry.stackIndex.empty() ? inventory->RequestInventoryItem(a_entry.invHandle.id) : nullptr;
 			const auto* stack = item ? item->GetStackByID(a_entry.stackIndex[0]) : nullptr;
-			const auto  percent = stack ? Condition::Percent(*item, stack) : std::nullopt;
-			return percent ? static_cast<std::int32_t>(*percent) : NO_CONDITION;
+			if (!stack) {
+				return NO_CONDITION;
+			}
+			if (const auto percent = Condition::Percent(*item, stack)) {
+				return static_cast<std::int32_t>(*percent);
+			}
+			const auto fresh = item->object ? FoodSpoil::FreshnessOf(*item->object, stack->extra.get(), a_holder) : std::nullopt;
+			return fresh ? static_cast<std::int32_t>(std::lround(*fresh * 100.0F)) : NO_CONDITION;
 		}
 
 		// The conditions of the rows AddItemRows is making. The 2 hooks run one
@@ -170,14 +178,15 @@ namespace QuickContainer
 		std::array<CallPatch::Link<void(RE::HUDQuickContainerDataModel*, RE::QuickContainerStateData&)>, 1> g_rowsLink;
 
 		// Stands in for InventoryItemDisplayData's constructor in AddItemRows.
-		// The owner's handle arrives by address.
+		// The owner's handle arrives by address. It is the container the rows
+		// stand for, a body, a box, a fridge or a companion.
 		RE::InventoryItemDisplayData* RowHk(RE::InventoryItemDisplayData* a_this, const RE::ObjectRefHandle& a_inventoryRef,
 			const RE::InventoryUserUIInterfaceEntry& a_entry)
 		{
 			const auto result = g_rowLink[0](a_this, a_inventoryRef, a_entry);
 
 			if (auto* building = t_building; building && building->made < MAX_ROWS && g_rowLink[0].Live()) {
-				building->percents[building->made++] = ConditionOf(a_entry);
+				building->percents[building->made++] = ConditionOf(a_entry, a_inventoryRef.get().get());
 			}
 			return result;
 		}

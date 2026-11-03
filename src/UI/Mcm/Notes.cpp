@@ -22,9 +22,10 @@
 // The page's grey rows: the list at the top and the note of each block.
 // config.json gives every block lead a hidden switch: a feature switch 2,
 // <key>:Free for its row and <key>:Note for its note, a number 1, <key>:Note,
-// and the list 1, parts:Note. MCM has 30 a page, and the numbers run on
-// across NEC's pages up to 30, with 1 for the HUD bar sliders, see
-// HudBar.cpp, and 1 for the food sliders that show once food spoils. Each
+// and the list 1, parts:Note. These numbers run on across NEC's pages, with
+// 1 for the HUD bar sliders, see HudBar.cpp. MCM counts 30 for each page on
+// its own, so a feature switch whose rows hide while it is off takes a
+// number its page leaves free, which other pages use too. Each
 // note is worked out from SettingLinks and CallPatch's losses, so a setting
 // needs no code of its own here. A piece left to a mod is named once: in the
 // note of a block that works through it, else in the list at the top. MCM

@@ -8,6 +8,7 @@
 #include "UI/Roles/ContainerName.h"
 
 #include <array>
+#include <format>
 #include <limits>
 #include <optional>
 #include <string>
@@ -59,6 +60,9 @@ namespace QuickContainer
 		// changes.
 		bool g_shown = false;
 
+		// The colour NEC gave the icon, so it is written only on a change.
+		Flash::Tint g_tint;
+
 		// The movie loading a file, and its loader, held until the file
 		// arrives, since nothing in the movie holds a loader that is not on
 		// screen. When a new HUD movie loads first, the old loader is let go
@@ -73,6 +77,18 @@ namespace QuickContainer
 		// Every frame
 		// -------------------------------------------------------------------
 
+		// Gives the icon the colour the name's letters show. A HUD may colour
+		// the name's field itself, which never reaches the icon beside it.
+		// The vanilla HUD colours a clip above the name's, which reaches both,
+		// so the field has no colour of its own and nothing is written.
+		void Recolor(Value& a_icon, const Value& a_field)
+		{
+			const auto wanted = Flash::LetterTint(a_field);
+			if (!wanted.Near(g_tint) && Flash::SetTint(a_icon, wanted)) {
+				g_tint = wanted;
+			}
+		}
+
 		// Shows the icon right of the name while the container is a fridge,
 		// and hides it otherwise.
 		void Update(Value& a_name)
@@ -83,10 +99,15 @@ namespace QuickContainer
 			}
 
 			// As high as the name's capitals, centred on its line as its
-			// letters are.
+			// letters are. Finding where the line is drawn takes LineOf about
+			// 10 calls into the movie, made every frame while a fridge's name
+			// shows, which is too few to be worth keeping between frames.
 			auto       field = Roles::ContainerName::Field(a_name);
 			const auto line = FoodSpoil::FridgeIconOn() && ShowsFridge() ? FridgeIcon::LineOf(field) : std::nullopt;
 			const auto shown = line && FridgeIcon::Put(icon, *g_box, FridgeIcon::Side::kRight, line->right + ICON_GAP, line->capitals, line->middle);
+			if (shown) {
+				Recolor(icon, field);
+			}
 			if (shown == g_shown) {
 				return;
 			}
@@ -94,9 +115,11 @@ namespace QuickContainer
 			Flash::Set(icon, "visible"sv, Value(shown));
 			if (shown) {
 				const auto box = Roles::BoundsIn(icon, a_name);
-				TraceLog::Line("menu", "Quick container fridge icon shown beside \"{:s}\" at x {:.1f}, {:.1f} high, its middle at y {:.1f} on the line's {:.1f}",
+				const auto tint = Flash::TintOf(icon);
+				TraceLog::Line("menu", "Quick container fridge icon shown beside \"{:s}\" at x {:.1f}, {:.1f} high, its tint {:s}, its middle at y {:.1f} on the line's {:.1f} as drawn, {:.1f} by its metrics",
 					Flash::String(field, "text"sv), Flash::Number(icon, "x"sv), Flash::Number(icon, "height"sv),
-					box ? (box->top + box->bottom) / 2.0 : std::numeric_limits<double>::quiet_NaN(), line->middle);
+					tint ? std::format("{:06X}", tint->OnWhite()) : "none"s, box ? (box->top + box->bottom) / 2.0 : std::numeric_limits<double>::quiet_NaN(),
+					line->middle, line->metricsMiddle);
 			} else {
 				TraceLog::Line("menu", "Quick container fridge icon hidden");
 			}
@@ -243,6 +266,7 @@ namespace QuickContainer
 	{
 		g_box.reset();
 		g_shown = false;
+		g_tint = {};
 		g_loading = nullptr;
 		g_loader = nullptr;
 		g_source = 0;

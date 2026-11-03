@@ -20,17 +20,19 @@ namespace FridgeIcon
 	// class or a_parent will not take it.
 	[[nodiscard]] Value Make(Scaleform::GFx::Movie& a_movie, Value& a_parent, const char* a_class);
 
-	// The first line of a field, in the units of the field's parent.
+	// The first line of a field where the game draws it, in the units of the
+	// field's parent.
 	struct Line
 	{
-		double left = 0.0;      // its first letter's left edge
-		double right = 0.0;     // its last letter's right edge
-		double capitals = 0.0;  // how high its capitals and digits are
-		double middle = 0.0;    // halfway between its top and its bottom, the middle its letters show
+		double left = 0.0;           // its first letter's left edge
+		double right = 0.0;          // its last letter's right edge
+		double capitals = 0.0;       // how high its capitals and digits are
+		double middle = 0.0;         // halfway between its top and its bottom, the middle its letters show
+		double metricsMiddle = 0.0;  // the middle its line metrics alone give, for the trace
 	};
 
-	// a_field's first line, from its line metrics. Nothing when it cannot be
-	// measured.
+	// a_field's first line, from its line metrics and where the game draws
+	// it. Nothing when it cannot be measured.
 	[[nodiscard]] std::optional<Line> LineOf(Value& a_field);
 
 	enum class Side

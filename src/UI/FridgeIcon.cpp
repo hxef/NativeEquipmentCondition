@@ -34,9 +34,13 @@ namespace FridgeIcon
 		return icon;
 	}
 
+	// The drawn line and the metrics' line nearly agree on vanilla's fields.
+	// The card's number is drawn about half a pixel lower, as its line nearly
+	// fills a box that shrinks its text, and the HUD's container name not
+	// lower at all, as its box keeps its text at the top.
 	std::optional<Line> LineOf(Value& a_field)
 	{
-		const auto line = Flash::FirstLine(a_field);
+		const auto line = Flash::DrawnLine(a_field);
 		if (!line) {
 			return std::nullopt;
 		}
@@ -44,9 +48,11 @@ namespace FridgeIcon
 		const auto y = Flash::Number(a_field, "y"sv);
 		const auto across = Flash::Number(a_field, "scaleX"sv, 1.0);
 		const auto down = Flash::Number(a_field, "scaleY"sv, 1.0);
-		const Line first{ x + line->left * across, x + line->right * across, (line->baseline - line->top) * down,
-			y + (line->top + line->baseline + line->descent) * down / 2.0 };
-		if (!std::isfinite(first.left) || !std::isfinite(first.right) || !std::isfinite(first.capitals) || !std::isfinite(first.middle)) {
+		const auto middle = y + (line->top + line->baseline + line->descent) * down / 2.0;
+		const Line first{ x + line->left * across, x + line->right * across, (line->baseline - line->top) * down, middle,
+			middle - line->drop * down };
+		if (!std::isfinite(first.left) || !std::isfinite(first.right) || !std::isfinite(first.capitals) || !std::isfinite(first.middle) ||
+			!std::isfinite(first.metricsMiddle)) {
 			return std::nullopt;
 		}
 		return first;

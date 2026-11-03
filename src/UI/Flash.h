@@ -132,10 +132,20 @@ namespace Flash
 		// Whether 2 colours look the same: each multiplier within a 500th
 		// and each added part within half a step.
 		[[nodiscard]] bool Near(const Tint& a_other) const noexcept;
+
+		// The colour this gives a white clip, 0xRRGGBB.
+		[[nodiscard]] std::uint32_t OnWhite() const noexcept;
 	};
 
 	// A clip's colour, or nothing when it has none to read.
 	[[nodiscard]] std::optional<Tint> TintOf(const Value& a_clip);
+
+	// The colour a text field's letters show, as the tint that gives it to a
+	// white clip: the field's textColor under the field's own colour. A clip
+	// in the field's parent shows that colour, since both sit under the same
+	// clips above. A field with no colour of its own to read counts as
+	// untinted.
+	[[nodiscard]] Tint LetterTint(const Value& a_field);
 
 	// Gives a clip a colour and keeps its alpha. False when there is no clip
 	// or the movie refuses a write.
@@ -170,8 +180,17 @@ namespace Flash
 		double top = 0.0;
 		double baseline = 0.0;
 		double descent = 0.0;
+		double drop = 0.0;  // how far DrawnLine moved it down, 0 from FirstLine
 	};
 	[[nodiscard]] std::optional<TextLine> FirstLine(Value& a_field);
+
+	// a_field's first line as FirstLine gives it, moved down to where the
+	// game draws it. The game draws the text lower than getLineMetrics puts
+	// it in a field set to centre its text or put it at the bottom, and
+	// centres it in a field that shrinks or fits its text to the box when
+	// nothing else is set. About 10 calls into the movie where FirstLine
+	// makes 1.
+	[[nodiscard]] std::optional<TextLine> DrawnLine(Value& a_field);
 
 	// a_text with &, < and > written for an htmlText field.
 	[[nodiscard]] std::string HtmlEscaped(std::string_view a_text);

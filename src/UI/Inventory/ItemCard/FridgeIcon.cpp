@@ -5,10 +5,11 @@
 #include "UI/FridgeIcon.h"
 #include "UI/Roles/Card.h"
 
-#include <algorithm>
-#include <array>
+#include <cstdint>
+#include <format>
 #include <limits>
 #include <optional>
+#include <string>
 
 namespace ItemCard
 {
@@ -21,88 +22,43 @@ namespace ItemCard
 		constexpr std::string_view ICONS_MOVIE = "ContainerMenu.swf";
 		constexpr const char*      ICONS_CLASS = "ContainerMenu_fla.DamageIcons_47";
 
-		// A timed row, such as a food's HP, shows the vanilla clock icon left
-		// of its number. The fridge icon takes the clock's size and place.
-		constexpr const char* TIMED_CLASS = "Components.ItemCard_TimedEntry";
-
-		// The game puts the clock 10 left of the x the number's line reports,
-		// which is 2 short of its first letter.
+		// The game puts a timed row's clock 10 left of the x the number's
+		// line reports, which is 2 short of its first letter. The icon keeps
+		// that gap.
 		constexpr double ICON_GAP = 12.0;
 
-		// Where a timed row draws its clock, from its number field's x and y.
-		struct Clock
-		{
-			double right = 0.0;
-			double height = 0.0;
-			double middle = 0.0;
-		};
+		// On the vanilla card a timed row's clock stands 21 high beside
+		// numbers whose capitals stand 26 high. The icon keeps that size to
+		// the number on every card, so a card with smaller numbers gets a
+		// smaller icon.
+		constexpr double ICON_PER_CAPITALS = 21.0 / 26.0;
 
-		// Read from the first card that needs it, since every card of the
-		// movie draws its rows from the same file.
-		std::optional<Clock> g_clock;
-
-		// Makes a timed row, hidden, measures its clock and takes it off
-		// again. It goes into a_row only for that, since a clip outside the
-		// display list has no bounds.
-		std::optional<Clock> MeasureClock(Scaleform::GFx::Movie& a_movie, Value& a_row)
-		{
-			Value timed;
-			a_movie.CreateObject(&timed, TIMED_CLASS);
-			if (!timed.IsDisplayObject()) {
-				return std::nullopt;
-			}
-			Flash::Set(timed, "visible"sv, Value(false));
-			if (!Flash::Call(a_row, "addChild", std::array{ timed })) {
-				return std::nullopt;
-			}
-			auto       clock = Flash::Member(timed, "TimerIcon_mc"sv);
-			const auto field = Flash::Member(timed, "Value_tf"sv);
-			const auto box = Roles::BoundsIn(clock, timed);
-			Flash::Call(a_row, "removeChild", std::array{ timed });
-			if (!box || !field.IsDisplayObject()) {
-				return std::nullopt;
-			}
-			const auto x = Flash::Number(field, "x"sv);
-			const auto y = Flash::Number(field, "y"sv);
-			return Clock{ box->right - x, box->bottom - box->top, (box->top + box->bottom) / 2.0 - y };
-		}
-
-		// Where the icon goes in a_row, in its units.
+		// The number the icon went beside, in a_row's units.
 		struct Spot
 		{
-			double edge = 0.0;
-			double height = 0.0;
-			double middle = 0.0;
-			double lineMiddle = 0.0;
+			FridgeIcon::Line line;
+			double           fieldX = 0.0;
+			std::uint32_t    color = 0;  // its letters' colour, 0xRRGGBB
 		};
 
-		// Puts the icon where a timed row puts its clock: as high, as far
-		// below the number field's top and as far left of the number, though
-		// never right of the clock's own column. The spot it took, or nothing
-		// when the row or the clock cannot be measured.
-		std::optional<Spot> Place(Scaleform::GFx::Movie& a_movie, Value& a_icon, Value& a_row)
+		// Puts the icon left of the number on its first line, ICON_GAP short
+		// of its first letter and centred on the line, and gives it the
+		// number's colour. A card may colour each field and not the row, by
+		// its textColor or its own colour, so the icon takes the colour from
+		// the field. The number it went beside, or nothing when the row
+		// cannot be measured.
+		std::optional<Spot> Place(Value& a_icon, Value& a_row)
 		{
-			if (!g_clock) {
-				g_clock = MeasureClock(a_movie, a_row);
-				if (!g_clock) {
-					Roles::Missing(a_movie, TIMED_CLASS, "a food's card in a fridge shows no icon"sv);
-					return std::nullopt;
-				}
-			}
-
 			auto       field = Roles::Card::NumberField(a_row);
 			const auto line = FridgeIcon::LineOf(field);
 			const auto box = Roles::BoundsIn(a_icon, a_icon);
-			if (!line || !box) {
+			if (!line || !box ||
+				!FridgeIcon::Put(a_icon, *box, FridgeIcon::Side::kLeft, line->left - ICON_GAP, line->capitals * ICON_PER_CAPITALS, line->middle)) {
 				return std::nullopt;
 			}
-			const auto x = Flash::Number(field, "x"sv);
-			const auto y = Flash::Number(field, "y"sv);
-			const Spot spot{ std::min(line->left - ICON_GAP, x + g_clock->right), g_clock->height, y + g_clock->middle, line->middle };
-			if (!FridgeIcon::Put(a_icon, *box, FridgeIcon::Side::kLeft, spot.edge, spot.height, spot.middle)) {
-				return std::nullopt;
-			}
-			return spot;
+			const auto tint = Flash::LetterTint(field);
+			Flash::SetTint(a_icon, tint);
+			return Spot{ *line, Flash::Number(field, "x"sv), tint.OnWhite() };
 		}
 	}
 
@@ -123,7 +79,7 @@ namespace ItemCard
 			}
 		}
 
-		const auto spot = a_fridge ? Place(a_movie, icon, a_row) : std::nullopt;
+		const auto spot = a_fridge ? Place(icon, a_row) : std::nullopt;
 		const auto shown = spot.has_value();
 		if (shown == Flash::Bool(icon, "visible"sv)) {
 			return;
@@ -134,8 +90,11 @@ namespace ItemCard
 			return;
 		}
 		const auto box = Roles::BoundsIn(icon, a_row);
+		const auto tint = Flash::TintOf(icon);
 		const auto nan = std::numeric_limits<double>::quiet_NaN();
-		TraceLog::Line("menu", "Fridge icon on the CND row of {:s}, {:.1f} high with its middle at y {:.1f}, a timed row's clock {:.1f} high at {:.1f}, the number's line at {:.1f}",
-			ICONS_MOVIE, box ? box->bottom - box->top : nan, box ? (box->top + box->bottom) / 2.0 : nan, spot->height, spot->middle, spot->lineMiddle);
+		TraceLog::Line("menu", "Fridge icon on the CND row of {:s}, {:.1f} high with its middle at y {:.1f}, its right edge at x {:.1f} and its tint {:s}, by the number's line from x {:.1f} with its middle at y {:.1f} as drawn, {:.1f} by its metrics, and its capitals {:.1f} high, in its field at x {:.1f} coloured {:06X}",
+			ICONS_MOVIE, box ? box->bottom - box->top : nan, box ? (box->top + box->bottom) / 2.0 : nan, box ? box->right : nan,
+			tint ? std::format("{:06X}", tint->OnWhite()) : "none"s, spot->line.left, spot->line.middle, spot->line.metricsMiddle, spot->line.capitals, spot->fieldX,
+			spot->color);
 	}
 }

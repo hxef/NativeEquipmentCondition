@@ -1,6 +1,7 @@
 #include "UI/Flash.h"
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <initializer_list>
 
@@ -148,6 +149,14 @@ namespace Flash
 		       std::abs(greenAdd - a_other.greenAdd) <= ADDED_LEEWAY && std::abs(blueAdd - a_other.blueAdd) <= ADDED_LEEWAY;
 	}
 
+	std::uint32_t Tint::OnWhite() const noexcept
+	{
+		const auto part = [](double a_multiplier, double a_add) {
+			return static_cast<std::uint32_t>(std::clamp(std::round(a_multiplier * 255.0 + a_add), 0.0, 255.0));
+		};
+		return part(red, redAdd) << 16 | part(green, greenAdd) << 8 | part(blue, blueAdd);
+	}
+
 	std::optional<Tint> TintOf(const Value& a_clip)
 	{
 		const auto colors = Member(Member(a_clip, "transform"sv), "colorTransform"sv);
@@ -160,6 +169,18 @@ namespace Flash
 			return std::nullopt;
 		}
 		return tint;
+	}
+
+	Tint LetterTint(const Value& a_field)
+	{
+		// A text field shows white unless it is given a colour. Its
+		// textColor scales white down to that colour, the way a tint's
+		// multipliers do.
+		constexpr std::uint32_t WHITE = 0xFFFFFF;
+
+		const auto color = static_cast<std::uint32_t>(Number(a_field, "textColor"sv, WHITE)) & WHITE;
+		const auto part = [&](int a_shift) { return static_cast<double>((color >> a_shift) & 0xFF) / 255.0; };
+		return TintOf(a_field).value_or(Tint{}).Over(Tint{ part(16), part(8), part(0) });
 	}
 
 	bool SetTint(Value& a_clip, const Tint& a_tint)
@@ -228,6 +249,86 @@ namespace Flash
 			return std::nullopt;
 		}
 		return first;
+	}
+
+	// -------------------------------------------------------------------
+	// Where a text field draws its first line
+	// -------------------------------------------------------------------
+
+	namespace
+	{
+		// How close the probe for a line's top gets to it.
+		constexpr double TOP_TOLERANCE = 0.1;
+
+		// Whether a_field draws a letter at a_x, a_y in its own units, as
+		// getCharIndexAtPoint finds one. It gives -1 off every line. Nothing
+		// when the call fails.
+		[[nodiscard]] std::optional<bool> OnLine(Value& a_field, double a_x, double a_y)
+		{
+			Value            index;
+			const std::array point{ Value(a_x), Value(a_y) };
+			if (!a_field.Invoke("getCharIndexAtPoint", &index, point.data(), point.size()) || !IsAnyNumber(index)) {
+				return std::nullopt;
+			}
+			return AsNumber(index) >= 0.0;
+		}
+
+		// The top of a_field's first line where the game draws it, in the
+		// field's own units, probed at a_x inside the line: down from the
+		// box's top in steps of 1 to the first letter, then the last step
+		// halved until it is under TOP_TOLERANCE, so the y it gives is on the
+		// line and less than that below its top. About 10 calls on a line
+		// near the top. Nothing when the box's top already finds a letter,
+		// no y finds one or a call fails.
+		[[nodiscard]] std::optional<double> DrawnTop(Value& a_field, double a_x)
+		{
+			const auto height = Number(a_field, "height"sv) / Number(a_field, "scaleY"sv, 1.0);
+			const auto atTop = OnLine(a_field, a_x, 0.0);
+			if (!std::isfinite(height) || !atTop || *atTop) {
+				return std::nullopt;
+			}
+			auto                  above = 0.0;
+			std::optional<double> below;
+			for (auto y = 1; !below && y < height; ++y) {
+				const auto letter = OnLine(a_field, a_x, y);
+				if (!letter) {
+					return std::nullopt;
+				}
+				if (*letter) {
+					below = y;
+				} else {
+					above = y;
+				}
+			}
+			while (below && *below - above >= TOP_TOLERANCE) {
+				const auto y = (above + *below) / 2.0;
+				const auto letter = OnLine(a_field, a_x, y);
+				if (!letter) {
+					return std::nullopt;
+				}
+				if (*letter) {
+					below = y;
+				} else {
+					above = y;
+				}
+			}
+			return below;
+		}
+	}
+
+	std::optional<TextLine> DrawnLine(Value& a_field)
+	{
+		auto line = FirstLine(a_field);
+		// No property gives the drop, and getCharIndexAtPoint is the one
+		// reader that counts it, so a probe down the line's middle finds the
+		// drawn top. Where the probe finds none the line stays at the margin.
+		const auto top = line ? DrawnTop(a_field, (line->left + line->right) / 2.0) : std::nullopt;
+		if (top) {
+			line->drop = *top - FIELD_MARGIN;
+			line->top += line->drop;
+			line->baseline += line->drop;
+		}
+		return line;
 	}
 
 	// -------------------------------------------------------------------

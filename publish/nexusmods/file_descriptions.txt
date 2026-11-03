@@ -1,3 +1,8 @@
+1.7.3
+v1.7.3 adds a Loot condition shift slider, a Weapon CND bar stands alone switch, freshness meters on the quick container rows and example inis, fixes meter colours on FallUI HUD and fridge icons, and hides MCM rows while a feature is off.
+
+OG/AE only
+
 1.7.2
 Version 1.7.2 adds a CND bar under the name of loose gear and food you look at, and an MCM slider for spoiled food's chance to make you sick in Survival. NEC.food.log shows the food settings, and a loading screen tip tells how food spoils.
 

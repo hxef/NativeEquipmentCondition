@@ -1,3 +1,12 @@
+1.7.3
+* A new MCM switch, Weapon CND bar stands alone (bHudBarStandsAlone, off), keeps the Weapon CND bar on screen when a HUD mod hides the ammo counter.
+* A new MCM slider, Loot condition shift (iLootShift, 0), makes loot more worn below 0, down to -100, and less worn above 0, up to 100.
+* The quick container rows show a food's freshness as a meter, like a weapon's condition. The meters show in their row name's colour, and the rows of a HUD replacer keep their text colour next to the condition meter.
+* The fridge icon sits right by its text and takes its colour, the container's name on a HUD replacer or the condition percentage on a food's card on an inventory replacer.
+* The MCM hides a feature's rows while its switch is off.
+* NEC.food.log now names the plugin behind a food's kind, as in "a disease risk by SomeMod.esp".
+* NEC now ships NEC_Example.ini in the Exclude, Food and Fridge folders, examples that change nothing as they are.
+
 1.7.2
 * A new Pickup CND bar (bPickupBar, on) under the name of a weapon, armor or food lying around. With food spoiling on it shows how fresh the food is. Its place, size and CND word are on the UI page.
 * Loose gear with no condition yet gets one the first time you look at it.

@@ -9,7 +9,7 @@ end
 
 -- set project constants
 set_project("NativeEquipmentCondition")
-set_version("1.7.2")
+set_version("1.7.3")
 set_license("GPL-3.0")
 set_languages("c++23")
 set_warnings("allextra")
@@ -185,12 +185,17 @@ task("release")
         if nexus then
             -- Checked first, so a text to fix stops the release early. Nexus
             -- Mods takes at most 255 characters for a file's description,
-            -- and every text here is plain ASCII, 1 byte each.
+            -- and every text here is plain ASCII, 1 byte each. The
+            -- description is 1 sentence from "v<version>", a blank line and
+            -- "OG/AE only", the newlines counted.
             local texts = path.join(os.projectdir(), "publish", "nexusmods")
             description = block(path.join(texts, "file_descriptions.txt"), version)
             changelog = block(path.join(texts, "changelog.txt"), version)
-            if description:sub(1, #("Version " .. version)) ~= "Version " .. version then
-                raise("publish/nexusmods/file_descriptions.txt needs a %s block that starts \"Version %s\"", version, version)
+            if description:sub(1, #("v" .. version)) ~= "v" .. version then
+                raise("publish/nexusmods/file_descriptions.txt needs a %s block that starts \"v%s\"", version, version)
+            end
+            if description:sub(-#"\n\nOG/AE only") ~= "\n\nOG/AE only" then
+                raise("the %s file description ends in a blank line and \"OG/AE only\"", version)
             end
             if #description > 255 then
                 raise("the %s file description is %d characters, and Nexus Mods takes 255", version, #description)

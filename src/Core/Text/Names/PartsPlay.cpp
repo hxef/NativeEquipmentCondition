@@ -17,6 +17,7 @@ namespace Text
 			{ Part::kCardArmor, PART_CARD_ARMOR },
 			{ Part::kBroken, PART_BROKEN },
 			{ Part::kPrices, PART_PRICES },
+			{ Part::kScrap, PART_SCRAP },
 			{ Part::kFireRate, PART_FIRE_RATE },
 			{ Part::kFireSound, PART_FIRE_SOUND },
 			{ Part::kCritMeter, PART_CRIT_METER },

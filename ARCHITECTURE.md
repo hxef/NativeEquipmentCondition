@@ -50,6 +50,7 @@ src/
       Owners.cpp             who has a place, and how NEC.log names them
       Losses.cpp             which pieces of each part are off, and why
       Summary.cpp            NEC.log's summary lines: what is left to other mods, what is shared, what that leaves of each setting
+    BenchRow.h/.cpp          the row a workbench's item list has highlighted, for the repair and the SCRAP button
     Feature.h                the shape of a feature and its 4 moments
     IniText.h/.cpp           one key changed in an ini file's text, every other line kept
     ItemCards.h/.cpp         asking the Pip-Boy to rebuild its item cards
@@ -98,6 +99,7 @@ src/
       Bill.cpp               the bill of parts and the order it is charged in
       Components.cpp         which component prices a form, a junk item by its own Components list
       Scrap.cpp              the scrap recipes the bench reads and the lists they name, read at Load, again at every save load, new game and coc from the main menu, and where a script can add to one
+      Yield.h/.cpp           how many of a component a worn copy's scrap count goes in as
     Repair.h/.cpp            what a worn item owes
     WeaponWear/
       WeaponWear.h/.cpp      which weapons take part, wearing the copy in hand
@@ -163,6 +165,10 @@ src/
       Effect.cpp             the object effects a blow or a shot casts
       Blast.cpp              an explosion: its damage and its object effect
       Card.cpp               the item card's damage
+    Scrapping/
+      Scrapping.h/.cpp       worn gear scraps into fewer components, and the count the 2 places share
+      Bench.cpp              the bench's SCRAP list, scaled by the copy the yes takes
+      Workshop.cpp           workshop mode's scrap lists, scaled by the object scrapped
     SpawnCondition/
       SpawnCondition.h/.cpp  the roll at the door of every inventory
       Band.h/.cpp            the roll, either side of an item's middle or in a trader's band

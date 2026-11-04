@@ -58,6 +58,9 @@ enum class Piece : std::uint8_t
 	kBrokenPutBack,
 	// Worn item prices
 	kPrices,
+	// Less scrap when worn
+	kScrapBench,
+	kScrapWorkshop,
 	// Slower fire when worn
 	kFireRate,
 	kFireRateNpcGuns,

@@ -87,6 +87,11 @@ namespace
 		// them back to selling by a health they carry, and every other price
 		// works.
 		{ "value form", {} },
+		// Scrapping
+		{ "bench scrap count", { kScrapBench } },
+		{ "workshop scrap box", { kScrapWorkshop } },
+		{ "workshop scrap no box", { kScrapWorkshop } },
+		{ "workshop scrap count", { kScrapWorkshop } },
 		// FireRate
 		{ "fire speed", { kFireRate } },
 		{ "fire rate", { kFireRate } },

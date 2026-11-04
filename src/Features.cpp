@@ -18,6 +18,7 @@
 #include "Gameplay/InHand.h"
 #include "Gameplay/ItemValue.h"
 #include "Gameplay/Jam.h"
+#include "Gameplay/Scrapping/Scrapping.h"
 #include "Gameplay/SpawnCondition/SpawnCondition.h"
 #include "Gameplay/WeaponEvents/WeaponEvents.h"
 #include "UI/Hud/HudCondition/HudCondition.h"
@@ -101,6 +102,9 @@ namespace
 		{ .name = "BrokenEquip", .part = Part::kBroken, .Install = BrokenEquip::Install },
 		// A worn item is worth less, everywhere the game prints a price.
 		{ .name = "ItemValue", .part = Part::kPrices, .Install = ItemValue::Install },
+		// A worn item scraps into fewer components, at a workbench and in
+		// workshop mode.
+		{ .name = "Scrapping", .part = Part::kScrap, .Install = Scrapping::Install },
 		// The condition of the weapon in the player's hands, measured once a
 		// frame for the hooks below that run every frame.
 		{ .name = "InHand", .Unload = InHand::Unload },

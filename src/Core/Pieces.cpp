@@ -52,6 +52,8 @@ namespace
 		// The mark put back sets is read only by the equip pair's hooks.
 		{ kBrokenPutBack, Part::kBroken, Shown::kName, { kBrokenTakeOff } },
 		{ kPrices, Part::kPrices, Shown::kPart },
+		{ kScrapBench, Part::kScrap, Shown::kName },
+		{ kScrapWorkshop, Part::kScrap, Shown::kName },
 		{ kFireRate, Part::kFireRate, Shown::kPart },
 		// An NPC's gun and the firing sound read the shot that Gun wear from
 		// firing's fire call notes.

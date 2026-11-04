@@ -61,6 +61,8 @@ WEAR AND TEAR
 * Price drops faster than condition, on the Fallout 3 and New Vegas curve: an
   item at half condition is worth 35% of its full price, whether you buy it or
   sell it.
+* Worn gear scraps into fewer components, and broken gear into none, at a
+  workbench and in workshop mode.
 
 Power armor wears and is repaired at the power armor station as it always was,
 but a damaged piece now sells for less, and so does a drained fusion core.
@@ -85,10 +87,10 @@ REPAIR AT THE WORKBENCH
 * At the weapon or armor workbench, select a worn item and a REPAIR button
   takes RENAME's place until it is back at full. Press it, choose how far to
   repair it in steps of 10%, and pay in the components it is built from. Gear
-  that scraps into nothing, like Grognak's Axe, costs what gear of its kind
-  most often scraps into, and wears at the same rate. Short of components, you
-  get the power armor station's list of what the repair takes, with the ones
-  you lack faded.
+  with no scrap recipe, like Grognak's Axe, costs what gear of its kind most
+  often scraps into, and wears at the same rate. Short of components, you get
+  the power armor station's list of what the repair takes, with the ones you
+  lack faded.
 * Barely worn gear, above 95%, gets a MEND button instead, which fixes it on
   the spot for free. The 95% is the Free mend above setting: 100 makes every
   repair cost components, and 0 mends everything but broken gear for free.

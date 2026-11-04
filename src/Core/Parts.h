@@ -26,6 +26,7 @@ enum class Part : std::uint8_t
 	kCardArmor,      // Protection shown in menus
 	kBroken,         // Broken gear rules
 	kPrices,         // Worn item prices
+	kScrap,          // Less scrap when worn
 	kFireRate,       // Slower fire when worn
 	kFireSound,      // Slower firing sound
 	kCritMeter,      // Fewer criticals when worn

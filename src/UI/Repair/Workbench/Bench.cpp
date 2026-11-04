@@ -1,5 +1,6 @@
 #include "UI/Repair/Workbench/Bench.h"
 
+#include "Core/BenchRow.h"
 #include "Core/Settings.h"
 
 #include <algorithm>
@@ -30,19 +31,8 @@ namespace Workbench
 
 	Selection Selected(RE::ExamineMenu* a_menu)
 	{
-		// The item list has to be asked first, since the row number comes out
-		// of it and the game reads it without checking. Flash calls in during
-		// the menu's first moments, before any list exists.
-		if (!a_menu || a_menu->inspectMode || !a_menu->itemList.IsObject()) {
-			return {};
-		}
-
-		const auto  row = static_cast<std::int32_t>(a_menu->GetSelectedIndex());
-		const auto& rows = a_menu->invInterface.stackedEntries;
-		if (row < 0 || static_cast<std::uint32_t>(row) >= rows.size()) {
-			return {};
-		}
-		return Selection{ SelectedItem::Read(rows[static_cast<std::size_t>(row)]) };
+		const auto* row = a_menu && !a_menu->inspectMode ? BenchRow::Highlighted(*a_menu) : nullptr;
+		return row ? Selection{ SelectedItem::Read(*row) } : Selection{};
 	}
 
 	std::optional<Condition::Kind> WorksOn(RE::ExamineMenu* a_menu)

@@ -5,9 +5,9 @@
 #include <span>
 
 // The names of the pieces of the Condition and Gameplay parts from Perk repair
-// discount text to Damage shown in menus, see Core/Pieces.h. The Pip-Boy of
-// Perk repair discount text is in PiecesUi.cpp, the armor pieces are in
-// PiecesArmor.cpp.
+// discount text to Damage shown in menus, and of Less scrap when worn, see
+// Core/Pieces.h. The Pip-Boy of Perk repair discount text is in PiecesUi.cpp,
+// the armor pieces are in PiecesArmor.cpp.
 namespace Text
 {
 	namespace
@@ -28,6 +28,8 @@ namespace Text
 			{ Piece::kCardDmgModEffects, PIECE_CARD_MOD_EFFECTS },
 			{ Piece::kCardDmgOwnEffects, PIECE_CARD_OWN_EFFECTS },
 			{ Piece::kCardDmgBlast, PIECE_BLAST },
+			{ Piece::kScrapBench, PIECE_SCRAP_BENCH },
+			{ Piece::kScrapWorkshop, PIECE_SCRAP_WORKSHOP },
 		};
 	}
 

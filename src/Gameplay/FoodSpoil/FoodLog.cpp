@@ -98,8 +98,8 @@ namespace FoodSpoil
 		{
 			auto text = std::format(
 				"Raw food and crops keep {:.2f} days, cooked food {:.2f}. A cooler or fridge spoils food at {:.2f} of the speed. "
-				"Spoiled food heals {:d}% and gives {:.1f} times the extra rads. In Survival it fills {:d}% of the fresh food's hunger "
-				"and makes you sick {:d} times as often.",
+				"Spoiled food heals {:d}% and adds {:.1f} times its extra rads, 15 for meat and 5 for other food. In Survival it fills "
+				"{:d}% of the fresh food's hunger and makes you sick {:d} times as often.",
 				Settings::fRawFoodDays.GetValue(), Settings::fCookedFoodDays.GetValue(), Settings::fFridgeSpoilSpeed.GetValue(),
 				Settings::iSpoiledHealing.GetValue(), Settings::fSpoiledRadsMult.GetValue(), Settings::iSpoiledHunger.GetValue(),
 				Settings::iSpoiledSicknessMult.GetValue());

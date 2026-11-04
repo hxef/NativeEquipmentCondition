@@ -26,8 +26,8 @@
 // A setting added here is added to publish/NEC.ini too, with a line saying
 // what it does, and to SWITCHES or NUMBERS in Settings.cpp in NEC.ini's
 // order. A setting left out of those is missing from the Settings line, and
-// the MCM page can neither read nor change it. The 9 switches with no row of
-// their own in Features.cpp, bPowerArmorBar, bFridgeIcon,
+// the MCM page can neither read nor change it. The 10 switches with no row of
+// their own in Features.cpp, bPowerArmorBar, bSpareRepair, bFridgeIcon,
 // bHudBarHidesWithCounter, bHudBarStandsAlone, bHudBarShowsWord,
 // bPowerArmorBarShowsWord, bPickupBar, bPickupBarShowsWord and bTraceLogs, are
 // named in Settings.cpp's ReportLine and in UI/Mcm/Bridge.cpp's SwitchFor
@@ -151,6 +151,16 @@ namespace Settings
 	// Traders who deal in weapons, armor or clothing repair them for caps.
 	inline Live<bool> bVendorRepair{ "Features", "bVendorRepair", true };
 
+	// A USE A SPARE row in a workbench's repair box when the player carries
+	// another copy of the item, see Workbench/Spares.h. No feature's row: it
+	// rides on Workbench repairs. On by default.
+	inline Live<bool> bSpareRepair{ "Features", "bSpareRepair", true };
+
+	// Which gear with UnscrappableObject can still be a spare, see
+	// Workbench/Spares.cpp: 0 none, 1 legendaries and 2 all. Any other number
+	// reads as 1, the default.
+	inline Live<std::int32_t> iUnscrappableSpares{ "Features", "iUnscrappableSpares", 1 };
+
 	// Loading screen tips about condition.
 	inline Live<bool> bLoadingTips{ "Features", "bLoadingTips", true };
 
@@ -248,6 +258,10 @@ namespace Settings
 	// What a repair at a workbench costs, against the mod as tuned, see
 	// Workbench/Cost.h.
 	inline Live<float> fBenchCostMult{ "Balance", "fBenchCostMult", 1.0F };
+
+	// What a spare is worth, against what vanilla scrapping gives it at 0.5,
+	// see Workbench/Spares.h. Counts as 0.5 to 2.
+	inline Live<float> fSpareWorthMult{ "Balance", "fSpareWorthMult", 1.0F };
 
 	// The condition above which a workbench mends an item for nothing, a
 	// whole percent, see Workbench/Bench.h.
@@ -374,12 +388,13 @@ namespace Settings
 	// they are off unless a bug is being reported.
 	inline Live<bool> bTraceLogs{ "Log", "bTraceLogs", false };
 
-	// A number under [Loot], [Balance] or [HUD]: a float, or a whole number
-	// where the setting only takes whole steps.
+	// A number under [Features], [Loot], [Balance] or [HUD]: a float, or a
+	// whole number where the setting only takes whole steps.
 	using Number = std::variant<Live<float>*, Live<std::int32_t>*>;
 
-	// The 9 switches under [Features] and the 39 numbers under [Loot],
-	// [Balance] and [HUD], in NEC.ini's order, for Report and the MCM page.
+	// The 9 switches under [Features] and the 41 numbers under [Features],
+	// [Loot], [Balance] and [HUD], in NEC.ini's order, for Report and the MCM
+	// page.
 	[[nodiscard]] std::span<Live<bool>* const> Switches();
 	[[nodiscard]] std::span<const Number>      Numbers();
 }

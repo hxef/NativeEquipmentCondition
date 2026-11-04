@@ -32,7 +32,9 @@ namespace Text
 			{ "Penalties", PENALTIES_TITLE },
 			{ "Jams", JAMS_TITLE },
 			{ "Loot", LOOT_TITLE },
-			{ "Repairs", REPAIRS_TITLE },
+			{ "BenchRepairs", BENCH_REPAIRS_TITLE },
+			{ "SpareRepairs", SPARE_REPAIRS_TITLE },
+			{ "VendorRepairs", VENDOR_REPAIRS_TITLE },
 			{ "HudBar", HUD_BAR_TITLE },
 			{ "PowerArmorBar", POWER_ARMOR_BAR_TITLE },
 			{ "PickupBar", PICKUP_BAR_TITLE },
@@ -80,6 +82,11 @@ namespace Text
 		// falls back to is never seen.
 		return Say(a_weapons && a_armor ? PERK_DISCOUNT_BOTH : a_armor ? PERK_DISCOUNT_ARMOR : PERK_DISCOUNT_WEAPONS,
 			a_percent);
+	}
+
+	std::string PerkScrapper()
+	{
+		return Pick(PERK_SCRAPPER);
 	}
 
 	std::string ArmorWornOut(std::string_view a_name)

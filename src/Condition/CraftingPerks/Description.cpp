@@ -4,6 +4,7 @@
 #include "Condition/CraftingPerks/Ladder.h"
 #include "Condition/CraftingPerks/Perks.h"
 #include "Core/CallPatch/CallPatch.h"
+#include "Core/Settings.h"
 #include "Core/Text/Text.h"
 #include "Core/TraceLog.h"
 
@@ -30,6 +31,10 @@ namespace CraftingPerks
 		// Whether the bench repairs, see SetBench. Set once at install.
 		bool (*g_benchRepairs)() = nullptr;
 
+		// Scrapper01 in Fallout4.esm, by its ID, the same on OG and AE. Its
+		// next ranks are walked from it.
+		constexpr RE::TESFormID SCRAPPER = 0x065E65;
+
 		[[nodiscard]] const Told* Ours(const Perks& a_perks, const RE::TESDescription* a_description)
 		{
 			const auto found = std::find_if(a_perks.told.begin(), a_perks.told.end(),
@@ -37,11 +42,28 @@ namespace CraftingPerks
 			return found != a_perks.told.end() ? &*found : nullptr;
 		}
 
+		// The Scrapper rank a_description belongs to, from 1, or 0 for none.
+		[[nodiscard]] std::uint32_t ScrapperRank(const Perks& a_perks, const RE::TESDescription* a_description)
+		{
+			const auto found = std::find_if(a_perks.scrapper.begin(), a_perks.scrapper.end(),
+				[a_description](const RE::BGSPerk* a_perk) { return static_cast<const RE::TESDescription*>(a_perk) == a_description; });
+			return found != a_perks.scrapper.end() ? static_cast<std::uint32_t>(found - a_perks.scrapper.begin()) + 1 : 0;
+		}
+
+		void Join(std::string& a_said, const std::string& a_line)
+		{
+			if (!a_said.empty()) {
+				a_said += " ";
+			}
+			a_said += a_line;
+		}
+
 		// Adds the plugin's line after the words already there, so a
 		// description rewritten by another plugin or read in another language
 		// comes through. Joined with a space, never a line break: the level up
 		// chart keeps only the first 2 pieces split on newlines and would drop
 		// the whole sentence. One per site, and only while the bench repairs.
+		// Scrapper's line shows only while spare repair is on too.
 		template <std::size_t I>
 		void DescriptionHk(RE::TESDescription* a_description, RE::BSString& a_out, const RE::TESForm* a_form)
 		{
@@ -49,16 +71,19 @@ namespace CraftingPerks
 			const auto  bench = g_benchRepairs && g_benchRepairs();
 			const auto  perks = g_links[I].Live() && bench ? Current() : nullptr;
 			const auto* ours = perks ? Ours(*perks, a_description) : nullptr;
-			if (!ours) {
+			const auto  scrapper = perks && Settings::bSpareRepair.GetValue() ? ScrapperRank(*perks, a_description) : 0U;
+			if (!ours && scrapper == 0) {
 				return;
 			}
 
 			const auto* already = a_out.c_str();
 			std::string said = already ? already : "";
-			if (!said.empty()) {
-				said += " ";
+			if (ours) {
+				Join(said, Text::PerkDiscount(ours->percent, ours->weapons, ours->armor));
 			}
-			said += Text::PerkDiscount(ours->percent, ours->weapons, ours->armor);
+			if (scrapper > 0) {
+				Join(said, Text::PerkScrapper());
+			}
 			a_out.Set(said.c_str(), 0);
 
 			// A screen asks for a description every time it draws, so the trace
@@ -75,9 +100,10 @@ namespace CraftingPerks
 						shown += c;
 					}
 				}
+				const auto* perk = ours ? ours->perk : perks->scrapper[scrapper - 1];
 				TraceLog::Once("menu", "{:s} rank {:d} [{:08X}] reads \"{:s}\"",
-					ours->perk ? RE::TESFullName::GetFullName(*ours->perk) : "a perk"sv, ours->rank,
-					ours->perk ? ours->perk->formID : 0U, shown);
+					perk ? RE::TESFullName::GetFullName(*perk) : "a perk"sv, ours ? ours->rank : scrapper,
+					perk ? perk->formID : 0U, shown);
 			}
 		}
 	}
@@ -110,6 +136,16 @@ namespace CraftingPerks
 				a_perks.told.push_back({ static_cast<const RE::TESDescription*>(walk), Discount(at, ranks), walk, at, gates.weapons > 0, gates.armor > 0 });
 				walk = walk->nextPerk;
 			} while (walk && walk != first && at < LADDER_LIMIT);
+		}
+	}
+
+	void TellScrapper(Perks& a_perks)
+	{
+		const auto* first = g_dataHandler ? g_dataHandler->LookupForm<RE::BGSPerk>(SCRAPPER, "Fallout4.esm") : nullptr;
+		const auto* walk = first;
+		while (walk && a_perks.scrapper.size() < LADDER_LIMIT) {
+			a_perks.scrapper.push_back(walk);
+			walk = walk->nextPerk == first ? nullptr : walk->nextPerk;
 		}
 	}
 }

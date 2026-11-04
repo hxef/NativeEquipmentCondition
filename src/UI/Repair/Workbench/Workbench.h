@@ -27,7 +27,8 @@
 // the question to the finished item, Box.h its confirmation and what yes takes,
 // Missing.h what a repair the bench cannot pay for shows, Label.h the button's
 // word and the mods heading, Display.h how a worn item is shown and kept out of
-// the slots, and Lists.h the hooks on the lists that do it.
+// the slots, Lists.h the hooks on the lists that do it, and Spares.h and
+// SpareBox.h the repair with a spare, another copy of the item taken apart.
 namespace Workbench
 {
 	// Patches the workbench menu's function table, each place by itself.

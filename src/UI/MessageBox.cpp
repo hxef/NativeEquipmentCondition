@@ -28,6 +28,10 @@ namespace MessageBox
 		{
 			const RE::IMessageBoxCallback* callback = nullptr;
 			std::uint64_t                  number = 0;
+			// The row the highlight is still to be put on and how many
+			// buttons the box has, 0 once it is there or for none.
+			std::uint32_t start = 0;
+			std::uint32_t buttons = 0;
 		};
 
 		// Every callback of NEC's that still lives. They are compared, never
@@ -43,17 +47,54 @@ namespace MessageBox
 			return !g_asked.empty();
 		}
 
-		// The number of the box a_callback belongs to, or nothing for a
-		// vanilla box or another mod's.
-		[[nodiscard]] std::optional<std::uint64_t> NumberOf(const RE::IMessageBoxCallback* a_callback)
+		// The box a_callback belongs to, or nothing for a vanilla box or
+		// another mod's.
+		[[nodiscard]] std::optional<Asked> Find(const RE::IMessageBoxCallback* a_callback)
 		{
 			const std::scoped_lock l{ g_askedLock };
 			for (const auto& asked : g_asked) {
 				if (asked.callback == a_callback) {
-					return asked.number;
+					return asked;
 				}
 			}
 			return std::nullopt;
+		}
+
+		// Sets the row a_callback's box starts on, 0 once it is there.
+		void StartAt(const RE::IMessageBoxCallback* a_callback, std::uint32_t a_start, std::uint32_t a_buttons)
+		{
+			const std::scoped_lock l{ g_askedLock };
+			for (auto& asked : g_asked) {
+				if (asked.callback == a_callback) {
+					asked.start = a_start;
+					asked.buttons = a_buttons;
+				}
+			}
+		}
+
+		// -------------------------------------------------------------------
+		// The row NEC's box starts on
+		// -------------------------------------------------------------------
+
+		// Puts the highlight on a_asked's starting row, once the movie shows
+		// the box with its buttons, which puts the highlight on the first.
+		// Tried on that 1 frame only, so a player who comes back to the
+		// first row keeps it. True once tried.
+		[[nodiscard]] bool MoveHighlight(RE::MessageBoxMenu& a_menu, const Asked& a_asked)
+		{
+			auto       list = Roles::Boxes::MessageList(a_menu);
+			const auto rows = Flash::Member(list, "entryList"sv);
+			if (!Flash::Bool(a_menu.menuObj, "visible"sv) || !rows.IsArray() || rows.GetArraySize() != a_asked.buttons) {
+				return false;
+			}
+			if (Flash::Number(list, "selectedIndex"sv, -1.0) != 0.0 ||
+				!Flash::Set(list, "selectedIndex"sv, Value(static_cast<double>(a_asked.start))) ||
+				Flash::Number(list, "selectedIndex"sv, -1.0) != static_cast<double>(a_asked.start)) {
+				TraceLog::Line("menu", "NEC's box {:d} keeps its highlight on its first row", a_asked.number);
+				return true;
+			}
+			TraceLog::Line("menu", "NEC's box {:d} put its highlight on row {:d}", a_asked.number, a_asked.start);
+			return true;
 		}
 
 		// -------------------------------------------------------------------
@@ -81,7 +122,8 @@ namespace MessageBox
 
 		// Called by the message box movie every frame. Only NEC's own box is
 		// looked at, so while NEC has no box up or waiting, a frame costs a
-		// check of an empty list.
+		// check of an empty list. A box with a starting row gets its
+		// highlight there first.
 		//
 		// The message box mod puts a background of its own in the vanilla
 		// background's place and styles it as each box shows, a few frames
@@ -108,7 +150,12 @@ namespace MessageBox
 				if (!menu || menu->uiMovie.get() != a_params.movie || !menu->GetRuntimeData().currentMessage) {
 					return;
 				}
-				const auto number = NumberOf(menu->GetRuntimeData().currentMessage->callback.get());
+				const auto* callback = menu->GetRuntimeData().currentMessage->callback.get();
+				const auto  asked = Find(callback);
+				if (asked && asked->start > 0 && MoveHighlight(*menu, *asked)) {
+					StartAt(callback, 0, 0);
+				}
+				const auto number = asked ? std::optional{ asked->number } : std::nullopt;
 				if (!number || *number == refused) {
 					return;
 				}
@@ -184,7 +231,7 @@ namespace MessageBox
 	// -------------------------------------------------------------------
 
 	void Ask(const char* a_title, const char* a_body,
-		const std::vector<std::string>& a_buttons, Callback* a_callback)
+		const std::vector<std::string>& a_buttons, Callback* a_callback, std::uint32_t a_start)
 	{
 		if (a_buttons.empty()) {
 			delete a_callback;
@@ -208,6 +255,9 @@ namespace MessageBox
 		// The Cancel key presses the last button. Most vanilla boxes
 		// give it no button, -1.
 		const auto wayOut = static_cast<std::int32_t>(a_buttons.size() - 1);
+		if (a_start > 0 && a_start < a_buttons.size()) {
+			StartAt(a_callback, a_start, static_cast<std::uint32_t>(a_buttons.size()));
+		}
 
 		// MessageMenuManager::Create takes 4 labels and is the only source of
 		// the 4 button limit. QueueMessage counts nothing. The box is modal and

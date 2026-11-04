@@ -130,6 +130,7 @@ namespace CraftingPerks
 		}
 		remember(perks->armor);
 		TellRanks(*perks, saying);
+		TellScrapper(*perks);
 		return perks;
 	}
 }

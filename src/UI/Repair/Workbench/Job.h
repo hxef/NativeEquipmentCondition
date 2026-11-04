@@ -40,8 +40,11 @@ namespace Workbench
 
 	// Asks how far to repair the item, naming the perk above the question where
 	// the player holds a rank. The answer goes to Begin a moment later, with
-	// a_priced, what PriceOf read at the REPAIR press.
-	void AskWhichLevel(const Selection& a_selection, const Priced& a_priced, const std::vector<std::uint32_t>& a_offered);
+	// a_priced, what PriceOf read at the REPAIR press. With a_spare, USE A
+	// SPARE sits above the levels and opens the box of spares instead, see
+	// SpareBox.h.
+	void AskWhichLevel(const Selection& a_selection, const Priced& a_priced, const std::vector<std::uint32_t>& a_offered,
+		bool a_spare);
 
 	// Prices the repair from a_priced and puts up its confirmation, or the box
 	// of what the bench lacks. Yes on the confirmation comes back to Finish.
@@ -55,6 +58,27 @@ namespace Workbench
 	// Repairs a barely worn item on the spot for free: the same work a paid
 	// repair ends in, handed a job that asks for no components.
 	void Mend(RE::ExamineMenu* a_menu);
+
+	// Makes a_parts the job's parts, which its recipe lists.
+	void SetParts(const std::vector<Materials::Part>& a_parts);
+
+	// What a repair paid in experience, for the trace.
+	struct Paid
+	{
+		std::uint32_t worth{ 0 };
+		float         experience{ 0.0F };
+	};
+
+	// Pays the experience crafting a mod from the job's parts pays, nothing
+	// for no parts.
+	Paid PayExperience(RE::PlayerCharacter& a_player);
+
+	// Brings the bench up to date after a repair of an item of a_type: the
+	// name in the list, the CND row on the card, the slot list ungreyed once
+	// the item reaches the floor, the button, and the Pip-Boy's cards of
+	// that kind. The list keeps the highlight where the menu's own record of
+	// the highlighted stack says, see SpareBox.cpp.
+	void Refresh(RE::ExamineMenu* a_menu, RE::ENUM_FORM_ID a_type);
 
 	// Ends the job, whatever became of the repair. Touches nothing but the
 	// job, since it also runs while the bench closes.

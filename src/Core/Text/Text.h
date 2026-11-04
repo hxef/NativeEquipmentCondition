@@ -72,6 +72,27 @@ namespace Text
 	// an item on the spot for free.
 	[[nodiscard]] std::string Mended(bool a_armor);
 
+	// "USE A SPARE", the top row of the bench's repair box while the player
+	// carries a spare, see Workbench/Spares.h.
+	[[nodiscard]] std::string SpareButton();
+
+	// "Hunting Rifle is at 85% condition. Use up a spare to repair it:"
+	[[nodiscard]] std::string SpareQuestion(std::string_view a_name, std::uint32_t a_percent);
+
+	// A spare's name with its marks before it in the order equipped, favorite,
+	// legendary, each a word in brackets, since no language's font for the box
+	// has a star or a heart:
+	// "(equipped) Hunting Rifle", "(favorite) (legendary) Hunting Rifle".
+	[[nodiscard]] std::string SpareName(std::string_view a_name, bool a_equipped, bool a_favorite, bool a_legendary);
+
+	// "Hunting Rifle (60%)  +7%", 1 row of the spare box, a_name from
+	// SpareName.
+	[[nodiscard]] std::string SpareRow(std::string_view a_name, std::uint32_t a_percent, std::uint32_t a_gain);
+
+	// "Salvaged Steel, Screw (2) and Spring.", the parts a spare gave back,
+	// each with its count past 1.
+	[[nodiscard]] std::string SpareSalvaged(std::span<const std::string> a_parts);
+
 	// "80% for 240 caps", one button of the question a trader asks, see
 	// VendorRepair.h.
 	[[nodiscard]] std::string RepairPrice(std::uint32_t a_level, std::uint32_t a_caps);
@@ -113,6 +134,10 @@ namespace Text
 	// "Armor built mostly ... takes", both read "Weapons and armor built
 	// mostly ... take". See CraftingPerks.h.
 	[[nodiscard]] std::string PerkDiscount(std::uint32_t a_percent, bool a_weapons, bool a_armor);
+
+	// "Spares used to repair weapons and armor at the workbench restore more
+	// condition.", added to every rank of Scrapper while spare repair is on.
+	[[nodiscard]] std::string PerkScrapper();
 
 	// "Combat Armor Chest Piece is worn out.", said in the corner when a piece
 	// the player wears reaches 0.

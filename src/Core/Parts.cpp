@@ -95,6 +95,9 @@ namespace
 	// With another mod on the bench lists the lock still refuses BUILD, but
 	// no row fades and the mod slots stay open.
 	constexpr Piece MOD_LOCK_SIDE[]{ kBenchItemList, kBenchModLists };
+	// Spare repair rides on the bench's REPAIR press, and the perk pages
+	// tell of what Scrapper adds to a spare.
+	constexpr Piece SPARE_SIDE[]{ kPerksChart, kPerksPipboy };
 	// The bite, the station rows and the Fertilizer row each go off alone,
 	// and food still spoils. The 2 days and the fridge speed set only how fast
 	// it spoils.
@@ -114,6 +117,8 @@ namespace
 		{ &Settings::bJam, nullptr, JAM, JAM_SIDE },
 		{ &Settings::bSpawnCondition, nullptr, WORN_LOOT, WORN_LOOT_SIDE, WORN_LOOT_EXCEPTIONS },
 		{ &Settings::bVendorRepair, nullptr, TRADER_REPAIRS, TRADER_REPAIRS_SIDE },
+		{ &Settings::bSpareRepair, &Settings::fBenchCostMult, BENCH, SPARE_SIDE },
+		{ &Settings::iUnscrappableSpares, &Settings::fBenchCostMult, BENCH },
 		{ &Settings::bLoadingTips, nullptr, TIPS },
 		{ &Settings::bHudCondition, nullptr, HUD_BARS },
 		// The power armor bar's switch rides on HUD condition bars as the
@@ -143,6 +148,7 @@ namespace
 		{ &Settings::fAccuracyFloor, nullptr, ACCURACY, ACCURACY_SIDE },
 		{ &Settings::fRangeFloor, nullptr, RANGE, RANGE_SIDE },
 		{ &Settings::fBenchCostMult, nullptr, BENCH, {}, BENCH_EXCEPTIONS },
+		{ &Settings::fSpareWorthMult, &Settings::fBenchCostMult, BENCH },
 		{ &Settings::iFreeMendAbove, &Settings::fBenchCostMult, BENCH },
 		{ &Settings::fModLockStart, &Settings::fBenchCostMult, BENCH, MOD_LOCK_SIDE },
 		{ &Settings::fTraderPriceMult, &Settings::bVendorRepair, TRADER_REPAIRS, TRADER_PRICE_SIDE },

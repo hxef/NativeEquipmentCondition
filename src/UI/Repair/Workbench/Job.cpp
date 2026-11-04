@@ -13,12 +13,14 @@
 #include "UI/Repair/Workbench/Display.h"
 #include "UI/Repair/Workbench/Label.h"
 #include "UI/Repair/Workbench/Missing.h"
+#include "UI/Repair/Workbench/SpareBox.h"
 #include "UI/Repair/Workbench/Workbench.h"
 
 #include <algorithm>
 #include <cmath>
 #include <cstddef>
 #include <format>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -97,7 +99,8 @@ namespace Workbench
 		return job;
 	}
 
-	void AskWhichLevel(const Selection& a_selection, const Priced& a_priced, const std::vector<std::uint32_t>& a_offered)
+	void AskWhichLevel(const Selection& a_selection, const Priced& a_priced, const std::vector<std::uint32_t>& a_offered,
+		bool a_spare)
 	{
 		if (a_offered.empty()) {
 			return;
@@ -124,8 +127,19 @@ namespace Workbench
 		                        std::format("{:s} {:d} for {:d}% fewer components", standing.Name(), standing.rank, off) :
 		                        std::string{ "nobody" };
 		TraceLog::Line("menu",
-			"Workbench asks how far to repair {:s} at {:d}%, offering {:s}, crediting {:s}",
-			a_selection.Name(), a_selection.percent, spelled, credit);
+			"Workbench asks how far to repair {:s} at {:d}%, offering {:s}{:s}, crediting {:s}",
+			a_selection.Name(), a_selection.percent, spelled, a_spare ? " under USE A SPARE" : "", credit);
+
+		// The item is found again by its stack's list, which keeps no
+		// number that moves.
+		std::optional<RepairPrompt::Top> top;
+		if (a_spare) {
+			top = RepairPrompt::Top{ Text::SpareButton(),
+				[object = a_selection.object, extra = a_selection.extra, priced = a_priced] {
+					TraceLog::Line("menu", "Workbench USE A SPARE pressed");
+					AskWhichSpare(*object, extra, priced);
+				} };
+		}
 
 		// The bench is looked up again when the answer comes, in case the
 		// player walked away in between.
@@ -134,7 +148,7 @@ namespace Workbench
 				TraceLog::Line("menu", "Workbench repair set to {:d}%", offered[a_index]);
 				Begin(OpenBench(), offered[a_index], priced);
 			},
-			[] { TraceLog::Line("menu", "Workbench repair called off"); });
+			[] { TraceLog::Line("menu", "Workbench repair called off"); }, std::move(top));
 	}
 
 	void Begin(RE::ExamineMenu* a_menu, std::uint32_t a_level, const Priced& a_priced)
@@ -177,12 +191,7 @@ namespace Workbench
 
 		auto& job = InHand();
 		job.level = a_level;
-		job.parts.clear();
-		for (const auto& part : bill) {
-			RE::BGSTypedFormValuePair::SharedVal count{};
-			count.i = part.count;
-			job.parts.push_back({ const_cast<RE::BGSComponent*>(part.component), count });
-		}
+		SetParts(bill);
 
 		job.choice = {};
 		job.choice.recipe = &JobRecipe();
@@ -233,15 +242,7 @@ namespace Workbench
 		RE::BGSInventoryItem::CheckStackIDFunctor find{ selection.stack };
 		Restore::Write(*player, *selection.object, find, level);
 
-		// What crafting a mod from the same components pays, the game counting
-		// what they are worth as it counts a recipe. False is the path that
-		// scales it by Intelligence and runs the experience perks, Idiot Savant
-		// among them, as a craft does. True would pay it bare.
-		const auto worth = RE::TESValueForm::GetFormValue(&JobRecipe(), nullptr);
-		const auto gained = CraftExperience(worth);
-		if (gained > 0.0F) {
-			player->RewardExperience(gained, false, nullptr, nullptr);
-		}
+		const auto paid = PayExperience(*player);
 
 		// Spends the job's parts, but not for a job asking nothing, a repair
 		// in the free band. That one queues the item itself, since the
@@ -255,12 +256,49 @@ namespace Workbench
 
 		TraceLog::Line("menu",
 			"Workbench repaired {:s} from {:d}% to {:d}%, one of a stack of {:d}, worth {:d} for {:g} experience before Intelligence and perks",
-			name, selection.percent, level, selection.count, worth, gained);
+			name, selection.percent, level, selection.count, paid.worth, paid.experience);
 
 		Drop();
+		Refresh(a_menu, selection.object->GetFormType());
 
-		// Brings the bench up to date: the name in the list, the CND row on the
-		// card, and the slot list ungreyed once the item reaches the floor.
+		// Nothing else on the screen says a free repair was made, with no
+		// confirmation, no components leaving and no experience. Then an item
+		// no mod fits says why it stays greyed.
+		if (InHand().parts.empty()) {
+			const auto said = Text::Mended(selection.Armor());
+			RE::SendHUDMessage::ShowHUDMessage(said.c_str(), nullptr, true, true);
+		}
+		SayCannotModify(selection, name, level);
+	}
+
+	void SetParts(const std::vector<Materials::Part>& a_parts)
+	{
+		auto& parts = InHand().parts;
+		parts.clear();
+		for (const auto& part : a_parts) {
+			RE::BGSTypedFormValuePair::SharedVal count{};
+			count.i = static_cast<std::int32_t>(part.count);
+			parts.push_back({ const_cast<RE::BGSComponent*>(part.component), count });
+		}
+	}
+
+	Paid PayExperience(RE::PlayerCharacter& a_player)
+	{
+		// What crafting a mod from the same components pays, the game counting
+		// what they are worth as it counts a recipe. False is the path that
+		// scales it by Intelligence and runs the experience perks, Idiot Savant
+		// among them, as a craft does. True would pay it bare.
+		Paid paid;
+		paid.worth = RE::TESValueForm::GetFormValue(&JobRecipe(), nullptr);
+		paid.experience = CraftExperience(paid.worth);
+		if (paid.experience > 0.0F) {
+			a_player.RewardExperience(paid.experience, false, nullptr, nullptr);
+		}
+		return paid;
+	}
+
+	void Refresh(RE::ExamineMenu* a_menu, RE::ENUM_FORM_ID a_type)
+	{
 		a_menu->UpdateItemList(static_cast<std::int32_t>(a_menu->GetSelectedIndex()));
 		RebuildModdedItem(a_menu);
 		a_menu->UpdateItemCard(false);
@@ -285,16 +323,7 @@ namespace Workbench
 		// The Pip-Boy lists the repaired item again by itself, see
 		// ItemCards.h. Its kind of card is rebuilt as well, once per repair:
 		// the apparel cards for a chest piece, the weapon cards for a gun.
-		ItemCards::Refresh(selection.object->GetFormType());
-
-		// Nothing else on the screen says a free repair was made, with no
-		// confirmation, no components leaving and no experience. Then an item
-		// no mod fits says why it stays greyed.
-		if (InHand().parts.empty()) {
-			const auto said = Text::Mended(selection.Armor());
-			RE::SendHUDMessage::ShowHUDMessage(said.c_str(), nullptr, true, true);
-		}
-		SayCannotModify(selection, name, level);
+		ItemCards::Refresh(a_type);
 	}
 
 	void Mend(RE::ExamineMenu* a_menu)

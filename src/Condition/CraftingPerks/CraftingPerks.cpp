@@ -85,6 +85,12 @@ namespace CraftingPerks
 				REX::INFO("A piece of armor whose own parts name no perk falls back on {:s}",
 					RE::TESFullName::GetFullName(*a_perks.armor));
 			}
+			if (a_perks.scrapper.empty()) {
+				REX::INFO("Fallout4.esm has no Scrapper perk, so no perk page tells what Scrapper adds to a spare.");
+			} else {
+				REX::DEBUG("Perk {:s} has {:d} ranks, which tell what it adds to a spare",
+					RE::TESFullName::GetFullName(*a_perks.scrapper.front()), a_perks.scrapper.size());
+			}
 		}
 	}
 
@@ -154,7 +160,7 @@ namespace CraftingPerks
 		Counted    counted;
 		auto       now = Measure(counted);
 		const bool moved = was->gates != now->gates || was->kinds != now->kinds || was->armor != now->armor ||
-		                   was->told != now->told;
+		                   was->told != now->told || was->scrapper != now->scrapper;
 		g_perks.Publish(std::move(now));
 		return moved ? std::vector<std::string>{ "the crafting perk gates" } : std::vector<std::string>{};
 	}

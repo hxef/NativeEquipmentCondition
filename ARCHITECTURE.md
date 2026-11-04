@@ -99,7 +99,7 @@ src/
       Bill.cpp               the bill of parts and the order it is charged in
       Components.cpp         which component prices a form, a junk item by its own Components list
       Scrap.cpp              the scrap recipes the bench reads and the lists they name, read at Load, again at every save load, new game and coc from the main menu, and where a script can add to one
-      Yield.h/.cpp           how many of a component a worn copy's scrap count goes in as
+      Yield.h/.cpp           how many of a component a worn copy's scrap count goes in as, and what a spare is worth
     Repair.h/.cpp            what a worn item owes
     WeaponWear/
       WeaponWear.h/.cpp      which weapons take part, wearing the copy in hand
@@ -116,7 +116,7 @@ src/
       Ladder.h/.cpp          walking a perk's ring of ranks
       Perks.h/.cpp           what every recipe says about perks: the gates, the fallbacks and the perk page lines
       Recipes.h/.cpp         which perks a recipe needs and what its mod reaches, a weapon's kind
-      Description.h/.cpp     the line every rank grows on the perk page
+      Description.h/.cpp     the line every rank of a crafting perk and of Scrapper grows on the perk page
     Provenance/
       Provenance.h/.cpp      where an item came from and who carries it
       Supply.h/.cpp          walking the leveled lists, where each one sits

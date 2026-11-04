@@ -51,6 +51,7 @@ namespace Settings
 		};
 
 		const Number NUMBERS[]{
+			&iUnscrappableSpares,
 			&iLootShift,
 			&fWearRateMult,
 			&fNpcWearRateMult,
@@ -67,6 +68,7 @@ namespace Settings
 			&fAccuracyFloor,
 			&fRangeFloor,
 			&fBenchCostMult,
+			&fSpareWorthMult,
 			&iFreeMendAbove,
 			&fModLockStart,
 			&fTraderPriceMult,
@@ -95,16 +97,27 @@ namespace Settings
 		// The switches neither list holds, each after the setting NEC.ini has
 		// it after, for the Settings line.
 		Live<bool>* const AFTER_JAM[]{ &bPlainApparelNeverWears };
+		Live<bool>* const AFTER_VENDOR_REPAIR[]{ &bSpareRepair };
 		Live<bool>* const AFTER_HUD_CONDITION[]{ &bPowerArmorBar };
 		Live<bool>* const AFTER_FOOD_SPOILS[]{ &bFridgeIcon };
 		Live<bool>* const AFTER_HUD_BAR[]{ &bHudBarHidesWithCounter, &bHudBarStandsAlone, &bHudBarShowsWord };
 		Live<bool>* const AFTER_POWER_ARMOR_BAR[]{ &bPowerArmorBarShowsWord, &bPickupBar };
 		Live<bool>* const AFTER_PICKUP_BAR[]{ &bPickupBarShowsWord };
 
+		// The number under [Features], which the Settings line puts after the
+		// switch NEC.ini has it after.
+		[[nodiscard]] const Live<std::int32_t>* NumberAfter(const Named& a_setting)
+		{
+			return &a_setting == &bSpareRepair ? &iUnscrappableSpares : nullptr;
+		}
+
 		[[nodiscard]] std::span<Live<bool>* const> SwitchesAfter(const Named& a_setting)
 		{
 			if (&a_setting == &bJam) {
 				return AFTER_JAM;
+			}
+			if (&a_setting == &bVendorRepair) {
+				return AFTER_VENDOR_REPAIR;
 			}
 			if (&a_setting == &bHudCondition) {
 				return AFTER_HUD_CONDITION;
@@ -336,20 +349,30 @@ namespace Settings
 		// Every key as it stands now, before any limit, in NEC.ini's order and
 		// spelling.
 		std::string line = "Settings: [Features]";
+		const auto say = [&](const auto& a_number) {
+			std::format_to(std::back_inserter(line), " {:s}={:s}{:s}", a_number.key, Shown(a_number.GetValue()), Mark(a_number));
+		};
 		for (const auto* on : SWITCHES) {
 			std::format_to(std::back_inserter(line), " {:s}={:s}", on->key, Shown(*on));
 			for (const auto* after : SwitchesAfter(*on)) {
 				std::format_to(std::back_inserter(line), " {:s}={:s}", after->key, Shown(*after));
+				if (const auto* number = NumberAfter(*after)) {
+					say(*number);
+				}
 			}
 		}
 		std::string_view section;
 		for (const auto& entry : NUMBERS) {
 			std::visit([&](const auto* a_number) {
+				// Said after its switch above.
+				if (a_number->section == bSpareRepair.section) {
+					return;
+				}
 				if (a_number->section != section) {
 					section = a_number->section;
 					std::format_to(std::back_inserter(line), " [{:s}]", section);
 				}
-				std::format_to(std::back_inserter(line), " {:s}={:s}{:s}", a_number->key, Shown(a_number->GetValue()), Mark(*a_number));
+				say(*a_number);
 				for (const auto* after : SwitchesAfter(*a_number)) {
 					std::format_to(std::back_inserter(line), " {:s}={:s}", after->key, Shown(*after));
 				}

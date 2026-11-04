@@ -26,6 +26,9 @@ namespace Roles::Boxes
 		constexpr const char* HOLDER_NAME = "ButtonBarHolder_mc";
 		constexpr const char* BAR_NAME = "ButtonHintBar_mc";
 
+		// The message box's list of buttons.
+		constexpr const char* MESSAGE_LIST_NAME = "List_mc";
+
 		// The barter and container screens' quantity box.
 		constexpr const char* QUANTITY_NAME = "QuantityMenu_mc";
 
@@ -220,6 +223,11 @@ namespace Roles::Boxes
 	Value MessageBackground(RE::MessageBoxMenu& a_menu)
 	{
 		return Flash::Member(a_menu.menuObj, BACKGROUND_NAME);
+	}
+
+	Value MessageList(RE::MessageBoxMenu& a_menu)
+	{
+		return Flash::Member(a_menu.menuObj, MESSAGE_LIST_NAME);
 	}
 
 	// -------------------------------------------------------------------

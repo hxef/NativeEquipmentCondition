@@ -13,6 +13,7 @@
 #include "UI/Repair/Workbench/Job.h"
 #include "UI/Repair/Workbench/Label.h"
 #include "UI/Repair/Workbench/Lists.h"
+#include "UI/Repair/Workbench/Spares.h"
 
 #include <cstdint>
 #include <format>
@@ -102,7 +103,8 @@ namespace Workbench
 		// repaired on the spot. One the bench has nothing to rebuild from is
 		// sent to a trader, see Cost.h. One with a single level worth offering
 		// goes straight to the confirmation, through the task queue like the
-		// prompt.
+		// prompt, unless the player carries a spare for it, see Spares.h,
+		// which only the question offers.
 		void RepairSelectedItemHk(RE::ExamineMenu* a_menu)
 		{
 			if (!Repairs()) {
@@ -139,8 +141,9 @@ namespace Workbench
 					above.size() - offered.size(), above.size(), selection.Name());
 			}
 
-			if (offered.size() != 1) {
-				AskWhichLevel(selection, priced, offered);
+			const auto spare = CarriesSpare(selection);
+			if (offered.size() != 1 || spare) {
+				AskWhichLevel(selection, priced, offered, spare);
 				return;
 			}
 

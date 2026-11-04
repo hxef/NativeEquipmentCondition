@@ -20,6 +20,7 @@ namespace Text
 			{ &Settings::fAccuracyFloor, ACCURACY_FLOOR_NAME, ACCURACY_FLOOR_HELP },
 			{ &Settings::fRangeFloor, RANGE_FLOOR_NAME, RANGE_FLOOR_HELP },
 			{ &Settings::fBenchCostMult, BENCH_COST_NAME, BENCH_COST_HELP },
+			{ &Settings::fSpareWorthMult, SPARE_WORTH_NAME, SPARE_WORTH_HELP },
 			{ &Settings::iFreeMendAbove, FREE_MEND_NAME, FREE_MEND_HELP },
 			{ &Settings::fModLockStart, MOD_LOCK_NAME, MOD_LOCK_HELP },
 			{ &Settings::fTraderPriceMult, TRADER_PRICE_NAME, TRADER_PRICE_HELP },

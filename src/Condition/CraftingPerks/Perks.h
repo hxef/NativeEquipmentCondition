@@ -70,6 +70,9 @@ namespace CraftingPerks
 		// Every rank of every perk that can price a repair, 15 in vanilla, so
 		// a plain loop is fast enough.
 		std::vector<Told> told;
+		// Every rank of Scrapper from the first, whose page tells what it adds
+		// to a spare repair, see TellScrapper.
+		std::vector<const RE::BGSPerk*> scrapper;
 	};
 
 	// The counts Load's lines name.

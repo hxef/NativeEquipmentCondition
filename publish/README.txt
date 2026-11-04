@@ -91,6 +91,11 @@ REPAIR AT THE WORKBENCH
   often scraps into, and wears at the same rate. Short of components, you get
   the power armor station's list of what the repair takes, with the ones you
   lack faded.
+* Carrying a spare of the same item? USE A SPARE in the repair box takes it
+  apart for the repair: it restores as much condition as its scrap is worth,
+  and the parts left over go to your inventory. Spare worth sets how much
+  condition a spare restores and Scrapper raises it, but you never get back
+  more parts than it holds.
 * Barely worn gear, above 95%, gets a MEND button instead, which fixes it on
   the spot for free. The 95% is the Free mend above setting: 100 makes every
   repair cost components, and 0 mends everything but broken gear for free.

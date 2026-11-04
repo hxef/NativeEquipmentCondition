@@ -2,6 +2,7 @@
 
 #include "Core/Plugin.h"
 
+#include <cstdint>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -21,8 +22,8 @@
 // them, are left as they are. Roles/Conventions.h names the mod.
 namespace MessageBox
 {
-	// Adds the frame listener that keeps NEC's box solid to the message box
-	// movie.
+	// Adds the frame listener that keeps NEC's box solid, and puts its
+	// highlight on its starting row, to the message box movie.
 	void OnMovieLoaded(Scaleform::GFx::Movie& a_movie, std::string_view a_file);
 
 	// What a box calls back into. The game owns it once handed over and frees
@@ -42,7 +43,9 @@ namespace MessageBox
 	// pressed, counting from 0. The last button is cancel, and the Cancel key,
 	// Tab or B, presses it too. When the box never opens, the callback gets
 	// the cancel button and is freed here. The box pauses whatever is under
-	// it.
+	// it. The movie puts the highlight on the first button, and the frame
+	// listener moves it to button a_start once, on the box's first frame. A
+	// message box mod can keep it on the first.
 	void Ask(const char* a_title, const char* a_body,
-		const std::vector<std::string>& a_buttons, Callback* a_callback);
+		const std::vector<std::string>& a_buttons, Callback* a_callback, std::uint32_t a_start = 0);
 }

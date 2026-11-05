@@ -20,11 +20,12 @@ actually does.
 DOES WHAT, EXACTLY?
 Your weapons and armor wear down as you use them, the way they did in
 Fallout 3 and New Vegas. Worn weapons and armor lose effectiveness and sell
-for less. Keep them in shape at a workbench with components, or pay a trader
-in caps.
+for less. Keep them in shape at a workbench with components or a spare copy,
+or pay a trader in caps.
 
 Worn gear can't be modded until it is repaired to full, so swapping in cheap
-mods can't cut the repair bill.
+mods can't cut the repair bill. The "Mod lock below" slider in MCM eases
+this or turns it off.
 
 Done natively, in one F4SE plugin: no ESP, no scripts, no new assets besides
 an optional MCM page. It reads weapons, armor, recipes, perks, leveled lists
@@ -32,40 +33,48 @@ and game settings from your load order as the game loads, for easier
 compatibility with other mods, including ones that add new gear.
 
 WEAR AND TEAR
-* Your weapon wears with every shot you fire and every melee hit you land.
-  Bashes and power attacks wear it harder. Fast automatics like the Minigun
-  wear less per shot, as if they fired at an ordinary automatic's pace.
-* Every hit that lands wears the armor and clothing on the limb it struck,
-  yours and NPCs' alike. Explosions wear every piece. Pieces that cover no
-  limb, like a mask or a super mutant's armor, share each hit between them.
-  Switch on Plain apparel never wears on MCM's Armor page, and apparel with no
-  armor rating or bonus, like hats and rings, never wears and shows no CND.
-* NPC weapons wear too, shot by shot and blow by blow, by default a third as
-  fast as yours. A weapon worn out to 0 stays in their hands.
-* The weapons and armor that companions and other essential NPCs come with
-  never wear on them, since some of it can never be handed to you to repair.
-  Once an item has passed through your hands, it becomes yours, so it wears
-  like any other item you own, on you or on them.
-* Worn weapons do less damage and worn armor protects less, yours and NPCs'
-  alike, both down to 66% at 0 condition.
-* Worn guns spread their shots wider and lose damage sooner at range, and worn
-  automatic weapons fire slower, each down to 75% at 0 condition.
+Weapons:
+* Your weapon wears with every shot you fire and every melee hit you land, and
+  harder with a bash or a power attack. Fast automatics like the Minigun wear
+  less per shot, as if they fired at an ordinary automatic's pace.
+* A worn weapon does less damage, yours and NPCs' alike, down to 66% at 0
+  condition.
+* Worn guns lose accuracy and range, and worn automatic weapons fire slower,
+  each down to 75% at 0 condition.
 * A worn weapon fills the VATS critical meter slower, down to 50% of its rate
   at 0 condition, like in Fallout 3, where worn weapons landed fewer critical
   hits.
-* Your weapon is unequipped automatically when it breaks, and broken gear
-  can't be equipped again until it is repaired.
-* A broken piece of armor or clothing stays on and keeps its bonuses, like a
-  +1 to a stat or a legendary effect, until you take it off.
 * Your guns can jam once they drop below 50% condition.
+* Your weapon is unequipped automatically when it breaks, and can't be
+  equipped again until it is repaired.
+* NPC weapons wear too, by default a third as fast as yours. A weapon worn out
+  to 0 stays in their hands.
+
+Armor and clothing:
+* Every hit that lands wears the armor and clothing on the limb it struck,
+  yours and NPCs' alike. Explosions wear every piece, and pieces that cover no
+  limb, like a mask or a super mutant's armor, share each hit between them.
+* Worn armor protects less, yours and NPCs' alike, down to 66% at 0 condition.
+* A broken piece stays on and keeps its bonuses, like a +1 to a stat or a
+  legendary effect, until you take it off. After that it can't be equipped
+  again until it is repaired.
+* Apparel with no armor rating or bonus, like hats and rings, wears like
+  armor. With "Plain apparel never wears" switched on in MCM, it never wears
+  and shows no CND.
+* Power armor wears and is repaired at the power armor station as it always
+  was, but a damaged piece now sells for less, and so does a drained fusion
+  core.
+
+All gear:
 * Price drops faster than condition, on the Fallout 3 and New Vegas curve: an
   item at half condition is worth 35% of its full price, whether you buy it or
   sell it.
-* Worn gear scraps into fewer components, down to 1 part for a broken one, at
-  a workbench and in workshop mode.
-
-Power armor wears and is repaired at the power armor station as it always was,
-but a damaged piece now sells for less, and so does a drained fusion core.
+* Worn gear scraps into fewer components at a workbench and in workshop mode,
+  down to 1 component for a broken item, its most common one.
+* The weapons and armor that companions and other essential NPCs come with
+  never wear on them, since some of it can never be handed to you to repair.
+  Once an item has passed through your hands, it wears like any other item you
+  own, on you or on them.
 
 LOOT WITH A HISTORY
 * Weapons and armor turn up already worn. Each gets its condition the first
@@ -93,11 +102,11 @@ REPAIR AT THE WORKBENCH
   lack faded.
 * Carrying a spare of the same item? USE A SPARE in the repair box takes it
   apart for the repair: it restores as much condition as its scrap is worth,
-  and the parts left over go to your inventory. Spare worth sets how much
+  and the parts left over go to your inventory. "Spare worth" sets how much
   condition a spare restores and Scrapper raises it, but you never get back
   more parts than it holds.
 * Barely worn gear, above 95%, gets a MEND button instead, which fixes it on
-  the spot for free. The 95% is the Free mend above setting: 100 makes every
+  the spot for free. The 95% is the "Free mend above" setting: 100 makes every
   repair cost components, and 0 mends everything but broken gear for free.
 * Crafting perks like Gun Nut, Science!, Blacksmith and Armorer make repairs
   take fewer components, down to half at the top rank. The perk behind most of
@@ -105,8 +114,8 @@ REPAIR AT THE WORKBENCH
   much. The perks count too when a skill mod like Classic NV Skill System
   grants them from your skills.
 * A repair earns the same XP as crafting a mod from those components.
-* With Workbench repair cost at 0, every repair is free and done on the spot,
-  broken gear included.
+* With "Workbench repair cost" at 0, every repair is free and done on the
+  spot, broken gear included.
 
 REPAIR AT A TRADER
 * Out of spare components? Gun shops, armorers and clothiers repair their kind
@@ -304,8 +313,8 @@ a save, then look at NEC's main page in MCM. It names that mod.
 
 For anything else, share NEC's logs:
 1. Turn on the full logs:
-   * With MCM: on NEC's main page, under Log, set Log detail to debug and
-     switch Bug report logs on.
+   * With MCM: on NEC's main page, under Log, set "Log detail" to debug and
+     switch "Bug report logs" on.
    * Without MCM: add these lines to NEC_custom.ini in Data\F4SE\Plugins,
      then restart the game:
        [Log]

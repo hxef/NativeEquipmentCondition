@@ -9,7 +9,7 @@ end
 
 -- set project constants
 set_project("NativeEquipmentCondition")
-set_version("1.7.3")
+set_version("1.8.0")
 set_license("GPL-3.0")
 set_languages("c++23")
 set_warnings("allextra")
@@ -80,7 +80,12 @@ target("NEC")
     add_installfiles("publish/Fridge/*.ini", { prefixdir = "F4SE/Plugins/NEC/Fridge" })
     add_installfiles("publish/MCM/Config/NEC/config.json", { prefixdir = "MCM/Config/NEC" })
 
+    -- Records what the DLL was built from for xmake release, see
+    -- xmake/sources.lua, then deploys when deploy_dir is set.
     after_build(function (target)
+        import("sources", { rootdir = path.join(os.projectdir(), "xmake") })
+        sources.write(target:targetfile())
+
         local dir = get_config("deploy_dir")
         if not dir or dir == "" then
             return
@@ -125,8 +130,10 @@ target("NEC")
 --
 -- It never builds. It ships the DLL and PDB the last build made, byte for
 -- byte, and stops when they are missing or a file the DLL is made from
--- changed after them, so build first. --lastbuild packs them anyway, for a
--- change that never reaches the DLL, like a comment or this task.
+-- differs from the one the build read, naming each such file, so build first.
+-- A DLL built before xmake/sources.lua existed is judged by file times
+-- instead. --lastbuild packs them anyway, for a change that never reaches the
+-- DLL, like a comment or this task.
 --
 -- With --nexus it packs build/nexusmods/NativeEquipmentCondition-<version>.zip
 -- instead, without README.txt, since Nexus Mods shows the readme in a section
@@ -221,27 +228,28 @@ task("release")
             raise("%s and its PDB are missing, run xmake to build NEC first", path.relative(dll, os.projectdir()))
         end
 
-        -- The first file the DLL is made from that is newer than the last
-        -- build's DLL or PDB. en.ini counts, since its English is compiled in.
-        local function changed()
-            local built = math.min(os.mtime(dll), os.mtime(pdb))
-            local sources = { "xmake.lua", "xmake/*.lua", "publish/Translations/en.ini", "src/**", "lib/commonlibf4/xmake.lua",
-                "lib/commonlibf4/include/**", "lib/commonlibf4/src/**", "lib/commonlibf4/lib/**" }
-            for _, pattern in ipairs(sources) do
-                for _, file in ipairs(os.files(path.join(os.projectdir(), pattern))) do
-                    if os.mtime(file) >= built then
-                        return file
-                    end
-                end
+        -- What changed since the last build, or nil when nothing did.
+        import("sources", { rootdir = path.join(os.projectdir(), "xmake") })
+        local built = sources.compare(dll)
+        local stale
+        if built and #built.differ > 0 then
+            local shown = table.slice(built.differ, 1, 10)
+            local more = #built.differ - #shown
+            stale = string.format("the sources differ from the last build's at %s: %s%s", built.commit, table.concat(shown, ", "),
+                more > 0 and string.format(" and %d more", more) or "")
+        elseif not built then
+            local newer = sources.newer(math.min(os.mtime(dll), os.mtime(pdb)))
+            if newer then
+                stale = newer .. " is newer than the last build, which has no record of its sources"
             end
         end
-        local newer = changed()
-        if newer and not option.get("lastbuild") then
-            raise("%s is newer than the last build, run xmake to build NEC first, or pass --lastbuild when the change never reaches the DLL",
-                path.relative(newer, os.projectdir()))
+        if stale and not option.get("lastbuild") then
+            raise("%s. Run xmake to build NEC first, or pass --lastbuild when the change never reaches the DLL", stale)
         end
-        if newer then
-            cprint("packing the DLL and PDB of the last build, although %s is newer", path.relative(newer, os.projectdir()))
+        if stale then
+            cprint("packing the DLL and PDB of the last build, although %s", stale)
+        elseif built then
+            cprint("packing the DLL and PDB of the last build at %s, since every source is as it was built", built.commit)
         else
             cprint("packing the DLL and PDB of the last build, since no source changed after it")
         end

@@ -8,28 +8,42 @@ In 2026, the game finally got the condition system it should've shipped with, on
 
 [size=3][b][font=Georgia][color=#1AFF80]Does what, exactly?[/color][/font][/b][/size]
 
-Your weapons and armor [b]wear down as you use them[/b], the way they did in Fallout 3 and New Vegas. Worn weapons and armor lose effectiveness and sell for less. Keep them in shape at a workbench with components, or pay a trader in caps.
+Your weapons and armor [b]wear down as you use them[/b], the way they did in Fallout 3 and New Vegas. Worn weapons and armor lose effectiveness and sell for less. Keep them in shape at a workbench with components or a spare copy, or pay a trader in caps.
 
-[b]Worn gear can't be modded[/b] until it is repaired to full, so swapping in cheap mods can't cut the repair bill.
+[b]Worn gear can't be modded[/b] until it is repaired to full, so swapping in cheap mods can't cut the repair bill. The [b]Mod lock below[/b] slider in MCM eases this or turns it off.
 
 [b]Done natively[/b], in one F4SE plugin: [b]no ESP, no scripts, no new assets[/b] besides an optional MCM page. It reads weapons, armor, recipes, perks, leveled lists and game settings from your load order as the game loads, for easier compatibility with other mods, including ones that add new gear.
 
 [size=3][b][font=Georgia][color=#1AFF80]Wear and tear[/color][/font][/b][/size]
 
+[b]Weapons[/b]
+
 [list]
-[*]Your weapon wears with every shot you fire and every melee hit you land. Bashes and power attacks wear it harder. Fast automatics like the Minigun wear less per shot, as if they fired at an ordinary automatic's pace.
-[*]Every hit that lands wears the armor and clothing on the limb it struck, yours and NPCs' alike. Explosions wear every piece. Pieces that cover no limb, like a mask or a super mutant's armor, share each hit between them. Switch on Plain apparel never wears on MCM's Armor page, and apparel with no armor rating or bonus, like hats and rings, never wears and shows no CND.
-[*]NPC weapons wear too, shot by shot and blow by blow, by default a third as fast as yours. A weapon worn out to 0 stays in their hands.
-[*]The weapons and armor that companions and other essential NPCs come with never wear on them, since some of it can never be handed to you to repair. Once an item has passed through your hands, it becomes yours, so it wears like any other item you own, on you or on them.
-[*]Worn weapons do less damage and worn armor protects less, yours and NPCs' alike, both down to 66% at 0 condition.
-[*]Worn guns spread their shots wider and lose damage sooner at range, and worn automatic weapons fire slower, each down to 75% at 0 condition.
+[*]Your weapon wears with every shot you fire and every melee hit you land, and harder with a bash or a power attack. Fast automatics like the Minigun wear less per shot, as if they fired at an ordinary automatic's pace.
+[*]A worn weapon does less damage, yours and NPCs' alike, down to 66% at 0 condition.
+[*]Worn guns lose accuracy and range, and worn automatic weapons fire slower, each down to 75% at 0 condition.
 [*]A worn weapon fills the VATS critical meter slower, down to 50% of its rate at 0 condition, like in Fallout 3, where worn weapons landed fewer critical hits.
-[*]Your weapon is [b]unequipped automatically[/b] when it breaks, and broken gear can't be equipped again until it is repaired.
-[*]A [b]broken piece[/b] of armor or clothing stays on and keeps its bonuses, like a +1 to a stat or a legendary effect, until you take it off.
 [*]Your guns can jam once they drop below 50% condition.
-[*]Price drops faster than condition, on the Fallout 3 and New Vegas curve: an item at half condition is worth 35% of its full price, whether you buy it or sell it.
-[*]Worn gear [b]scraps into fewer components[/b], down to 1 part for a broken one, at a workbench and in workshop mode.
+[*]Your weapon is [b]unequipped automatically[/b] when it breaks, and can't be equipped again until it is repaired.
+[*]NPC weapons wear too, by default a third as fast as yours. A weapon worn out to 0 stays in their hands.
+[/list]
+
+[b]Armor and clothing[/b]
+
+[list]
+[*]Every hit that lands wears the armor and clothing on the limb it struck, yours and NPCs' alike. Explosions wear every piece, and pieces that cover no limb, like a mask or a super mutant's armor, share each hit between them.
+[*]Worn armor protects less, yours and NPCs' alike, down to 66% at 0 condition.
+[*]A [b]broken piece[/b] stays on and keeps its bonuses, like a +1 to a stat or a legendary effect, until you take it off. After that it can't be equipped again until it is repaired.
+[*]Apparel with no armor rating or bonus, like hats and rings, wears like armor. With [b]Plain apparel never wears[/b] switched on in MCM, it never wears and shows no CND.
 [*][b]Power armor[/b] wears and is repaired at the power armor station as it always was, but a damaged piece now sells for less, and so does a drained fusion core.
+[/list]
+
+[b]All gear[/b]
+
+[list]
+[*]Price drops faster than condition, on the Fallout 3 and New Vegas curve: an item at half condition is worth 35% of its full price, whether you buy it or sell it.
+[*]Worn gear [b]scraps into fewer components[/b] at a workbench and in workshop mode, down to 1 component for a broken item, its most common one.
+[*]The weapons and armor that companions and other essential NPCs come with never wear on them, since some of it can never be handed to you to repair. Once an item has passed through your hands, it wears like any other item you own, on you or on them.
 [/list]
 
 [size=3][b][font=Georgia][color=#1AFF80]Loot with a history[/color][/font][/b][/size]
@@ -45,11 +59,11 @@ Your weapons and armor [b]wear down as you use them[/b], the way they did in Fal
 
 [list]
 [*]At the weapon or armor workbench, select a worn item and a REPAIR button takes RENAME's place until it is back at full. Press it, choose how far to repair it in steps of 10%, and pay in the components it is built from. Gear with no scrap recipe, like Grognak's Axe, costs what gear of its kind most often scraps into, and wears at the same rate. Short of components, you get the power armor station's list of what the repair takes, with the ones you lack faded.
-[*]Carrying a spare of the same item? [b]USE A SPARE[/b] in the repair box takes it apart for the repair: it restores as much condition as its scrap is worth, and the parts left over go to your inventory. Spare worth sets how much condition a spare restores and Scrapper raises it, but you never get back more parts than it holds.
+[*]Carrying a spare of the same item? [b]USE A SPARE[/b] in the repair box takes it apart for the repair: it restores as much condition as its scrap is worth, and the parts left over go to your inventory. [b]Spare worth[/b] sets how much condition a spare restores and Scrapper raises it, but you never get back more parts than it holds.
 [*]Barely worn gear, above 95%, gets a MEND button instead, which fixes it on the spot [b]for free[/b]. The 95% is the [b]Free mend above[/b] setting: 100 makes every repair cost components, and 0 mends everything but broken gear for free.
 [*][b]Crafting perks[/b] like Gun Nut, Science!, Blacksmith and Armorer make repairs take fewer components, down to half at the top rank. The perk behind most of an item's components sets the discount, and each rank's description says how much. The perks count too when a skill mod like Classic NV Skill System grants them from your skills.
 [*]A repair [b]earns the same XP[/b] as crafting a mod from those components.
-[*]With Workbench repair cost at 0, every repair is free and done on the spot, broken gear included.
+[*]With [b]Workbench repair cost[/b] at 0, every repair is free and done on the spot, broken gear included.
 [/list]
 
 [size=3][b][font=Georgia][color=#1AFF80]Repair at a trader[/color][/font][/b][/size]
@@ -184,7 +198,7 @@ After that, [b]removing the mod is safe.[/b] It has no ESP and keeps no save dat
 [*]The same check would also keep a broken item from coming off, or from going back on after the barber chair. NEC lets both through.
 [*]sWeaponBreak is a broken weapon message the game never shows. NEC shows it when your weapon breaks.
 [*]Jams use Fallout 3's fWeaponConditionReloadJam1 to 10 settings. They are still in the game and still editable.
-[*]With the Weapon penalties below slider under 0.5, NEC squeezes those jam steps into the range below the slider.
+[*]With the [b]Weapon penalties below[/b] slider under 0.5, NEC squeezes those jam steps into the range below the slider.
 [*][font=Courier New]srm[/font] is Fallout 3's ShowRepairMenu console command. In vanilla it does nothing.
 [*]The Item Condition on a leveled list or container entry (COED) still sets ExtraHealth, but only on armor or ammo with a Health value in its record. In vanilla that means power armor and fusion cores. NEC leaves it as it is.
 [*]The vanilla damage, armor rating and price formulas already read ExtraHealth. They treat it as Skyrim's tempering bonus, so ExtraHealth below 1.0 changes none of them.
@@ -204,7 +218,7 @@ After that, [b]removing the mod is safe.[/b] It has no ESP and keeps no save dat
 [/list]
 [*]A hit wears the armor on the body part its hit event names. The wearer's race maps each body part to biped slots.
 [*]A hit with no body part, like a blast, wears every piece on a slot some body part maps to.
-[*]Pieces on slots that no body part maps to share each hit between them. A wearable among them that gives no protection or bonus takes the same share, but doesn't count in the split. With Plain apparel never wears on, such a wearable never wears.
+[*]Pieces on slots that no body part maps to share each hit between them. A wearable among them that gives no protection or bonus takes the same share, but doesn't count in the split. With [b]Plain apparel never wears[/b] on, such a wearable never wears.
 [*]NEC leaves out grenades, mines, unplayable weapons and power armor.
 [*]It also leaves out wearables with no name, and race or NPC skins (WNAM), when they give no protection or bonus and fit no armor mod that adds one.
 [*]Which armor mods add protection, an effect or a bonus, and which pieces are skins, is read as the game loads and again at every save load and new game.
@@ -222,7 +236,7 @@ After that, [b]removing the mod is safe.[/b] It has no ESP and keeps no save dat
 [list]
 [*]Loot rolls its condition once, when the game first spawns the item. Loading a save never rolls anything.
 [*]When the game spawns a loose item in the world, NEC marks it as not rolled yet with an ExtraHealth of 0.99999994. Whoever first picks it up rolls its condition.
-[*]With the Pickup CND bar on, a loose item gets its condition the first time you look at it, the same roll the pickup would make, and the save keeps it. A loose item with a faction owner (ExtraOwnership) rolls on the barter screen as the trader's stock. Vanilla places none. NEC reads the item from the pickup prompt as the game fills it (HUDRolloverModel::Update), so it is the same item E picks up.
+[*]With the [b]Pickup CND bar[/b] on, a loose item gets its condition the first time you look at it, the same roll the pickup would make, and the save keeps it. A loose item with a faction owner (ExtraOwnership) rolls on the barter screen as the trader's stock. Vanilla places none. NEC reads the item from the pickup prompt as the game fills it (HUDRolloverModel::Update), so it is the same item E picks up.
 [*]A loose item with no ExtraHealth at all spawned before you installed or updated NEC, or while Worn loot was off. It comes out at 100%.
 [*]The roll uses the leveled list the item came from (ExtraLeveledItem), ranked against every other list of its kind. It also uses the armor the item's owner was given.
 [*]Items of an NPC whose base record is essential start at 100%.
@@ -272,7 +286,7 @@ For anything else, share NEC's logs:
 [list=1]
 [*]Turn on the full logs:
 [list]
-[*]With MCM: on NEC's main page, under Log, set Log detail to debug and switch Bug report logs on.
+[*]With MCM: on NEC's main page, under Log, set [b]Log detail[/b] to debug and switch [b]Bug report logs[/b] on.
 [*]Without MCM: add these lines to NEC_custom.ini in Data\F4SE\Plugins, then restart the game:
 [code][Log]
 sLogLevel=debug

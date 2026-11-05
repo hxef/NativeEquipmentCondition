@@ -230,6 +230,7 @@ src/
         QuickContainer.h/.cpp        the feature: its install and the movie
         Rows.h/.cpp                  the rows as the game builds them
         Meters.h/.cpp                the meters on the HUD's rows
+        RowLayout.h/.cpp             how a row fits its name, icons and meter
         Draw.h/.cpp                  how one meter looks
         FridgeIcon.h/.cpp            the icon beside a fridge's name
     Inventory/

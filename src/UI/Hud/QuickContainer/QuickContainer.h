@@ -17,9 +17,10 @@
 // and each row takes its meter from the newest whose names and counts match.
 //
 // Rows.cpp is the rows as the game builds them, Meters.cpp the meters on the
-// HUD's rows, and Draw.cpp how one meter looks. FridgeIcon.cpp puts an icon
-// beside a fridge's name, from the container Rows.cpp sees. Rows.h, Meters.h,
-// Draw.h and FridgeIcon.h are what they share.
+// HUD's rows, RowLayout.cpp how a row fits its name, icons and meter, and
+// Draw.cpp how one meter looks. FridgeIcon.cpp puts an icon beside a fridge's
+// name, from the container Rows.cpp sees. Rows.h, Meters.h, RowLayout.h, Draw.h
+// and FridgeIcon.h are what they share.
 namespace QuickContainer
 {
 	// Patches the calls that build the rows.

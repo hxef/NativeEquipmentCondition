@@ -1,3 +1,8 @@
+1.8.0
+v1.8.0 adds repair with spares, like in Fallout 3 and New Vegas: USE A SPARE at a workbench takes apart another copy of an item to repair it. Worn gear scraps into fewer components, ESC closes the repair boxes, and MCM helps fit on 1 line.
+
+OG/AE only
+
 1.7.3
 v1.7.3 adds a Loot condition shift slider, a Weapon CND bar stands alone switch, freshness meters on the quick container rows and example inis, fixes meter colours on FallUI HUD and fridge icons, and hides MCM rows while a feature is off.
 

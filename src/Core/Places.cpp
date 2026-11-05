@@ -202,6 +202,10 @@ namespace
 		{ "bench mod slots", { kBenchModLists } },
 		{ "bench mod choices", { kBenchModLists } },
 		{ "item list refresh", { kBenchItemList } },
+		// Tab and Escape on NEC's boxes. A box keeps its CANCEL button without
+		// them, so nothing goes off.
+		{ "box keys", {} },
+		{ "box pause key", {} },
 		// ConfirmScroll
 		{ "confirm box messages", { kConfirmScroll } },
 		{ "confirm box input", { kConfirmScroll } },

@@ -6,6 +6,7 @@
 #include "Core/Text/Text.h"
 #include "Core/TraceLog.h"
 #include "UI/MenuMovies.h"
+#include "UI/MessageBox.h"
 #include "UI/Repair/RepairPrompt.h"
 #include "UI/Repair/Workbench/Bench.h"
 #include "UI/Repair/Workbench/Cost.h"
@@ -296,6 +297,10 @@ namespace Workbench
 		// The list places stand alone, see Lists.h. A skipped call there leaves
 		// 1 list as the game draws it.
 		InstallLists();
+
+		// Tab and Escape on every repair box, a trader's too, alone as well. A
+		// cut leaves each box its CANCEL button.
+		MessageBox::Install();
 
 		CraftingPerks::SetBench(&Repairs);
 		if (!canRepair || !switchItem || !repair) {

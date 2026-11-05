@@ -22,6 +22,11 @@
 // them, are left as they are. Roles/Conventions.h names the mod.
 namespace MessageBox
 {
+	// Lets Tab and Escape answer NEC's box, see Ask. The game takes Escape for
+	// its pause menu before a box hears it, and on OG no box answers Tab. The
+	// Workbench row runs it, since a row that patches needs a part.
+	void Install();
+
 	// Adds the frame listener that keeps NEC's box solid, and puts its
 	// highlight on its starting row, to the message box movie.
 	void OnMovieLoaded(Scaleform::GFx::Movie& a_movie, std::string_view a_file);
@@ -41,11 +46,11 @@ namespace MessageBox
 
 	// Puts the question up and hands a_callback the number of the button
 	// pressed, counting from 0. The last button is cancel, and the Cancel key,
-	// Tab or B, presses it too. When the box never opens, the callback gets
-	// the cancel button and is freed here. The box pauses whatever is under
-	// it. The movie puts the highlight on the first button, and the frame
-	// listener moves it to button a_start once, on the box's first frame. A
-	// message box mod can keep it on the first.
+	// Tab or B, and Escape press it too. When the box never opens, the
+	// callback gets the cancel button and is freed here. The box pauses
+	// whatever is under it. The movie puts the highlight on the first button,
+	// and the frame listener moves it to button a_start once, on the box's
+	// first frame. A message box mod can keep it on the first.
 	void Ask(const char* a_title, const char* a_body,
 		const std::vector<std::string>& a_buttons, Callback* a_callback, std::uint32_t a_start = 0);
 }

@@ -88,6 +88,7 @@ namespace
 		// works.
 		{ "value form", {} },
 		// Scrapping
+		{ "bench scrap list", { kScrapBench } },
 		{ "bench scrap count", { kScrapBench } },
 		{ "workshop scrap box", { kScrapWorkshop } },
 		{ "workshop scrap no box", { kScrapWorkshop } },

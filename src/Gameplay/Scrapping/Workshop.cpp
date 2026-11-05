@@ -58,9 +58,16 @@ namespace Scrapping
 			// Scrapping 1 object can scrap what is linked to it, a list built
 			// inside another, so the outer item is put back after.
 			const auto outer = t_noted;
+			Tally      tally;
 			t_noted = g_lists.Runs(g_listLinks[I]) ? NoteOf(a_ref) : Noted{};
 			g_listLinks[I](a_ref, a_ownRecipeOnly, a_rewards);
 			t_noted = outer;
+
+			// 1 component, not 1 for each copy a dropped stack holds.
+			auto* part = tally.LeastPart("workshop");
+			if (part && a_rewards && *a_rewards) {
+				(*a_rewards)->emplace_back(part, 1U);
+			}
 		}
 
 		std::uint32_t CountHk(RE::TESForm* a_form, std::uint32_t a_count, bool a_applyBase, bool a_skipScalar)

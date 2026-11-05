@@ -5,7 +5,9 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <span>
 #include <utility>
+#include <vector>
 
 namespace Materials
 {
@@ -13,7 +15,7 @@ namespace Materials
 	{
 		// The share of a count scrapping gives, fBuildableScrapCountMultBase
 		// in vanilla, in tenths. A spare's count goes in divided by it, so
-		// the game's count gives the whole count back.
+		// vanilla's count gives the whole count back.
 		constexpr std::uint64_t HALVED_TENTHS = 5;
 
 		// The forms a copy's recipes name and the count of each, added up
@@ -62,6 +64,39 @@ namespace Materials
 		}
 	}
 
+	const RE::BGSComponent* LeastPart(std::span<const Tallied> a_tally)
+	{
+		const auto index = Current();
+		if (!index || std::ranges::any_of(a_tally, [](const Tallied& a_form) { return a_form.given > 0; })) {
+			return nullptr;
+		}
+
+		// Each component's count, its scrap item's added in.
+		std::vector<std::pair<const RE::BGSComponent*, std::uint64_t>> held;
+		for (const auto& [form, count, given] : a_tally) {
+			const auto* component = PricedBy(*index, form);
+			if (!component || !component->scrapItem || count == 0) {
+				continue;
+			}
+			const auto already = std::ranges::find(held, component, &decltype(held)::value_type::first);
+			if (already != held.end()) {
+				already->second += count;
+			} else {
+				held.emplace_back(component, count);
+			}
+		}
+
+		const RE::BGSComponent* most = nullptr;
+		std::uint64_t           mostCount = 0;
+		for (const auto& [component, count] : held) {
+			if (!most || count > mostCount || (count == mostCount && component->GetFormID() < most->GetFormID())) {
+				most = component;
+				mostCount = count;
+			}
+		}
+		return most;
+	}
+
 	std::uint32_t ScrapIn(std::uint32_t a_count, std::uint32_t a_percent)
 	{
 		// Whole numbers, never a float: 50 at 53% is 26.5 and rounds up to
@@ -79,19 +114,21 @@ namespace Materials
 			return out;
 		}
 
+		std::vector<Tallied> tallied;
 		for (const auto& [form, count] : TallyOf(*index, a_object, a_extra)) {
 			// A line for a finished item says nothing about what the copy is
 			// made of, as in the bill.
 			const auto* component = PricedBy(*index, form);
+			if (!component) {
+				continue;
+			}
 			// Whole numbers again: 5 Steel at 0.7F over 0.5 comes to 6.9999999
 			// and would round down to 6, where 7 tenths give 7.
 			const auto in = std::uint64_t{ ScrapIn(count, a_percent) } * a_tenths / HALVED_TENTHS;
-			if (!component || in == 0) {
-				continue;
-			}
 
 			// The bench's flags: the halving on, and the component's share.
-			const auto given = RE::ScrapRewardCount(form, static_cast<std::uint32_t>(in), true, false);
+			const auto given = in > 0 ? RE::ScrapRewardCount(form, static_cast<std::uint32_t>(in), true, false) : 0;
+			tallied.push_back({ form, count, given });
 			if (given == 0) {
 				continue;
 			}
@@ -101,6 +138,13 @@ namespace Materials
 			} else {
 				out.push_back({ component, given });
 			}
+		}
+
+		// The bench gives a new copy what the game gives, so only a worn one
+		// gets the 1 component.
+		const auto* least = a_percent < Repair::FULL ? LeastPart(tallied) : nullptr;
+		if (least) {
+			out.push_back({ least, 1 });
 		}
 		return out;
 	}

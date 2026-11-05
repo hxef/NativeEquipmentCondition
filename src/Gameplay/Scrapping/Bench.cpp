@@ -16,7 +16,18 @@ namespace Scrapping
 		// SCRAP button, before the "Scrap item?" box.
 		constexpr CallPatch::CallSite COUNT_SITE{ CallPatch::AE{ 2223077, 0x36C }, CallPatch::OG{ 646841, 0x27C }, "bench scrap count" };
 
-		CountLink g_countLink;
+		// That only caller, the SCRAP button's case of ExamineMenu::Call. The
+		// list is whole once the call returns, and the box and the yes both
+		// read it from the menu after.
+		constexpr CallPatch::CallSite LIST_SITE{ CallPatch::AE{ 2223002, 0xBE8 }, CallPatch::OG{ 1461108, 0xC39 }, "bench scrap list" };
+
+		using ListLink = CallPatch::Link<void(RE::ExamineMenu*)>;
+
+		// The list hook reads what the count hook gave, so the 2 go in
+		// together.
+		CallPatch::Held g_bench;
+		ListLink        g_listLink;
+		CountLink       g_countLink;
 
 		// The copy the SCRAP yes takes, as its whole percent, or nothing for
 		// a row that does not wear. A row can hold several stacks. The yes
@@ -56,17 +67,35 @@ namespace Scrapping
 
 		std::uint32_t CountHk(RE::TESForm* a_form, std::uint32_t a_count, bool a_applyBase, bool a_skipScalar)
 		{
-			const auto copy = g_countLink.Live() ? Scrapped() : std::nullopt;
+			const auto copy = g_bench.Runs(g_countLink) ? Scrapped() : std::nullopt;
 			if (!copy || copy->percent >= Repair::FULL) {
 				return g_countLink(a_form, a_count, a_applyBase, a_skipScalar);
 			}
 			return Count(g_countLink, "bench", *copy->item, copy->percent, a_form, a_count, a_applyBase, a_skipScalar);
 		}
+
+		void ListHk(RE::ExamineMenu* a_menu)
+		{
+			if (!g_bench.Runs(g_listLink)) {
+				g_listLink(a_menu);
+				return;
+			}
+			Tally tally;
+			g_listLink(a_menu);
+			if (auto* part = tally.LeastPart("bench")) {
+				a_menu->scrappingArray.emplace_back(part, 1U);
+			}
+		}
 	}
 
 	void InstallBench()
 	{
-		if (CallPatch::PatchCall(COUNT_SITE, RE::ID::ScrapRewardCount, reinterpret_cast<std::uintptr_t>(&CountHk), g_countLink)) {
+		g_bench = CallPatch::PatchTogether({
+			{ LIST_SITE, RE::ID::ExamineMenu::BuildWeaponScrappingArray, reinterpret_cast<std::uintptr_t>(&ListHk), &g_listLink },
+			{ COUNT_SITE, RE::ID::ScrapRewardCount, reinterpret_cast<std::uintptr_t>(&CountHk), &g_countLink },
+		});
+
+		if (g_bench) {
 			REX::INFO("Worn weapons and armor scrap into fewer components at a workbench.");
 		} else {
 			REX::WARN("Worn weapons and armor will scrap into as many components as new ones at a workbench.");

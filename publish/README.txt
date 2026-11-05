@@ -61,8 +61,8 @@ WEAR AND TEAR
 * Price drops faster than condition, on the Fallout 3 and New Vegas curve: an
   item at half condition is worth 35% of its full price, whether you buy it or
   sell it.
-* Worn gear scraps into fewer components, and broken gear into none, at a
-  workbench and in workshop mode.
+* Worn gear scraps into fewer components, down to 1 part for a broken one, at
+  a workbench and in workshop mode.
 
 Power armor wears and is repaired at the power armor station as it always was,
 but a damaged piece now sells for less, and so does a drained fusion core.

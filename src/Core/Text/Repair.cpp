@@ -42,6 +42,11 @@ namespace Text
 		return Pick(SPARE_BUTTON);
 	}
 
+	std::string SpareScrapper(std::string_view a_perk, std::uint32_t a_rank)
+	{
+		return Say(SPARE_SCRAPPER, a_perk, a_rank);
+	}
+
 	std::string SpareQuestion(std::string_view a_name, std::uint32_t a_percent)
 	{
 		return Say(SPARE_QUESTION, a_name, a_percent);

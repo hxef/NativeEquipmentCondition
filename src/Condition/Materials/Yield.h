@@ -49,7 +49,9 @@ namespace Materials
 	// without Scrapper a spare holds only the common ones, and a worn copy
 	// left with none holds the 1 component of LeastPart. a_tenths scales the
 	// doubled count before vanilla's count, in tenths and rounded down, 10
-	// for none and 5 for exactly what scrapping gives. a_extra can be null.
+	// for none and 5 for exactly what scrapping gives. With a_scrapper false
+	// the components only a Scrapper rank gives count as 0, as for a player
+	// with no rank. a_extra can be null.
 	[[nodiscard]] std::vector<Part> Yield(const RE::TESBoundObject& a_object, const RE::ExtraDataList* a_extra,
-		std::uint32_t a_percent, std::uint32_t a_tenths);
+		std::uint32_t a_percent, std::uint32_t a_tenths, bool a_scrapper = true);
 }

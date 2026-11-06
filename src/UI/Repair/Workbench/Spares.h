@@ -54,6 +54,9 @@ namespace Workbench
 		std::vector<Materials::Part> held;
 		std::uint32_t                worth{ 0 };
 		std::uint32_t                gain{ 0 };
+		// What it would restore with no Scrapper rank, worked out only for a
+		// player who holds one, and gain otherwise.
+		std::uint32_t                unranked{ 0 };
 	};
 
 	// The player's copy of a_object on the stack with a_extra, read the way

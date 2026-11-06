@@ -76,6 +76,11 @@ namespace Text
 	// carries a spare, see Workbench/Spares.h.
 	[[nodiscard]] std::string SpareButton();
 
+	// "Scrapper 2 raises the condition these spares restore.", said over the
+	// question below while the player's rank raises what a listed spare
+	// restores.
+	[[nodiscard]] std::string SpareScrapper(std::string_view a_perk, std::uint32_t a_rank);
+
 	// "Hunting Rifle is at 85% condition. Use up a spare to repair it:"
 	[[nodiscard]] std::string SpareQuestion(std::string_view a_name, std::uint32_t a_percent);
 

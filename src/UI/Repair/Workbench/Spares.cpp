@@ -1,6 +1,7 @@
 #include "UI/Repair/Workbench/Spares.h"
 
 #include "Condition/Condition.h"
+#include "Condition/CraftingPerks/CraftingPerks.h"
 #include "Condition/Materials/Yield.h"
 #include "Condition/Repair.h"
 #include "Core/Settings.h"
@@ -183,6 +184,10 @@ namespace Workbench
 			spare.held = tenths > AS_HELD ? Materials::Yield(*a_item.object, extra, a_copy.percent, AS_HELD) : spare.scrap;
 			spare.worth = WorthOf(spare.scrap);
 			spare.gain = GainOf(a_priced, a_item.percent, spare.worth);
+			const auto ranked = CraftingPerks::Scrapper().rank > 0;
+			spare.unranked = ranked ?
+			                     GainOf(a_priced, a_item.percent, WorthOf(Materials::Yield(*a_item.object, extra, a_copy.percent, tenths, false))) :
+			                     spare.gain;
 			return spare;
 		}
 

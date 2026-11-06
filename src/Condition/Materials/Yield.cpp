@@ -4,6 +4,7 @@
 #include "Condition/Repair.h"
 
 #include <algorithm>
+#include <array>
 #include <cstdint>
 #include <span>
 #include <utility>
@@ -17,6 +18,26 @@ namespace Materials
 		// in vanilla, in tenths. A spare's count goes in divided by it, so
 		// vanilla's count gives the whole count back.
 		constexpr std::uint64_t HALVED_TENTHS = 5;
+
+		// Scrapper is no entry point of the count. Its ranks raise 2 globals
+		// from 0 to 0.5 through PerksQuest's stages, ModScrapScalar_Uncommon
+		// and ModScrapScalar_Rare, here by their Fallout4.esm IDs, the same on
+		// OG and AE. A component whose scrap scalar is either gives nothing
+		// with no rank, such as Screws and Circuitry. A scrap item takes no
+		// scalar, so it gives the same with or without one.
+		constexpr RE::TESFormID SCRAPPER_SCALARS[]{ 0x2074A5, 0x2074A6 };
+
+		using Scalars = std::array<const RE::TESForm*, std::size(SCRAPPER_SCALARS)>;
+
+		// The 2 globals as the load order has them, nothing for one it lacks.
+		[[nodiscard]] Scalars ScrapperScalars()
+		{
+			Scalars out{};
+			for (std::size_t i = 0; i < out.size() && g_dataHandler; i++) {
+				out[i] = g_dataHandler->LookupForm(SCRAPPER_SCALARS[i], "Fallout4.esm");
+			}
+			return out;
+		}
 
 		// The forms a copy's recipes name and the count of each, added up
 		// within a form and never across 2, as the bench tallies them.
@@ -106,13 +127,14 @@ namespace Materials
 	}
 
 	std::vector<Part> Yield(const RE::TESBoundObject& a_object, const RE::ExtraDataList* a_extra,
-		std::uint32_t a_percent, std::uint32_t a_tenths)
+		std::uint32_t a_percent, std::uint32_t a_tenths, bool a_scrapper)
 	{
 		std::vector<Part> out;
 		const auto        index = Current();
 		if (!index) {
 			return out;
 		}
+		const auto unranked = a_scrapper ? Scalars{} : ScrapperScalars();
 
 		std::vector<Tallied> tallied;
 		for (const auto& [form, count] : TallyOf(*index, a_object, a_extra)) {
@@ -127,7 +149,9 @@ namespace Materials
 			const auto in = std::uint64_t{ ScrapIn(count, a_percent) } * a_tenths / HALVED_TENTHS;
 
 			// The bench's flags: the halving on, and the component's share.
-			const auto given = in > 0 ? RE::ScrapRewardCount(form, static_cast<std::uint32_t>(in), true, false) : 0;
+			const auto* scalar = form == component ? component->modScrapScalar : nullptr;
+			const auto  rankOnly = scalar && std::ranges::find(unranked, scalar) != unranked.end();
+			const auto  given = in > 0 && !rankOnly ? RE::ScrapRewardCount(form, static_cast<std::uint32_t>(in), true, false) : 0;
 			tallied.push_back({ form, count, given });
 			if (given == 0) {
 				continue;

@@ -105,6 +105,19 @@ namespace CraftingPerks
 		return perks ? OfRecipe(*perks, a_recipe) : Standing{};
 	}
 
+	Standing Scrapper()
+	{
+		const auto perks = Current();
+		if (!perks || perks->scrapper.empty()) {
+			return {};
+		}
+		Standing out;
+		out.perk = perks->scrapper.front();
+		out.rank = RankHeld(out.perk);
+		out.ranks = static_cast<std::uint32_t>(perks->scrapper.size());
+		return out;
+	}
+
 	float Multiple(const Standing& a_standing)
 	{
 		return UNSKILLED_MULTIPLE - (UNSKILLED_MULTIPLE - SKILLED_MULTIPLE) * a_standing.Share();

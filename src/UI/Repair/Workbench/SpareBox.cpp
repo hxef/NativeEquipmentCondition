@@ -1,6 +1,7 @@
 #include "UI/Repair/Workbench/SpareBox.h"
 
 #include "Condition/Condition.h"
+#include "Condition/CraftingPerks/CraftingPerks.h"
 #include "Condition/Repair.h"
 #include "Core/Text/Text.h"
 #include "Core/TraceLog.h"
@@ -271,12 +272,25 @@ namespace Workbench
 			rows.push_back(RowOf(spare));
 			lists.push_back(spare.extra);
 		}
-		TraceLog::Line("menu", "Workbench asks which of {:d} spares to use up on {:s} at {:d}%",
-			spares.size(), item->Name(), item->percent);
+
+		// The line above the question names the player's Scrapper rank, as the
+		// repair box names the perk pricing the item, but only while the rank
+		// raises what a listed spare restores, so it never claims a gain
+		// that is not on the list.
+		const auto scrapper = CraftingPerks::Scrapper();
+		const auto raised = std::ranges::count_if(spares, [](const Spare& a_spare) { return a_spare.unranked < a_spare.gain; });
+		const auto over = scrapper.rank > 0 && raised > 0 ? Text::SpareScrapper(scrapper.Name(), scrapper.rank) : std::string{};
+		std::string credit{ "nobody" };
+		if (scrapper.rank > 0) {
+			credit = raised > 0 ? std::format("{:s} {:d}, which raises {:d} of them", scrapper.Name(), scrapper.rank, raised) :
+			                      std::format("nobody, as {:s} {:d} raises none of them", scrapper.Name(), scrapper.rank);
+		}
+		TraceLog::Line("menu", "Workbench asks which of {:d} spares to use up on {:s} at {:d}%, crediting {:s}",
+			spares.size(), item->Name(), item->percent, credit);
 
 		// The bench, the item and the spare are looked up again when the
 		// answer comes, in case anything moved in between.
-		RepairPrompt::AskRows({}, Text::SpareQuestion(item->Name(), item->percent), std::move(rows),
+		RepairPrompt::AskRows(over, Text::SpareQuestion(item->Name(), item->percent), std::move(rows),
 			[object = &a_object, a_extra, lists = std::move(lists), priced = a_priced](std::size_t a_row) {
 				Pick(*object, a_extra, lists[a_row], priced);
 			},

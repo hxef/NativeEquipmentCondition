@@ -119,6 +119,10 @@ namespace CraftingPerks
 	// the one the player has taken furthest counts.
 	[[nodiscard]] Standing OfRecipe(const RE::BGSConstructibleObject& a_recipe);
 
+	// Where the player stands on Scrapper, whose ranks raise what a spare
+	// restores. No perk when Fallout4.esm has none.
+	[[nodiscard]] Standing Scrapper();
+
 	// What repairing a broken item costs the player at this rank, between the 2
 	// multiples. No perk at all costs the full multiple.
 	[[nodiscard]] float Multiple(const Standing& a_standing);

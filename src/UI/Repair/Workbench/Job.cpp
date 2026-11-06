@@ -3,6 +3,7 @@
 #include "Condition/CraftingPerks/CraftingPerks.h"
 #include "Condition/Repair.h"
 #include "Core/ItemCards.h"
+#include "Core/Settings.h"
 #include "Core/Text/Text.h"
 #include "Core/TraceLog.h"
 #include "UI/Flash.h"
@@ -87,6 +88,26 @@ namespace Workbench
 			RE::SendHUDMessage::ShowHUDMessage(said.c_str(), nullptr, true, true);
 			TraceLog::Line("menu", "Workbench said {:s} can't be modified, sound and still greyed", a_name);
 		}
+
+		// -------------------------------------------------------------------
+		// The row the repair box opens on
+		// -------------------------------------------------------------------
+
+		// What iRepairBoxRow picks, see Settings.h. Any other number reads as
+		// 2, the highest level.
+		[[nodiscard]] RepairPrompt::Start BoxStart()
+		{
+			switch (Settings::iRepairBoxRow.GetValue()) {
+			case 0:
+				return RepairPrompt::Start::kNone;
+			case 1:
+				return RepairPrompt::Start::kTop;
+			case 3:
+				return RepairPrompt::Start::kLowest;
+			default:
+				return RepairPrompt::Start::kHighest;
+			}
+		}
 	}
 
 	// -------------------------------------------------------------------
@@ -148,7 +169,7 @@ namespace Workbench
 				TraceLog::Line("menu", "Workbench repair set to {:d}%", offered[a_index]);
 				Begin(OpenBench(), offered[a_index], priced);
 			},
-			[] { TraceLog::Line("menu", "Workbench repair called off"); }, std::move(top));
+			[] { TraceLog::Line("menu", "Workbench repair called off"); }, std::move(top), BoxStart());
 	}
 
 	void Begin(RE::ExamineMenu* a_menu, std::uint32_t a_level, const Priced& a_priced)

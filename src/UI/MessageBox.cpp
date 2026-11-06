@@ -10,6 +10,7 @@
 #include <array>
 #include <cmath>
 #include <cstdint>
+#include <limits>
 #include <mutex>
 #include <optional>
 
@@ -29,8 +30,9 @@ namespace MessageBox
 		{
 			const RE::IMessageBoxCallback* callback = nullptr;
 			std::uint64_t                  number = 0;
-			// The row the highlight is still to be put on and how many
-			// buttons the box has, 0 once it is there or for none.
+			// The row the highlight is still to be put on, NO_ROW to take it
+			// off, and how many buttons the box has, 0 once it is done or for
+			// none.
 			std::uint32_t start = 0;
 			std::uint32_t buttons = 0;
 			// The number of its last button, its cancel.
@@ -153,10 +155,15 @@ namespace MessageBox
 		// The row NEC's box starts on
 		// -------------------------------------------------------------------
 
-		// Puts the highlight on a_asked's starting row, once the movie shows
-		// the box with its buttons, which puts the highlight on the first.
-		// Tried on that 1 frame only, so a player who comes back to the
-		// first row keeps it. True once tried.
+		// The list's own number for no row, which its scroll arrows also
+		// leave. From there Down highlights the first row and Up nothing.
+		constexpr double NO_SELECTION = -1.0;
+
+		// Puts the highlight on a_asked's starting row, or takes it off for
+		// NO_ROW, once the movie shows the box with its buttons, which puts
+		// the highlight on the first. Tried on that 1 frame only, so a player
+		// who comes back to the first row keeps it. A read that fails gives
+		// NaN, which matches no row. True once tried.
 		[[nodiscard]] bool MoveHighlight(RE::MessageBoxMenu& a_menu, const Asked& a_asked)
 		{
 			auto       list = Roles::Boxes::MessageList(a_menu);
@@ -164,13 +171,20 @@ namespace MessageBox
 			if (!Flash::Bool(a_menu.menuObj, "visible"sv) || !rows.IsArray() || rows.GetArraySize() != a_asked.buttons) {
 				return false;
 			}
-			if (Flash::Number(list, "selectedIndex"sv, -1.0) != 0.0 ||
-				!Flash::Set(list, "selectedIndex"sv, Value(static_cast<double>(a_asked.start))) ||
-				Flash::Number(list, "selectedIndex"sv, -1.0) != static_cast<double>(a_asked.start)) {
+			const auto none = a_asked.start == NO_ROW;
+			const auto to = none ? NO_SELECTION : static_cast<double>(a_asked.start);
+			constexpr auto UNREAD = std::numeric_limits<double>::quiet_NaN();
+			if (Flash::Number(list, "selectedIndex"sv, UNREAD) != 0.0 ||
+				!Flash::Set(list, "selectedIndex"sv, Value(to)) ||
+				Flash::Number(list, "selectedIndex"sv, UNREAD) != to) {
 				TraceLog::Line("menu", "NEC's box {:d} keeps its highlight on its first row", a_asked.number);
 				return true;
 			}
-			TraceLog::Line("menu", "NEC's box {:d} put its highlight on row {:d}", a_asked.number, a_asked.start);
+			if (none) {
+				TraceLog::Line("menu", "NEC's box {:d} took its highlight off every row", a_asked.number);
+			} else {
+				TraceLog::Line("menu", "NEC's box {:d} put its highlight on row {:d}", a_asked.number, a_asked.start);
+			}
 			return true;
 		}
 
@@ -352,7 +366,7 @@ namespace MessageBox
 		// give it no button, -1.
 		const auto wayOut = static_cast<std::int32_t>(a_buttons.size() - 1);
 		CancelsBy(a_callback, static_cast<std::uint8_t>(wayOut));
-		if (a_start > 0 && a_start < a_buttons.size()) {
+		if (a_start == NO_ROW || (a_start > 0 && a_start < a_buttons.size())) {
 			StartAt(a_callback, a_start, static_cast<std::uint32_t>(a_buttons.size()));
 		}
 

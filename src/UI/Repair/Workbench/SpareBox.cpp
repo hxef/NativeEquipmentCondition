@@ -276,7 +276,7 @@ namespace Workbench
 
 		// The bench, the item and the spare are looked up again when the
 		// answer comes, in case anything moved in between.
-		RepairPrompt::AskRows(Text::SpareQuestion(item->Name(), item->percent), std::move(rows),
+		RepairPrompt::AskRows({}, Text::SpareQuestion(item->Name(), item->percent), std::move(rows),
 			[object = &a_object, a_extra, lists = std::move(lists), priced = a_priced](std::size_t a_row) {
 				Pick(*object, a_extra, lists[a_row], priced);
 			},

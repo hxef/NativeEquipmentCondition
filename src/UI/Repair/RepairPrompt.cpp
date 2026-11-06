@@ -55,15 +55,8 @@ namespace RepairPrompt
 	void Ask(std::string_view a_over, std::string_view a_name, std::uint32_t a_percent,
 		std::vector<std::string> a_buttons,
 		std::function<void(std::size_t)> a_chosen, std::function<void()> a_cancelled,
-		std::optional<Top> a_top)
+		std::optional<Top> a_top, Start a_start)
 	{
-		std::string body;
-		if (!a_over.empty()) {
-			body += a_over;
-			body += "\n\n";
-		}
-		body += Text::RepairQuestion(a_name, a_percent);
-
 		// The box lists the offers the other way round, below the top row.
 		const auto offers = a_buttons.size();
 		const auto above = a_top ? std::size_t{ 1 } : std::size_t{ 0 };
@@ -71,7 +64,20 @@ namespace RepairPrompt
 		if (a_top) {
 			a_buttons.insert(a_buttons.begin(), a_top->label);
 		}
-		AskRows(body, std::move(a_buttons),
+		// The highest offer sits right below the top row.
+		auto start = static_cast<std::uint32_t>(above);
+		switch (a_start) {
+		case Start::kNone:
+			start = MessageBox::NO_ROW;
+			break;
+		case Start::kTop:
+			start = 0;
+			break;
+		case Start::kLowest:
+			start = static_cast<std::uint32_t>(above + std::max<std::size_t>(offers, 1) - 1);
+			break;
+		}
+		AskRows(a_over, Text::RepairQuestion(a_name, a_percent), std::move(a_buttons),
 			[offers, above, chosen = std::move(a_chosen), top = a_top ? std::move(a_top->chosen) : std::function<void()>{}](std::size_t a_row) {
 				if (a_row < above) {
 					top();
@@ -79,15 +85,21 @@ namespace RepairPrompt
 					chosen(offers - 1 - (a_row - above));
 				}
 			},
-			std::move(a_cancelled), static_cast<std::uint32_t>(above));
+			std::move(a_cancelled), start);
 	}
 
-	void AskRows(std::string_view a_body, std::vector<std::string> a_rows,
+	void AskRows(std::string_view a_over, std::string_view a_question, std::vector<std::string> a_rows,
 		std::function<void(std::size_t)> a_chosen, std::function<void()> a_cancelled, std::uint32_t a_start)
 	{
+		std::string body;
+		if (!a_over.empty()) {
+			body += a_over;
+			body += "\n\n";
+		}
+		body += a_question;
+
 		const auto rows = a_rows.size();
 		a_rows.emplace_back(CANCEL);
-		const std::string body{ a_body };
 		MessageBox::Ask(TITLE, body.c_str(), a_rows, new Answered(rows, std::move(a_chosen), std::move(a_cancelled)), a_start);
 	}
 }

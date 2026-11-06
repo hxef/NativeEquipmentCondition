@@ -3,6 +3,7 @@
 #include "Core/Plugin.h"
 
 #include <cstdint>
+#include <limits>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -44,13 +45,18 @@ namespace MessageBox
 		Callback& operator=(const Callback&) = delete;
 	};
 
+	// The a_start of Ask that leaves no button highlighted.
+	inline constexpr std::uint32_t NO_ROW = std::numeric_limits<std::uint32_t>::max();
+
 	// Puts the question up and hands a_callback the number of the button
 	// pressed, counting from 0. The last button is cancel, and the Cancel key,
 	// Tab or B, and Escape press it too. When the box never opens, the
 	// callback gets the cancel button and is freed here. The box pauses
 	// whatever is under it. The movie puts the highlight on the first button,
 	// and the frame listener moves it to button a_start once, on the box's
-	// first frame. A message box mod can keep it on the first.
+	// first frame. With NO_ROW it takes the highlight off, so Enter presses
+	// nothing until Down or the mouse highlights a button. Up does nothing
+	// then, as the movie has it. A message box mod can keep it on the first.
 	void Ask(const char* a_title, const char* a_body,
 		const std::vector<std::string>& a_buttons, Callback* a_callback, std::uint32_t a_start = 0);
 }

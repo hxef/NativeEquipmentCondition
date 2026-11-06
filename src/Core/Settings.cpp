@@ -51,6 +51,7 @@ namespace Settings
 
 		const Number NUMBERS[]{
 			&iUnscrappableSpares,
+			&iRepairBoxRow,
 			&iLootShift,
 			&fWearRateMult,
 			&fNpcWearRateMult,
@@ -105,11 +106,16 @@ namespace Settings
 		Live<bool>* const AFTER_POWER_ARMOR_BAR[]{ &bPowerArmorBarShowsWord, &bPickupBar };
 		Live<bool>* const AFTER_PICKUP_BAR[]{ &bPickupBarShowsWord };
 
-		// The number under [Features], which the Settings line puts after the
-		// switch NEC.ini has it after.
-		[[nodiscard]] const Live<std::int32_t>* NumberAfter(const Named& a_setting)
+		// The numbers under [Features], which the Settings line puts after the
+		// switch NEC.ini has them after.
+		Live<std::int32_t>* const AFTER_SPARE_REPAIR[]{ &iUnscrappableSpares, &iRepairBoxRow };
+
+		[[nodiscard]] std::span<Live<std::int32_t>* const> NumbersAfter(const Named& a_setting)
 		{
-			return &a_setting == &bSpareRepair ? &iUnscrappableSpares : nullptr;
+			if (&a_setting == &bSpareRepair) {
+				return AFTER_SPARE_REPAIR;
+			}
+			return {};
 		}
 
 		[[nodiscard]] std::span<Live<bool>* const> SwitchesAfter(const Named& a_setting)
@@ -354,7 +360,7 @@ namespace Settings
 			std::format_to(std::back_inserter(line), " {:s}={:s}", on->key, Shown(*on));
 			for (const auto* after : SwitchesAfter(*on)) {
 				std::format_to(std::back_inserter(line), " {:s}={:s}", after->key, Shown(*after));
-				if (const auto* number = NumberAfter(*after)) {
+				for (const auto* number : NumbersAfter(*after)) {
 					say(*number);
 				}
 			}

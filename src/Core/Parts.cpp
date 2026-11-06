@@ -118,6 +118,7 @@ namespace
 		{ &Settings::bVendorRepair, nullptr, TRADER_REPAIRS, TRADER_REPAIRS_SIDE },
 		{ &Settings::bSpareRepair, &Settings::fBenchCostMult, BENCH, SPARE_SIDE },
 		{ &Settings::iUnscrappableSpares, &Settings::fBenchCostMult, BENCH },
+		{ &Settings::iRepairBoxRow, &Settings::fBenchCostMult, BENCH },
 		{ &Settings::bLoadingTips, nullptr, TIPS },
 		{ &Settings::bHudCondition, nullptr, HUD_BARS },
 		// The power armor bar's switch rides on HUD condition bars as the

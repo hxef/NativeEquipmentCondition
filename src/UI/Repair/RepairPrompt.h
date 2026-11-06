@@ -31,20 +31,31 @@ namespace RepairPrompt
 		std::function<void()> chosen;
 	};
 
+	// The row the highlight starts on: none, the top row, the highest offer
+	// or the lowest. With no top row, kTop starts on the highest offer.
+	enum class Start
+	{
+		kNone,
+		kTop,
+		kHighest,
+		kLowest
+	};
+
 	// Puts the question up. a_over is the line above it, or nothing. a_buttons
 	// are the offers lowest first. The box lists them highest first, so full
 	// condition needs no scrolling, and adds the cancel button after them.
 	// a_chosen is handed the offer's number in a_buttons, and a_cancelled runs
 	// for cancel. Both run a moment later, from F4SE's task queue. a_top goes
-	// above the highest offer, and the highlight still starts on that offer.
+	// above the highest offer, and the highlight starts on a_start's row.
 	void Ask(std::string_view a_over, std::string_view a_name, std::uint32_t a_percent,
 		std::vector<std::string> a_buttons,
 		std::function<void(std::size_t)> a_chosen, std::function<void()> a_cancelled = {},
-		std::optional<Top> a_top = std::nullopt);
+		std::optional<Top> a_top = std::nullopt, Start a_start = Start::kHighest);
 
-	// Puts a box headed REPAIR up with a_body over a_rows in their order and
-	// the cancel button after them. a_chosen is handed the row's number, from
-	// the task queue like a_cancelled. The highlight starts on row a_start.
-	void AskRows(std::string_view a_body, std::vector<std::string> a_rows,
+	// Puts a box headed REPAIR up with a_over, or nothing, over a_question,
+	// over a_rows in their order and the cancel button after them. a_chosen is
+	// handed the row's number, from the task queue like a_cancelled. The
+	// highlight starts on row a_start, or on none for MessageBox::NO_ROW.
+	void AskRows(std::string_view a_over, std::string_view a_question, std::vector<std::string> a_rows,
 		std::function<void(std::size_t)> a_chosen, std::function<void()> a_cancelled = {}, std::uint32_t a_start = 0);
 }

@@ -158,6 +158,11 @@ namespace Settings
 	// reads as 1, the default.
 	inline Live<std::int32_t> iUnscrappableSpares{ "Features", "iUnscrappableSpares", 1 };
 
+	// The row a workbench's repair box highlights as it opens, see
+	// Workbench/Job.cpp: 0 none, 1 USE A SPARE, 2 the highest level and 3 the
+	// lowest. Any other number reads as 2, the default.
+	inline Live<std::int32_t> iRepairBoxRow{ "Features", "iRepairBoxRow", 2 };
+
 	// Loading screen tips about condition.
 	inline Live<bool> bLoadingTips{ "Features", "bLoadingTips", true };
 
@@ -397,7 +402,7 @@ namespace Settings
 	// whole number where the setting only takes whole steps.
 	using Number = std::variant<Live<float>*, Live<std::int32_t>*>;
 
-	// The 8 switches under [Features] and the 43 numbers under [Features],
+	// The 8 switches under [Features] and the 44 numbers under [Features],
 	// [Loot], [Balance] and [HUD], in NEC.ini's order, for Report and the MCM
 	// page.
 	[[nodiscard]] std::span<Live<bool>* const> Switches();

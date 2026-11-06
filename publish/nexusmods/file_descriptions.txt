@@ -1,3 +1,8 @@
+1.8.1
+v1.8.1 swaps the Jamming switch for 2 MCM sliders: how often worn guns jam and how early. An MCM stepper picks the repair box's opening row, spare repairs name your Scrapper rank, and a dropped pile of broken gear scraps into 1 component each.
+
+OG/AE only
+
 1.8.0
 v1.8.0 adds repair with spares, like in Fallout 3 and New Vegas: USE A SPARE at a workbench takes apart another copy of an item to repair it. Worn gear scraps into fewer components, ESC closes the repair boxes, and MCM helps fit on 1 line.
 

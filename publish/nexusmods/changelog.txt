@@ -1,3 +1,11 @@
+1.8.1
+* 2 new MCM sliders on the Weapons page, Jam chance at 0 condition (fJamChance, 1) and Jams below (fJamStart, 0.5), set how often your worn guns jam and from what condition.
+* The Jamming MCM switch is gone, and a jam chance of 0 turns jams off. If you had jams off, set the Jam chance at 0 condition MCM slider to 0 once.
+* The Weapon penalties below MCM slider no longer moves where jams start, and the fWeaponConditionReloadJam1 to 10 game settings are no longer read.
+* A new MCM stepper, Repair box opens on (iRepairBoxRow, Highest level), picks the row the workbench's repair box highlights as it opens: none, USE A SPARE, or the highest or lowest repair condition level.
+* When you repair with a spare at a workbench, the box that lists your spares names your Scrapper rank while it raises the condition a spare restores.
+* A pile of broken gear you dropped gives 1 component for each item when you scrap it in workshop mode, as scrapping them one by one does.
+
 1.8.0
 * A new USE A SPARE button in the workbench's repair box takes apart a spare of the same item to repair it, and the parts it doesn't need go to your inventory.
 * A new MCM switch, Spare repair (bSpareRepair, on), turns USE A SPARE off, and a slider, Spare worth (fSpareWorthMult, 1), sets how much condition a spare restores, from 0.5, what scrapping it gives, up to 2.

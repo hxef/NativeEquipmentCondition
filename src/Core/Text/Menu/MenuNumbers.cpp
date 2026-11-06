@@ -19,6 +19,8 @@ namespace Text
 			{ &Settings::fCritMeterFloor, CRIT_METER_FLOOR_NAME, CRIT_METER_FLOOR_HELP },
 			{ &Settings::fAccuracyFloor, ACCURACY_FLOOR_NAME, ACCURACY_FLOOR_HELP },
 			{ &Settings::fRangeFloor, RANGE_FLOOR_NAME, RANGE_FLOOR_HELP },
+			{ &Settings::fJamChance, JAM_CHANCE_NAME, JAM_CHANCE_HELP },
+			{ &Settings::fJamStart, JAM_START_NAME, JAM_START_HELP },
 			{ &Settings::fBenchCostMult, BENCH_COST_NAME, BENCH_COST_HELP },
 			{ &Settings::fSpareWorthMult, SPARE_WORTH_NAME, SPARE_WORTH_HELP },
 			{ &Settings::iFreeMendAbove, FREE_MEND_NAME, FREE_MEND_HELP },

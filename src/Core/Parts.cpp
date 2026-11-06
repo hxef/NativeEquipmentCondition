@@ -19,9 +19,8 @@ namespace
 {
 	using enum Piece;
 
-	// A shot's jam comes through Gun wear from firing, which Jam's row rides
-	// on, see Features.cpp. A single shot gun's comes through its own reload
-	// call.
+	// A shot's jam comes through Gun wear from firing's fire call, see
+	// Core/Pieces.cpp. A single shot gun's comes through its own reload call.
 	constexpr Piece JAM[]{ kJamShot };
 	constexpr Piece JAM_SIDE[]{ kJamReload };
 	// The 2 side parts roll loot lying in the world and a stock's items with
@@ -83,9 +82,10 @@ namespace
 	}
 
 	// The weapon start moves every weapon penalty's line, so it does
-	// nothing only once all of them are off.
-	constexpr auto WEAPON_PENALTIES = Joined<DAMAGE, FIRE_RATE, CRIT_METER, ACCURACY, RANGE, JAM>();
-	constexpr auto WEAPON_PENALTIES_SIDE = Joined<FIRE_RATE_SIDE, ACCURACY_SIDE, RANGE_SIDE, JAM_SIDE>();
+	// nothing only once all of them are off. The jams have a start of their
+	// own.
+	constexpr auto WEAPON_PENALTIES = Joined<DAMAGE, FIRE_RATE, CRIT_METER, ACCURACY, RANGE>();
+	constexpr auto WEAPON_PENALTIES_SIDE = Joined<FIRE_RATE_SIDE, ACCURACY_SIDE, RANGE_SIDE>();
 
 	constexpr Piece BENCH[]{ kBench };
 	// The perk pages tell of a discount on a bench repair, and the bench's
@@ -114,7 +114,6 @@ namespace
 	constexpr Piece FRIDGE_ICON_SIDE[]{ kLootMeters, kCndContainers };
 
 	constexpr SettingLink SETTINGS[]{
-		{ &Settings::bJam, nullptr, JAM, JAM_SIDE },
 		{ &Settings::bSpawnCondition, nullptr, WORN_LOOT, WORN_LOOT_SIDE, WORN_LOOT_EXCEPTIONS },
 		{ &Settings::bVendorRepair, nullptr, TRADER_REPAIRS, TRADER_REPAIRS_SIDE },
 		{ &Settings::bSpareRepair, &Settings::fBenchCostMult, BENCH, SPARE_SIDE },
@@ -147,6 +146,8 @@ namespace
 		{ &Settings::fCritMeterFloor, nullptr, CRIT_METER },
 		{ &Settings::fAccuracyFloor, nullptr, ACCURACY, ACCURACY_SIDE },
 		{ &Settings::fRangeFloor, nullptr, RANGE, RANGE_SIDE },
+		{ &Settings::fJamChance, nullptr, JAM, JAM_SIDE },
+		{ &Settings::fJamStart, &Settings::fJamChance, JAM, JAM_SIDE },
 		{ &Settings::fBenchCostMult, nullptr, BENCH, {}, BENCH_EXCEPTIONS },
 		{ &Settings::fSpareWorthMult, &Settings::fBenchCostMult, BENCH },
 		{ &Settings::iFreeMendAbove, &Settings::fBenchCostMult, BENCH },

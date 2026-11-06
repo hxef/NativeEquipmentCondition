@@ -118,9 +118,8 @@ namespace
 		{ .name = "Accuracy", .part = Part::kAccuracy, .Install = Aim::InstallAccuracy, .Load = Aim::LoadAccuracy },
 		// A worn gun loses damage sooner at range, in anybody's hands.
 		{ .name = "Range", .part = Part::kRange, .Install = Aim::InstallRange },
-		// A worn gun can jam. Every shot's roll comes through WeaponEvents'
-		// fire call, so it rides on Gun wear from firing.
-		{ .name = "Jam", .on = &Settings::bJam, .part = Part::kJam, .needs = Part::kGunWear, .Install = Jam::Install, .Load = Jam::Load, .Unload = Jam::Unload },
+		// A worn gun can jam.
+		{ .name = "Jam", .part = Part::kJam, .Install = Jam::Install, .Load = Jam::Load, .Unload = Jam::Unload },
 		// A weapon or a piece of armor spawns at a condition that suits where
 		// it came from.
 		{ .name = "SpawnCondition", .on = &Settings::bSpawnCondition, .part = Part::kSpawn, .Install = SpawnCondition::Install },

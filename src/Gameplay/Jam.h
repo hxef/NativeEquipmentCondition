@@ -2,11 +2,7 @@
 
 #include "Core/Plugin.h"
 
-// Worn guns jam. Fallout 3 and New Vegas jammed guns in poor condition. Fallout
-// 4 cut the mechanic but still registers the old settings, fWeaponConditionJam1
-// to 10 and fWeaponConditionReloadJam1 to 10, with their old values, and the
-// weapon record keeps a No Jam After Reload flag. The jam comes back here on
-// those settings.
+// Worn guns jam, as they did in Fallout 3 and New Vegas.
 //
 // Each shot the player's gun is about to fire rolls first. A jammed shot is
 // never fired: no round, no bang, no wear. The magazine empties instead, as if
@@ -15,30 +11,29 @@
 // says it jammed. Emptying costs no ammo, since the rounds stay counted in the
 // inventory until fired.
 //
-// fWeaponConditionReloadJam is a table of 10 chances, one per 10% of
-// condition, worst first: 1, 0.75, 0.5, 0.25 and 0.1 for the 5 steps below
-// 50% and 0 from 50% up. Here it is the chance that a magazine jams, so a gun
-// below 10% jams once per magazine whatever its size. Which round jams is
-// chance too: in a magazine of 500 that is sure to jam, the first round jams
-// with 1 in 500, the next with 1 in 499, and the last for certain.
-// ChancePerShot in Jam.cpp does the same for chances below 1.
-//
-// fWeaponPenaltyStart below half moves the jams down with the other
-// penalties: the 5 steps below half are squeezed in below the start, so a gun
-// jams only below it and the table keeps its shape.
+// The chance is per magazine. It is 0 at fJamStart and above, and below it
+// rises in a straight line to fJamChance at 0 condition, as the other weapon
+// penalties run from their start to their floor. fWeaponPenaltyStart does not
+// move it. At the defaults, 1 and 0.5, a gun at 45% jams in 1 magazine of 10,
+// at 25% in every 2nd and at 5% in 9 of 10, whatever the magazine's size.
+// Which round jams is chance too: in a magazine of 500 that is sure to jam,
+// the first round jams with 1 in 500, the next with 1 in 499, and the last for
+// certain. ChancePerShot in Jam.cpp does the same for chances below 1. A
+// chance or a start of 0 turns jams off, and nothing rolls.
 //
 // Guns that fire once per reload, the Fat Man, the Flare Gun, the Syringer and
 // the Laser Musket, jam as the reload finishes instead, so a jam costs one
 // reload and never the shot. The reload after a jammed one always loads.
 //
-// The settings are read on every roll, so setgs or a plugin retunes all of it.
+// Both settings are read on every roll, so the MCM page retunes them on the
+// spot.
 namespace Jam
 {
-	// Patches the reload call, a detail of the switch: without it only the
-	// guns that fire once per reload stop jamming.
+	// Patches the reload call. Without it only the guns that fire once per
+	// reload never jam.
 	void Install();
 
-	// Finds the settings and reads the message text.
+	// Reads the message text.
 	void Load();
 
 	// Forgets the gun whose last reload jammed, also when another game
@@ -52,4 +47,8 @@ namespace Jam
 	// caller must not fire the shot.
 	bool Roll(RE::PlayerCharacter& a_player, const RE::BGSObjectInstanceT<RE::TESObjectWEAP>& a_weapon, std::uint32_t a_equipIndex,
 		float a_health);
+
+	// Whether guns can jam at all, false while fJamChance or fJamStart is 0.
+	// The loading tip about jams asks it too.
+	[[nodiscard]] bool Jams();
 }

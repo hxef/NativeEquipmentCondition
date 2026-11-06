@@ -73,9 +73,9 @@ namespace Text
 		Key                    help;
 	};
 
-	// The 9 switches, bPlainApparelNeverWears, bPowerArmorBar, bSpareRepair,
+	// The 8 switches, bPlainApparelNeverWears, bPowerArmorBar, bSpareRepair,
 	// iUnscrappableSpares, bFridgeIcon and bTraceLogs, in MenuSwitches.cpp, the
-	// 5 wear speeds, in MenuWear.cpp, iLootShift and the 22 other Balance
+	// 5 wear speeds, in MenuWear.cpp, iLootShift and the 24 other Balance
 	// numbers, in MenuNumbers.cpp, and the 12 HUD numbers, the 5 HUD bar
 	// switches and sLogLevel, in MenuHudLog.cpp, each in NEC.ini's order.
 	[[nodiscard]] std::span<const MenuRow> MenuSwitches();

@@ -7,6 +7,7 @@
 #include "Core/TraceLog.h"
 #include "Gameplay/BrokenEquip.h"
 #include "Gameplay/ItemValue.h"
+#include "Gameplay/Jam.h"
 #include "UI/Repair/Workbench/Workbench.h"
 
 #include <algorithm>
@@ -47,6 +48,13 @@ namespace LoadingTips
 			return ItemValue::Works() && !CallPatch::LossOf(Part::kDamage) && !CallPatch::LossOf(Part::kArmor);
 		}
 
+		// The jam tip shows while guns can jam and no piece of Jamming is off
+		// for another mod, as the wear tip does.
+		bool JamWorks()
+		{
+			return Jam::Jams() && !CallPatch::LossOf(Part::kJam);
+		}
+
 		// The bench tip with the mod lock as it stands.
 		std::string BenchWords()
 		{
@@ -65,7 +73,7 @@ namespace LoadingTips
 			// Armor06Metal, metal armor.
 			{ .words = &Text::BrokenTip, .picture = 0x001F6DCB, .in = &BrokenEquip::Works },
 			// Weapons13SubmachineGun, the submachine gun.
-			{ .words = &Text::JamTip, .picture = 0x001F6DB9, .on = &Settings::bJam },
+			{ .words = &Text::JamTip, .picture = 0x001F6DB9, .in = &JamWorks },
 			// CreatureRaider, a raider.
 			{ .words = &Text::LootTip, .picture = 0x001CEDB8, .on = &Settings::bSpawnCondition },
 			// GeneralGameplay10CookingStation, a cooking station.

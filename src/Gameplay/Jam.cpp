@@ -5,12 +5,10 @@
 #include "Core/CallPatch/CallPatch.h"
 #include "Core/Settings.h"
 #include "Core/TraceLog.h"
+#include "Gameplay/WeaponEvents/WeaponEvents.h"
 
 #include <algorithm>
-#include <array>
 #include <atomic>
-#include <cmath>
-#include <format>
 #include <random>
 #include <string>
 
@@ -24,59 +22,34 @@ namespace Jam
 		constexpr std::uint32_t JAMMED_TEXT_ID = 0x19A89;
 		constexpr const char*   JAMMED_TEXT_FALLBACK = "Jammed.";
 
-		// fWeaponConditionReloadJam1 to 10.
-		constexpr std::size_t NUM_TENTHS = 10;
-
-		std::array<RE::Setting*, NUM_TENTHS> g_chancePerMagazine{};
-		std::string                          g_message{ JAMMED_TEXT_FALLBACK };
+		std::string g_message{ JAMMED_TEXT_FALLBACK };
 
 		// The gun whose last reload jammed, so its next reload loads for sure.
 		// Atomic, since animation events arrive on more than one thread.
 		std::atomic<const RE::TESObjectWEAP*> g_retryLoads{ nullptr };
 
-		// Vanilla's chances are 0 from half condition up.
-		constexpr float HALF = 0.5F;
+		// -------------------------------------------------------------------
+		// The chance
+		// -------------------------------------------------------------------
 
-		// Where jams can start: half condition, or fWeaponPenaltyStart when
-		// that is lower.
-		float JamStart()
+		// A setting as a share from 0 to 1, a value past an end counting as
+		// that end.
+		float Clamped(const Settings::Live<float>& a_setting)
 		{
-			return std::min(HALF, Condition::Start(Condition::Kind::kWeapon));
+			const auto value = a_setting.GetValue();
+			return value > 0.0F ? std::min(value, 1.0F) : 0.0F;
 		}
 
-		// The condition the table is read at, see Jam.h: 0 to the start reads
-		// as 0 to half, and the start to full as half to full. The 1st division
-		// runs only for a health below the start, so the start is above 0
-		// there. The 2nd runs only for a start below half, so 1 - start is
-		// never 0.
-		float TableHealth(float a_health)
-		{
-			const auto start = JamStart();
-			if (start >= HALF) {
-				return a_health;
-			}
-			const auto read = a_health < start ? a_health * (HALF / start) : HALF + ((a_health - start) * ((1.0F - HALF) / (1.0F - start)));
-
-			// Rounded to 6 places, since float error can read a gun right on a
-			// step's edge, 0.06 at a start of 0.3, as 0.0999999 and so 1 step
-			// worse.
-			return std::round(read * 1e6F) / 1e6F;
-		}
-
-		// What the trace lines add when the table is read at another
-		// condition than the gun's.
-		std::string ReadAs(float a_health, float a_read)
-		{
-			return TraceLog::IsOpen() && a_read != a_health ? std::format(", read as {:.3f}", a_read) : std::string{};
-		}
-
-		// a_health is the condition the table is read at, see TableHealth.
+		// The chance that a magazine of a gun at a_health jams, see Jam.h. The
+		// division runs only for a health below the start, so the start is
+		// above 0 there.
 		float ChancePerMagazine(float a_health)
 		{
-			// Worst first, so a gun at 45% reads the 5th.
-			const auto tenth = std::clamp(static_cast<int>(a_health * 10.0F), 0, static_cast<int>(NUM_TENTHS) - 1);
-			const auto setting = g_chancePerMagazine[static_cast<std::size_t>(tenth)];
-			return setting ? std::clamp(setting->GetFloat(), 0.0F, 1.0F) : 0.0F;
+			const auto start = Clamped(Settings::fJamStart);
+			if (a_health >= start) {
+				return 0.0F;
+			}
+			return std::clamp(Clamped(Settings::fJamChance) * (1.0F - (a_health / start)), 0.0F, 1.0F);
 		}
 
 		// The chance that the next shot jams, for a magazine of a_capacity that
@@ -121,6 +94,10 @@ namespace Jam
 			static thread_local std::mt19937 engine{ std::random_device{}() };
 			return std::bernoulli_distribution{ a_chance }(engine);
 		}
+
+		// -------------------------------------------------------------------
+		// The jam
+		// -------------------------------------------------------------------
 
 		// Empties a magazine the way firing its last round does, the 3 steps
 		// Actor::UseAmmo takes at 0. The last lets go of the trigger, which
@@ -175,13 +152,17 @@ namespace Jam
 			return a_actor.GetCurrentAmmoCount(RE::BGSEquipIndex{ a_equipIndex });
 		}
 
+		// -------------------------------------------------------------------
+		// The reload of a single shot gun
+		// -------------------------------------------------------------------
+
 		// Rolls for a jam as a reload of the player's gun finishes. Only guns
 		// that fire once per reload roll here. a_loadedBefore is how many
 		// rounds the magazine held before.
 		void RollReload(RE::PlayerCharacter& a_player, const RE::BGSObjectInstanceT<RE::TESObjectWEAP>& a_weapon, std::uint32_t a_equipIndex,
 			std::uint32_t a_loadedBefore)
 		{
-			if (!Settings::bJam.GetValue()) {
+			if (!Jams()) {
 				return;
 			}
 
@@ -205,8 +186,8 @@ namespace Jam
 				return;
 			}
 
-			// The reload after a jam always loads. Under 10% every reload jams,
-			// and this keeps such guns firing at all.
+			// The reload after a jam always loads. Near 0 condition nearly every
+			// reload jams, and this keeps such guns firing at all.
 			const RE::TESObjectWEAP* retry = &weapon;
 			if (g_retryLoads.compare_exchange_strong(retry, nullptr)) {
 				TraceLog::Line("jam", "clear, the reload after a jam always loads");
@@ -222,16 +203,14 @@ namespace Jam
 
 			// The magazine is 1 round, so the magazine's chance is this
 			// reload's.
-			const auto read = TableHealth(health);
-			const auto perMagazine = ChancePerMagazine(read);
+			const auto perMagazine = ChancePerMagazine(health);
 			if (perMagazine <= 0.0F) {
-				TraceLog::Line("jam", "clear, no chance at condition {:.3f}{:s}", health, ReadAs(health, read));
+				TraceLog::Line("jam", "clear, no chance at condition {:.3f}", health);
 				return;
 			}
 			const bool jammed = RollChance(perMagazine);
 
-			TraceLog::Line("jam", "{:s} at {:.2f}% on the reload, condition {:.3f}{:s}",
-				jammed ? "JAMMED" : "clear", perMagazine * 100.0, health, ReadAs(health, read));
+			TraceLog::Line("jam", "{:s} at {:.2f}% on the reload, condition {:.3f}", jammed ? "JAMMED" : "clear", perMagazine * 100.0, health);
 			if (jammed) {
 				g_retryLoads = &weapon;
 				JamGun(a_player, RE::BGSEquipIndex{ a_equipIndex }, stats);
@@ -255,9 +234,11 @@ namespace Jam
 		bool ReloadHk(RE::Actor* a_actor, const RE::BGSObjectInstanceT<RE::TESObjectWEAP>& a_weapon, std::uint32_t a_equipIndex)
 		{
 			// For every actor, so only the player's guns that wear are watched.
+			// A single shot gun's jam goes with every other gun's, which rolls
+			// in Gun wear from firing's fire call, see Core/Pieces.cpp.
 			auto*      object = a_weapon.object;
 			auto*      player = RE::PlayerCharacter::GetSingleton();
-			const bool watched = player && a_actor == player && object && object->IsWeapon() && g_reloadLink.Live();
+			const bool watched = player && a_actor == player && object && object->IsWeapon() && g_reloadLink.Live() && WeaponEvents::FireLive();
 			const auto before = watched ? LoadedRounds(*a_actor, a_equipIndex) : 0;
 
 			// On to the mod NEC runs on top of, or through the actor's vtable,
@@ -287,22 +268,11 @@ namespace Jam
 
 	void Unload()
 	{
-		// The settings are built into the game, not read from a file, so they
-		// are not deleted with the forms.
 		g_retryLoads = nullptr;
 	}
 
 	void Load()
 	{
-		auto* settings = RE::GameSettingCollection::GetSingleton();
-		for (std::size_t i = 0; i < NUM_TENTHS; i++) {
-			const auto name = std::format("fWeaponConditionReloadJam{:d}", i + 1);
-			g_chancePerMagazine[i] = settings ? settings->GetSetting(name) : nullptr;
-			if (!g_chancePerMagazine[i]) {
-				REX::ERROR("{:s} is missing, guns in that tenth of condition will not jam.", name);
-			}
-		}
-
 		// Read as game data loads, so a shot never waits on the strings file.
 		const auto* master = g_dataHandler ? g_dataHandler->LookupModByName("Fallout4.esm") : nullptr;
 		if (master) {
@@ -314,20 +284,14 @@ namespace Jam
 		}
 
 		REX::INFO("Worn guns can jam. The message reads \"{:s}\".", g_message);
-
-		// A line only for a start that moves the jams.
-		const auto start = JamStart();
-		if (start < HALF) {
-			REX::INFO("Guns jam only below {:.2f} condition, by fWeaponPenaltyStart, on the vanilla chances squeezed into that span.", start);
-		}
 	}
 
 	bool Roll(RE::PlayerCharacter& a_player, const RE::BGSObjectInstanceT<RE::TESObjectWEAP>& a_weapon, std::uint32_t a_equipIndex,
 		float a_health)
 	{
-		// Switched off, nothing rolls. The fire hook belongs to WeaponEvents
-		// and calls in here whatever the switch says.
-		if (!Settings::bJam.GetValue()) {
+		// With jams off nothing rolls. The fire hook belongs to WeaponEvents
+		// and calls in here whatever the settings say.
+		if (!Jams()) {
 			return false;
 		}
 
@@ -362,10 +326,9 @@ namespace Jam
 
 		// A roll that cannot jam is still logged, or a gun in good condition
 		// would look like one the roll never reached.
-		const auto read = TableHealth(a_health);
-		const auto perMagazine = ChancePerMagazine(read);
+		const auto perMagazine = ChancePerMagazine(a_health);
 		if (perMagazine <= 0.0F) {
-			TraceLog::Line("jam", "clear, no chance at condition {:.3f}{:s}", a_health, ReadAs(a_health, read));
+			TraceLog::Line("jam", "clear, no chance at condition {:.3f}", a_health);
 			return false;
 		}
 		const auto capacity = static_cast<std::uint32_t>(stats.ammoCapacity);
@@ -374,12 +337,16 @@ namespace Jam
 
 		// Every roll goes to the trace log, so the chance can be watched
 		// climbing as a magazine empties.
-		TraceLog::Line("jam", "{:s} at {:.2f}% with {:d} of {:d} loaded, {:.2f} a magazine at condition {:.3f}{:s}",
-			jammed ? "JAMMED" : "clear", perShot * 100.0, loaded, capacity, perMagazine, a_health, ReadAs(a_health, read));
+		TraceLog::Line("jam", "{:s} at {:.2f}% with {:d} of {:d} loaded, {:.2f} a magazine at condition {:.3f}",
+			jammed ? "JAMMED" : "clear", perShot * 100.0, loaded, capacity, perMagazine, a_health);
 		if (jammed) {
 			JamGun(a_player, index, stats);
 		}
 		return jammed;
 	}
 
+	bool Jams()
+	{
+		return Clamped(Settings::fJamChance) > 0.0F && Clamped(Settings::fJamStart) > 0.0F;
+	}
 }

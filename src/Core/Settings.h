@@ -90,9 +90,9 @@ namespace Settings
 	// from the MCM page.
 	void ReportLine(bool a_always = true);
 
-	// Logs 1 change of a setting, whatever made it: "bJam: true to false, from
-	// the MCM page." At info, or at the log's own level when that is higher,
-	// so no level hides it.
+	// Logs 1 change of a setting, whatever made it: "bSpawnCondition: true to
+	// false, from the MCM page." At info, or at the log's own level when that
+	// is higher, so no level hides it.
 	void LogChange(std::string_view a_key, std::string_view a_old, std::string_view a_new, std::string_view a_from);
 
 	// The level NEC.log opens at, from sLogLevel. An unknown word reads as
@@ -134,9 +134,6 @@ namespace Settings
 	bool Drop(std::string_view a_section, std::string_view a_key);
 
 	// Features. Each is the switch on a row of Features.cpp.
-
-	// Worn guns can jam.
-	inline Live<bool> bJam{ "Features", "bJam", true };
 
 	// Apparel that gives nothing, see ArmorWear::GivesAnything, never wears
 	// and shows no condition. No feature's row: Condition::WhyNoCondition
@@ -197,7 +194,8 @@ namespace Settings
 	inline Live<std::int32_t> iLootShift{ "Loot", "iLootShift", 0 };
 
 	// Balance. Each tunes a feature and is read where it is used. A floor at
-	// 1 leaves the result vanilla, so a feature with a floor has no switch.
+	// 1, or a jam chance of 0, leaves the result vanilla, so such a feature
+	// has no switch.
 
 	// What the wear rate of the player's weapons is multiplied by, see
 	// WeaponWear/Rate.cpp.
@@ -222,8 +220,7 @@ namespace Settings
 	inline Live<float> fDamageFloor{ "Balance", "fDamageFloor", 0.66F };
 
 	// The condition where wear starts to cost a weapon its damage, fire rate,
-	// criticals, accuracy and range, see Condition::Share, and where its jams
-	// can start, see Jam.h.
+	// criticals, accuracy and range, see Condition::Share.
 	inline Live<float> fWeaponPenaltyStart{ "Balance", "fWeaponPenaltyStart", 1.0F };
 
 	// What a piece of armor at nothing still protects for, as a share of its
@@ -254,6 +251,14 @@ namespace Settings
 	// How far a gun at nothing still carries its damage, as a share of its
 	// range, see Gameplay/Aim/Range.cpp.
 	inline Live<float> fRangeFloor{ "Balance", "fRangeFloor", 0.75F };
+
+	// How often the player's gun at nothing jams, as a chance per magazine,
+	// see Jam.h. Counts as 0 to 1, and 0 turns jams off.
+	inline Live<float> fJamChance{ "Balance", "fJamChance", 1.0F };
+
+	// The condition below which the player's guns can jam, see Jam.h. Counts
+	// as 0 to 1, and 0 turns jams off.
+	inline Live<float> fJamStart{ "Balance", "fJamStart", 0.5F };
 
 	// What a repair at a workbench costs, against the mod as tuned, see
 	// Workbench/Cost.h.
@@ -392,7 +397,7 @@ namespace Settings
 	// whole number where the setting only takes whole steps.
 	using Number = std::variant<Live<float>*, Live<std::int32_t>*>;
 
-	// The 9 switches under [Features] and the 41 numbers under [Features],
+	// The 8 switches under [Features] and the 43 numbers under [Features],
 	// [Loot], [Balance] and [HUD], in NEC.ini's order, for Report and the MCM
 	// page.
 	[[nodiscard]] std::span<Live<bool>* const> Switches();

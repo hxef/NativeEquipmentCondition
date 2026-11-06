@@ -20,9 +20,10 @@
 #include <utility>
 #include <variant>
 
-// MCM.swf asks root.mcm for a value as GetModSettingBool("NEC", "bJam:Features"),
-// changes it with the new value as a third argument, and asks for a line of
-// text as GetFullName("NEC|bJam"). These answer the calls Mcm.cpp finds are
+// MCM.swf asks root.mcm for a value as
+// GetModSettingBool("NEC", "bSpawnCondition:Features"), changes it with the
+// new value as a third argument, and asks for a line of text as
+// GetFullName("NEC|bSpawnCondition"). These answer the calls Mcm.cpp finds are
 // NEC's, from Settings, Core/Text, through Notes.cpp what CallPatch left to
 // other mods, and through HudBar.cpp the HUD bar's place on screen.
 namespace Mcm

@@ -23,14 +23,18 @@
 // config.json gives every block lead a hidden switch: a feature switch 2,
 // <key>:Free for its row and <key>:Note for its note, a number 1, <key>:Note,
 // and the list 1, parts:Note. These numbers run on across NEC's pages, with
-// 1 for the HUD bar sliders, see HudBar.cpp. MCM counts 30 for each page on
+// 1 for the HUD bar sliders, see HudBar.cpp, and 1 for the Jams below row,
+// fJamChance:Jams, which hides that row while the jam chance is 0, as a
+// switch that is off hides the rows under it. MCM counts 30 for each page on
 // its own, so a feature switch whose rows hide while it is off takes a
-// number its page leaves free, which other pages use too. Each
-// note is worked out from SettingLinks and CallPatch's losses, so a setting
-// needs no code of its own here. A piece left to a mod is named once: in the
-// note of a block that works through it, else in the list at the top. MCM
-// asks once a pause menu visit, after NEC's recheck as the menu opens.
-// NEC.log keeps every line the page leaves out.
+// number its page leaves free, which other pages use too. Each note is worked
+// out from SettingLinks and CallPatch's losses, so a setting needs no code of
+// its own here. A piece left to a mod is named once: in the note of a block
+// that works through it, else in the list at the top. MCM asks once a pause
+// menu visit, after NEC's recheck as the menu opens, and the jam chance's
+// slider has config.json's refreshMenu, so MCM reads every value again after
+// it moves and the Jams below row hides and comes back at once. NEC.log keeps
+// every line the page leaves out.
 namespace Mcm
 {
 	namespace
@@ -40,6 +44,7 @@ namespace Mcm
 		constexpr std::string_view NOTE = ".note"sv;
 		constexpr std::string_view PARTS = "parts"sv;
 		constexpr std::string_view PARTS_HELP = "parts.help"sv;
+		constexpr std::string_view JAMS = "fJamChance:Jams"sv;
 
 		// MCM draws a noTint text entry white, so this colour shows as is.
 		// The tag quotes it with " as MCM's own html does.
@@ -53,7 +58,7 @@ namespace Mcm
 		// The block notes
 		// -------------------------------------------------------------------
 
-		// One of the feature switches by its key, bJam.
+		// One of the feature switches by its key, bSpawnCondition.
 		Settings::Live<bool>* SwitchFor(std::string_view a_key)
 		{
 			for (auto* on : Settings::Switches()) {
@@ -86,6 +91,19 @@ namespace Mcm
 				}
 			}
 			return members;
+		}
+
+		// Whether the Jams below row shows: only while guns can jam by the
+		// chance.
+		bool JamStartShows()
+		{
+			return Settings::fJamChance.GetValue() > 0.0F;
+		}
+
+		// A row the page hides, whose setting its block's note leaves out.
+		bool Hidden(const Settings::Named& a_setting)
+		{
+			return HudBarHidden(a_setting) || (&a_setting == &Settings::fJamStart && !JamStartShows());
 		}
 
 		// A piece a grey line names as left to an owner.
@@ -196,7 +214,7 @@ namespace Mcm
 			// once.
 			std::vector<std::string> none;
 			for (const auto* member : members) {
-				if ((yield && member == &a_lead) || HudBarHidden(*member->setting)) {
+				if ((yield && member == &a_lead) || Hidden(*member->setting)) {
 					continue;
 				}
 				const auto effect = CallPatch::EffectOf(*member->setting);
@@ -366,6 +384,9 @@ namespace Mcm
 	// same functions.
 	std::optional<bool> Shows(std::string_view a_id)
 	{
+		if (a_id == JAMS) {
+			return JamStartShows();
+		}
 		if (a_id.ends_with(FREE)) {
 			const auto* on = SwitchFor(a_id.substr(0, a_id.size() - FREE.size()));
 			return on ? std::optional{ !CallPatch::IsYielded(*on) } : std::nullopt;

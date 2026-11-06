@@ -20,8 +20,9 @@ namespace Mcm
 	inline constexpr std::string_view MOD = "NEC"sv;
 
 	// NEC's answers on root.mcm, in Bridge.cpp, each for a call that is NEC's.
-	// a_id is a value's id, bJam:Features or the hidden bJam:Free, or for
-	// GetFullName a line's id, bJam, bJam.help or bJam.note.
+	// a_id is a value's id, bSpawnCondition:Features or the hidden
+	// bSpawnCondition:Free, or for GetFullName a line's id, bSpawnCondition,
+	// bSpawnCondition.help or bSpawnCondition.note.
 	void GetBool(const Params& a_params, std::string_view a_id);
 	void GetInt(const Params& a_params, std::string_view a_id);
 	void GetFloat(const Params& a_params, std::string_view a_id);
@@ -31,13 +32,15 @@ namespace Mcm
 	void GetFullName(const Params& a_params, std::string_view a_id);
 
 	// Whether a_id is a_setting's id on the page, its key and section as in
-	// bJam:Features, in Bridge.cpp.
+	// bSpawnCondition:Features, in Bridge.cpp.
 	[[nodiscard]] bool IsIdOf(const Settings::Named& a_setting, std::string_view a_id);
 
-	// What the hidden switches of the page's grey rows say, and what those
-	// rows read, in Notes.cpp. a_id is parts:Note, bJam:Free, bJam:Note or
-	// fDamageFloor:Note for Shows, and parts.note, bJam.note, fDamageFloor.note
-	// or parts.help for Note. Nothing for any other id.
+	// What the hidden switches of the page's grey rows and of the Jams below
+	// row say, and what those grey rows read, in Notes.cpp. a_id is
+	// parts:Note, bSpawnCondition:Free, bSpawnCondition:Note,
+	// fDamageFloor:Note or fJamChance:Jams for Shows, and parts.note,
+	// bSpawnCondition.note, fDamageFloor.note or parts.help for Note. Nothing
+	// for any other id.
 	[[nodiscard]] std::optional<bool>        Shows(std::string_view a_id);
 	[[nodiscard]] std::optional<std::string> Note(std::string_view a_id);
 

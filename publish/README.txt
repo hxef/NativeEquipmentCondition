@@ -44,7 +44,8 @@ Weapons:
 * A worn weapon fills the VATS critical meter slower, down to 50% of its rate
   at 0 condition, like in Fallout 3, where worn weapons landed fewer critical
   hits.
-* Your guns can jam once they drop below 50% condition.
+* Your guns can jam once they drop below 50% condition. "Jams below" and
+  "Jam chance at 0 condition" in MCM set where they start and how often.
 * Your weapon is unequipped automatically when it breaks, and can't be
   equipped again until it is repaired.
 * NPC weapons wear too, by default a third as fast as yours. A weapon worn out

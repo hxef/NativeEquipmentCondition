@@ -10,7 +10,6 @@ namespace Text
 	namespace
 	{
 		constexpr MenuRow ROWS[]{
-			{ &Settings::bJam, {}, JAM_HELP },
 			{ &Settings::bPlainApparelNeverWears, PLAIN_APPAREL_NAME, PLAIN_APPAREL_HELP },
 			{ &Settings::bSpawnCondition, {}, SPAWN_CONDITION_HELP },
 			{ &Settings::bVendorRepair, {}, VENDOR_REPAIR_HELP },

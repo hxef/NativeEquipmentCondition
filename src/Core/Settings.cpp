@@ -39,7 +39,6 @@ namespace Settings
 		std::mutex g_userFileLock;
 
 		Live<bool>* const SWITCHES[]{
-			&bJam,
 			&bSpawnCondition,
 			&bVendorRepair,
 			&bLoadingTips,
@@ -67,6 +66,8 @@ namespace Settings
 			&fCritMeterFloor,
 			&fAccuracyFloor,
 			&fRangeFloor,
+			&fJamChance,
+			&fJamStart,
 			&fBenchCostMult,
 			&fSpareWorthMult,
 			&iFreeMendAbove,
@@ -95,8 +96,8 @@ namespace Settings
 		};
 
 		// The switches neither list holds, each after the setting NEC.ini has
-		// it after, for the Settings line.
-		Live<bool>* const AFTER_JAM[]{ &bPlainApparelNeverWears };
+		// it after, for the Settings line. bPlainApparelNeverWears comes first
+		// in [Features], so ReportLine says it before the list.
 		Live<bool>* const AFTER_VENDOR_REPAIR[]{ &bSpareRepair };
 		Live<bool>* const AFTER_HUD_CONDITION[]{ &bPowerArmorBar };
 		Live<bool>* const AFTER_FOOD_SPOILS[]{ &bFridgeIcon };
@@ -113,9 +114,6 @@ namespace Settings
 
 		[[nodiscard]] std::span<Live<bool>* const> SwitchesAfter(const Named& a_setting)
 		{
-			if (&a_setting == &bJam) {
-				return AFTER_JAM;
-			}
 			if (&a_setting == &bVendorRepair) {
 				return AFTER_VENDOR_REPAIR;
 			}
@@ -348,7 +346,7 @@ namespace Settings
 	{
 		// Every key as it stands now, before any limit, in NEC.ini's order and
 		// spelling.
-		std::string line = "Settings: [Features]";
+		std::string line = std::format("Settings: [Features] {:s}={:s}", bPlainApparelNeverWears.key, Shown(bPlainApparelNeverWears));
 		const auto say = [&](const auto& a_number) {
 			std::format_to(std::back_inserter(line), " {:s}={:s}{:s}", a_number.key, Shown(a_number.GetValue()), Mark(a_number));
 		};

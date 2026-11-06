@@ -176,8 +176,8 @@ namespace
 				continue;
 			}
 			// A row whose switch went off with a part an earlier row lost, as
-			// Jamming goes with Gun wear from firing. That row's turn already
-			// said so in NEC.log.
+			// Food spoils goes with Worn loot. That row's turn already said so
+			// in NEC.log.
 			if (!feature.Runs()) {
 				continue;
 			}

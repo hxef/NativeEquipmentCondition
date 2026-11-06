@@ -52,21 +52,32 @@ namespace Scrapping
 			return Noted{ item, static_cast<std::uint32_t>(*percent) };
 		}
 
+		// How many items a_ref stands for, read as BuildScrapRewards reads it
+		// to multiply each count: a dropped pile is 1 reference with a count,
+		// anything else counts 1.
+		std::uint32_t ItemsOf(const RE::TESObjectREFR* a_ref)
+		{
+			const auto count = a_ref && a_ref->extraList ? a_ref->extraList->GetCount() : std::int16_t{ 1 };
+			return count > 0 ? static_cast<std::uint32_t>(count) : 0U;
+		}
+
 		template <std::size_t I>
 		void ListHk(RE::TESObjectREFR* a_ref, bool a_ownRecipeOnly, RE::BSScrapArray<RE::BSTTuple<RE::TESBoundObject*, std::uint32_t>>** a_rewards)
 		{
 			// Scrapping 1 object can scrap what is linked to it, a list built
 			// inside another, so the outer item is put back after.
 			const auto outer = t_noted;
+			const auto items = ItemsOf(a_ref);
 			Tally      tally;
 			t_noted = g_lists.Runs(g_listLinks[I]) ? NoteOf(a_ref) : Noted{};
 			g_listLinks[I](a_ref, a_ownRecipeOnly, a_rewards);
 			t_noted = outer;
 
-			// 1 component, not 1 for each copy a dropped stack holds.
-			auto* part = tally.LeastPart("workshop");
+			// 1 component for each item of a dropped pile, as a pile of 3
+			// scraps into what 3 scrapped one by one give.
+			auto* part = items ? tally.LeastPart("workshop", items) : nullptr;
 			if (part && a_rewards && *a_rewards) {
-				(*a_rewards)->emplace_back(part, 1U);
+				(*a_rewards)->emplace_back(part, items);
 			}
 		}
 

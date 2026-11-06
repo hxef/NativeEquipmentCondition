@@ -17,8 +17,9 @@
 // applies the perks and Scrapper and rounds down. NEC sits on that call and
 // hands it the count scaled by the item's condition, see Materials::ScrapIn.
 // So a 30% Hunting Rifle's 11 Steel go in as 3 and come out as 1. When every
-// count of a worn item comes to 0, the call that builds the list adds the 1
-// part Materials::LeastPart names.
+// count of a worn item comes to 0, the call that builds the list adds 1 of the
+// component Materials::LeastPart names for each item it scraps. In workshop
+// mode a dropped pile is 1 reference that scraps all its items at once.
 //
 // At the bench the call sits in the list builder, which only the SCRAP button
 // runs, and the item is the bench's highlighted row, see Bench.cpp. In
@@ -60,10 +61,11 @@ namespace Scrapping
 
 		void Add(const RE::TESBoundObject& a_item, std::uint32_t a_percent, const Materials::Tallied& a_count);
 
-		// The scrap item of the 1 component the list gains, or nothing for a
-		// list that gives something or that NEC never scaled. Writes the
-		// trace line, a_where naming the bench or workshop mode.
-		[[nodiscard]] RE::TESObjectMISC* LeastPart(const char* a_where) const;
+		// The scrap item of the component the list gains 1 of for each of
+		// a_items, or nothing for a list that gives something or that NEC
+		// never scaled. Writes the trace line, a_where naming the bench or
+		// workshop mode.
+		[[nodiscard]] RE::TESObjectMISC* LeastPart(const char* a_where, std::uint32_t a_items) const;
 
 	private:
 		Tally*                          outer;

@@ -48,14 +48,14 @@ namespace Scrapping
 		counts.push_back(a_count);
 	}
 
-	RE::TESObjectMISC* Tally::LeastPart(const char* a_where) const
+	RE::TESObjectMISC* Tally::LeastPart(const char* a_where, std::uint32_t a_items) const
 	{
 		const auto* part = item ? Materials::LeastPart(counts) : nullptr;
 		if (!part) {
 			return nullptr;
 		}
-		TraceLog::Line("scrap", "{:s} at {:d}%  {:s} gives 1, as every count came to 0  {:s}", TraceLog::Who{ item }, percent,
-			TraceLog::Who{ part }, a_where);
+		TraceLog::Line("scrap", "{:s} at {:d}%  {:s} gives 1 per item, {:d} in all, as every count came to 0  {:s}",
+			TraceLog::Who{ item }, percent, TraceLog::Who{ part }, a_items, a_where);
 		return part->scrapItem;
 	}
 }

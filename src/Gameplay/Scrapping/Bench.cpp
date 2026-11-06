@@ -82,7 +82,8 @@ namespace Scrapping
 			}
 			Tally tally;
 			g_listLink(a_menu);
-			if (auto* part = tally.LeastPart("bench")) {
+			// The bench scraps 1 item at a time.
+			if (auto* part = tally.LeastPart("bench", 1)) {
 				a_menu->scrappingArray.emplace_back(part, 1U);
 			}
 		}

@@ -8,8 +8,8 @@
 #include <optional>
 
 // An item changing hands: the mark the 3 handover calls raise, what a stack
-// that changes hands gets, a trader's loose item, SpawnDupe's copies and the
-// spawn container scope. Private to this folder.
+// that changes hands gets, a trader's loose item, in LooseItem.cpp,
+// SpawnDupe's copies and the spawn container scope. Private to this folder.
 namespace SpawnCondition
 {
 	// What a handover in progress on this thread moves: the item, who gets it,

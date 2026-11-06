@@ -47,11 +47,12 @@ namespace SpawnCondition
 	// Band.cpp is the roll itself, either side of an item's middle or in a
 	// trader's band, Roll.cpp a stack's first condition and its split,
 	// Food.cpp food's starting freshness, Handover.cpp an item changing
-	// hands, World.cpp loot lying in the world, Look.cpp the first look at it,
-	// Guards.cpp KeepCarried and what marks a save being applied, a console
-	// command, a script giving an item and a restock, Owners.cpp the owner
-	// checks, and Trace.cpp what the trace log is told about a stack. Their
-	// headers are what the folder's files share.
+	// hands, LooseItem.cpp a trader's loose item, World.cpp loot lying in the
+	// world, Look.cpp the first look at it, Guards.cpp KeepCarried and what
+	// marks a save being applied, a console command, a script giving an item
+	// and a restock, Owners.cpp the owner checks, and Trace.cpp what the trace
+	// log is told about a stack. Their headers are what the folder's files
+	// share.
 	void Install();
 
 	// Whether KeepCarried may run from the MCM: no main menu, no loading

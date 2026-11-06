@@ -11,8 +11,8 @@
 #include <vector>
 
 // The grey lines of the MCM page about parts left to other mods, see
-// UI/Mcm/Notes.cpp, and the words that join a list. NEC.log reads the English
-// of the part lines.
+// UI/Mcm/Notes.cpp and UI/Mcm/TopList.cpp, and the words that join a list.
+// NEC.log reads the English of the part lines.
 namespace Text
 {
 	std::vector<std::string> PartLines(const CallPatch::Loss& a_loss, Out a_out)

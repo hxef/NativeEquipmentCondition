@@ -62,7 +62,9 @@ src/
     Places.cpp               which pieces each patched place is
     Plugin.h                 the data handler the load order is read through
     Runtime.h/.cpp           the game version NEC runs on, 1.11.240 or OG, and NEC.log's line about it
-    Settings.h/.cpp          every setting, read from NEC.ini
+    Settings.h/.cpp          every setting, read from NEC.ini, and a change kept in NEC_custom.ini
+    SettingsLine.cpp         NEC.log's Settings line, and every switch and number in NEC.ini's order
+    SettingsTuning.h         the settings under [Balance] and [HUD], which Settings.h includes
     Snapshot.h               a table other threads read while it is measured again, swapped in whole, and how 2 readings differ
     Text/
       Text.h/.cpp            the plugin's own sentences, 1 function each
@@ -175,8 +177,9 @@ src/
       Fill.h/.cpp            a list filled from a container's record, its plain lines and its stock record
       Food.h/.cpp            found food's starting freshness
       Guards.h/.cpp          what marks a save being applied, a game recording no change, a console command, a script's gift and a restock, the folder's scope, and what the player carries
-      Handover.h/.cpp        an item changing hands, a trader's loose item and SpawnDupe's copies
+      Handover.h/.cpp        an item changing hands and SpawnDupe's copies
       Look.cpp               the first look at loot lying in the world, rolled as the player's pickup would roll it
+      LooseItem.cpp          a trader's loose item, 1 roll for the copy on the barter screen and the item in the world
       Owners.h/.cpp          who a stack goes to, and which of them get it at full condition
       Roll.h/.cpp            a stack's first condition, and splitting a stack that arrived several at once
       Trace.h/.cpp           what the trace log is told about a stack
@@ -188,7 +191,9 @@ src/
   UI/
     Flash.h/.cpp             safe reads, writes and calls on a menu movie's objects, their colour, boxes and points, a text field's first line, and text written for it
     MenuMovies.h/.cpp        the one doorway into Fallout 4's menu movies
-    MessageBox.h/.cpp        a question with as many answers as it is given, kept solid under a message box mod
+    MessageBox.h/.cpp        a question with as many answers as it is given, and Tab and Escape on it
+    MessageBoxAsked.h        the list of NEC's boxes the 2 message box files share
+    MessageBoxMovie.cpp      the row NEC's box starts on, and the box kept solid under a message box mod
     LoadingTips.h/.cpp       the plugin's own tips on the loading screen
     InspectPrice.h/.cpp      the price on the inspect screen at a trader
     FridgeIcon.h/.cpp        the fridge icon the quick container and the item card share, made and sized to a line of text
@@ -204,7 +209,8 @@ src/
     Mcm/
       Mcm.h/.cpp             the settings page in the Mod Configuration Menu
       Bridge.h/.cpp          the page's answers: values, changes and words
-      Notes.cpp              the page's grey rows: each block's note, and the list at the top of the parts no note names
+      Notes.cpp              the page's grey rows: each block's note, and what MCM asks of them
+      TopList.cpp            the list at the top of the main page, of the parts no note names
       Fit.cpp                how tall a grey row may be, and a row cut to fit
       Layout.cpp             MCM's list in None mode while one of NEC's pages shows, and the HUD bar sliders' live ends
       HudBar.cpp             the HUD bar sliders: the bar's place in HUD units from the screen's top left, with the screen as their range
@@ -215,7 +221,9 @@ src/
         Draw.cpp             the boxes and text fields a readout is built from
       HudCondition/
         HudCondition.h/.cpp          the Weapon CND bar by the ammo counter: the movie
-        Frame.h/.cpp                 the frame listener, which lays the bar out at its spot and size, places it, draws its level and fades it
+        Frame.h/.cpp                 the frame listener, which follows the counter, draws the bar's level and fades it
+        Listener.h                   the frame listener's class, which Frame.cpp and Layout.cpp share
+        Layout.cpp                   the frame listener laying the bar out at its spot and size and placing it on screen
         Spot.h/.cpp                  where the bar and its word go, the divider's place or the nearest free spot, the NEC.log line, and the bar at its size
         Place.h/.cpp                 where the readout sits in the counter's parent, by the counter or standing alone from the screen's top left corner, moved by fHudBarX and fHudBarY and held whole on screen, and that place kept for the MCM page
       PowerArmorCondition/

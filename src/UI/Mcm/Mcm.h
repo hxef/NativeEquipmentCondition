@@ -11,7 +11,8 @@
 // in front of MCM's, answers what is NEC's from Settings, Core/Text and the
 // HUD's measure, and passes the rest on. Each switch sits in a block with
 // its sliders. A part left to another mod shows as a grey line at the top of
-// its block and in a list at the top of NEC's main page, see Notes.cpp.
+// its block, see Notes.cpp, and in a list at the top of NEC's main page, see
+// TopList.cpp.
 //
 // A change applies on the spot. Once it has stood for half a second it is
 // written into NEC_custom.ini, on the next frame of the main or pause menu, so

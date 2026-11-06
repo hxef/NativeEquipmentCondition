@@ -1,6 +1,9 @@
 #pragma once
 
 #include "Core/Plugin.h"
+#include "Core/CallPatch/CallPatch.h"
+#include "Core/Parts.h"
+#include "Core/Pieces.h"
 #include "Core/Settings.h"
 
 #include <cstddef>
@@ -11,7 +14,7 @@
 #include <string_view>
 #include <vector>
 
-// What the 6 files of the folder share. Private to this folder.
+// What the 7 files of the folder share. Private to this folder.
 namespace Mcm
 {
 	using Params = Scaleform::GFx::FunctionHandler::Params;
@@ -43,6 +46,28 @@ namespace Mcm
 	// for any other id.
 	[[nodiscard]] std::optional<bool>        Shows(std::string_view a_id);
 	[[nodiscard]] std::optional<std::string> Note(std::string_view a_id);
+
+	// What Notes.cpp and TopList.cpp share: a piece a grey line names as left
+	// to an owner, a block's note from BlockOf, in Notes.cpp, and the list at
+	// the top from TopLines, in TopList.cpp, with OnlyGameVersion.
+	struct Left
+	{
+		Piece            piece;
+		CallPatch::Owner owner;
+
+		bool operator==(const Left&) const = default;
+	};
+
+	// A block's note and what its part lines name, of the lines it shows.
+	struct Block
+	{
+		std::vector<std::string> lines;
+		std::vector<Left>        left;
+	};
+
+	[[nodiscard]] Block                    BlockOf(const SettingLink& a_lead);
+	[[nodiscard]] std::vector<std::string> TopLines();
+	[[nodiscard]] bool                     OnlyGameVersion();
 
 	// How tall a grey row may be, in Fit.cpp: LinesOf, the lines a_line takes
 	// on the page in the player's language, and Capped, a_lines cut to fit.

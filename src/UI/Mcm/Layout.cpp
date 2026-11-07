@@ -1,9 +1,11 @@
 #include "UI/Mcm/Bridge.h"
 
+#include "Core/TraceLog.h"
 #include "UI/Flash.h"
 
 #include <atomic>
 #include <cstdint>
+#include <string>
 #include <string_view>
 
 // MCM draws its settings list in Multi-Line mode. There a row is as tall as
@@ -15,10 +17,13 @@
 // while one of NEC's pages shows, NEC puts the list in None mode, and back in
 // Multi-Line once another page shows. Only a name would wrap differently, and
 // no name on NEC's pages is wider than 1 line. On NEC's pages it also writes
-// the HUD bar sliders' live ends, see HudBar.cpp.
+// the HUD bar sliders' live ends, see HudBar.cpp. And while MCM asks whether
+// the Jams below row shows, NEC keeps MCM's left list on the open page, see
+// KeepOpenPage.
 //
 // MCM's menu is a child of _root.Menu_mc, its list is configPanel_mc's
 // configList_mc, and the list holds the shown page's entries in entryList.
+// The left list of page names is HelpPanel_mc's HelpList_mc.
 // Nothing is kept past a frame, since the movie can be gone by the next one.
 namespace Mcm
 {
@@ -37,22 +42,42 @@ namespace Mcm
 		// from then on NEC leaves the list alone.
 		std::atomic<bool> g_missing{ false };
 
-		// MCM's settings list, from the last child of a_menu back, since MCM
-		// adds its menu last. A value that is no object while MCM is not open.
-		Value SettingsList(Value& a_menu)
+		// MCM's menu, from the last child of a_root back, since MCM adds its
+		// menu last. A value that is no object while MCM is not open.
+		Value McmMenu(Value& a_root)
 		{
-			const auto children = static_cast<std::int32_t>(Flash::Number(a_menu, "numChildren"sv));
+			const auto children = static_cast<std::int32_t>(Flash::Number(a_root, "numChildren"sv));
 			for (auto i = children - 1; i >= 0; i--) {
-				auto  child = Flash::ChildAt(a_menu, static_cast<std::uint32_t>(i));
-				Value panel;
-				Value list;
-				if (child.IsObject() && child.HasMember("configPanel_mc"sv) && child.GetMember("configPanel_mc"sv, &panel) &&
-					panel.IsObject() && panel.HasMember("configList_mc"sv) && panel.GetMember("configList_mc"sv, &list) &&
-					list.IsObject()) {
-					return list;
+				auto child = Flash::ChildAt(a_root, static_cast<std::uint32_t>(i));
+				if (child.IsObject() && child.HasMember("configPanel_mc"sv)) {
+					return child;
 				}
 			}
 			return {};
+		}
+
+		// MCM's settings list, a value that is no object while MCM is not open.
+		Value SettingsList(Value& a_root)
+		{
+			auto list = Flash::Member(Flash::Member(McmMenu(a_root), "configPanel_mc"sv), "configList_mc"sv);
+			return list.IsObject() ? list : Value{};
+		}
+
+		// The left list's entry at a_at, a value that is no object past its
+		// ends.
+		Value PageAt(const Value& a_pages, double a_at)
+		{
+			Value at;
+			if (a_at >= 0.0 && a_at < static_cast<double>(a_pages.GetArraySize())) {
+				a_pages.GetElement(static_cast<std::uint32_t>(a_at), &at);
+			}
+			return at;
+		}
+
+		// A left list entry for the trace, as Weapons of NEC.
+		std::string PageName(const Value& a_page)
+		{
+			return a_page.IsObject() ? Flash::String(a_page, "text"sv) + " of " + Flash::String(a_page, "modName"sv) : "(none)";
 		}
 
 		// The first member of the list NEC needs that it lacks, nullptr when
@@ -123,5 +148,35 @@ namespace Mcm
 		if (redraw) {
 			list.Invoke("InvalidateData");
 		}
+	}
+
+	// MCM refreshes the page after a slider with refreshMenu moved
+	// (RefreshMCM_internal) and takes the page's row filter from the left
+	// list's highlight, not from the open page. The left list moves its
+	// highlight on every mouse over, so a hand that crossed Armor on its way to
+	// the jam chance slider gave Weapons Armor's filter, and Jams below hid.
+	// MCM asks for fJamChance:Jams in that refresh before it reads the filter,
+	// so here the highlight goes back on the open page, as MCM itself does when
+	// the right shoulder button moves into the settings list. Only on NEC's
+	// pages, and not while MCM builds its pages, when the highlight is below 0.
+	void KeepOpenPage(Scaleform::GFx::Movie* a_movie)
+	{
+		Value root;
+		if (!a_movie || !a_movie->GetVariable(&root, "_root.Menu_mc") || !root.IsObject()) {
+			return;
+		}
+		const auto menu = McmMenu(root);
+		auto       left = Flash::Member(Flash::Member(menu, "HelpPanel_mc"sv), "HelpList_mc"sv);
+		const auto pages = Flash::Member(left, "entryList"sv);
+		if (!pages.IsArray()) {
+			return;
+		}
+		const auto page = Flash::Number(menu, "selectedPage"sv, -1.0);
+		const auto lit = Flash::Number(left, "selectedIndex"sv, -1.0);
+		const auto open = PageAt(pages, page);
+		const auto ours = open.IsObject() && Flash::String(open, "modName"sv) == MOD;
+		const auto back = lit >= 0.0 && lit != page && ours && Flash::Set(left, "selectedIndex"sv, Value(page));
+		TraceLog::Line("menu", "MCM asks for {:s} with the left list's highlight on {:g} ({:s}) and the open page {:g} ({:s}), put back {:s}",
+			JAMS, lit, PageName(PageAt(pages, lit)), page, PageName(open), back ? "yes" : "no");
 	}
 }

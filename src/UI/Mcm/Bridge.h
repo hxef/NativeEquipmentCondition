@@ -22,6 +22,9 @@ namespace Mcm
 	// config.json's modName, which MCM also puts on every entry of NEC's pages.
 	inline constexpr std::string_view MOD = "NEC"sv;
 
+	// The hidden switch MCM asks whether the Jams below row shows.
+	inline constexpr std::string_view JAMS = "fJamChance:Jams"sv;
+
 	// NEC's answers on root.mcm, in Bridge.cpp, each for a call that is NEC's.
 	// a_id is a value's id, bSpawnCondition:Features or the hidden
 	// bSpawnCondition:Free, or for GetFullName a line's id, bSpawnCondition,
@@ -123,4 +126,9 @@ namespace Mcm
 	// back once another page shows, and keeps the HUD bar sliders' live ends,
 	// in Layout.cpp. Called every frame of the main or pause menu.
 	void Layout(Scaleform::GFx::Movie& a_movie);
+
+	// Puts MCM's left list highlight back on the open page of NEC's when the
+	// mouse left it on another page name, in Layout.cpp. Called as MCM asks
+	// for JAMS.
+	void KeepOpenPage(Scaleform::GFx::Movie* a_movie);
 }

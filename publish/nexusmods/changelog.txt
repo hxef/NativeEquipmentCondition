@@ -1,3 +1,6 @@
+1.8.2
+* The Jams below MCM slider stays on show while you move the Jam chance at 0 condition MCM slider, even when the mouse passed over another page's name on the way.
+
 1.8.1
 * 2 new MCM sliders on the Weapons page, Jam chance at 0 condition (fJamChance, 1) and Jams below (fJamStart, 0.5), set how often your worn guns jam and from what condition.
 * The Jamming MCM switch is gone, and a jam chance of 0 turns jams off. If you had jams off, set the Jam chance at 0 condition MCM slider to 0 once.

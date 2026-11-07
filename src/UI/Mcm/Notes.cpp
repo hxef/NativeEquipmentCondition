@@ -33,8 +33,9 @@
 // that works through it, else in the list at the top. MCM asks once a pause
 // menu visit, after NEC's recheck as the menu opens, and the jam chance's
 // slider has config.json's refreshMenu, so MCM reads every value again after
-// it moves and the Jams below row hides and comes back at once. NEC.log keeps
-// every line the page leaves out.
+// it moves and the Jams below row hides and comes back at once, on the page
+// that is open, see KeepOpenPage in Layout.cpp. NEC.log keeps every line
+// the page leaves out.
 namespace Mcm
 {
 	namespace
@@ -44,7 +45,6 @@ namespace Mcm
 		constexpr std::string_view NOTE = ".note"sv;
 		constexpr std::string_view PARTS = "parts"sv;
 		constexpr std::string_view PARTS_HELP = "parts.help"sv;
-		constexpr std::string_view JAMS = "fJamChance:Jams"sv;
 
 		// MCM draws a noTint text entry white, so this colour shows as is.
 		// The tag quotes it with " as MCM's own html does.

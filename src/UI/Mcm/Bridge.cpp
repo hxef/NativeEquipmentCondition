@@ -135,6 +135,9 @@ namespace Mcm
 
 	void GetBool(const Params& a_params, std::string_view a_id)
 	{
+		if (a_id == JAMS) {
+			KeepOpenPage(a_params.movie);
+		}
 		if (const auto shows = Shows(a_id)) {
 			Answer(a_params, *shows);
 			return;

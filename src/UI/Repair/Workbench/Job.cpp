@@ -7,6 +7,8 @@
 #include "Core/Text/Text.h"
 #include "Core/TraceLog.h"
 #include "UI/Flash.h"
+#include "UI/Repair/Columns/Columns.h"
+#include "UI/Repair/Gains.h"
 #include "UI/Repair/RepairPrompt.h"
 #include "UI/Repair/Restore.h"
 #include "UI/Repair/Workbench/Box.h"
@@ -137,12 +139,17 @@ namespace Workbench
 		                      Text::RepairDiscount(standing.Name(), standing.rank, off) :
 		                      std::string{};
 
-		std::vector<std::string> buttons;
-		std::string              spelled;
-		for (const auto level : a_offered) {
-			buttons.emplace_back(Repair::NameOf(level));
-			spelled += std::format("{:s}{:d}%", spelled.empty() ? "" : " ", level);
+		// Each level's row ends with what the item's card gains there.
+		const auto     gains = Gains::Read(a_selection, a_offered);
+		Columns::Table table;
+		std::string    spelled;
+		for (std::size_t i = 0; i < a_offered.size(); i++) {
+			Gains::AddRow(table, { Repair::NameOf(a_offered[i]) }, gains, i);
+			spelled += std::format("{:s}{:d}%", spelled.empty() ? "" : " ", a_offered[i]);
+			TraceLog::Line("menu", "Workbench level {:d}% of {:s}, its card {:s}", a_offered[i], a_selection.Name(), Gains::Spelled(gains, i));
 		}
+		auto* bench = OpenBench();
+		auto  buttons = Columns::Lay(bench ? bench->uiMovie.get() : nullptr, table, "Workbench repair box");
 
 		const auto credit = off > 0 ?
 		                        std::format("{:s} {:d} for {:d}% fewer components", standing.Name(), standing.rank, off) :

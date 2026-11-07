@@ -57,6 +57,9 @@ namespace Workbench
 		// What it would restore with no Scrapper rank, worked out only for a
 		// player who holds one, and gain otherwise.
 		std::uint32_t                unranked{ 0 };
+		// What it would restore with no rank of the perk pricing the item,
+		// worked out the same way.
+		std::uint32_t                unpriced{ 0 };
 	};
 
 	// The player's copy of a_object on the stack with a_extra, read the way
@@ -94,6 +97,11 @@ namespace Workbench
 	// taken.
 	[[nodiscard]] Payment Pay(const Spare& a_spare, const Selection& a_item, const Priced& a_priced);
 
-	// The spare's row in the box, "(favorite) Hunting Rifle (60%)  +7%".
-	[[nodiscard]] std::string RowOf(const Spare& a_spare);
+	// The spare's first 4 columns in the box: its mark, its name, its own
+	// condition and what it restores, "(favorite)", "Hunting Rifle", "(60%)"
+	// and "+7%".
+	[[nodiscard]] std::vector<std::string> CellsOf(const Spare& a_spare);
+
+	// Which of those holds the name.
+	inline constexpr std::size_t NAME_CELL = 1;
 }

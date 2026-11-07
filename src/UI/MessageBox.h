@@ -45,6 +45,13 @@ namespace MessageBox
 		Callback& operator=(const Callback&) = delete;
 	};
 
+	// How wide the text of a row NEC lays may be, in the row's pixels: the
+	// room in vanilla's row field. A message box mod that sizes its rows to
+	// their text grows its box with them, up to where its row field starts
+	// to wrap, so the same room holds there. A row seen past its field gives
+	// a narrower room, that field's, until the game quits.
+	[[nodiscard]] double RowRoom();
+
 	// The a_start of Ask that leaves no button highlighted.
 	inline constexpr std::uint32_t NO_ROW = std::numeric_limits<std::uint32_t>::max();
 

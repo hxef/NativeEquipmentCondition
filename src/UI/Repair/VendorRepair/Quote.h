@@ -7,9 +7,11 @@
 #include "UI/Repair/VendorRepair/Stock.h"
 
 #include <cstdint>
+#include <string>
 #include <vector>
 
-// What a trader wants for each step of a repair. Private to this folder.
+// What a trader wants for each step of a repair, and the rows the question
+// lists them in. Private to this folder.
 //
 // The same price curve as the bench, see Repair.h, but based on what the item
 // is worth and always at the price with no perk: a crafting perk is the
@@ -43,4 +45,9 @@ namespace VendorRepair
 	// The steps the player can pay for. The price rises with the condition
 	// bought, so what is left is the cheap end of the list.
 	[[nodiscard]] std::vector<Quote> Afforded(const std::vector<Quote>& a_quotes);
+
+	// The question's rows, 1 per step in a_quotes' order, in columns: the
+	// level, its price and what the item's card gains there, see
+	// UI/Repair/Columns/Columns.h. Each step's card numbers go in the trace.
+	[[nodiscard]] std::vector<std::string> Rows(RE::BarterMenu* a_menu, const Selection& a_selection, const std::vector<Quote>& a_quotes);
 }

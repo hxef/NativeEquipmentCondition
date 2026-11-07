@@ -96,11 +96,13 @@ LOOT WITH A HISTORY
 REPAIR AT THE WORKBENCH
 * At the weapon or armor workbench, select a worn item and a REPAIR button
   takes RENAME's place until it is back at full. Press it, choose how far to
-  repair it in steps of 10%, and pay in the components it is built from. Gear
-  with no scrap recipe, like Grognak's Axe, costs what gear of its kind most
-  often scraps into, and wears at the same rate. Short of components, you get
-  the power armor station's list of what the repair takes, with the ones you
-  lack faded.
+  repair it in steps of 10%, and pay in the components it is built from.
+  Beside each step the box shows what it adds to the item's damage or
+  resistances by type, and the box of spares does the same for each spare.
+  Gear with no scrap recipe, like Grognak's Axe, costs what gear of its kind
+  most often scraps into, and wears at the same rate. Short of components, you
+  get the power armor station's list of what the repair takes, with the ones
+  you lack faded.
 * Carrying a spare of the same item? USE A SPARE in the repair box takes it
   apart for the repair: it restores as much condition as its scrap is worth,
   and the components left over go to your inventory. "Spare worth" sets how
@@ -123,7 +125,8 @@ REPAIR AT A TRADER
   of gear for caps, and those caps stay in the trader's till, ready to buy the
   loot you haul in next. On the barter screen, select a worn item on your side
   and a REPAIR button appears if they fix that kind of gear. Click it, or
-  press C on the keyboard or the left bumper on a pad.
+  press C on the keyboard or the left bumper on a pad. Each step shows its
+  price and what it adds to the item's damage or resistances.
 * What a trader repairs, and how far, depends on what they restock. Plenty of
   guns on the shelves, or a few beside plenty of ammunition, grenades and
   mines, means they fix guns, and the more kinds of gun they stock, the

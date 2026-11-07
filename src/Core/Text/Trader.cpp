@@ -21,9 +21,9 @@ namespace Text
 		}
 	}
 
-	std::string RepairPrice(std::uint32_t a_level, std::uint32_t a_caps)
+	std::string RepairCaps(std::uint32_t a_caps)
 	{
-		return Say(REPAIR_PRICE, a_level, a_caps);
+		return Say(REPAIR_CAPS, a_caps);
 	}
 
 	std::string RepairPaid(std::uint32_t a_level, std::uint32_t a_caps)

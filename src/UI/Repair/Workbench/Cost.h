@@ -30,6 +30,10 @@ namespace Workbench
 	// every bill and each perk rank still takes off its share.
 	[[nodiscard]] float Scaled(float a_multiple);
 
+	// The multiple an item is priced at under a_standing, with fBenchCostMult
+	// on it.
+	[[nodiscard]] float MultipleOf(const CraftingPerks::Standing& a_standing);
+
 	// What an item is built from and which perk prices it, read once for every
 	// level on offer. The order is the bill laid out one unit at a time, one
 	// unit longer than the most the item could owe, so a repair is never free

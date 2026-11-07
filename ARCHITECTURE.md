@@ -260,8 +260,10 @@ src/
       SelectedItem.h/.cpp    the item highlighted in a menu's list
       Restore.h/.cpp         writing a repair onto one copy of an item
       RepairPrompt.h/.cpp    asking how far to bring a worn item back
+      Gains.h/.cpp           what a repair adds to the card's damage or resistances by type
       ConsoleRepair.h/.cpp   setting the weapon in hand or the armor worn from the console
       ConfirmScroll.h/.cpp   the box the bench puts up, grown and scrolled
+      Columns/               the repair boxes' rows in columns: the cells measured, the rows fitted to the box's room and sent as html
       Workbench/             repairing at the weapon and armor benches
       VendorRepair/          paying a trader to repair weapons, armor or clothing, and their stock
 ```

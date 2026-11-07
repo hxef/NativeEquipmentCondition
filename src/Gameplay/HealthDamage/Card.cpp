@@ -5,14 +5,18 @@
 #include "Core/CallPatch/CallPatch.h"
 #include "Core/TraceLog.h"
 #include "Gameplay/HealthDamage/Curve.h"
+#include "Gameplay/HealthDamage/HealthDamage.h"
 #include "Gameplay/HealthDamage/Trace.h"
 
 #include <array>
 #include <atomic>
 #include <cstdint>
 #include <iterator>
+#include <optional>
 #include <span>
+#include <tuple>
 #include <utility>
+#include <vector>
 
 namespace HealthDamage
 {
@@ -84,6 +88,10 @@ namespace HealthDamage
 		// damage, never the last card's.
 		thread_local float t_displayHealth = Condition::INVALID_HEALTH;
 
+		// The health CardDamage asks the card about, in place of the one the
+		// stack carries, and nothing while the card is the game's own.
+		thread_local std::optional<float> t_askedHealth;
+
 		// The 2 Pip-Boy hooks. The object effect sites read what they hand
 		// on, so they ask it too.
 		CallPatch::Held g_card;
@@ -102,15 +110,18 @@ namespace HealthDamage
 		// Records the condition of the item, or -1 while the pair does not
 		// run and for a weapon on a list in NEC/Exclude. The physical damage
 		// is already scaled, since this call reaches CalcWeaponDamage through
-		// the display site in Combat.cpp. The vanilla call keeps a_health,
-		// so its base number stays vanilla.
+		// the display site in Combat.cpp. The vanilla call gets the same
+		// health, which vanilla scales nothing by below full, so its base
+		// number stays vanilla. A health CardDamage asks about stands in for
+		// the stack's, and the vanilla call hands it on to the display site.
 		float CardHealthHk(const RE::BGSObjectInstanceT<RE::TESObjectWEAP>& a_weapon, const RE::TESAmmo* a_ammo, float a_health)
 		{
+			const auto health = t_askedHealth.value_or(a_health);
 			const auto listed = a_weapon.object && Excluded::Has(*a_weapon.object);
 			t_cardEffects = Condition::INVALID_HEALTH;
-			t_cardHealth = g_card.Runs(g_cardHealthLink) && !listed ? a_health : Condition::INVALID_HEALTH;
+			t_cardHealth = g_card.Runs(g_cardHealthLink) && !listed ? health : Condition::INVALID_HEALTH;
 			const auto was = std::exchange(t_listed, listed);
-			const auto damage = g_cardHealthLink(a_weapon, a_ammo, a_health);
+			const auto damage = g_cardHealthLink(a_weapon, a_ammo, health);
 			t_listed = was;
 			return damage;
 		}
@@ -187,6 +198,26 @@ namespace HealthDamage
 	{
 		t_displayHealth = t_listed ? Condition::INVALID_HEALTH : a_condition;
 		return t_displayHealth;
+	}
+
+	std::vector<std::pair<std::uint32_t, float>> CardDamage(const RE::BGSInventoryItem& a_item,
+		const RE::BGSInventoryItem::Stack* a_stack, float a_health)
+	{
+		// The hooks this call goes through leave healths for the card's later
+		// hooks, which the next card built on this thread could read, so they
+		// are put back as they were.
+		RE::BSScrapArray<RE::BSTTuple<std::uint32_t, float>> values;
+		const auto kept = std::tuple{ t_cardHealth, t_cardEffects, t_displayHealth };
+		const auto was = std::exchange(t_askedHealth, a_health);
+		RE::PipboyInventoryUtils::FillDamageTypeInfo(a_item, a_stack, values);
+		t_askedHealth = was;
+		std::tie(t_cardHealth, t_cardEffects, t_displayHealth) = kept;
+		std::vector<std::pair<std::uint32_t, float>> out;
+		out.reserve(values.size());
+		for (const auto& entry : values) {
+			out.emplace_back(entry.first, entry.second);
+		}
+		return out;
 	}
 
 	void InstallCard()

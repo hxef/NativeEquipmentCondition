@@ -42,13 +42,14 @@ namespace Mcm
 		// from then on NEC leaves the list alone.
 		std::atomic<bool> g_missing{ false };
 
-		// MCM's menu, from the last child of a_root back, since MCM adds its
-		// menu last. A value that is no object while MCM is not open.
-		Value McmMenu(Value& a_root)
+		// MCM's menu, from the last child of a_menus, _root.Menu_mc, back,
+		// since MCM adds its menu last. A value that is no object while MCM is
+		// not open.
+		Value McmMenu(Value& a_menus)
 		{
-			const auto children = static_cast<std::int32_t>(Flash::Number(a_root, "numChildren"sv));
+			const auto children = static_cast<std::int32_t>(Flash::Number(a_menus, "numChildren"sv));
 			for (auto i = children - 1; i >= 0; i--) {
-				auto child = Flash::ChildAt(a_root, static_cast<std::uint32_t>(i));
+				auto child = Flash::ChildAt(a_menus, static_cast<std::uint32_t>(i));
 				if (child.IsObject() && child.HasMember("configPanel_mc"sv)) {
 					return child;
 				}
@@ -57,9 +58,9 @@ namespace Mcm
 		}
 
 		// MCM's settings list, a value that is no object while MCM is not open.
-		Value SettingsList(Value& a_root)
+		Value SettingsList(Value& a_menus)
 		{
-			auto list = Flash::Member(Flash::Member(McmMenu(a_root), "configPanel_mc"sv), "configList_mc"sv);
+			auto list = Flash::Member(Flash::Member(McmMenu(a_menus), "configPanel_mc"sv), "configList_mc"sv);
 			return list.IsObject() ? list : Value{};
 		}
 
@@ -110,11 +111,11 @@ namespace Mcm
 
 	void Layout(Scaleform::GFx::Movie& a_movie)
 	{
-		Value menu;
-		if (g_missing.load() || !a_movie.GetVariable(&menu, "_root.Menu_mc") || !menu.IsObject()) {
+		Value menus;
+		if (g_missing.load() || !a_movie.GetVariable(&menus, "_root.Menu_mc") || !menus.IsObject()) {
 			return;
 		}
-		auto list = SettingsList(menu);
+		auto list = SettingsList(menus);
 		if (!list.IsObject()) {
 			return;
 		}
@@ -161,17 +162,17 @@ namespace Mcm
 	// pages, and not while MCM builds its pages, when the highlight is below 0.
 	void KeepOpenPage(Scaleform::GFx::Movie* a_movie)
 	{
-		Value root;
-		if (!a_movie || !a_movie->GetVariable(&root, "_root.Menu_mc") || !root.IsObject()) {
+		Value menus;
+		if (!a_movie || !a_movie->GetVariable(&menus, "_root.Menu_mc") || !menus.IsObject()) {
 			return;
 		}
-		const auto menu = McmMenu(root);
-		auto       left = Flash::Member(Flash::Member(menu, "HelpPanel_mc"sv), "HelpList_mc"sv);
+		const auto mcm = McmMenu(menus);
+		auto       left = Flash::Member(Flash::Member(mcm, "HelpPanel_mc"sv), "HelpList_mc"sv);
 		const auto pages = Flash::Member(left, "entryList"sv);
 		if (!pages.IsArray()) {
 			return;
 		}
-		const auto page = Flash::Number(menu, "selectedPage"sv, -1.0);
+		const auto page = Flash::Number(mcm, "selectedPage"sv, -1.0);
 		const auto lit = Flash::Number(left, "selectedIndex"sv, -1.0);
 		const auto open = PageAt(pages, page);
 		const auto ours = open.IsObject() && Flash::String(open, "modName"sv) == MOD;

@@ -36,6 +36,11 @@ namespace Workbench
 		return a_multiple * (mult > 0.0F ? std::min(mult, MAX_COST_MULT) : 0.0F);
 	}
 
+	float MultipleOf(const CraftingPerks::Standing& a_standing)
+	{
+		return Scaled(CraftingPerks::Multiple(a_standing));
+	}
+
 	Priced PriceOf(const Selection& a_selection)
 	{
 		Priced out;
@@ -53,7 +58,7 @@ namespace Workbench
 		const auto bill = Materials::BillOfLines(*a_selection.object, a_selection.extra);
 		out.built = Materials::BillOfParts(bill);
 		out.standing = CraftingPerks::Of(*a_selection.object, a_selection.extra, bill);
-		out.multiple = Scaled(CraftingPerks::Multiple(out.standing));
+		out.multiple = MultipleOf(out.standing);
 
 		for (const auto& part : out.built) {
 			out.units += part.count;

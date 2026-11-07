@@ -4,6 +4,7 @@
 
 #include <optional>
 #include <string>
+#include <vector>
 
 // The bench's confirmation box, as NEC grows it, the background and the button
 // list of the vanilla message box, and the barter screen's quantity box.
@@ -47,6 +48,18 @@ namespace Roles::Boxes
 	// The message box's list of buttons, at vanilla's place, or a value that
 	// is not a display object.
 	[[nodiscard]] Value MessageList(RE::MessageBoxMenu& a_menu);
+
+	// A row's text field as the message box draws it.
+	struct RowField
+	{
+		double width = 0.0;
+		double textWidth = 0.0;
+		double lines = 0.0;
+	};
+
+	// The text field of each row in the message box's list of buttons, all
+	// those at the depth where the first is found, or none.
+	[[nodiscard]] std::vector<RowField> MessageRows(RE::MessageBoxMenu& a_menu);
 
 	// Whether a_menu's quantity box is open. A movie with no quantity box at
 	// vanilla's place reads as closed.

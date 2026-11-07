@@ -18,6 +18,7 @@
 #include "Gameplay/SpawnCondition/SpawnCondition.h"
 #include "UI/Hud/HudParts/HudParts.h"
 #include "UI/MenuMovies.h"
+#include "UI/Repair/Columns/Columns.h"
 #include "UI/Repair/ConsoleRepair.h"
 
 #include <spdlog/details/os.h>
@@ -68,7 +69,7 @@ namespace
 	// -------------------------------------------------------------------
 
 	// What play remembers belongs to 1 game, so another save or a new game
-	// starts without it.
+	// starts without it, and NEC.log counts the repair boxes without gains.
 	void ForgetPlay()
 	{
 		Jam::Unload();
@@ -77,6 +78,7 @@ namespace
 		HudParts::Weapon::Forget();
 		WeaponWear::ForgetOwed();
 		FoodSpoil::ForgetPlay();
+		Columns::SayLeftOut();
 	}
 
 	// -------------------------------------------------------------------

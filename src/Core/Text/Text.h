@@ -78,29 +78,43 @@ namespace Text
 
 	// "Scrapper 2 raises the condition these spares restore.", said over the
 	// question below while the player's rank raises what a listed spare
-	// restores.
-	[[nodiscard]] std::string SpareScrapper(std::string_view a_perk, std::uint32_t a_rank);
+	// restores. It names 1 perk rank, Scrapper's or the pricing perk's.
+	[[nodiscard]] std::string SparePerk(std::string_view a_perk, std::uint32_t a_rank);
+
+	// "Gun Nut 2 and Scrapper 1 raise the condition these spares restore.",
+	// said in its place while both ranks raise what a listed spare restores.
+	[[nodiscard]] std::string SparePerks(std::string_view a_pricing, std::uint32_t a_pricingRank,
+		std::string_view a_scrapper, std::uint32_t a_scrapperRank);
 
 	// "Hunting Rifle is at 85% condition. Use up a spare to repair it:"
 	[[nodiscard]] std::string SpareQuestion(std::string_view a_name, std::uint32_t a_percent);
 
-	// A spare's name with its marks before it in the order equipped, favorite,
-	// legendary, each a word in brackets, since no language's font for the box
-	// has a star or a heart:
-	// "(equipped) Hunting Rifle", "(favorite) (legendary) Hunting Rifle".
-	[[nodiscard]] std::string SpareName(std::string_view a_name, bool a_equipped, bool a_favorite, bool a_legendary);
+	// A spare's 1 mark, the first of equipped, favorite and legendary that
+	// applies, a word in brackets, since no language's font for the box has
+	// a star or a heart: "(equipped)" for an equipped legendary spare,
+	// "(legendary)", or nothing. The column before the spare's name in the
+	// spare box.
+	[[nodiscard]] std::string SpareMark(bool a_equipped, bool a_favorite, bool a_legendary);
 
-	// "Hunting Rifle (60%)  +7%", 1 row of the spare box, a_name from
-	// SpareName.
-	[[nodiscard]] std::string SpareRow(std::string_view a_name, std::uint32_t a_percent, std::uint32_t a_gain);
+	// "(60%)", a spare's own condition, and "+7%", what it restores, the 2
+	// columns after its name.
+	[[nodiscard]] std::string SpareCondition(std::uint32_t a_percent);
+	[[nodiscard]] std::string SpareRestores(std::uint32_t a_gain);
+
+	// "+2 Damage" or "+3 DMG Resist", what a repair adds to 1 number the item
+	// card prints, a column of the 3 repair boxes, or "+2 DMG" and "+3 DR" in
+	// the short words. a_type is the damage type as the card numbers it, and
+	// an armor piece's number is a resistance. Empty for a type the card has
+	// no word for.
+	[[nodiscard]] std::string GainByType(std::int64_t a_gain, std::uint32_t a_type, bool a_armor, bool a_short);
 
 	// "Salvaged Steel, Screw (2) and Spring.", the parts a spare gave back,
 	// each with its count past 1.
 	[[nodiscard]] std::string SpareSalvaged(std::span<const std::string> a_parts);
 
-	// "80% for 240 caps", one button of the question a trader asks, see
-	// VendorRepair.h.
-	[[nodiscard]] std::string RepairPrice(std::uint32_t a_level, std::uint32_t a_caps);
+	// "240 caps", the column after the level in a row of the question a
+	// trader asks, see VendorRepair.h.
+	[[nodiscard]] std::string RepairCaps(std::uint32_t a_caps);
 
 	// "Repaired to 100% for 240 caps.", said once the caps have changed hands.
 	[[nodiscard]] std::string RepairPaid(std::uint32_t a_level, std::uint32_t a_caps);

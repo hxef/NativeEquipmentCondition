@@ -358,11 +358,10 @@ namespace VendorRepair
 			return true;
 		}
 
-		const auto               quotes = Afforded(Quotes(selection, ceiling));
-		std::vector<std::string> buttons;
-		std::string              spelled;
+		const auto  quotes = Afforded(Quotes(selection, ceiling));
+		auto        buttons = Rows(menu, selection, quotes);
+		std::string spelled;
 		for (const auto& quote : quotes) {
-			buttons.push_back(Text::RepairPrice(quote.level, quote.price));
 			spelled += std::format("{:s}{:d}%:{:d}", spelled.empty() ? "" : " ", quote.level, quote.price);
 		}
 

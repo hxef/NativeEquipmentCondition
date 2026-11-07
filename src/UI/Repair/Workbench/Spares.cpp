@@ -188,6 +188,13 @@ namespace Workbench
 			spare.unranked = ranked ?
 			                     GainOf(a_priced, a_item.percent, WorthOf(Materials::Yield(*a_item.object, extra, a_copy.percent, tenths, false))) :
 			                     spare.gain;
+			spare.unpriced = spare.gain;
+			if (a_priced.standing.rank > 0) {
+				auto unskilled = a_priced;
+				unskilled.standing.rank = 0;
+				unskilled.multiple = MultipleOf(unskilled.standing);
+				spare.unpriced = GainOf(unskilled, a_item.percent, spare.worth);
+			}
 			return spare;
 		}
 
@@ -326,9 +333,9 @@ namespace Workbench
 		return out;
 	}
 
-	std::string RowOf(const Spare& a_spare)
+	std::vector<std::string> CellsOf(const Spare& a_spare)
 	{
-		return Text::SpareRow(Text::SpareName(a_spare.name, a_spare.equipped, a_spare.favorite, a_spare.legendary),
-			a_spare.percent, a_spare.gain);
+		return { Text::SpareMark(a_spare.equipped, a_spare.favorite, a_spare.legendary), a_spare.name,
+			Text::SpareCondition(a_spare.percent), Text::SpareRestores(a_spare.gain) };
 	}
 }

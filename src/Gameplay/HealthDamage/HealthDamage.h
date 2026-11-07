@@ -2,6 +2,10 @@
 
 #include "Core/Plugin.h"
 
+#include <cstdint>
+#include <utility>
+#include <vector>
+
 namespace HealthDamage
 {
 	// Scales weapon damage by the item's health extra data. The engine looks up
@@ -25,4 +29,13 @@ namespace HealthDamage
 	// an explosion and Card.cpp the item card. Curve.h is the damage line,
 	// Trace.h the trace lines, and Hooks.h what they share.
 	void Install();
+
+	// The damage the item card prints for the weapon on a_stack as if it were
+	// at a_health, 1 pair per damage type in the card's order: the type as the
+	// card numbers it, and the damage before the card drops its fraction. It
+	// runs the card's own sum with the card hooks reading a_health, so a
+	// weapon on a list in NEC/Exclude, or a card whose hooks are out, prints
+	// the same at every health.
+	[[nodiscard]] std::vector<std::pair<std::uint32_t, float>> CardDamage(const RE::BGSInventoryItem& a_item,
+		const RE::BGSInventoryItem::Stack* a_stack, float a_health);
 }

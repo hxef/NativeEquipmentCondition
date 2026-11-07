@@ -2,6 +2,10 @@
 
 #include "Core/Plugin.h"
 
+#include <cstdint>
+#include <utility>
+#include <vector>
+
 // A worn piece of armor protects less. The game adds armor up in 2 places. The
 // rating is the physical resistance, added up over the equipped pieces every
 // time DamageResist is read, by a visitor the actor runs, with a tempering
@@ -35,4 +39,12 @@ namespace ArmorRating
 	// Asks the engine to add a_actor's resistances up again, after a piece
 	// wore or was repaired. Equipping does the same on its own.
 	void Refresh(RE::Actor& a_actor);
+
+	// The resistances the menus' item card prints for the piece on a_stack as
+	// if it were at a_health, 1 pair per damage type in the card's order: the
+	// type as the card numbers it, and the resistance before the card drops
+	// its fraction. Scaled as the card's hook scales them, so while the hook
+	// is out every health prints the same.
+	[[nodiscard]] std::vector<std::pair<std::uint32_t, float>> CardResists(const RE::BGSInventoryItem& a_item,
+		const RE::BGSInventoryItem::Stack* a_stack, float a_health);
 }

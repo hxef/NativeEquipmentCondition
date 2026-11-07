@@ -12,6 +12,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 namespace ArmorRating
@@ -53,6 +54,9 @@ namespace ArmorRating
 			{ AE{ RE::ID::PipboyInventoryData::PopulateItemCardInfo.ae(), 0x74A }, OG{ RE::ID::PipboyInventoryData::PopulateItemCardInfo.og(), 0x82D }, "pipboy card resistances" },
 			{ AE{ RE::ID::PipboyInventoryData::UpdateSlotResists.ae(), 0x159 }, OG{ 611980, 0xA2 }, "paper doll resistances" },
 		};
+
+		// The site whose share the repair boxes' gains follow, the card's own.
+		constexpr std::size_t CARD_SITE = 0;
 
 		using Visitor_t = std::int64_t (*)(RE::ActorUtils::ArmorRatingVisitorBase*, const RE::BGSInventoryItem*, std::uint32_t);
 		using Sum_t = bool (*)(const RE::BSTArray<RE::BGSInventoryItem>&, RE::BSTScrapHashMap<RE::BGSDamageType*, std::int32_t>* const&);
@@ -170,6 +174,14 @@ namespace ArmorRating
 			return result;
 		}
 
+		// The share of a_item's resistances fill site a_site gives at
+		// a_health, all of them while the site is not patched or the item
+		// never wears out.
+		[[nodiscard]] float ShareAt(std::size_t a_site, const RE::BGSInventoryItem& a_item, float a_health)
+		{
+			return g_fillLinks[a_site].Live() && a_item.object && Condition::WearsOut(*a_item.object) ? Share(a_health) : 1.0F;
+		}
+
 		// Stands in for FillResistTypeInfo. Each resistance read before the
 		// copy was added in is kept, so the copy's own part can be scaled and
 		// the rest left alone: the paper doll adds a region's pieces into one
@@ -178,7 +190,7 @@ namespace ArmorRating
 		void FillHk(const RE::BGSInventoryItem& a_item, const RE::BGSInventoryItem::Stack* a_stack,
 			RE::BSScrapArray<RE::BSTTuple<std::uint32_t, float>>& a_values, float a_scale)
 		{
-			const auto share = g_fillLinks[I].Live() && a_item.object && Condition::WearsOut(*a_item.object) ? Share(Condition::HealthOf(a_stack)) : 1.0F;
+			const auto share = ShareAt(I, a_item, Condition::HealthOf(a_stack));
 			if (share >= 1.0F) {
 				g_fillLinks[I](a_item, a_stack, a_values, a_scale);
 				return;
@@ -218,6 +230,22 @@ namespace ArmorRating
 	void Refresh(RE::Actor& a_actor)
 	{
 		RE::ActorUtils::UpdateEquippedArmorResistances(&a_actor);
+	}
+
+	std::vector<std::pair<std::uint32_t, float>> CardResists(const RE::BGSInventoryItem& a_item,
+		const RE::BGSInventoryItem::Stack* a_stack, float a_health)
+	{
+		// The engine's numbers do not move with health, and FillHk at the
+		// card's own call scales the whole list by the share.
+		RE::BSScrapArray<RE::BSTTuple<std::uint32_t, float>> values;
+		RE::PipboyInventoryUtils::FillResistTypeInfo(a_item, a_stack, values, 1.0F);
+		const auto share = ShareAt(CARD_SITE, a_item, a_health);
+		std::vector<std::pair<std::uint32_t, float>> out;
+		out.reserve(values.size());
+		for (const auto& entry : values) {
+			out.emplace_back(entry.first, entry.second * share);
+		}
+		return out;
 	}
 
 	void Install()

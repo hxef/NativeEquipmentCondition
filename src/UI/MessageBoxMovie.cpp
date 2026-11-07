@@ -7,13 +7,16 @@
 
 #include <algorithm>
 #include <array>
+#include <atomic>
 #include <cmath>
 #include <cstdint>
 #include <limits>
 #include <optional>
+#include <vector>
 
-// What NEC does in the message box movie: the row its box starts on, and its
-// background kept solid under a message box mod, both by 1 frame listener.
+// What NEC does in the message box movie: the row its box starts on, its
+// background kept solid under a message box mod, and the room its rows have,
+// all by 1 frame listener.
 namespace MessageBox
 {
 	namespace
@@ -80,6 +83,39 @@ namespace MessageBox
 			return static_cast<std::int32_t>((red << 16) | (green << 8) | blue);
 		}
 
+		// Vanilla's row field, and the 2 px Flash keeps free on each side of
+		// a field's text.
+		constexpr double VANILLA_ROW_FIELD = 450.0;
+		constexpr double GUTTERS = 4.0;
+
+		// A row passes its field when its text is wider than the room by more
+		// than SLACK, or when it wraps. NEC's rows are a paragraph, which a
+		// field counts as 2 lines while it draws 1.
+		constexpr double SLACK = 1.0;
+		constexpr double ROW_LINES = 2.0;
+
+		// What RowRoom gives. The frame listener writes it on the message
+		// box's thread and a repair box reads it before its box goes up.
+		std::atomic<double> g_rowRoom{ VANILLA_ROW_FIELD - GUTTERS };
+
+		// Narrows the room to a row field's when one of a_box's rows passes
+		// its field, so the boxes after it take the short words, draw their
+		// cells smaller or cut a name to fit. A message box mod that wraps a
+		// row measures it by its first line, so a field after a wrap can be
+		// narrower than the mod's real limit.
+		void Fitted(std::uint64_t a_box, const std::vector<Roles::Boxes::RowField>& a_rows)
+		{
+			TraceLog::Line("menu", "NEC's box {:d} draws its rows {:.0f} px wide", a_box, a_rows.front().width);
+			for (const auto& row : a_rows) {
+				const auto room = row.width - GUTTERS;
+				if ((row.textWidth > room + SLACK || row.lines > ROW_LINES) && room < g_rowRoom) {
+					g_rowRoom = room;
+					TraceLog::Line("menu", "NEC's box {:d} has a row of {:.0f} px on {:.0f} lines that its field {:.0f} px wide cannot hold, so rows are laid for {:.0f} px from here",
+						a_box, row.textWidth, row.lines, row.width, room);
+				}
+			}
+		}
+
 		// Called by the message box movie every frame. Only NEC's own box is
 		// looked at, so while NEC has no box up or waiting, a frame costs a
 		// check of an empty list. A box with a starting row gets its
@@ -116,6 +152,12 @@ namespace MessageBox
 					StartAt(callback, 0, 0);
 				}
 				const auto number = asked ? std::optional{ asked->number } : std::nullopt;
+				if (number && *number != measured && Flash::Opacity(menu->menuObj) > 0.0) {
+					if (const auto rows = Roles::Boxes::MessageRows(*menu); !rows.empty()) {
+						measured = *number;
+						Fitted(*number, rows);
+					}
+				}
 				if (!number || *number == refused) {
 					return;
 				}
@@ -159,15 +201,22 @@ namespace MessageBox
 			}
 
 		private:
-			// The last box each line was said for, and the last box whose style
-			// refused, by number. Only the message box's own thread comes here.
+			// The last box each line was said for, the last box whose style
+			// refused, and the last whose rows were measured, by number. Only
+			// the message box's own thread comes here.
 			std::uint64_t kept = 0;
 			std::uint64_t lifted = 0;
 			std::uint64_t refused = 0;
+			std::uint64_t measured = 0;
 		};
 
 		// Lives as long as the plugin, see Flash.h.
 		FrameListener g_frameListener;
+	}
+
+	double RowRoom()
+	{
+		return g_rowRoom;
 	}
 
 	// -------------------------------------------------------------------

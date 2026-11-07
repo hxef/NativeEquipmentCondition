@@ -5,6 +5,8 @@
 #include "Condition/Repair.h"
 #include "Core/Text/Text.h"
 #include "Core/TraceLog.h"
+#include "UI/Repair/Columns/Columns.h"
+#include "UI/Repair/Gains.h"
 #include "UI/Repair/RepairPrompt.h"
 #include "UI/Repair/Restore.h"
 #include "UI/Repair/Workbench/Box.h"
@@ -12,6 +14,7 @@
 #include "UI/Repair/Workbench/Spares.h"
 
 #include <algorithm>
+#include <cstddef>
 #include <format>
 #include <limits>
 #include <optional>
@@ -266,27 +269,53 @@ namespace Workbench
 			return;
 		}
 
-		std::vector<std::string>              rows;
+		// Each row ends with what the item's card gains at the condition the
+		// spare brings it to, the condition its percent column names.
+		std::vector<std::uint32_t>            levels;
 		std::vector<const RE::ExtraDataList*> lists;
 		for (const auto& spare : spares) {
-			rows.push_back(RowOf(spare));
+			levels.push_back(std::min(item->percent + spare.gain, FULL));
 			lists.push_back(spare.extra);
 		}
+		const auto     gains = Gains::Read(*item, levels);
+		Columns::Table table;
+		table.name = NAME_CELL;
+		for (std::size_t i = 0; i < spares.size(); i++) {
+			Gains::AddRow(table, CellsOf(spares[i]), gains, i);
+			TraceLog::Line("menu", "Workbench spare {:d} brings {:s} to {:d}%, its card {:s}", i + 1, item->Name(), levels[i],
+				Gains::Spelled(gains, i));
+		}
+		auto* bench = OpenBench();
+		auto  rows = Columns::Lay(bench ? bench->uiMovie.get() : nullptr, table, "Workbench spare box");
 
-		// The line above the question names the player's Scrapper rank, as the
-		// repair box names the perk pricing the item, but only while the rank
-		// raises what a listed spare restores, so it never claims a gain
-		// that is not on the list.
-		const auto scrapper = CraftingPerks::Scrapper();
-		const auto raised = std::ranges::count_if(spares, [](const Spare& a_spare) { return a_spare.unranked < a_spare.gain; });
-		const auto over = scrapper.rank > 0 && raised > 0 ? Text::SpareScrapper(scrapper.Name(), scrapper.rank) : std::string{};
+		// The line above the question names each rank that raises what a
+		// listed spare restores, the perk pricing the item first, then
+		// Scrapper, as the repair box names the perk pricing the item. A rank
+		// that raises none is left off, so the line never claims a gain that
+		// is not on the list.
+		const auto& pricing = a_priced.standing;
+		const auto  scrapper = CraftingPerks::Scrapper();
+		const auto  byPrice = std::ranges::count_if(spares, [](const Spare& a_spare) { return a_spare.unpriced < a_spare.gain; });
+		const auto  byScrapper = std::ranges::count_if(spares, [](const Spare& a_spare) { return a_spare.unranked < a_spare.gain; });
+		std::string over;
+		if (byPrice > 0 && byScrapper > 0) {
+			over = Text::SparePerks(pricing.Name(), pricing.rank, scrapper.Name(), scrapper.rank);
+		} else if (byPrice > 0) {
+			over = Text::SparePerk(pricing.Name(), pricing.rank);
+		} else if (byScrapper > 0) {
+			over = Text::SparePerk(scrapper.Name(), scrapper.rank);
+		}
 		std::string credit{ "nobody" };
 		if (scrapper.rank > 0) {
-			credit = raised > 0 ? std::format("{:s} {:d}, which raises {:d} of them", scrapper.Name(), scrapper.rank, raised) :
-			                      std::format("nobody, as {:s} {:d} raises none of them", scrapper.Name(), scrapper.rank);
+			credit = byScrapper > 0 ? std::format("{:s} {:d}, which raises {:d} of them", scrapper.Name(), scrapper.rank, byScrapper) :
+			                          std::format("nobody, as {:s} {:d} raises none of them", scrapper.Name(), scrapper.rank);
 		}
 		TraceLog::Line("menu", "Workbench asks which of {:d} spares to use up on {:s} at {:d}%, crediting {:s}",
 			spares.size(), item->Name(), item->percent, credit);
+		if (pricing.perk && pricing.rank > 0) {
+			TraceLog::Line("menu", "Workbench credits {:s} {:d}, the perk pricing {:s}, which raises {:d} of them", pricing.Name(),
+				pricing.rank, item->Name(), byPrice);
+		}
 
 		// The bench, the item and the spare are looked up again when the
 		// answer comes, in case anything moved in between.

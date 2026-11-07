@@ -1,8 +1,14 @@
 #include "UI/Repair/VendorRepair/Quote.h"
 
+#include "Condition/Repair.h"
 #include "Core/Settings.h"
+#include "Core/Text/Text.h"
+#include "Core/TraceLog.h"
+#include "UI/Repair/Columns/Columns.h"
+#include "UI/Repair/Gains.h"
 
 #include <algorithm>
+#include <cstddef>
 #include <utility>
 
 namespace VendorRepair
@@ -70,5 +76,22 @@ namespace VendorRepair
 			}
 		}
 		return out;
+	}
+
+	std::vector<std::string> Rows(RE::BarterMenu* a_menu, const Selection& a_selection, const std::vector<Quote>& a_quotes)
+	{
+		std::vector<std::uint32_t> levels;
+		for (const auto& quote : a_quotes) {
+			levels.push_back(quote.level);
+		}
+		const auto     gains = Gains::Read(a_selection, levels);
+		Columns::Table table;
+		for (std::size_t i = 0; i < a_quotes.size(); i++) {
+			const auto& quote = a_quotes[i];
+			Gains::AddRow(table, { Repair::NameOf(quote.level), Text::RepairCaps(quote.price) }, gains, i);
+			TraceLog::Line("menu", "{:s} offers {:d}% of {:s}, its card {:s}", Trader(a_menu), quote.level, a_selection.Name(),
+				Gains::Spelled(gains, i));
+		}
+		return Columns::Lay(a_menu ? a_menu->uiMovie.get() : nullptr, table, Trader(a_menu) + "'s repair box");
 	}
 }

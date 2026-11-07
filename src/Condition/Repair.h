@@ -49,8 +49,8 @@ namespace Repair
 	// The condition levels above the one an item already has.
 	[[nodiscard]] std::vector<std::uint32_t> Above(std::uint32_t a_percent);
 
-	// What a level is called on a button, or nothing for a number that is not a
-	// level.
+	// What a level is called on a button, or an empty name for a number that is
+	// not a level.
 	[[nodiscard]] const char* NameOf(std::uint32_t a_level);
 
 	// One level an item can be brought back to and its price, in whatever the

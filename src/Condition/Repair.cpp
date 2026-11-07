@@ -38,7 +38,7 @@ namespace Repair
 				return LEVEL_NAME[i];
 			}
 		}
-		return nullptr;
+		return "";
 	}
 
 	std::string Ladder(float a_multiple)

@@ -6,6 +6,8 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
+#include <utility>
+#include <vector>
 
 namespace Roles::Boxes
 {
@@ -228,6 +230,32 @@ namespace Roles::Boxes
 	Value MessageList(RE::MessageBoxMenu& a_menu)
 	{
 		return Flash::Member(a_menu.menuObj, MESSAGE_LIST_NAME);
+	}
+
+	std::vector<RowField> MessageRows(RE::MessageBoxMenu& a_menu)
+	{
+		// The rows sit in entry clips a level or 2 below the list, each a
+		// text field, which is what holds an htmlText.
+		auto               list = MessageList(a_menu);
+		std::vector<Value> level{ list };
+		for (auto depth = 0; depth < 3 && !level.empty(); depth++) {
+			std::vector<Value>    next;
+			std::vector<RowField> out;
+			for (auto& clip : level) {
+				for (auto& child : Flash::Children(clip)) {
+					const auto width = Flash::Number(child, "width"sv);
+					if (Flash::Member(child, "htmlText"sv).IsString() && width > 0.0) {
+						out.push_back({ width, Flash::Number(child, "textWidth"sv), Flash::Number(child, "numLines"sv) });
+					}
+					next.push_back(child);
+				}
+			}
+			if (!out.empty()) {
+				return out;
+			}
+			level = std::move(next);
+		}
+		return {};
 	}
 
 	// -------------------------------------------------------------------

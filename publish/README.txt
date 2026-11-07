@@ -20,8 +20,8 @@ actually does.
 DOES WHAT, EXACTLY?
 Your weapons and armor wear down as you use them, the way they did in
 Fallout 3 and New Vegas. Worn weapons and armor lose effectiveness and sell
-for less. Keep them in shape at a workbench with components or a spare copy,
-or pay a trader in caps.
+for less. Keep them in shape at a workbench with components or a spare of
+the same weapon or armor, or pay a trader in caps.
 
 Worn gear can't be modded until it is repaired to full, so swapping in cheap
 mods can't cut the repair bill. The "Mod lock below" slider in MCM eases

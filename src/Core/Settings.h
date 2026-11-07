@@ -149,8 +149,9 @@ namespace Settings
 	inline Live<bool> bVendorRepair{ "Features", "bVendorRepair", true };
 
 	// A USE A SPARE row in a workbench's repair box when the player carries
-	// another copy of the item, see Workbench/Spares.h. No feature's row: it
-	// rides on Workbench repairs. On by default.
+	// another of the same weapon or armor, with any mods, see
+	// Workbench/Spares.h. No feature's row: it rides on Workbench repairs. On
+	// by default.
 	inline Live<bool> bSpareRepair{ "Features", "bSpareRepair", true };
 
 	// Which gear with UnscrappableObject can still be a spare, see

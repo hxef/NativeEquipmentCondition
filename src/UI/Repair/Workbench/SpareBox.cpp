@@ -30,7 +30,7 @@ namespace Workbench
 		using Repair::FULL;
 
 		// -------------------------------------------------------------------
-		// Finding the copies again
+		// Finding the stacks again
 		// -------------------------------------------------------------------
 
 		// Picks the stack with a_extra, as the fork's CheckExtraDataFunctor

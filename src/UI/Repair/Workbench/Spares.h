@@ -12,8 +12,8 @@
 #include <string>
 #include <vector>
 
-// Repairing with a spare, another copy of the same item the player carries,
-// taken apart for the repair. Private to this folder.
+// Repairing with a spare, another of the same weapon or armor the player
+// carries, with any mods, taken apart for the repair. Private to this folder.
 //
 // A spare is worth what its parts are worth, the parts it scraps into without
 // the halving, its condition and Scrapper counted, see Materials::Yield, times
@@ -34,7 +34,7 @@ namespace Workbench
 	// takes the last number.
 	inline constexpr std::size_t MOST_SPARES = 254;
 
-	// 1 copy of the item that a repair can use up.
+	// 1 spare a repair can use up.
 	struct Spare
 	{
 		// Its stack's list, by which it is found again, since a stack's
@@ -45,7 +45,7 @@ namespace Workbench
 		bool                     equipped{ false };
 		bool                     favorite{ false };
 		bool                     legendary{ false };
-		// A copy in the item's own stack, the same as the item in every way.
+		// A spare in the item's own stack, the same as the item in every way.
 		bool                         withItem{ false };
 		// What it is worth at fSpareWorthMult, which pays for the repair.
 		std::vector<Materials::Part> scrap;
@@ -70,17 +70,17 @@ namespace Workbench
 	// bSpareRepair is on.
 	[[nodiscard]] bool CarriesSpare(const Selection& a_item);
 
-	// Every spare for a_item, 1 row per copy, the smallest gain first, then
-	// the lower condition, then the name, MOST_SPARES at most. Another copy
-	// in the player's inventory with the same base counts, equipped,
-	// favorite and legendary ones too. Never a quest item, and gear the SCRAP
-	// button refuses only as iUnscrappableSpares allows, by default a
+	// Every spare for a_item, 1 row per spare, the smallest gain first, then
+	// the lower condition, then the name, MOST_SPARES at most. Another of the
+	// same weapon or armor in the player's inventory counts, with any mods,
+	// equipped, favorite and legendary ones too. Never a quest item, and gear
+	// the SCRAP button refuses only as iUnscrappableSpares allows, by default a
 	// legendary but no unique weapon. The bench never lists a power armor
 	// piece, so neither the item nor a spare is one. Says each in the trace.
 	[[nodiscard]] std::vector<Spare> Spares(const Selection& a_item, const Priced& a_priced);
 
 	// The spare on the stack with a_extra, worked out again for a_item as it
-	// is now, or nothing once no such copy is left.
+	// is now, or nothing once no such spare is left.
 	[[nodiscard]] std::optional<Spare> SpareOn(const Selection& a_item, const Priced& a_priced, const RE::ExtraDataList* a_extra);
 
 	// What a spare's repair takes from its parts, and what goes back.

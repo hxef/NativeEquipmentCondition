@@ -68,14 +68,14 @@ namespace Workbench
 		constexpr std::int32_t NO_UNSCRAPPABLE = 0;
 		constexpr std::int32_t ALL_UNSCRAPPABLE = 2;
 
-		// Whether iUnscrappableSpares keeps the copy out for the keyword the
+		// Whether iUnscrappableSpares keeps a spare out for the keyword the
 		// SCRAP button refuses, the one the default object
 		// UnscrappableObject_DO names. In vanilla the record carries it on the
 		// unique weapons like Grognak's Axe and the Cryolator, on grenades,
 		// mines and power armor pieces, and every legendary mod adds it to the
-		// copy. At 0 the copy's own keywords count where it has some, as the
-		// SCRAP button reads them, so no legendary is listed. At 1 only the
-		// record's count, so a legendary is, and at 2 the keyword counts
+		// item itself. At 0 the spare's own keywords count where it has some,
+		// as the SCRAP button reads them, so no legendary is listed. At 1 only
+		// the record's count, so a legendary is, and at 2 the keyword counts
 		// nowhere.
 		[[nodiscard]] bool Unscrappable(const RE::TESBoundObject& a_object, const RE::ExtraDataList* a_extra)
 		{
@@ -162,7 +162,7 @@ namespace Workbench
 			return std::min(std::max(covered, LEAST_GAIN), missing);
 		}
 
-		// a_copy as a spare for a_item, or nothing for a copy that never is
+		// a_copy as a spare for a_item, or nothing for a stack that never is
 		// one.
 		[[nodiscard]] std::optional<Spare> Worked(const Copy& a_copy, const Selection& a_item, const Priced& a_priced)
 		{
@@ -198,7 +198,7 @@ namespace Workbench
 			return spare;
 		}
 
-		// The copies on a_copy's stack that are spares: all but the item
+		// The items on a_copy's stack that are spares: all but the item
 		// itself.
 		[[nodiscard]] std::uint32_t SparesIn(const Copy& a_copy)
 		{

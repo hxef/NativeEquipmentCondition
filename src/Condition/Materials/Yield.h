@@ -38,20 +38,19 @@ namespace Materials
 	// vanilla.
 	[[nodiscard]] std::uint32_t ScrapIn(std::uint32_t a_count, std::uint32_t a_percent);
 
-	// What a copy of a_object with a_extra at a_percent is worth as a spare,
-	// component by component: its scrap as the bench works it out, without
-	// the halving. The bench's walk is the recipe of every enabled mod, the
-	// legendary one too, and the item's own scrap recipe, with nothing
-	// borrowed. Each form those recipes name is counted apart, scaled by
-	// ScrapIn and then doubled, and vanilla's own count takes it from
-	// there, so a Hunting Rifle's 2 Steel scrap items and the Steel its mods
-	// ask for are 2 counts. A component the game counts at 0 is left out, so
-	// without Scrapper a spare holds only the common ones, and a worn copy
-	// left with none holds the 1 component of LeastPart. a_tenths scales the
-	// doubled count before vanilla's count, in tenths and rounded down, 10
-	// for none and 5 for exactly what scrapping gives. With a_scrapper false
-	// the components only a Scrapper rank gives count as 0, as for a player
-	// with no rank. a_extra can be null.
+	// What a_object with a_extra at a_percent is worth as a spare, component by
+	// component: its scrap as the bench works it out, without the halving. The
+	// bench's walk is the recipe of every enabled mod, the legendary one too,
+	// and the item's own scrap recipe, with nothing borrowed. Each form those
+	// recipes name is counted apart, scaled by ScrapIn and then doubled, and
+	// vanilla's own count takes it from there, so a Hunting Rifle's 2 Steel
+	// scrap items and the Steel its mods ask for are 2 counts. A component the
+	// game counts at 0 is left out, so without Scrapper a spare holds only the
+	// common ones, and a worn spare left with none holds the 1 component of
+	// LeastPart. a_tenths scales the doubled count before vanilla's count, in
+	// tenths and rounded down, 10 for none and 5 for exactly what scrapping
+	// gives. With a_scrapper false the components only a Scrapper rank gives
+	// count as 0, as for a player with no rank. a_extra can be null.
 	[[nodiscard]] std::vector<Part> Yield(const RE::TESBoundObject& a_object, const RE::ExtraDataList* a_extra,
 		std::uint32_t a_percent, std::uint32_t a_tenths, bool a_scrapper = true);
 }

@@ -197,6 +197,7 @@ src/
     LoadingTips.h/.cpp       the plugin's own tips on the loading screen
     InspectPrice.h/.cpp      the price on the inspect screen at a trader
     FridgeIcon.h/.cpp        the fridge icon the quick container and the item card share, made and sized to a line of text
+    PerkChart.h/.cpp         every line of a perk's description on the level up perk chart
     Roles/
       Roles.h/.cpp           the tests every part shares: on screen, a part's box, a point to and from the stage, the found, noted and missing lines
       Conventions.h          the method names some menu movies share beyond the vanilla ones
@@ -205,6 +206,7 @@ src/
       Hud.h/.cpp             the ammo counter, its divider, numbers and colour, the parts beside it, where a quick container row's name starts and ends
       ContainerName.h/.cpp   the container's name at the top of the quick container
       Rollover.h/.cpp        the pickup prompt: the name and the button hints under it
+      PerkCard.h/.cpp        the perk chart's card and the field its description prints in
       Boxes.h/.cpp           the parts of the bench's confirmation box, where the bench's button bar starts, the message box's background, and whether the barter screen's quantity box is open
     Mcm/
       Mcm.h/.cpp             the settings page in the Mod Configuration Menu

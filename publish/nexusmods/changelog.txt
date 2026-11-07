@@ -1,4 +1,5 @@
 1.8.2
+* The perk chart draws a perk's whole description, so NEC's repair discount line on Gun Nut, Armorer, Science! and Blacksmith and the spare line on Scrapper are no longer cut off after 2 lines.
 * The Jams below MCM slider stays on show while you move the Jam chance at 0 condition MCM slider, even when the mouse passed over another page's name on the way.
 
 1.8.1

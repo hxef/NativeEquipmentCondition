@@ -18,7 +18,9 @@ namespace CraftingPerks
 	namespace
 	{
 		// The 2 places a perk's words are read for the screen: the level up
-		// chart and the Pip-Boy's perks page.
+		// chart and the Pip-Boy's perks page. The Pip-Boy shrinks the letters
+		// of a long description to fit, and UI/PerkChart.cpp grows the chart's
+		// field, 2 lines high on its own, to every line.
 		constexpr CallPatch::CallSite DESCRIPTION_SITES[]{
 			{ CallPatch::AE{ 2206559, 0x434 }, CallPatch::OG{ 1471750, 0x382 }, "perk chart" },
 			{ CallPatch::AE{ 2225718, 0x36A }, CallPatch::OG{ 1034674, 0x29A }, "Pip-Boy perks page" },

@@ -33,6 +33,7 @@
 #include "UI/LoadingTips.h"
 #include "UI/Mcm/Mcm.h"
 #include "UI/MessageBox.h"
+#include "UI/PerkChart.h"
 #include "UI/Repair/ConfirmScroll.h"
 #include "UI/Repair/ConsoleRepair.h"
 #include "UI/Repair/VendorRepair/VendorRepair.h"
@@ -137,6 +138,9 @@ namespace
 		{ .name = "Pipboy", .OnMovieLoaded = Pipboy::OnMovieLoaded },
 		// A CND bar over each body region of the Pip-Boy's paper doll.
 		{ .name = "PaperDoll", .OnMovieLoaded = PaperDoll::OnMovieLoaded },
+		// Every line of a perk's description on the level up perk chart, which
+		// draws 2 on its own.
+		{ .name = "PerkChart", .OnMovieLoaded = PerkChart::OnMovieLoaded },
 		// What both CND bars on the HUD share, on the switch of their part.
 		// Their colour targets go with the HUD menu they were made for.
 		{ .name = "HudParts", .on = &Settings::bHudCondition, .part = Part::kHudBar, .Install = HudParts::Install, .Load = HudParts::Load },

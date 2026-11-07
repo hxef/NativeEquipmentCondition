@@ -98,11 +98,11 @@ REPAIR AT THE WORKBENCH
   takes RENAME's place until it is back at full. Press it, choose how far to
   repair it in steps of 10%, and pay in the components it is built from.
   Beside each step the box shows what it adds to the item's damage or
-  resistances by type, and the box of spares does the same for each spare.
-  Gear with no scrap recipe, like Grognak's Axe, costs what gear of its kind
-  most often scraps into, and wears at the same rate. Short of components, you
-  get the power armor station's list of what the repair takes, with the ones
-  you lack faded.
+  resistances by type, and the box of spares does the same for each spare, in
+  columns unless "Repair rows in columns" is off. Gear with no scrap recipe,
+  like Grognak's Axe, costs what gear of its kind most often scraps into, and
+  wears at the same rate. Short of components, you get the power armor
+  station's list of what the repair takes, with the ones you lack faded.
 * Carrying a spare of the same item? USE A SPARE in the repair box takes it
   apart for the repair: it restores as much condition as its scrap is worth,
   and the components left over go to your inventory. "Spare worth" sets how

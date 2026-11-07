@@ -21,7 +21,7 @@ namespace Columns
 	// A box's rows as they go out: the table in the words picked with any
 	// names cut, the columns shown, the size of the cells before the gains
 	// and each step taken. wide is the widest row as last measured, and
-	// columns each column's width there.
+	// columns each column's width there for rows in columns.
 	struct Fit
 	{
 		Table                    table;
@@ -34,8 +34,9 @@ namespace Columns
 		std::vector<double>      columns;
 	};
 
-	// a_table fitted to a_room, from a_all's columns down to a_kept's.
-	// Nothing when a cell could not be measured.
+	// a_table fitted to a_room, from a_all's columns down to a_kept's, each
+	// row in columns or, with a_lines, as 1 line. Nothing when a cell could
+	// not be measured.
 	[[nodiscard]] std::optional<Fit> Fitted(Meter& a_meter, const Table& a_table, const std::vector<std::size_t>& a_all,
-		const std::vector<std::size_t>& a_kept, double a_room);
+		const std::vector<std::size_t>& a_kept, double a_room, bool a_lines);
 }

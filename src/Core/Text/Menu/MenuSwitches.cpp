@@ -3,9 +3,9 @@
 #include "Core/Settings.h"
 
 // The help lines of the switches on the MCM page, the names and help of the
-// plain apparel, 2 CND bar, spare repair, fridge icon and bug report logs
-// switches, and of the unscrappable spares and repair box steppers, see
-// MenuLine in Text.h.
+// plain apparel, 2 CND bar, spare repair, repair columns, fridge icon and bug
+// report logs switches, and of the unscrappable spares and repair box
+// steppers, see MenuLine in Text.h.
 namespace Text
 {
 	namespace
@@ -17,6 +17,7 @@ namespace Text
 			{ &Settings::bSpareRepair, SPARE_REPAIR_NAME, SPARE_REPAIR_HELP },
 			{ &Settings::iUnscrappableSpares, UNSCRAPPABLE_SPARES_NAME, UNSCRAPPABLE_SPARES_HELP },
 			{ &Settings::iRepairBoxRow, REPAIR_BOX_ROW_NAME, REPAIR_BOX_ROW_HELP },
+			{ &Settings::bRepairBoxColumns, REPAIR_COLUMNS_NAME, REPAIR_COLUMNS_HELP },
 			{ &Settings::bLoadingTips, {}, LOADING_TIPS_HELP },
 			{ &Settings::bHudCondition, HUD_CONDITION_NAME, HUD_CONDITION_HELP },
 			{ &Settings::bPowerArmorBar, POWER_ARMOR_BAR_NAME, POWER_ARMOR_BAR_HELP },

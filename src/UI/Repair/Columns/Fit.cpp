@@ -13,15 +13,33 @@ namespace Columns
 		// Measuring the rows and their short words
 		// -------------------------------------------------------------------
 
-		// Measures a_fit's rows. False when a cell could not be measured.
-		[[nodiscard]] bool Measured(Meter& a_meter, Fit& a_fit)
+		// How wide a_row prints as 1 line of a_fit's columns at its size.
+		[[nodiscard]] std::optional<double> LineWidth(Meter& a_meter, const Fit& a_fit, const std::vector<std::string>& a_row)
 		{
-			const auto widths = Measure(a_meter, a_fit.table, a_fit.size);
-			if (!widths) {
-				return false;
+			return a_meter.Width(Lined(a_fit.table.kept, a_row, a_fit.shown, a_fit.size));
+		}
+
+		// Measures a_fit's rows, drawn as 1 line each when a_lines is set.
+		// False when a cell could not be measured.
+		[[nodiscard]] bool Measured(Meter& a_meter, Fit& a_fit, bool a_lines)
+		{
+			if (!a_lines) {
+				const auto widths = Measure(a_meter, a_fit.table, a_fit.size);
+				if (!widths) {
+					return false;
+				}
+				a_fit.columns = Widest(*widths);
+				a_fit.wide = StopsOf(a_fit.columns, a_fit.shown).wide;
+				return true;
 			}
-			a_fit.columns = Widest(*widths);
-			a_fit.wide = StopsOf(a_fit.columns, a_fit.shown).wide;
+			a_fit.wide = 0.0;
+			for (const auto& row : a_fit.table.rows) {
+				const auto width = LineWidth(a_meter, a_fit, row);
+				if (!width) {
+					return false;
+				}
+				a_fit.wide = std::max(a_fit.wide, *width);
+			}
 			return true;
 		}
 
@@ -116,39 +134,53 @@ namespace Columns
 			return cut;
 		}
 
-		// Cuts a_fit's names to the room the other columns leave them at
-		// their rounded stops, in whole pixels, so the stops after the name
-		// still hold, and measures the rows again. False when a cell could not
-		// be measured.
-		[[nodiscard]] bool CutNames(Meter& a_meter, Fit& a_fit, double a_room)
+		// Cuts a_fit's names to the room the rest of each row leaves them, in
+		// whole pixels, and measures the rows again. In columns that room is
+		// the same for every row, the other columns at their rounded stops, so
+		// the stops after the name still hold. False when a cell could not be
+		// measured.
+		[[nodiscard]] bool CutNames(Meter& a_meter, Fit& a_fit, double a_room, bool a_lines)
 		{
-			auto others = a_fit.columns;
-			others[*a_fit.table.name] = 0.0;
-			const std::vector<double> rooms(a_fit.table.rows.size(), std::floor(a_room - StopsOf(others, a_fit.shown).wide));
-			const auto                cut = Cut(a_meter, a_fit.table, rooms, a_fit.size);
+			const auto          name = *a_fit.table.name;
+			std::vector<double> rooms;
+			if (a_lines) {
+				for (const auto& row : a_fit.table.rows) {
+					const auto line = LineWidth(a_meter, a_fit, row);
+					const auto cell = name < row.size() ? a_meter.Cell(row[name], a_fit.size) : std::optional{ 0.0 };
+					if (!line || !cell) {
+						return false;
+					}
+					rooms.push_back(std::floor(a_room - (*line - *cell)));
+				}
+			} else {
+				auto others = a_fit.columns;
+				others[name] = 0.0;
+				rooms.assign(a_fit.table.rows.size(), std::floor(a_room - StopsOf(others, a_fit.shown).wide));
+			}
+			const auto cut = Cut(a_meter, a_fit.table, rooms, a_fit.size);
 			a_fit.cut = cut.value_or(0);
-			return cut && Measured(a_meter, a_fit);
+			return cut && Measured(a_meter, a_fit, a_lines);
 		}
 	}
 
 	std::optional<Fit> Fitted(Meter& a_meter, const Table& a_table, const std::vector<std::size_t>& a_all,
-		const std::vector<std::size_t>& a_kept, double a_room)
+		const std::vector<std::size_t>& a_kept, double a_room, bool a_lines)
 	{
 		Fit fit;
 		fit.table = a_table;
 		fit.shown = a_all;
-		auto measured = Measured(a_meter, fit);
+		auto measured = Measured(a_meter, fit, a_lines);
 		if (measured && fit.wide > a_room && Shortened(fit.table)) {
 			fit.shortWords = true;
-			measured = Measured(a_meter, fit);
+			measured = Measured(a_meter, fit, a_lines);
 		}
 		while (measured && fit.wide > a_room && fit.size > SMALLEST_SIZE) {
 			fit.size--;
-			measured = Measured(a_meter, fit);
+			measured = Measured(a_meter, fit, a_lines);
 		}
 		const auto cuts = a_table.name && std::ranges::contains(a_kept, *a_table.name);
 		if (measured && fit.wide > a_room && cuts) {
-			measured = CutNames(a_meter, fit, a_room);
+			measured = CutNames(a_meter, fit, a_room, a_lines);
 		}
 
 		// The last resort, for a box narrower than vanilla's. The names are cut
@@ -158,9 +190,9 @@ namespace Columns
 			fit.shown = a_kept;
 			fit.cut = 0;
 			fit.table = a_table;
-			measured = Measured(a_meter, fit);
+			measured = Measured(a_meter, fit, a_lines);
 			if (measured && fit.wide > a_room && cuts) {
-				measured = CutNames(a_meter, fit, a_room);
+				measured = CutNames(a_meter, fit, a_room, a_lines);
 			}
 		}
 		return measured ? std::optional{ fit } : std::nullopt;

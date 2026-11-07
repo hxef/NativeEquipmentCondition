@@ -27,11 +27,11 @@
 // with a line saying what it does, and to SWITCHES or NUMBERS in
 // SettingsLine.cpp in NEC.ini's order. A setting left out of those is missing
 // from the Settings line, and the MCM page can neither read nor change it. The
-// 10 switches with no row of their own in Features.cpp, bPowerArmorBar,
-// bSpareRepair, bFridgeIcon, bHudBarHidesWithCounter, bHudBarStandsAlone,
-// bHudBarShowsWord, bPowerArmorBarShowsWord, bPickupBar, bPickupBarShowsWord
-// and bTraceLogs, are named in SettingsLine.cpp's ReportLine and in
-// UI/Mcm/Bridge.cpp's SwitchFor instead.
+// 11 switches with no row of their own in Features.cpp, bPowerArmorBar,
+// bSpareRepair, bRepairBoxColumns, bFridgeIcon, bHudBarHidesWithCounter,
+// bHudBarStandsAlone, bHudBarShowsWord, bPowerArmorBarShowsWord, bPickupBar,
+// bPickupBarShowsWord and bTraceLogs, are named in SettingsLine.cpp's
+// ReportLine and in UI/Mcm/Bridge.cpp's SwitchFor instead.
 namespace Settings
 {
 	// Where a setting sits in NEC.ini, which is also its id on the MCM page.
@@ -163,6 +163,12 @@ namespace Settings
 	// Workbench/Job.cpp: 0 none, 1 USE A SPARE, 2 the highest level and 3 the
 	// lowest. Any other number reads as 2, the default.
 	inline Live<std::int32_t> iRepairBoxRow{ "Features", "iRepairBoxRow", 2 };
+
+	// The rows of the repair boxes at a workbench and at a trader in columns,
+	// see Repair/Columns/Columns.h. When off, each row is 1 centred line, as
+	// vanilla draws its boxes. No feature's row: it rides on Workbench repairs
+	// and Trader repairs. On by default.
+	inline Live<bool> bRepairBoxColumns{ "Features", "bRepairBoxColumns", true };
 
 	// Loading screen tips about condition.
 	inline Live<bool> bLoadingTips{ "Features", "bLoadingTips", true };

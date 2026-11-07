@@ -88,6 +88,8 @@ namespace
 	constexpr auto WEAPON_PENALTIES_SIDE = Joined<FIRE_RATE_SIDE, ACCURACY_SIDE, RANGE_SIDE>();
 
 	constexpr Piece BENCH[]{ kBench };
+	// The repair boxes' rows are laid at the bench and at a trader alike.
+	constexpr Piece REPAIR_BOXES[]{ kBench, kTraderRepairs };
 	// The perk pages tell of a discount on a bench repair, and the bench's
 	// lists show what it repairs, so the line of each part shows in this
 	// block.
@@ -119,6 +121,7 @@ namespace
 		{ &Settings::bSpareRepair, &Settings::fBenchCostMult, BENCH, SPARE_SIDE },
 		{ &Settings::iUnscrappableSpares, &Settings::fBenchCostMult, BENCH },
 		{ &Settings::iRepairBoxRow, &Settings::fBenchCostMult, BENCH },
+		{ &Settings::bRepairBoxColumns, &Settings::fBenchCostMult, REPAIR_BOXES },
 		{ &Settings::bLoadingTips, nullptr, TIPS },
 		{ &Settings::bHudCondition, nullptr, HUD_BARS },
 		// The power armor bar's switch rides on HUD condition bars as the

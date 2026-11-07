@@ -15,13 +15,16 @@
 // whatever field draws the rows, every row starting at the same left edge.
 // Nothing in the box's movie is written. Each column is as wide as its widest
 // cell, measured in the font the box draws its rows in, with a gap after it.
+// With bRepairBoxColumns off, each row is its cells joined by 2 spaces in a
+// centred paragraph, as vanilla centres its rows.
 //
 // The gains are drawn at size 14 and the other cells at 18. Where the widest
 // row would pass the room, see MessageBox::RowRoom, every row takes these steps
 // in order until it fits: the gains' short words, "+2 DMG" for "+2 Damage",
 // the other cells 1 size down at a time to 14, then each name still too wide
 // cut with "..." to the room the other cells leave it, never under 8 letters.
-// Only a box that still passes then leaves out its gains.
+// Only a box that still passes then leaves out its gains. A row as 1 line
+// takes the same steps.
 namespace Columns
 {
 	// 1 box's rows, each its cells in order, the same count on every row. The

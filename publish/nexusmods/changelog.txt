@@ -1,5 +1,6 @@
 1.8.2
 * The workbench's repair box, the box of spares and a trader's repair box list their rows in columns centered in the box, and each row shows what it adds to the item's damage or resistances by type, such as +2 Damage or +3 DMG Resist.
+* A new MCM switch, Repair rows in columns (bRepairBoxColumns, on), turns the column style of the repair boxes on or off. Off shows no columns, each row 1 line of text as vanilla arranges it.
 * The box of spares also names your rank of the perk behind the item's repair discount, such as Gun Nut 2, when it raises the condition a spare restores.
 * The Spare repair MCM switch's help, NEC.ini and every language call a spare another of the same weapon or armor, with any mods, where they said a copy of the item.
 * The perk chart draws a perk's whole description, so NEC's repair discount line on Gun Nut, Armorer, Science! and Blacksmith and the spare line on Scrapper are no longer cut off after 2 lines.

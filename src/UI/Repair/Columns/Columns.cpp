@@ -1,5 +1,6 @@
 #include "UI/Repair/Columns/Columns.h"
 
+#include "Core/Settings.h"
 #include "Core/TraceLog.h"
 #include "UI/MessageBox.h"
 #include "UI/Repair/Columns/Cells.h"
@@ -120,6 +121,19 @@ namespace Columns
 				a_box, a_fit.shown.size(), side, fromEdge, GAP, GAIN_SIZE, laid.wide, a_room, a_steps, Traced(out));
 			return out;
 		}
+
+		// The rows as 1 line each, each a centred paragraph, as vanilla centres
+		// its rows.
+		[[nodiscard]] std::vector<std::string> AsLines(const Fit& a_fit, double a_room, std::string_view a_box, const std::string& a_steps)
+		{
+			std::vector<std::string> out;
+			for (const auto& row : a_fit.table.rows) {
+				out.push_back(Centred(Lined(a_fit.table.kept, row, a_fit.shown, a_fit.size)));
+			}
+			TraceLog::Line("menu", "{:s} lays its rows as 1 centred line each, its cells 2 spaces apart, the gains at size {:d}, {:.0f} px wide for a room of {:.0f} px, {:s}: {:s}",
+				a_box, GAIN_SIZE, a_fit.wide, a_room, a_steps, Traced(out));
+			return out;
+		}
 	}
 
 	std::vector<std::string> Lay(Scaleform::GFx::Movie* a_movie, const Table& a_table, std::string_view a_box)
@@ -146,9 +160,10 @@ namespace Columns
 				}
 			}
 		}
+		const auto lines = !Settings::bRepairBoxColumns.GetValue();
 		// Whole pixels, so a closing stop rounded up leaves ROW_END_ROOM free.
 		const auto room = std::floor(MessageBox::RowRoom());
-		const auto fit = Fitted(*meter, a_table, all, kept, room - ROW_END_ROOM);
+		const auto fit = Fitted(*meter, a_table, all, kept, lines ? room : room - ROW_END_ROOM, lines);
 		if (!fit) {
 			return Plain(a_table, a_box);
 		}
@@ -157,7 +172,7 @@ namespace Columns
 				a_box, room, SMALLEST_SIZE);
 		}
 		const auto steps = Steps(*fit, all.size() > kept.size());
-		return InColumns(*fit, room, a_box, steps);
+		return lines ? AsLines(*fit, room, a_box, steps) : InColumns(*fit, room, a_box, steps);
 	}
 
 	void SayLeftOut()

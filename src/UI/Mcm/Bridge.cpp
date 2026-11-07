@@ -86,7 +86,7 @@ namespace Mcm
 					return on;
 				}
 			}
-			for (auto* on : { &Settings::bPlainApparelNeverWears, &Settings::bPowerArmorBar, &Settings::bSpareRepair, &Settings::bFridgeIcon, &Settings::bHudBarHidesWithCounter, &Settings::bHudBarStandsAlone, &Settings::bHudBarShowsWord, &Settings::bPowerArmorBarShowsWord, &Settings::bPickupBar, &Settings::bPickupBarShowsWord, &Settings::bTraceLogs }) {
+			for (auto* on : { &Settings::bPlainApparelNeverWears, &Settings::bPowerArmorBar, &Settings::bSpareRepair, &Settings::bRepairBoxColumns, &Settings::bFridgeIcon, &Settings::bHudBarHidesWithCounter, &Settings::bHudBarStandsAlone, &Settings::bHudBarShowsWord, &Settings::bPowerArmorBarShowsWord, &Settings::bPickupBar, &Settings::bPickupBarShowsWord, &Settings::bTraceLogs }) {
 				if (IsIdOf(*on, a_id)) {
 					return on;
 				}

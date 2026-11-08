@@ -1,3 +1,8 @@
+1.8.2
+v1.8.2 lines up the repair message boxes' rows in columns with each repair's gain by type, like +2 Damage, and an MCM switch turns them off. The perk chart no longer cuts off NEC's perk lines, and the Jams below MCM slider stays in view.
+
+OG/AE only
+
 1.8.1
 v1.8.1 swaps the Jamming switch for 2 MCM sliders: how often worn guns jam and how early. An MCM stepper picks the repair box's opening row, spare repairs name your Scrapper rank, and a dropped pile of broken gear scraps into 1 component each.
 

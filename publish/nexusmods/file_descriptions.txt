@@ -1,3 +1,8 @@
+1.9.0
+v1.9.0 adds a Papyrus API: functions to read and change the condition of any weapon, armor or food, the repair costs and the curves, and events for condition changes, breaks, jams and spoiled food. NEC's logs move to F4SE\NEC.
+
+OG/AE only
+
 1.8.2
 v1.8.2 lines up the repair message boxes' rows in columns with each repair's gain by type, like +2 Damage, and an MCM switch turns them off. The perk chart no longer cuts off NEC's perk lines, and the Jams below MCM slider stays in view.
 

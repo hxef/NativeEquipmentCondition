@@ -37,6 +37,9 @@ namespace FoodSpoil
 	// stack the player holds too reads as out of it.
 	[[nodiscard]] bool InFridge(const RE::TESObjectREFR* a_holder, const RE::ExtraDataList* a_extra);
 
+	// The stamp in a fridge of food stamped a_start outside one, on a_today.
+	[[nodiscard]] float Chill(float a_start, float a_today);
+
 	// The plain stamp of food stamped a_stamp in a fridge, on a_today.
 	[[nodiscard]] float Thaw(float a_stamp, float a_today);
 

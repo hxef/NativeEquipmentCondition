@@ -2,6 +2,7 @@
 
 #include "Core/Plugin.h"
 
+#include <cstdint>
 #include <optional>
 
 // Food that spoils with time, as in Fallout 76, on bFoodSpoils, off by
@@ -113,6 +114,35 @@ namespace FoodSpoil
 	// show with no container screen open.
 	[[nodiscard]] std::optional<float> FreshnessOf(const RE::TESBoundObject& a_object, RE::ExtraDataList* a_extra,
 		const RE::TESObjectREFR* a_holder);
+
+	// What a script reads and writes of food, see Papyrus/Food.cpp.
+
+	// a_form's kind as a number, whatever the switch says: -1 for anything
+	// that is not food, 0 never spoils, 1 raw, 2 crop, 3 cooked.
+	[[nodiscard]] std::int32_t KindNumber(const RE::TESForm& a_form);
+
+	// The game days food of a_form's kind keeps outside a fridge at the
+	// sliders as they stand, whatever the switch says. Nothing for food that
+	// never spoils and anything that is not food.
+	[[nodiscard]] std::optional<float> DaysFor(const RE::TESForm& a_form);
+
+	// The same as FreshnessOf, read at the fridge speed when a_fridge, with no
+	// screen asked, so a trade does not show the trader's food fresh. Under
+	// the lock that keeps a_extra.
+	[[nodiscard]] std::optional<float> StackFreshness(const RE::TESBoundObject& a_object, RE::ExtraDataList* a_extra, bool a_fridge);
+
+	// Stamps a_extra's food of a_object as far back as leaves it a_share of
+	// its time today, from above 0 to 1, with a fridge's own stamp when
+	// a_fridge. A spoiled stack and found food lose their health, so the
+	// stamp alone says how fresh it is. False before the game has a calendar.
+	bool SetFreshness(RE::ExtraDataList& a_extra, const RE::TESBoundObject& a_object, float a_share, bool a_fridge);
+
+	// Whether a_extra's food has spoiled, not only run out of time.
+	[[nodiscard]] bool IsSpoiled(RE::ExtraDataList* a_extra);
+
+	// Takes a_extra's stamp off and gives it the spoiled health, as running
+	// out of time does.
+	void Spoil(RE::ExtraDataList& a_extra);
 
 	// Whether food arriving in a_list starts to spoil there: the player's, a
 	// companion's or a dead body's.

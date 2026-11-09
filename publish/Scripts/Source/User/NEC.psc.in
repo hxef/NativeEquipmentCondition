@@ -1,0 +1,510 @@
+Scriptname NEC Native Hidden
+{The Papyrus API of Native Equipment Condition, for mods that read or change the condition of weapons, armor and food. Every function is global: call NEC.GetCondition(akItem).}
+
+; # What this is
+; NEC is the script Native Equipment Condition ships. Other mods call its functions to read and change the
+; condition of weapons and armor, the freshness of food, the repair costs and the curves, and hear its events.
+;
+; Compile against NEC.psc, which NEC installs in Data\Scripts\Source\User: keep that folder among your import
+; folders. Never ship a copy of NEC.pex or NEC.psc with your mod.
+;
+; GetVersion tells you which NEC.dll runs, GetScriptVersion which NEC.pex your game loaded.
+;
+; NEC.papyrus.log, in Documents\My Games\Fallout4\F4SE\NEC, logs the errors in a script's calls to NEC.
+;
+; # How an item is named
+; Every item function takes an ObjectReference akItem, and 3 things fit in it:
+; 1. An item lying in the world, as any reference to it.
+; 2. A persistent item inside a container or an inventory, such as a quest item or Self in a script on the item.
+; 3. A handle NEC gives you for 1 stack inside a container or an inventory, from GetItems, GetEquippedWeapon,
+;    GetWornItem or GetWornItems. Papyrus prints one as [ObjectReference <Item 2 in container  (00000014)>].
+;
+; A handle names 1 stack while a script variable holds it. It follows its stack into another container and back,
+; out into the world as that world item, and across a save and a load.
+;
+; Once no script holds it any more, the game takes the stack's number off within seconds, so ask GetItems again.
+;
+; Once the stack no longer exists, because it was consumed, scrapped or removed, a handle answers None, false or -1.
+; The game may later give that number to an item that arrives in the same container, so drop a handle you no longer
+; need.
+;
+; Identical new copies share 1 stack, so GetCount can be above 1. A write, a wear or a repair changes 1 copy of such
+; a stack: that copy splits off and your handle follows it. Call GetItems again for the rest.
+;
+; A pile lying in the world shares 1 condition between its copies, and a write changes all of them.
+;
+; # Units
+; Condition and freshness are a percent from 0 to 100, with decimals: the API gives 85.3 where the item card shows 85.
+; A new item reads 100. -1 means NEC gives this item no condition, or akItem is None or no longer exists.
+; The curve functions below, GetDamageShare to GetJamChance, answer a fraction from 0 to 1: the share of its damage a
+; weapon keeps, or the chance a magazine jams. Vanilla's GetItemHealthPercent is a fraction from 0 to 1 too, not a
+; percent.
+;
+; # Writes
+; A write works on gear NEC gives a condition, see IsTracked, and returns false for anything else. A write costs the
+; player nothing: no perk, workbench, component or caps are needed. If your mod should charge for a repair, work the
+; price out with the repair economics functions below.
+;
+; A write goes through even when the player turned wear off in MCM. Wear scales by NEC's wear rate sliders, the
+; other writes apply the value as given. An item on a list in NEC/Exclude is never written.
+;
+; After a write, the item card, the Pip-Boy row and a worn piece's protection follow, and the player's weapon
+; brought to 0 is put away as wear puts it away. An open bench or barter screen shows the change once it lists the
+; item again.
+;
+; # When a call runs
+; Every function but GetVersion, GetVersionString and GetScriptVersion is latent: it runs on the next Papyrus tick,
+; during play and while a menu pauses the game, and returns when its work is done. So a call takes about 1 frame,
+; and a script that calls in a loop advances 1 call per frame. The 3 version functions return at once.
+;
+; A call fails safely when the game locks that item's inventory for more than 5 ms, and during a save, a load or a
+; quit to the main menu: it answers as if the item no longer existed and writes nothing. NEC.papyrus.log records
+; each such call. A save made while a script was inside a call to NEC loads only with NEC installed, since without
+; NEC the game refuses it as corrupt.
+;
+; # Versions
+; 10900 is 1.9.0, the first NEC with this script.
+
+; # Functions
+
+; ## Version
+
+; The version of NEC.dll as 1 number, major times 10000 plus minor times 100 plus patch: 10900 for 1.9.0.
+int Function GetVersion() global native
+
+; The version of NEC.dll as text: "1.9.0".
+string Function GetVersionString() global native
+
+; The version this NEC.pex belongs to, equal to GetVersion when the DLL and NEC.pex come from 1 release.
+int Function GetScriptVersion() global
+    return ${NEC_VERSION_NUMBER}
+EndFunction
+
+; ## Features and settings
+
+; True when the NEC feature of this name runs: its NEC.ini switch is on and no other DLL took all of it. Names: see Feature names.
+bool Function IsFeatureOn(string asFeature) global native
+
+; True when another DLL took some or all of this feature, as NEC's main MCM page and NEC.log say.
+bool Function IsFeatureTakenOver(string asFeature) global native
+
+; A decimal setting by its MCM id, key:section, such as "fWearRateMult:Balance". 0.0 for an id NEC does not know.
+float Function GetSettingFloat(string asId) global native
+
+; A whole number setting by its MCM id, such as "iFreeMendAbove:Balance". 0 for an id NEC does not know.
+int Function GetSettingInt(string asId) global native
+
+; A switch by its MCM id, such as "bFoodSpoils:Features". False for an id NEC does not know.
+bool Function GetSettingBool(string asId) global native
+
+; ## Naming items
+
+; 1 handle per stack of akBase akHolder carries, akBase None for every weapon, armor and food NEC tracks. None for a
+; None holder or one whose inventory the game has not loaded.
+ObjectReference[] Function GetItems(ObjectReference akHolder, Form akBase) global native
+
+; A handle to the weapon in akActor's hands, None when they hold none NEC tracks.
+ObjectReference Function GetEquippedWeapon(Actor akActor) global native
+
+; A handle to the tracked piece akActor wears on biped slot aiSlot, 30 to 61, None when there is none.
+ObjectReference Function GetWornItem(Actor akActor, int aiSlot) global native
+
+; 1 handle per tracked piece akActor wears, an empty array for none or an actor in power armor.
+ObjectReference[] Function GetWornItems(Actor akActor) global native
+
+; The container or actor holding akItem, None for an item lying in the world.
+ObjectReference Function GetHolder(ObjectReference akItem) global native
+
+; The base form of akItem, its Weapon, Armor or Potion record.
+Form Function GetBase(ObjectReference akItem) global native
+
+; How many copies akItem's stack holds, 0 for None or an item that no longer exists.
+int Function GetCount(ObjectReference akItem) global native
+
+; ## Reading condition
+
+; True when NEC gives this weapon or armor a condition.
+bool Function IsTracked(Form akBase) global native
+
+; Why NEC gives akBase no condition, as NEC.log words it, such as "on a list in NEC/Exclude". "" when it does.
+string Function WhyNotTracked(Form akBase) global native
+
+; akItem's condition, a percent from 0 to 100, -1 when NEC gives it none.
+float Function GetCondition(ObjectReference akItem) global native
+
+; True when akItem is at 0 condition, so the game will not equip it.
+bool Function IsBroken(ObjectReference akItem) global native
+
+; True for loot lying in the world that rolls its condition when someone first takes or looks at it. It reads 100.
+bool Function IsUnrolled(ObjectReference akItem) global native
+
+; ## Changing condition
+
+; Sets akItem's condition to afPercent, kept between 0 and 100. True once the item is at that condition.
+bool Function SetCondition(ObjectReference akItem, float afPercent) global native
+
+; Takes afPercent points off akItem's condition, down to 0 at most. True once written.
+bool Function Damage(ObjectReference akItem, float afPercent) global native
+
+; Adds afPercent points to akItem's condition, up to 100 at most. True once written.
+bool Function Repair(ObjectReference akItem, float afPercent) global native
+
+; Wears akItem as afUses shots or swings would, armor as that many hits as hard as an ordinary weapon's, at NEC's rate.
+; The rate is this item's for its holder, wear rate sliders included.
+bool Function Wear(ObjectReference akItem, float afUses = 1.0) global native
+
+; Rolls unrolled loot lying in the world as the player's pickup would. False when it already rolled, while Worn loot
+; is off, or for a trader's or a faction's item, which rolls when it is taken.
+bool Function RollCondition(ObjectReference akItem) global native
+
+; ## Curves
+
+; The share of its damage a weapon keeps at afPercent, from 0 to 1, from fDamageFloor at 0 to 1 at fWeaponPenaltyStart times 100.
+float Function GetDamageShare(float afPercent) global native
+
+; The share of its protection a piece of armor keeps at afPercent, from fArmorFloor at 0 to 1 at fArmorPenaltyStart times 100.
+float Function GetArmorShare(float afPercent) global native
+
+; The share of its accuracy the gun akWeapon keeps at afPercent, 1 for anything that is not a gun.
+float Function GetAccuracyShare(Form akWeapon, float afPercent) global native
+
+; The share of its range the gun akWeapon keeps at afPercent, 1 for anything that is not a gun.
+float Function GetRangeShare(Form akWeapon, float afPercent) global native
+
+; The share of its fire rate the automatic weapon akWeapon keeps at afPercent, with its mods, 1 for any other.
+float Function GetFireRateShare(ObjectReference akWeapon, float afPercent) global native
+
+; The share of its critical meter charge a weapon keeps at afPercent, from fCritMeterFloor at 0 to 1 at fWeaponPenaltyStart times 100.
+float Function GetCritShare(float afPercent) global native
+
+; The share of its price an item keeps at afPercent, along fValueExponent.
+float Function GetPriceShare(float afPercent) global native
+
+; The chance a magazine of a gun at afPercent jams, from 0 to 1, 0 at fJamStart times 100 and above.
+float Function GetJamChance(float afPercent) global native
+
+; The condition points 1 Wear takes off akItem at its holder's wear speed, -1 for an untracked item.
+float Function GetWearPerUse(ObjectReference akItem) global native
+
+; ## Repair economics
+
+; The Free mend above setting: a repair of an item above this percent costs nothing at the bench.
+int Function GetFreeMendAbove() global native
+
+; The Mod lock below setting: the bench modifies no item below this percent.
+int Function GetModLockBelow() global native
+
+; How many percent the player's crafting perk rank takes off a bench repair of akBase, 0 to 50.
+int Function GetRepairDiscount(Form akBase) global native
+
+; 1 component of a bill and how many of it.
+Struct Cost
+    Component object
+    int count
+EndStruct
+
+; The components the bench would take from the player to bring akItem to aiToPercent, empty for a free mend, None when the bench would not repair it.
+Cost[] Function GetRepairCost(ObjectReference akItem, int aiToPercent) global native
+
+; The components akItem scraps into at the bench at its condition, with the player's perks.
+Cost[] Function GetScrapYield(ObjectReference akItem) global native
+
+; The condition points the player's spare akSpare restores to the player's akItem, -1 when it is no spare for it.
+int Function GetSpareGain(ObjectReference akItem, ObjectReference akSpare) global native
+
+; How far akTrader repairs akBase's kind of gear, a percent, 0 when they repair none of it.
+int Function GetTraderRepairLevel(Actor akTrader, Form akBase) global native
+
+; The caps akTrader asks to repair akItem to aiToPercent, -1 when they would not.
+int Function GetTraderRepairPrice(Actor akTrader, ObjectReference akItem, int aiToPercent) global native
+
+; ## Food
+
+; akFood's kind: -1 not food, 0 never spoils, 1 raw, 2 crop, 3 cooked.
+int Function GetFoodKind(Form akFood) global native
+
+; How many game days akFood stays fresh outside a fridge at the current settings, -1 for food that never spoils.
+float Function GetSpoilDays(Form akFood) global native
+
+; akItem's freshness, a percent, 0 once spoiled, -1 for food that never spoils or while food spoiling is off.
+float Function GetFreshness(ObjectReference akItem) global native
+
+; The game days until akItem spoils outside a fridge, 0 once spoiled, -1 where GetFreshness answers -1.
+float Function GetDaysLeft(ObjectReference akItem) global native
+
+; Sets the freshness of akItem's whole stack to afPercent, above 0 and up to 100. True once written.
+bool Function SetFreshness(ObjectReference akItem, float afPercent) global native
+
+; Turns akItem's whole stack spoiled, as running out of time does. True once written.
+bool Function Spoil(ObjectReference akItem) global native
+
+; True when akItem has spoiled or its time ran out.
+bool Function IsSpoiled(ObjectReference akItem) global native
+
+; True when food in akContainer keeps as in a fridge.
+bool Function IsFridge(ObjectReference akContainer) global native
+
+; ## Helpers
+; Plain Papyrus on the functions above, for the jobs most mods write themselves. Import NEC, or call them as
+; NEC.GetItemsBelow(...). Each takes 1 frame per item it touches, as the functions it calls do.
+
+; Shows "<name>: <condition>%" on screen, or "<name>: no condition" for an item NEC leaves alone.
+Function SayCondition(ObjectReference akItem) global
+    Form base = GetBase(akItem)
+    string name = "None"
+    If base != None
+        name = base.GetName()
+    EndIf
+    float condition = GetCondition(akItem)
+    If condition < 0.0
+        Debug.Notification(name + ": no condition")
+    Else
+        Debug.Notification(name + ": " + (condition as int) + "%")
+    EndIf
+EndFunction
+
+; Writes every item NEC tracks in akHolder to the Papyrus log, 1 line each: name, count, condition.
+Function TraceItems(ObjectReference akHolder) global
+    ObjectReference[] items = GetItems(akHolder, None)
+    If items == None
+        Debug.Trace("NEC: " + akHolder + " has no loaded inventory")
+        Return
+    EndIf
+    int i = 0
+    While i < items.Length
+        Form base = GetBase(items[i])
+        If base != None
+            Debug.Trace("NEC: " + base.GetName() + " x" + GetCount(items[i]) + " at " + GetCondition(items[i]) + "%")
+        EndIf
+        i += 1
+    EndWhile
+EndFunction
+
+; The items of akHolder below afPercent, worst first. Empty when there are none or the inventory is not loaded.
+ObjectReference[] Function GetItemsBelow(ObjectReference akHolder, float afPercent) global
+    ObjectReference[] out = new ObjectReference[0]
+    float[] conditions = new float[0]
+    ObjectReference[] items = GetItems(akHolder, None)
+    If items == None
+        Return out
+    EndIf
+    int i = 0
+    While i < items.Length
+        float condition = GetCondition(items[i])
+        If condition >= 0.0 && condition < afPercent
+            int at = 0
+            While at < conditions.Length && conditions[at] <= condition
+                at += 1
+            EndWhile
+            out.Insert(items[i], at)
+            conditions.Insert(condition, at)
+        EndIf
+        i += 1
+    EndWhile
+    Return out
+EndFunction
+
+; The items of akHolder at 0.
+ObjectReference[] Function GetBrokenItems(ObjectReference akHolder) global
+    ObjectReference[] out = new ObjectReference[0]
+    ObjectReference[] items = GetItems(akHolder, None)
+    If items == None
+        Return out
+    EndIf
+    int i = 0
+    While i < items.Length
+        If IsBroken(items[i])
+            out.Add(items[i])
+        EndIf
+        i += 1
+    EndWhile
+    Return out
+EndFunction
+
+; The worn piece of akActor with the lowest condition, None when nothing worn has one.
+ObjectReference Function GetWeakestWornItem(Actor akActor) global
+    ObjectReference[] worn = GetWornItems(akActor)
+    ObjectReference weakest = None
+    float lowest = 101.0
+    int i = 0
+    While worn != None && i < worn.Length
+        float condition = GetCondition(worn[i])
+        If condition >= 0.0 && condition < lowest
+            lowest = condition
+            weakest = worn[i]
+        EndIf
+        i += 1
+    EndWhile
+    Return weakest
+EndFunction
+
+; The condition of the weapon in akActor's hands, -1 for none.
+float Function GetEquippedWeaponCondition(Actor akActor) global
+    Return GetCondition(GetEquippedWeapon(akActor))
+EndFunction
+
+; The average condition of what akActor wears, -1 when nothing worn has one.
+float Function GetWornCondition(Actor akActor) global
+    ObjectReference[] worn = GetWornItems(akActor)
+    float sum = 0.0
+    int counted = 0
+    int i = 0
+    While worn != None && i < worn.Length
+        float condition = GetCondition(worn[i])
+        If condition >= 0.0
+            sum += condition
+            counted += 1
+        EndIf
+        i += 1
+    EndWhile
+    If counted == 0
+        Return -1.0
+    EndIf
+    Return sum / counted
+EndFunction
+
+; Repairs every item of akHolder below afTo up to it. How many it repaired.
+int Function RepairAll(ObjectReference akHolder, float afTo = 100.0) global
+    ObjectReference[] items = GetItemsBelow(akHolder, afTo)
+    int done = 0
+    int i = 0
+    While i < items.Length
+        If SetCondition(items[i], afTo)
+            done += 1
+        EndIf
+        i += 1
+    EndWhile
+    Return done
+EndFunction
+
+; Takes afPercent off every item NEC tracks in akHolder. How many it damaged.
+int Function DamageAll(ObjectReference akHolder, float afPercent) global
+    ObjectReference[] items = GetItems(akHolder, None)
+    int done = 0
+    int i = 0
+    While items != None && i < items.Length
+        If Damage(items[i], afPercent)
+            done += 1
+        EndIf
+        i += 1
+    EndWhile
+    Return done
+EndFunction
+
+; Wears every piece akActor wears by afUses uses, along NEC's armor curve. How many pieces it wore.
+int Function WearWorn(Actor akActor, float afUses = 1.0) global
+    ObjectReference[] worn = GetWornItems(akActor)
+    int done = 0
+    int i = 0
+    While worn != None && i < worn.Length
+        If Wear(worn[i], afUses)
+            done += 1
+        EndIf
+        i += 1
+    EndWhile
+    Return done
+EndFunction
+
+; Spoils every food in akContainer that is not spoiled yet. How many it spoiled.
+int Function SpoilAll(ObjectReference akContainer) global
+    ObjectReference[] items = GetItems(akContainer, None)
+    int done = 0
+    int i = 0
+    While items != None && i < items.Length
+        If GetFreshness(items[i]) >= 0.0 && !IsSpoiled(items[i]) && Spoil(items[i])
+            done += 1
+        EndIf
+        i += 1
+    EndWhile
+    Return done
+EndFunction
+
+; The spoiled food in akContainer.
+ObjectReference[] Function GetSpoiledFood(ObjectReference akContainer) global
+    ObjectReference[] out = new ObjectReference[0]
+    ObjectReference[] items = GetItems(akContainer, None)
+    int i = 0
+    While items != None && i < items.Length
+        If IsSpoiled(items[i])
+            out.Add(items[i])
+        EndIf
+        i += 1
+    EndWhile
+    Return out
+EndFunction
+
+; # Feature names
+; IsFeatureOn and IsFeatureTakenOver take the name of a feature that another DLL can take over, and
+; NEC_Papyrus_API.txt lists them. Armor wear has none: ask GetSettingFloat("fArmorWearRateMult:Balance"), 0 when the
+; player's armor never wears.
+
+; # Events
+; NEC sends its events through F4SE. Register once, in OnInit for example, and F4SE keeps the registration in its
+; own save: RegisterForExternalEvent("NEC:Broke", "OnNECBroke"). F4SE calls your Function by name, so declare it
+; with exactly these parameter types. akItem is a handle as GetItems gives, None when that stack no longer exists by then.
+;
+; Most events reach you within about 1 frame. One from a loot roll or a food arrival waits for NEC's next shot, hit,
+; menu or call to any NEC function but GetScriptVersion. One whose holder's inventory the game holds is tried again
+; at each of them. After at least 2 s and 100 tries it comes with akItem None. Events of 1 holder come in the order
+; they happened. None comes during a save load, and a load that fails can lose the events waiting then.
+;
+; If more than 256 events wait, NEC drops the newest and NEC.papyrus.log counts them.
+;
+; Event NEC:ConditionChanged
+; Function OnConditionChanged(ObjectReference akHolder, Form akBase, ObjectReference akItem, float afBefore, float afAfter, int aiCause)
+; The condition of an item the player carries changed. aiCause: 0 wear, 1 repair, 2 a script, 3 the loot roll of an item that
+; reaches you still unrolled (afBefore 100), 4 the console.
+;
+; Event NEC:Broke
+; Function OnBroke(ObjectReference akHolder, Form akBase, ObjectReference akItem)
+; A weapon or a piece of armor reached 0 condition, anybody's. akHolder is None for an item lying in the world.
+;
+; Event NEC:Jammed
+; Function OnJammed(Actor akActor, Form akWeapon, ObjectReference akItem)
+; The player's gun jammed.
+;
+; Event NEC:FoodSpoiled
+; Function OnFoodSpoiled(ObjectReference akHolder, Form akFood, int aiCount)
+; aiCount pieces of akFood were turned spoiled, in anybody's inventory or container. NEC does this as a menu shows the
+; food or the food changes hands, so IsSpoiled can answer true before the event comes.
+
+; # Examples
+; Read the condition of the weapon in the player's hands:
+;
+;   Function SayWeaponCondition() global
+;       ObjectReference item = NEC.GetEquippedWeapon(Game.GetPlayer())
+;       If item != None
+;           Debug.Notification("Weapon condition " + NEC.GetCondition(item))
+;       EndIf
+;   EndFunction
+;
+; Repair every weapon and piece of armor a container holds:
+;
+;   Function RepairEveryCopy(ObjectReference akContainer) global
+;       ObjectReference[] items = NEC.GetItems(akContainer, None)
+;       If items == None
+;           Return
+;       EndIf
+;       int index = 0
+;       While index < items.Length
+;           float condition = NEC.GetCondition(items[index])
+;           If condition >= 0.0 && condition < 100.0
+;               NEC.SetCondition(items[index], 100.0)
+;           EndIf
+;           index += 1
+;       EndWhile
+;   EndFunction
+;
+; React to NEC:Broke, in a quest script:
+;
+;   Scriptname MyBrokeWatcher extends Quest
+;
+;   Event OnInit()
+;       RegisterForExternalEvent("NEC:Broke", "OnNECBroke")
+;   EndEvent
+;
+;   Function OnNECBroke(ObjectReference akHolder, Form akBase, ObjectReference akItem)
+;       If akHolder == Game.GetPlayer()
+;           Debug.Notification("Something you carry broke")
+;       EndIf
+;   EndFunction

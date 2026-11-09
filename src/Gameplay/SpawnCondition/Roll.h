@@ -28,9 +28,11 @@ namespace SpawnCondition
 
 	// Roll for a_count copies on their way in as 1 stack, before the stack
 	// is built, with a_extra the list it will hold. a_private says nothing
-	// else holds them, as Private does for a stack.
+	// else holds them, as Private does for a stack. a_looked says a_extra is
+	// a world item's own list that the player only looked at, with a_list
+	// standing in for the holder, so no script hears of the roll.
 	std::optional<Aim> Roll(RE::BGSInventoryList* a_list, RE::TESBoundObject* a_object, RE::ExtraDataList* a_extra, std::uint32_t a_count,
-		bool a_private);
+		bool a_private, bool a_looked = false);
 
 	// Gives every item in a stack that arrived several at once a
 	// condition of its own. Roll gave the whole stack one condition between

@@ -2,6 +2,7 @@
 
 #include "Core/Snapshot.h"
 #include "Gameplay/FoodSpoil/Food.h"
+#include "Gameplay/FoodSpoil/FoodSpoil.h"
 
 #include <algorithm>
 #include <array>
@@ -9,6 +10,7 @@
 #include <cstdint>
 #include <format>
 #include <memory>
+#include <optional>
 #include <unordered_map>
 #include <utility>
 #include <vector>
@@ -184,10 +186,22 @@ namespace FoodSpoil
 		// The table
 		// -------------------------------------------------------------------
 
-		// Every food that spoils, sorted by form ID, read from other threads.
+		// Every food, sorted by form ID, read from other threads. Food that
+		// never spoils is kept too, so a script can tell it from what is not
+		// food.
 		using Table = std::vector<std::pair<RE::TESFormID, Kind>>;
 
 		Snapshot<Table> g_table;
+
+		std::optional<Kind> Find(const RE::TESForm& a_form)
+		{
+			const auto table = g_table.Get();
+			if (!table) {
+				return std::nullopt;
+			}
+			const auto at = std::ranges::lower_bound(*table, a_form.formID, {}, &Table::value_type::first);
+			return at != table->end() && at->first == a_form.formID ? std::optional{ at->second } : std::nullopt;
+		}
 	}
 
 	void LoadKinds()
@@ -201,10 +215,9 @@ namespace FoodSpoil
 		NoteFoods(kinds);
 
 		Table table;
+		table.reserve(kinds.size());
 		for (const auto& [id, food] : kinds) {
-			if (food.kind != Kind::kNever) {
-				table.emplace_back(id, food.kind);
-			}
+			table.emplace_back(id, food.kind);
 		}
 		std::ranges::sort(table);
 		g_table.Publish(std::make_shared<const Table>(std::move(table)));
@@ -217,11 +230,12 @@ namespace FoodSpoil
 
 	Kind KindOf(const RE::TESForm& a_form)
 	{
-		const auto table = g_table.Get();
-		if (!table) {
-			return Kind::kNever;
-		}
-		const auto at = std::ranges::lower_bound(*table, a_form.formID, {}, &Table::value_type::first);
-		return at != table->end() && at->first == a_form.formID ? at->second : Kind::kNever;
+		return Find(a_form).value_or(Kind::kNever);
+	}
+
+	std::int32_t KindNumber(const RE::TESForm& a_form)
+	{
+		const auto kind = Find(a_form);
+		return kind ? static_cast<std::int32_t>(*kind) : -1;
 	}
 }

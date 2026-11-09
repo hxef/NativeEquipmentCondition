@@ -8,21 +8,22 @@
 #include <string_view>
 #include <utility>
 
-// 4 more log files, for lines that arrive in floods: one per shot, per hit and
+// 5 more log files, for lines that arrive in floods: one per shot, per hit and
 // per item spawned, thousands a minute in a fight. NEC.log keeps what was
 // patched and what went wrong. The rest goes to:
 //
-//   NEC.trace.log       the player's game: shots, wear, damage, spawns
-//   NEC.ui.trace.log    the menus: what was drawn, where, from what
-//   NEC.npc.trace.log   everybody else's fighting
-//   NEC.food.trace.log  food spoiling: stacks stamped, spoiled and eaten
+//   NEC.trace.log          the player's game: shots, wear, damage, spawns
+//   NEC.ui.trace.log       the menus: what was drawn, where, from what
+//   NEC.npc.trace.log      everybody else's fighting
+//   NEC.food.trace.log     food spoiling: stacks stamped, spoiled and eaten
+//   NEC.papyrus.trace.log  the calls and events of the script NEC
 //
-// All 5 sit in Documents\My Games\<save folder>\F4SE, see LogFiles.h.
-// bTraceLogs switches the 4 on together, see Settings.h. Anything that can
+// All 6 sit in Documents\My Games\<save folder>\F4SE\NEC, see LogFiles.h.
+// bTraceLogs switches the 5 on together, see Settings.h. Anything that can
 // happen more than once in a session goes here, not in NEC.log. UI_TAGS and
-// FOOD_TAG decide between the first 2 files and the food file. The NPC file is
-// asked for by name through Npc below, since a damage line reads the same
-// whoever struck the blow.
+// FOOD_TAG decide between the first 2 files and the food file. The NPC file
+// and the Papyrus file are asked for by name through Npc and Papyrus below,
+// since a damage line reads the same whoever struck the blow.
 //
 // A file reads as blocks. A header line with a tag in capitals opens one, SHOT
 // or MELEE, with the clock time and the thread. The lines below carry a
@@ -35,15 +36,15 @@
 //
 // A line with no block open becomes a header of its own. A line names its
 // thread only when it differs from the header's. Each Mark opens a block in
-// all 4 files at once: the plugin starting, the main menu, a save loading
+// all 5 files at once: the plugin starting, the main menu, a save loading
 // and loaded, a new game, a full reset and every file loaded.
 namespace TraceLog
 {
-	// Opens the 4 files beside NEC.log when bTraceLogs is on. Call it after
+	// Opens the 5 files beside NEC.log when bTraceLogs is on. Call it after
 	// LogFiles::OpenMain, which opens NEC.log.
 	void Open();
 
-	// Lets lines through to the 4 files, or stops them. The files open the
+	// Lets lines through to the 5 files, or stops them. The files open the
 	// first time and stay open, since another thread may be part way into a
 	// line. Open calls it with bTraceLogs as the game starts.
 	void Switch(bool a_on);
@@ -90,13 +91,14 @@ namespace TraceLog
 
 	namespace detail
 	{
-		// Which of the 4 files a line goes to.
+		// Which of the 5 files a line goes to.
 		enum class Target
 		{
 			kGame,
 			kUI,
 			kNpc,
 			kFood,
+			kPapyrus,
 		};
 
 		// Where a tag's lines go when nobody asked for the NPC file.
@@ -180,46 +182,54 @@ namespace TraceLog
 		}
 	}
 
-	// Opens a block in all 4 files at once. Every line First wrote may come
+	// Opens a block in all 5 files at once. Every line First wrote may come
 	// again after it.
 	template <class... T>
 	void Mark(std::string_view a_tag, std::format_string<T...> a_fmt, T&&... a_args)
 	{
 		if (IsOpen()) {
 			const auto text = std::format(a_fmt, std::forward<T>(a_args)...);
-			detail::Mark(detail::Target::kGame, a_tag, text);
-			detail::Mark(detail::Target::kUI, a_tag, text);
-			detail::Mark(detail::Target::kNpc, a_tag, text);
-			detail::Mark(detail::Target::kFood, a_tag, text);
+			using enum detail::Target;
+			for (const auto target : { kGame, kUI, kNpc, kFood, kPapyrus }) {
+				detail::Mark(target, a_tag, text);
+			}
 		}
+	}
+
+	namespace detail
+	{
+		// The lines of 1 file that is asked for by name. Quiet says QUIET
+		// applies to it.
+		template <Target File, bool Quiet>
+		struct Named
+		{
+			template <class... T>
+			static void Begin(std::string_view a_tag, std::format_string<T...> a_fmt, T&&... a_args)
+			{
+				if (IsOpen()) {
+					detail::Begin(File, a_tag, std::format(a_fmt, std::forward<T>(a_args)...));
+				}
+			}
+
+			template <class... T>
+			static void Line(std::string_view a_tag, std::format_string<T...> a_fmt, T&&... a_args)
+			{
+				if ((!Quiet || Wanted(a_tag)) && IsOpen()) {
+					detail::Line(File, a_tag, std::format(a_fmt, std::forward<T>(a_args)...));
+				}
+			}
+
+			// How many blocks this file has opened. 2 lines with the same
+			// count are in the same block.
+			[[nodiscard]] static std::uint32_t Blocks() { return detail::Blocks(File); }
+		};
 	}
 
 	// The same for NEC.npc.trace.log. QUIET applies here too.
-	namespace Npc
-	{
-		template <class... T>
-		void Begin(std::string_view a_tag, std::format_string<T...> a_fmt, T&&... a_args)
-		{
-			if (IsOpen()) {
-				detail::Begin(detail::Target::kNpc, a_tag, std::format(a_fmt, std::forward<T>(a_args)...));
-			}
-		}
+	using Npc = detail::Named<detail::Target::kNpc, true>;
 
-		template <class... T>
-		void Line(std::string_view a_tag, std::format_string<T...> a_fmt, T&&... a_args)
-		{
-			if (Wanted(a_tag) && IsOpen()) {
-				detail::Line(detail::Target::kNpc, a_tag, std::format(a_fmt, std::forward<T>(a_args)...));
-			}
-		}
-
-		// How many blocks this file has opened. 2 lines with the same count are
-		// in the same block.
-		[[nodiscard]] inline std::uint32_t Blocks()
-		{
-			return detail::Blocks(detail::Target::kNpc);
-		}
-	}
+	// The same for NEC.papyrus.trace.log, 1 block per call of a script.
+	using Papyrus = detail::Named<detail::Target::kPapyrus, false>;
 
 	// The files a line about somebody's item goes to: the NPC file for theirs,
 	// the player's files for the player's own. For a reader both share, so it
@@ -271,15 +281,7 @@ namespace TraceLog
 	// A damage type in a line. It has no name, and the game keeps no editor
 	// ID for most forms unless another DLL mod keeps them. The resistance it
 	// is checked against keeps its own, such as EnergyResist.
-	[[nodiscard]] inline std::string_view TypeName(const RE::BGSDamageType& a_type)
-	{
-		const char* own = a_type.GetFormEditorID();
-		if (own && *own) {
-			return own;
-		}
-		const char* resistance = a_type.data.resistance ? a_type.data.resistance->GetFormEditorIDString().c_str() : nullptr;
-		return resistance && *resistance ? resistance : "a damage type";
-	}
+	[[nodiscard]] std::string_view TypeName(const RE::BGSDamageType& a_type);
 }
 
 // Lets a TraceLog::Who stand in a format string wherever a name would.

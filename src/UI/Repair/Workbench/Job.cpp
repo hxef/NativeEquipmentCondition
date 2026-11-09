@@ -268,7 +268,7 @@ namespace Workbench
 
 		// The stack the bench shows, by its number, see Restore.h.
 		RE::BGSInventoryItem::CheckStackIDFunctor find{ selection.stack };
-		Restore::Write(*player, *selection.object, find, level);
+		Restore::Write(*player, *selection.object, find, level, ScriptEvents::Cause::kRepair);
 
 		const auto paid = PayExperience(*player);
 

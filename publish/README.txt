@@ -27,10 +27,11 @@ Worn gear can't be modded until it is repaired to full, so swapping in cheap
 mods can't cut the repair bill. The "Mod lock below" slider in MCM eases
 this or turns it off.
 
-Done natively, in one F4SE plugin: no ESP, no scripts, no new assets besides
-an optional MCM page. It reads weapons, armor, recipes, perks, leveled lists
-and game settings from your load order as the game loads, for easier
-compatibility with other mods, including ones that add new gear.
+Done natively, in one F4SE plugin: no ESP and no new assets besides an
+optional MCM page and a Papyrus API script for modders. It reads
+weapons, armor, recipes, perks, leveled lists and game settings from your load
+order as the game loads, for easier compatibility with other mods, including
+ones that add new gear.
 
 WEAR AND TEAR
 Weapons:
@@ -280,7 +281,7 @@ REQUIREMENTS
   https://www.nexusmods.com/fallout4/mods/21497
 
 INSTALLATION
-Install with your mod manager, or copy the F4SE and MCM folders into
+Install with your mod manager, or copy the F4SE, MCM and Scripts folders into
 Fallout 4's Data folder. Launch the game through F4SE.
 
 NEC.pdb, beside NEC.dll, is only there for crash logs. The game itself never
@@ -311,6 +312,12 @@ save. On anything but power armor the game ignores it for damage, protection
 and price, so what is left behind does nothing there, except that identical
 items at different conditions stay in separate stacks in your inventory.
 
+A save made without any mod calling NEC's Papyrus API holds no trace of it.
+Once a mod that uses NEC's Papyrus API has run in your save, keep NEC
+installed for that playthrough: without it that mod's calls fail on every
+load, and taking that mod's plugin, its ESP, ESM or ESL, out of a running
+playthrough is never safe.
+
 FOUND A BUG?
 If a feature seems to do nothing, another DLL mod may have taken it over. Load
 a save, then look at NEC's main page in MCM. It names that mod.
@@ -325,17 +332,34 @@ For anything else, share NEC's logs:
        sLogLevel=debug
        bTraceLogs=true
 2. Play until the bug happens again.
-3. Open the folder Documents\My Games\Fallout4\F4SE and share these files:
+3. Open the folder Documents\My Games\Fallout4\F4SE\NEC and share these
+   files:
    * NEC.log, NEC.trace.log, NEC.ui.trace.log, NEC.npc.trace.log and
      NEC.food.trace.log, and NEC.food.log with food spoiling on.
-   * If the game crashed and you started it again, also the 5 files with a
+   * NEC.papyrus.log and NEC.papyrus.trace.log, for a problem with a mod
+     that uses NEC's Papyrus API.
+   * If the game crashed and you started it again, also the files with a
      1 in the name, like NEC.1.log. They are from the game that crashed.
      NEC keeps your last 10 games this way, and a higher number is older.
    * The crash log, if the game crashed, like
-     crash-2026-10-01-21-15-31.log from Addictol
+     crash-2026-10-01-21-15-31.log from Addictol, 1 folder up in
+     Documents\My Games\Fallout4\F4SE
 4. Say what you did right before it went wrong, and post it all on the Bugs
    tab of the mod's Nexus Mods page or as an issue on GitHub (link below).
 5. Switch the full logs off again. They get big fast.
+
+PAPYRUS API
+* NEC ships a Papyrus script that your mod can call to read and change the
+  condition of any weapon, armor or food, read the repair costs and the
+  curves, and hear when condition changes, an item breaks, a gun jams or food
+  spoils.
+* Every function is global, so a call reads NEC.GetCondition(akItem), and it
+  works the same on OG and AE.
+* NEC_Papyrus_API.txt in Data\F4SE\Plugins lists every function and event
+  with some examples, the same text as the Papyrus API article on the mod's
+  Nexus Mods page.
+* Compile against NEC.psc in Data\Scripts\Source\User, and never ship NEC.pex
+  or NEC.psc with your mod.
 
 SOURCE CODE
 NEC is open source under the GPL 3.0 license. Browse the code, report a bug or

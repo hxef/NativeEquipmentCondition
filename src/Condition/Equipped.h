@@ -25,6 +25,10 @@
 // fusion core's charge: one item goes into a stack of its own with a copy of
 // the list and the equipped flags, and the rest keep the condition they had.
 // The 2 stay apart, since the engine only merges stacks whose lists match.
+//
+// The copy takes the stack's unique ID with the list, see UniqueID.h, so a
+// script's handle to the stack would then name 2 stacks. The writers keep it
+// on the written copy alone, which a script's handle follows.
 namespace Equipped
 {
 	// Any stack of the item: the all ones value the engine passes when it has
@@ -136,6 +140,24 @@ namespace Equipped
 		std::uint32_t count{ 0 };
 	};
 
+	// Picks the stack whose list is a_extra, as the fork's
+	// CheckExtraDataFunctor compares, from a list kept since an earlier look.
+	// A stack's number moves when a stack before it goes, and its list never
+	// does.
+	class ListStack final :
+		public RE::BGSInventoryItem::StackDataCompareFunctor
+	{
+	public:
+		explicit ListStack(const RE::ExtraDataList* a_extra) noexcept :
+			extra(a_extra)
+		{}
+
+		bool CompareData(const RE::BGSInventoryItem::Stack& a_stack) override { return a_stack.extra.get() == extra; }
+
+	private:
+		const RE::ExtraDataList* extra;
+	};
+
 	// Wears down the 1 stack the engine hands it by amount, and remembers
 	// whether the health moved and whether that broke the item. The writer's
 	// compare functor sets amount on the stack it picks, and picks none when
@@ -163,6 +185,36 @@ namespace Equipped
 		bool        broke{ false };
 	};
 
+	// What WriteStack wrote.
+	struct Written
+	{
+		// The list of the stack a_write was handed, the split off copy after a
+		// split. Null when a_find picked no stack. Good only while the caller
+		// holds the inventory lock, so it is never kept.
+		const RE::ExtraDataList* list{ nullptr };
+		// The same list, held, so its address names no other list while an
+		// event about the write waits, see ScriptEvents.h. Let go with the
+		// lock held or not: the stack still holds the list then, unless the
+		// engine merged the copy back and the list is nobody else's.
+		RE::BSTSmartPointer<RE::ExtraDataList> held;
+
+		// The health before and after, as HealthOf reads it.
+		float before{ Condition::INVALID_HEALTH };
+		float after{ Condition::INVALID_HEALTH };
+
+		// How many copies the picked stack held before the split.
+		std::uint32_t count{ 0 };
+
+		bool split{ false };
+
+		// Whether the copy left behind lost the unique ID it shared with the
+		// written one.
+		bool cleared{ false };
+
+		// Whether the written stack is equipped.
+		bool equipped{ false };
+	};
+
 	// Runs a_write on the one stack of a_object in a_owner's inventory that
 	// a_find picks, and on one copy of it alone, see above. The engine finds
 	// the entry, asks a_find which stack, splits off one copy with the equipped
@@ -171,6 +223,6 @@ namespace Equipped
 	// inventory lock the engine takes as a reader. A caller may already hold
 	// it as a writer, see Copy.h. When a_find picks no stack, nothing is
 	// written and the game is told nothing.
-	void WriteStack(RE::TESObjectREFR& a_owner, RE::TESBoundObject& a_object,
+	Written WriteStack(RE::TESObjectREFR& a_owner, RE::TESBoundObject& a_object,
 		RE::BGSInventoryItem::StackDataCompareFunctor& a_find, RE::BGSInventoryItem::StackDataWriteFunctor& a_write);
 }

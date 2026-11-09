@@ -6,7 +6,9 @@
 
 #include <algorithm>
 #include <format>
+#include <optional>
 #include <utility>
+#include <vector>
 
 namespace Workbench
 {
@@ -43,6 +45,18 @@ namespace Workbench
 
 	Priced PriceOf(const Selection& a_selection)
 	{
+		if (!a_selection.object) {
+			return {};
+		}
+		// The scrap lists are read first, so an item a script added to one
+		// since the last loading screen is priced as the bench would scrap it.
+		Materials::ReadScrapLists();
+		TraceLog::Line("menu", "Workbench read the scrap lists to price {:s}", a_selection.Name());
+		return PriceAsLastRead(a_selection);
+	}
+
+	Priced PriceAsLastRead(const Selection& a_selection)
+	{
 		Priced out;
 		if (!a_selection.object) {
 			return out;
@@ -50,11 +64,7 @@ namespace Workbench
 
 		// Its own scrap recipe, or the recipe it borrows, plus the recipe
 		// behind every mod, see Materials.h, so the bill reads as a smaller
-		// copy of the item. The scrap lists are read first, so an item a
-		// script added to one since the last loading screen is priced as the
-		// bench would scrap it.
-		Materials::ReadScrapLists();
-		TraceLog::Line("menu", "Workbench read the scrap lists to price {:s}", a_selection.Name());
+		// copy of the item.
 		const auto bill = Materials::BillOfLines(*a_selection.object, a_selection.extra);
 		out.built = Materials::BillOfParts(bill);
 		out.standing = CraftingPerks::Of(*a_selection.object, a_selection.extra, bill);
@@ -103,6 +113,28 @@ namespace Workbench
 			return a_lhs.count != a_rhs.count ? a_lhs.count > a_rhs.count : place(a_lhs) < place(a_rhs);
 		});
 		return out;
+	}
+
+	std::optional<std::vector<Materials::Part>> BillFor(RE::TESBoundObject& a_object, const RE::ExtraDataList* a_extra,
+		std::uint32_t a_from, std::uint32_t a_to)
+	{
+		Selection selection;
+		selection.object = &a_object;
+		selection.extra = a_extra;
+		selection.percent = a_from;
+		selection.kind = Condition::KindOf(a_object);
+		if (!Repairs() || !selection.Worn() || a_to <= a_from) {
+			return std::nullopt;
+		}
+		// MEND brings the item to full for nothing, whatever the level.
+		if (selection.Trifling()) {
+			return std::vector<Materials::Part>{};
+		}
+		const auto priced = PriceAsLastRead(selection);
+		if (priced.units == 0) {
+			return std::nullopt;
+		}
+		return CostOf(priced, a_from, std::min(a_to, Repair::FULL));
 	}
 
 	std::vector<std::uint32_t> Above(const Selection& a_selection)

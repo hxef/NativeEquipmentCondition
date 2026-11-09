@@ -37,10 +37,6 @@ namespace Mcm
 	void SetFloat(const Params& a_params, std::string_view a_id);
 	void GetFullName(const Params& a_params, std::string_view a_id);
 
-	// Whether a_id is a_setting's id on the page, its key and section as in
-	// bSpawnCondition:Features, in Bridge.cpp.
-	[[nodiscard]] bool IsIdOf(const Settings::Named& a_setting, std::string_view a_id);
-
 	// What the hidden switches of the page's grey rows and of the Jams below
 	// row say, and what those grey rows read, in Notes.cpp. a_id is
 	// parts:Note, bSpawnCondition:Free, bSpawnCondition:Note,

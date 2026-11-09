@@ -111,7 +111,7 @@ namespace Mcm
 		// A slider by its id, fHudBarX:HUD.
 		[[nodiscard]] const Settings::Live<float>* SettingOf(std::string_view a_id)
 		{
-			const auto it = std::ranges::find_if(SETTINGS, [&](const auto* a_setting) { return IsIdOf(*a_setting, a_id); });
+			const auto it = std::ranges::find_if(SETTINGS, [&](const auto* a_setting) { return Settings::IsIdOf(*a_setting, a_id); });
 			return it != SETTINGS.end() ? *it : nullptr;
 		}
 

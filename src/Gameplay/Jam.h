@@ -51,4 +51,7 @@ namespace Jam
 	// Whether guns can jam at all, false while fJamChance or fJamStart is 0.
 	// The loading tip about jams asks it too.
 	[[nodiscard]] bool Jams();
+
+	// The chance that a magazine of a gun at a_health jams, 0 to 1.
+	[[nodiscard]] float ChancePerMagazine(float a_health);
 }

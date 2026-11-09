@@ -34,7 +34,7 @@ If you want to redirect the build output, set one of the following environment v
 or
 - Path to a Fallout 4 install folder: `XSE_FO4_GAME_PATH`
 
-To copy the DLL, the PDB, `NEC.ini`, the language files and the MCM `config.json` into a mod folder after every build instead, point `deploy_dir` at it once:
+To copy the DLL, the PDB, `NEC.ini`, `NEC_Papyrus_API.txt`, the language files, the MCM `config.json` and `NEC.pex` into a mod folder after every build instead, point `deploy_dir` at it once:
 ```bat
 xmake f --deploy_dir="C:/MO2/mods/Native Equipment Condition"
 ```

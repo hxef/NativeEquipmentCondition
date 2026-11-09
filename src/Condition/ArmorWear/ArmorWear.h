@@ -88,4 +88,10 @@ namespace ArmorWear
 	// Returns true when the health changed. Call it without holding the
 	// inventory lock, see ItemCards.h.
 	bool Wear(RE::Actor& a_owner, RE::TESObjectARMO& a_armor, float a_damage, const char* a_source, bool a_theirs);
+
+	// What 1 hit as hard as the ordinary weapon's costs the copy whose list is
+	// a_extra, at the player's rate or with a_theirs at an NPC's, the wear
+	// rate sliders included. Read it under the inventory lock that keeps
+	// a_extra.
+	float PerHit(const RE::TESObjectARMO& a_armor, const RE::ExtraDataList* a_extra, bool a_theirs);
 }

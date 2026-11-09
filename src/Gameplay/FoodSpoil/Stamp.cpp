@@ -1,6 +1,7 @@
 #include "Gameplay/FoodSpoil/Stamp.h"
 
 #include "Condition/Condition.h"
+#include "Core/ScriptEvents.h"
 #include "Core/Settings.h"
 #include "Core/TraceLog.h"
 #include "Gameplay/FoodSpoil/Food.h"
@@ -174,8 +175,10 @@ namespace FoodSpoil
 	{
 		// What FreshnessOf reads, where a_inFridge says whether the food sits in
 		// a fridge. It is asked last, since it searches the fridge's stacks.
+		// a_trade says whether an open trade shows the trader's food fresh.
 		template <class FridgeCheck>
-		std::optional<float> ReadFreshness(const RE::TESBoundObject& a_object, RE::ExtraDataList* a_extra, FridgeCheck a_inFridge)
+		std::optional<float> ReadFreshness(const RE::TESBoundObject& a_object, RE::ExtraDataList* a_extra, FridgeCheck a_inFridge,
+			bool a_trade = true)
 		{
 			if (!Spoils(a_object)) {
 				return std::nullopt;
@@ -185,7 +188,7 @@ namespace FoodSpoil
 				return IsSpoiled(a_extra) ? 0.0F : 1.0F;
 			}
 			// A trade shows the trader's food fresh, as buying starts it so.
-			if (RE::TESDataHandler::GetBarterContainer() && !StampOf(a_extra) && !IsSpoiled(a_extra)) {
+			if (a_trade && RE::TESDataHandler::GetBarterContainer() && !StampOf(a_extra) && !IsSpoiled(a_extra)) {
 				return 1.0F;
 			}
 			return std::max(0.0F, FreshnessIn(KindOf(a_object), a_extra, a_inFridge(), *today));
@@ -200,6 +203,35 @@ namespace FoodSpoil
 	std::optional<float> FreshnessOf(const RE::TESBoundObject& a_object, RE::ExtraDataList* a_extra, const RE::TESObjectREFR* a_holder)
 	{
 		return ReadFreshness(a_object, a_extra, [&] { return InFridge(a_holder, a_extra); });
+	}
+
+	// -------------------------------------------------------------------
+	// What a script reads and writes
+	// -------------------------------------------------------------------
+
+	std::optional<float> DaysFor(const RE::TESForm& a_form)
+	{
+		const auto kind = KindOf(a_form);
+		return kind == Kind::kNever ? std::nullopt : std::optional{ DaysOf(kind) };
+	}
+
+	std::optional<float> StackFreshness(const RE::TESBoundObject& a_object, RE::ExtraDataList* a_extra, bool a_fridge)
+	{
+		return ReadFreshness(a_object, a_extra, [a_fridge] { return a_fridge; }, false);
+	}
+
+	bool SetFreshness(RE::ExtraDataList& a_extra, const RE::TESBoundObject& a_object, float a_share, bool a_fridge)
+	{
+		const auto today = Today();
+		if (!today) {
+			return false;
+		}
+		const auto start = *today - (1.0F - std::clamp(a_share, 0.0F, 1.0F)) * DaysOf(KindOf(a_object));
+		Stamp(a_extra, a_fridge ? Chill(start, *today) : start);
+		if (a_extra.GetHealthPerc() >= 0.0F) {
+			a_extra.SetHealthPerc(Condition::INVALID_HEALTH);
+		}
+		return true;
 	}
 
 	// -------------------------------------------------------------------
@@ -238,6 +270,9 @@ namespace FoodSpoil
 			Spoil(*extra);
 			TraceLog::Line("food", "{:s} [{:08X}] x{:d} spoiled as it arrived, stamped on day {:.3f}, today is {:.3f}",
 				RE::TESFullName::GetFullName(a_object), a_object.formID, a_stack.count, start, *today);
+			// Under AddStack's inventory lock, so the event waits for NEC's
+			// next kick, see ScriptEvents.h.
+			ScriptEvents::Spoiled(a_list.owner.get().get(), a_object, a_stack.count);
 			return false;
 		}
 

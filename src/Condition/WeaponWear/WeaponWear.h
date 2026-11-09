@@ -42,6 +42,16 @@ namespace WeaponWear
 	// without holding the inventory lock, see ItemCards.h.
 	bool Wear(RE::TESObjectREFR& a_owner, RE::TESObjectWEAP& a_weapon, const char* a_source, float a_scale = 1.0F);
 
+	// What 1 shot or swing costs the copy whose list is a_extra, at the
+	// player's rate or with a_theirs at an NPC's, the wear rate sliders
+	// included. Read it under the inventory lock that keeps a_extra.
+	float PerUse(const RE::TESObjectWEAP& a_weapon, const RE::ExtraDataList* a_extra, bool a_theirs);
+
+	// Takes a_weapon, worn to 0, out of a_owner's hands, with the break
+	// message for the player, as the shot that breaks it does. Call it from
+	// F4SE's task queue, holding no lock.
+	void PutAwayNow(RE::Actor& a_owner, RE::TESObjectWEAP& a_weapon);
+
 	// The a_source of a bash, which fAutoWearRateMult leaves alone.
 	inline constexpr const char* BASH = "bash";
 

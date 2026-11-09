@@ -1,5 +1,6 @@
 #include "Gameplay/FoodSpoil/Food.h"
 
+#include "Core/ScriptEvents.h"
 #include "Core/Settings.h"
 #include "Core/TraceLog.h"
 #include "Gameplay/FoodSpoil/FoodSpoil.h"
@@ -109,6 +110,7 @@ namespace FoodSpoil
 					if (i == 0) {
 						written.push_back(object);
 					}
+					ScriptEvents::Spoiled(&a_ref, *object, spoil.pieces);
 					TraceLog::Line("food", "{:s} [{:08X}] x{:d} spoiled in the inventory of [{:08X}]",
 						RE::TESFullName::GetFullName(*object), object->formID, spoil.pieces, a_ref.formID);
 				}
@@ -211,6 +213,7 @@ namespace FoodSpoil
 						if (const auto other = OtherSide(screen)) {
 							Sweep(*other, *today);
 						}
+						ScriptEvents::KickIfWaiting();
 					});
 				}
 				return RE::BSEventNotifyControl::kContinue;

@@ -3,6 +3,7 @@
 #include "Condition/ArmorWear/ArmorWear.h"
 #include "Condition/Condition.h"
 #include "Condition/Provenance/Provenance.h"
+#include "Core/ScriptEvents.h"
 #include "Core/TraceLog.h"
 #include "Gameplay/SpawnCondition/Guards.h"
 #include "Gameplay/SpawnCondition/Owners.h"
@@ -14,6 +15,19 @@
 
 namespace SpawnCondition
 {
+	namespace
+	{
+		// A script hears of loot that reaches the player unrolled, as a change
+		// from full. This runs under AddStack's inventory lock, so the event
+		// waits for NEC's next kick, see ScriptEvents.h.
+		void HeardRolled(const RE::TESBoundObject& a_object, RE::ExtraDataList* a_list, float a_health)
+		{
+			if (auto* player = RE::PlayerCharacter::GetSingleton(); player && a_list) {
+				ScriptEvents::Changed(*player, a_object, a_list, Condition::INVALID_HEALTH, a_health, ScriptEvents::Cause::kRoll);
+			}
+		}
+	}
+
 	// -------------------------------------------------------------------
 	// The roll
 	// -------------------------------------------------------------------
@@ -30,7 +44,7 @@ namespace SpawnCondition
 	}
 
 	std::optional<Aim> Roll(RE::BGSInventoryList* a_list, RE::TESBoundObject* a_object, RE::ExtraDataList* a_extra, std::uint32_t a_count,
-		bool a_private)
+		bool a_private, bool a_looked)
 	{
 		if (!a_object) {
 			return std::nullopt;
@@ -164,6 +178,9 @@ namespace SpawnCondition
 		const Aim  aim{ origin.Centre(), stock };
 		const auto rolled = RollHealth(aim);
 		a_extra->SetHealthPerc(rolled.health);
+		if (players && !a_looked) {
+			HeardRolled(*a_object, a_extra, rolled.health);
+		}
 
 		// Spelled out only where a trace file takes it, since a cell
 		// loading hands dozens of stacks through here.
@@ -235,11 +252,13 @@ namespace SpawnCondition
 				if (a_stack.extra) {
 					rolled = RollHealth(aim);
 					a_stack.extra->SetHealthPerc(rolled.health);
+					list = a_stack.extra.get();
 				}
 			}
 
-			Aim    aim;
-			Rolled rolled{};
+			Aim                aim;
+			Rolled             rolled{};
+			RE::ExtraDataList* list{ nullptr };
 		};
 
 		// Splits the stack of a_count that holds a_extra inside a_item, 1 copy
@@ -271,6 +290,9 @@ namespace SpawnCondition
 							name, id, count);
 					}
 					return;
+				}
+				if (players) {
+					HeardRolled(a_object, reroll.list, reroll.rolled.health);
 				}
 				Report(listed, "split off", "{:<30s} [{:08X}] x1   split off at {:.4f}{:s}{:s}",
 					name, id, reroll.rolled.health, reroll.rolled.upset ? ", ignored its band" : "",

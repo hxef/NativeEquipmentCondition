@@ -2,6 +2,7 @@
 
 #include "Condition/ArmorWear/ArmorWear.h"
 #include "Condition/Excluded.h"
+#include "Condition/UniqueID.h"
 
 #include <algorithm>
 #include <span>
@@ -23,6 +24,70 @@ namespace Equipped
 			const auto* effects = data.GetEnchantmentArray();
 			return effects && std::ranges::find(*effects, &a_effect) != effects->end();
 		}
+
+		// The caller's compare, keeping the stack it picks.
+		class Picked final :
+			public RE::BGSInventoryItem::StackDataCompareFunctor
+		{
+		public:
+			explicit Picked(RE::BGSInventoryItem::StackDataCompareFunctor& a_find) noexcept :
+				find(a_find)
+			{}
+
+			bool CompareData(const RE::BGSInventoryItem::Stack& a_stack) override
+			{
+				if (!find.CompareData(a_stack)) {
+					return false;
+				}
+				list = a_stack.extra.get();
+				count = a_stack.count;
+				return true;
+			}
+
+			bool UseDefaultStackIfNoMatch() const override { return find.UseDefaultStackIfNoMatch(); }
+
+			RE::BGSInventoryItem::StackDataCompareFunctor& find;
+			RE::ExtraDataList*                             list{ nullptr };
+			std::uint32_t                                  count{ 0 };
+		};
+
+		// The caller's write, on the stack the engine hands over. After a
+		// split that is the new copy, and the stack picked is the rest, which
+		// then loses the unique ID the copy took from it. The engine runs this
+		// inside its own write, where the rest is still the stack it picked.
+		class Wrote final :
+			public RE::BGSInventoryItem::StackDataWriteFunctor
+		{
+		public:
+			Wrote(RE::BGSInventoryItem::StackDataWriteFunctor& a_write, const Picked& a_picked) noexcept :
+				write(a_write),
+				picked(a_picked)
+			{
+				shouldSplitStacks = a_write.shouldSplitStacks;
+				transferEquippedToSplitStack = a_write.transferEquippedToSplitStack;
+			}
+
+			void WriteDataImpl(RE::TESBoundObject& a_object, RE::BGSInventoryItem::Stack& a_stack) override
+			{
+				written.before = Condition::HealthOf(&a_stack);
+				write.WriteDataImpl(a_object, a_stack);
+				written.list = a_stack.extra.get();
+				written.held = a_stack.extra;
+				written.after = Condition::HealthOf(&a_stack);
+				written.count = picked.count;
+				written.equipped = a_stack.IsEquipped();
+				written.split = picked.list && written.list != picked.list;
+				const auto uid = UniqueID::Of(written.list);
+				if (written.split && uid != 0 && UniqueID::Of(picked.list) == uid) {
+					UniqueID::Clear(*picked.list);
+					written.cleared = true;
+				}
+			}
+
+			RE::BGSInventoryItem::StackDataWriteFunctor& write;
+			const Picked&                                picked;
+			Written                                      written;
+		};
 
 		// Every equipped stack of every piece of armor a_takes picks, see
 		// ArmorPieces, or every stack with a_carried, in power armor too.
@@ -254,12 +319,15 @@ namespace Equipped
 		broke = moved && a_stack.extra->IsItemBroken();
 	}
 
-	void WriteStack(RE::TESObjectREFR& a_owner, RE::TESBoundObject& a_object,
+	Written WriteStack(RE::TESObjectREFR& a_owner, RE::TESBoundObject& a_object,
 		RE::BGSInventoryItem::StackDataCompareFunctor& a_find, RE::BGSInventoryItem::StackDataWriteFunctor& a_write)
 	{
 		// The equipped flags move onto the split off copy, so the item in use
 		// and the item written stay the same one.
 		a_write.transferEquippedToSplitStack = true;
-		a_owner.FindAndWriteStackDataForInventoryItem(&a_object, a_find, a_write);
+		Picked picked{ a_find };
+		Wrote  wrote{ a_write, picked };
+		a_owner.FindAndWriteStackDataForInventoryItem(&a_object, picked, wrote);
+		return wrote.written;
 	}
 }

@@ -25,14 +25,6 @@ namespace FoodSpoil
 			return std::clamp(Settings::fFridgeSpoilSpeed.GetValue(), SLOWEST, FASTEST);
 		}
 
-		// The stamp for a fridge of food stamped a_start outside one. At the
-		// slowest speed it can fall up to 3000 days back, which Stamp.h
-		// stores as it does any day.
-		float Chill(float a_start, float a_today)
-		{
-			return a_today - (a_today - a_start) / Speed();
-		}
-
 		// -------------------------------------------------------------------
 		// Who holds a stack
 		// -------------------------------------------------------------------
@@ -67,6 +59,13 @@ namespace FoodSpoil
 	{
 		const auto* base = a_ref ? a_ref->GetObjectReference() : nullptr;
 		return base && IsFridge(*base);
+	}
+
+	// At the slowest speed the stamp can fall up to 3000 days back, which
+	// Stamp.h stores as it does any day.
+	float Chill(float a_start, float a_today)
+	{
+		return a_today - (a_today - a_start) / Speed();
 	}
 
 	float Thaw(float a_stamp, float a_today)

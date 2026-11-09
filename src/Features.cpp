@@ -21,6 +21,7 @@
 #include "Gameplay/Scrapping/Scrapping.h"
 #include "Gameplay/SpawnCondition/SpawnCondition.h"
 #include "Gameplay/WeaponEvents/WeaponEvents.h"
+#include "Papyrus/Papyrus.h"
 #include "UI/Hud/HudCondition/HudCondition.h"
 #include "UI/Hud/HudParts/HudParts.h"
 #include "UI/Hud/PickupBar/PickupBar.h"
@@ -39,8 +40,11 @@
 #include "UI/Repair/VendorRepair/VendorRepair.h"
 #include "UI/Repair/Workbench/Workbench.h"
 
+#include <algorithm>
+#include <cctype>
 #include <cstddef>
 #include <iterator>
+#include <string_view>
 
 namespace
 {
@@ -178,6 +182,11 @@ namespace
 		// The settings page in the Mod Configuration Menu, where it is
 		// installed.
 		{ .name = "Mcm", .OnMovieLoaded = Mcm::OnMovieLoaded },
+
+		// Papyrus: the script NEC that other mods call.
+
+		// NEC.log says whether NEC.pex belongs to this NEC.dll.
+		{ .name = "Papyrus", .Load = Papyrus::Load, .Unload = Papyrus::Unload },
 	};
 
 	// -------------------------------------------------------------------
@@ -248,6 +257,17 @@ namespace
 std::span<const Feature> Features()
 {
 	return FEATURES;
+}
+
+const Feature* FeatureNamed(std::string_view a_name)
+{
+	const auto same = [&](const Feature& a_row) {
+		return std::ranges::equal(std::string_view{ a_row.name }, a_name, [](char a_l, char a_r) {
+			return std::tolower(static_cast<unsigned char>(a_l)) == std::tolower(static_cast<unsigned char>(a_r));
+		});
+	};
+	const auto it = std::ranges::find_if(FEATURES, [&](const Feature& a_row) { return a_row.part != Part::kNone && same(a_row); });
+	return it != std::end(FEATURES) ? &*it : nullptr;
 }
 
 Part PartOf(const Settings::Named& a_switch)

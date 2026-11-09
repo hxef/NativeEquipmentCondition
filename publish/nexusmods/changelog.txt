@@ -1,3 +1,8 @@
+1.9.0
+* A Papyrus API: functions to read and change the condition of any weapon, armor or food, the repair costs and the curves, and events when condition changes, an item breaks, a gun jams or food spoils. The API is documented in NEC_Papyrus_API.txt and in the Papyrus API article.
+* NEC writes its logs in a folder of their own, Documents\My Games\Fallout4\F4SE\NEC, under the same names. The logs of earlier versions stay in the F4SE folder.
+* NEC.papyrus.log logs the errors in other mods' calls to NEC, and with the Bug report logs MCM switch on, NEC.papyrus.trace.log lists the Papyrus API's calls and events.
+
 1.8.2
 * The repair message boxes at a workbench and at a trader, and the message box that lists your spares, show their rows in centered columns with what the repair adds to the item's damage or resistances by type, such as +2 Damage or +3 DMG Resist. A row too wide for its box takes short words such as +2 DMG, the Pip-Boy's word in each language, then a smaller font size, then a shortened item name.
 * A new MCM switch, Repair rows in columns (bRepairBoxColumns, on), turns the columns off, so each row shows as 1 centered line as vanilla draws its boxes.

@@ -2,6 +2,7 @@
 
 #include "Condition/Condition.h"
 #include "Condition/CraftingPerks/CraftingPerks.h"
+#include "Condition/Equipped.h"
 #include "Condition/Repair.h"
 #include "Core/Text/Text.h"
 #include "Core/TraceLog.h"
@@ -32,22 +33,6 @@ namespace Workbench
 		// -------------------------------------------------------------------
 		// Finding the stacks again
 		// -------------------------------------------------------------------
-
-		// Picks the stack with a_extra, as the fork's CheckExtraDataFunctor
-		// compares, from a list kept since the box went up. A stack's number
-		// moves when a stack before it goes, and its list never does.
-		class OnList final : public RE::BGSInventoryItem::StackDataCompareFunctor
-		{
-		public:
-			explicit OnList(const RE::ExtraDataList* a_extra) :
-				extra(a_extra)
-			{}
-
-			bool CompareData(const RE::BGSInventoryItem::Stack& a_stack) override { return a_stack.extra.get() == extra; }
-
-		private:
-			const RE::ExtraDataList* extra;
-		};
 
 		// Takes 1 copy off the player's stack of a_object with a_extra, its
 		// number read right before, through the player's own RemoveItem,
@@ -222,8 +207,8 @@ namespace Workbench
 				}
 			}
 
-			OnList find{ a_item };
-			Restore::Write(*player, a_object, find, level);
+			Equipped::ListStack find{ a_item };
+			Restore::Write(*player, a_object, find, level, ScriptEvents::Cause::kRepair);
 			const auto* written = Written(a_object, a_item, item->count > 1, level, name);
 			if (spare->withItem) {
 				const RE::PlayerCharacter::ScopedInventoryChangeMessageContext quiet{ true, true };

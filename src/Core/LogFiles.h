@@ -6,8 +6,8 @@
 #include <filesystem>
 #include <string>
 
-// NEC.log and the 4 bug report logs keep the logs of the 10 game starts
-// before. As a log opens, the file of the start before moves to NEC.1.log,
+// NEC.log, NEC.papyrus.log and the 5 bug report logs keep the logs of the
+// 10 game starts before. As a log opens, the file of the start before moves to NEC.1.log,
 // NEC.trace.1.log and so on, so a restart after a crash still has the lines
 // that led to it.
 //
@@ -43,9 +43,12 @@ namespace LogFiles
 	inline constexpr std::size_t GAME_TRACE_SIZE = 10 * MB;
 	inline constexpr std::size_t UI_TRACE_SIZE = 10 * MB;
 	inline constexpr std::size_t FOOD_TRACE_SIZE = 10 * MB;
+	inline constexpr std::size_t PAPYRUS_TRACE_SIZE = 10 * MB;
+	inline constexpr std::size_t PAPYRUS_LOG_SIZE = 1 * MB;
 
-	// Opens NEC.log in Documents\My Games\<save folder>\F4SE the way F4SE::Init
-	// would, and makes it the log every REX line goes to. Call it right after
+	// Opens NEC.log in Documents\My Games\<save folder>\F4SE\NEC, a folder of
+	// its own beside the other plugins' logs, and makes it the log every REX
+	// line goes to. NEC's other logs open beside it. Call it right after
 	// F4SE::Init, which names the save folder.
 	void OpenMain() noexcept;
 

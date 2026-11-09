@@ -139,6 +139,7 @@ namespace VendorRepair
 			if (!making->ceilings) {
 				// The chest the screen names, see Restock.h. A faction with no
 				// merchant container is covered by the linked chests instead.
+				trader.UpdateVendorFaction();
 				const auto* faction = trader.vendorFaction;
 				making->ceilings = CeilingsOf(faction ? faction->vendorData.merchantContainer : nullptr, trader,
 					", worked out for a restock");

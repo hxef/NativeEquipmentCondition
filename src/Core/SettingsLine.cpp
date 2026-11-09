@@ -4,6 +4,7 @@
 #include "Core/Runtime.h"
 
 #include <algorithm>
+#include <cctype>
 #include <cstdint>
 #include <format>
 #include <iterator>
@@ -14,8 +15,8 @@
 #include <vector>
 
 // The Settings line NEC.log writes, every setting as it stands, and the lists
-// of switches and numbers it walks in NEC.ini's order, which the MCM page reads
-// too.
+// of switches and numbers it walks in NEC.ini's order, which the MCM page and
+// the Papyrus API read too.
 namespace Settings
 {
 	namespace
@@ -82,7 +83,31 @@ namespace Settings
 			&fPickupBarThickness,
 		};
 
-		// The switches neither list holds, each after the setting NEC.ini has
+		// Every switch in NEC.ini's order, for a lookup by id.
+		Live<bool>* const EVERY_SWITCH[]{
+			&bPlainApparelNeverWears,
+			&bSpawnCondition,
+			&bVendorRepair,
+			&bSpareRepair,
+			&bRepairBoxColumns,
+			&bLoadingTips,
+			&bHudCondition,
+			&bPowerArmorBar,
+			&bQuickContainer,
+			&bConfirmScroll,
+			&bInspectPrice,
+			&bFoodSpoils,
+			&bFridgeIcon,
+			&bHudBarHidesWithCounter,
+			&bHudBarStandsAlone,
+			&bHudBarShowsWord,
+			&bPowerArmorBarShowsWord,
+			&bPickupBar,
+			&bPickupBarShowsWord,
+			&bTraceLogs,
+		};
+
+		// The switches SWITCHES leaves out, each after the setting NEC.ini has
 		// it after, for the Settings line. bPlainApparelNeverWears comes first
 		// in [Features], so ReportLine says it before the list.
 		Live<bool>* const AFTER_VENDOR_REPAIR[]{ &bSpareRepair, &bRepairBoxColumns };
@@ -196,6 +221,24 @@ namespace Settings
 	std::span<const Number> Numbers()
 	{
 		return NUMBERS;
+	}
+
+	bool IsIdOf(const Named& a_setting, std::string_view a_id)
+	{
+		const auto same = [](std::string_view a_lhs, std::string_view a_rhs) {
+			return std::ranges::equal(a_lhs, a_rhs, [](char a_l, char a_r) {
+				return std::tolower(static_cast<unsigned char>(a_l)) == std::tolower(static_cast<unsigned char>(a_r));
+			});
+		};
+		const auto key = a_setting.key.size();
+		return a_id.size() == key + 1 + a_setting.section.size() && a_id[key] == ':' &&
+		       same(a_id.substr(0, key), a_setting.key) && same(a_id.substr(key + 1), a_setting.section);
+	}
+
+	Live<bool>* SwitchById(std::string_view a_id)
+	{
+		const auto it = std::ranges::find_if(EVERY_SWITCH, [&](const Live<bool>* a_switch) { return IsIdOf(*a_switch, a_id); });
+		return it != std::end(EVERY_SWITCH) ? *it : nullptr;
 	}
 
 	// -------------------------------------------------------------------

@@ -2,6 +2,7 @@
 
 #include "Condition/WeaponWear/Copy.h"
 #include "Condition/WeaponWear/Rate.h"
+#include "Core/ScriptEvents.h"
 #include "Core/TraceLog.h"
 
 #include <algorithm>
@@ -118,6 +119,10 @@ namespace WeaponWear
 			const auto* keeper = a_owner.boolFlags.all(RE::Actor::BOOL_FLAGS::kEssential) ? &a_owner : nullptr;
 			const auto  worn = WearCopy(a_owner, a_weapon, a_source, a_scale, true, keeper);
 			inv->rwLock.unlock_write();
+			if (worn.broke) {
+				ScriptEvents::Broke(&a_owner, a_weapon, worn.written.held.get());
+				ScriptEvents::Kick();
+			}
 			return worn.count > 0 ? Tried::kWorn : Tried::kNotHeld;
 		}
 

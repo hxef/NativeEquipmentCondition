@@ -2,6 +2,9 @@
 
 #include "Core/Plugin.h"
 
+#include <cstdint>
+#include <optional>
+
 // Paying a trader to repair a worn weapon, piece of armor or piece of clothing.
 // A workbench asks for components. A trader who deals in that kind of item asks
 // for caps, and more of them, since the player pays for someone else's skill,
@@ -38,4 +41,20 @@ namespace VendorRepair
 	// hook starts, for a message box or a frame of a wait or a watch, asks it
 	// first, since it would show the item that hook last stored.
 	[[nodiscard]] bool HighlightLive();
+
+	// How far a_trader repairs a_object's kind, a whole percent, 0 for a kind
+	// they do not deal in or an actor with no shop. Worked out from what they
+	// restock with at every call, as the barter screen does at its opening.
+	[[nodiscard]] std::uint32_t LevelFor(RE::Actor& a_trader, const RE::TESBoundObject& a_object);
+
+	// What a copy of a_item at a_stack is worth as a sound price, without the
+	// wear or a trader's markup, see ItemValue.h. Under the inventory lock.
+	[[nodiscard]] std::uint32_t SoundWorth(const RE::BGSInventoryItem& a_item, std::uint32_t a_stack);
+
+	// The caps a_trader asks to bring a copy of a_object at a_percent, worth
+	// a_worth, to a_to, as the barter screen's question prices it: the first
+	// step it offers at a_to or above. Nothing above the trader's limit, at
+	// or below a_percent, or for an item with no price.
+	[[nodiscard]] std::optional<std::uint32_t> PriceFor(RE::Actor& a_trader, RE::TESBoundObject& a_object, std::uint32_t a_percent,
+		std::uint32_t a_worth, std::uint32_t a_to);
 }

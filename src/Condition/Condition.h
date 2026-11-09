@@ -43,6 +43,13 @@ namespace Condition
 		return a_health == UNROLLED;
 	}
 
+	// Whether a write from a_before to a_after broke the item: it reached 0
+	// from a health above, from none or from the mark of an unrolled item.
+	[[nodiscard]] constexpr bool Breaks(float a_before, float a_after)
+	{
+		return a_after == MIN_HEALTH && a_before != MIN_HEALTH;
+	}
+
 	// The health an extra data list carries, or INVALID_HEALTH for a list
 	// carrying none and for no list at all, which count as new.
 	float HealthOf(RE::ExtraDataList* a_extra);

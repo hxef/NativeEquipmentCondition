@@ -147,7 +147,7 @@ namespace ConsoleRepair
 		{
 			const auto              name = RE::TESFullName::GetFullName(*a_target.object);
 			Equipped::EquippedStack find;
-			Restore::Write(a_player, *a_target.object, find, a_level);
+			Restore::Write(a_player, *a_target.object, find, a_level, ScriptEvents::Cause::kConsole);
 			if (find.count == 0) {
 				TraceLog::Line("wear", "{:s} [{:08X}] is equipped with no reading to write to", name, a_target.object->formID);
 				if (a_console) {

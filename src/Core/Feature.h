@@ -64,3 +64,7 @@ struct Feature
 // The part a switch stands for: the part of the 1 row with that switch and
 // a part. kNone for any other setting.
 [[nodiscard]] Part PartOf(const Settings::Named& a_switch);
+
+// The row of that name with a part, in any case as for Settings::IsIdOf, as
+// the Papyrus API's IsFeatureOn names a feature, or nullptr.
+[[nodiscard]] const Feature* FeatureNamed(std::string_view a_name);

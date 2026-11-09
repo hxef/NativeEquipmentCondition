@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Condition/Equipped.h"
 #include "Core/Plugin.h"
 
 #include <cstdint>
@@ -14,6 +15,7 @@ namespace WeaponWear
 		std::uint32_t count{ 0 };  // what the equipped stack held, 0 when none was equipped
 		bool          moved{ false };
 		bool          broke{ false };  // the health it moved to is broken
+		Equipped::Written written;
 	};
 
 	// Wears down a_owner's equipped copy of a_weapon, see Wear in WeaponWear.h.

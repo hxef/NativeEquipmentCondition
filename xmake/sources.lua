@@ -9,12 +9,13 @@
 -- file times.
 
 -- The files the DLL is made from, from the project's root. en.ini counts,
--- since its English is compiled in.
-local SOURCES = { "xmake.lua", "xmake/*.lua", "publish/Translations/en.ini", "src/**", "lib/commonlibf4/xmake.lua",
-    "lib/commonlibf4/include/**", "lib/commonlibf4/src/**", "lib/commonlibf4/lib/**" }
+-- since its English is compiled in, and NEC.psc.in, which NEC.pex is built
+-- from beside it.
+local SOURCES = { "xmake.lua", "xmake/*.lua", "publish/Translations/en.ini", "publish/Scripts/Source/User/NEC.psc.in", "src/**",
+    "lib/commonlibf4/xmake.lua", "lib/commonlibf4/include/**", "lib/commonlibf4/src/**", "lib/commonlibf4/lib/**" }
 
 -- The same files as paths for git, which takes no patterns.
-local GIT_PATHS = { "xmake.lua", "xmake", "publish/Translations/en.ini", "src", "lib/commonlibf4" }
+local GIT_PATHS = { "xmake.lua", "xmake", "publish/Translations/en.ini", "publish/Scripts/Source/User/NEC.psc.in", "src", "lib/commonlibf4" }
 
 -- Each source as its path from the project's root with forward slashes, to
 -- its SHA-256.

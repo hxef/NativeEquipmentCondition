@@ -4,9 +4,9 @@ Native Equipment Condition is one DLL that gives Fallout 4 weapons and armor a
 condition that wears down with use. It patches about 120 places in the
 engine's code, reads what the load order says about weapons, armor, recipes,
 perks and leveled lists, and draws its readouts into Fallout 4's own menus. It
-ships no ESP, no scripts and no assets, only the DLL, `NEC.ini` beside it, 1
-language file per language in `NEC/Translations` and a page for the Mod
-Configuration Menu.
+ships no ESP and no assets, only the DLL, `NEC.ini` beside it, 1 language file
+per language in `NEC/Translations`, a page for the Mod Configuration Menu and
+the Papyrus API script `NEC.pex` for other mods.
 
 Read `src/Features.cpp` next. It lists every feature in the order it runs.
 Then read the header of whichever feature you are here for. Every header opens
@@ -19,18 +19,20 @@ src/Core/       plumbing every layer may use
 src/Condition/  what condition is, and what putting it right costs
 src/Gameplay/   hooks that change play
 src/UI/         what is drawn into Fallout 4's own menus
+src/Papyrus/    the script NEC that other mods call, bound to the game's script VM
 ```
 
 A file includes only from its own layer and the layers above it in that list.
-`src/main.cpp` and `src/Features.cpp` sit outside the ladder and are the only
-files that know every feature. Every include is written from `src`, so a file
-says `#include "UI/Repair/Workbench/Cost.h"` wherever it is.
+`src/main.cpp`, `src/Session.cpp` and `src/Features.cpp` sit outside the ladder
+and are the only files that know every feature. Every include is written from
+`src`, so a file says `#include "UI/Repair/Workbench/Cost.h"` wherever it is.
 
 ## Files
 
 ```
 src/
   main.cpp                   the entry point, which walks the feature table
+  Session.h/.cpp             forgetting the last game and measuring the load order again, at a load, a new game or the main menu
   Features.cpp               every feature, in the order it runs
   pch.h                      what every file includes first
 
@@ -55,13 +57,14 @@ src/
     IniText.h/.cpp           one key changed in an ini file's text, every other line kept
     ItemCards.h/.cpp         asking the Pip-Boy to rebuild its item cards
     ListFiles.h/.cpp         reading the lists of forms a mod ships in a folder under NEC, such as Exclude
-    LogFiles.h/.cpp          opening NEC.log and the 3 bug report logs, and keeping those of the 10 game starts before
+    LogFiles.h/.cpp          opening NEC.log and the other logs in their own folder, and keeping those of the 10 game starts before
     LogLevel.cpp             NEC.log's level, from sLogLevel or the MCM page, declared in Settings.h
     Parts.h/.cpp             every part another mod can take from NEC, and what each setting works through
     Pieces.h/.cpp            the pieces of every part, and what each piece needs
     Places.cpp               which pieces each patched place is
     Plugin.h                 the data handler the load order is read through
     Runtime.h/.cpp           the game version NEC runs on, 1.11.240 or OG, and NEC.log's line about it
+    ScriptEvents.h/.cpp      the events other mods' scripts hear, as every place that changes an item notes them, and the gate of a save load
     Settings.h/.cpp          every setting, read from NEC.ini, and a change kept in NEC_custom.ini
     SettingsLine.cpp         NEC.log's Settings line, and every switch and number in NEC.ini's order
     SettingsTuning.h         the settings under [Balance] and [HUD], which Settings.h includes
@@ -95,6 +98,7 @@ src/
     Condition.h/.cpp         the reading, its bounds, the share a stat keeps, what takes part, the write
     Equipped.h/.cpp          what an actor holds and has on, and writing to the copy in use
     Excluded.h/.cpp          the weapons and armor a patch's file in NEC/Exclude tells NEC to leave alone
+    UniqueID.h/.cpp          the number that names 1 stack inside a container to a script
     Materials/
       Materials.h/.cpp       what an item is built from, the mod recipe index and the ordinary make
       Index.h                the index, for this folder
@@ -266,12 +270,39 @@ src/
       Columns/               the repair boxes' rows in columns: the cells measured, the rows fitted to the box's room and sent as html
       Workbench/             repairing at the weapon and armor benches
       VendorRepair/          paying a trader to repair weapons, armor or clothing, and their stock
+
+  Papyrus/
+    Papyrus.h                the script NEC that other mods call
+    Natives.h                every function of NEC.psc that NEC.dll answers, as the script VM calls it
+    Items.h/.cpp             finding the item a script names again at every call, GetHolder, GetBase, GetCount
+    Handles.cpp              GetItems, GetEquippedWeapon, GetWornItem, GetWornItems
+    Numbering.h/.cpp         numbering a stack for its handle
+    Writer.cpp               SetCondition, Damage, Repair, Wear and RollCondition, through 1 writer
+    Readers.cpp              IsTracked, WhyNotTracked, GetCondition, IsBroken and IsUnrolled
+    Curves.cpp               the shares and the jam chance NEC applies at a condition, and the wear of 1 use
+    Repair.cpp               the bench's bill and free mend, the mod lock, scrap, spares, a trader's limit and price
+    Food.cpp                 a food's kind, days, freshness and fridge, and setting it fresh or spoiled
+    Events.h/.cpp            the task that runs what a write leaves and hands the waiting events to the scripts registered for them
+    Works.cpp                what a write leaves for that task: the item cards, the armor rating, putting a broken weapon away
+    Pack.h/.cpp              an event's arguments packed as exactly the types its callback declares
+    Log.h/.cpp               NEC.papyrus.log: each script VM built, the scripts each event reached first, and the errors in a script's calls
+    Register.cpp             the bind, which F4SE runs each time the game builds its script VM
+    Version.cpp              GetVersion, GetVersionString, and NEC.pex's version checked against NEC.dll's
+    Settings.cpp             IsFeatureOn, IsFeatureTakenOver and the settings by their MCM ids
 ```
 
 The words themselves are in `publish/Translations`, 1 file per language, and
 the files under `Text/` hold keys, not words. Each build writes
 `Core/Text/Keys.h` from `en.ini` into the build folder and checks the other
 files, see `xmake/texts.lua`.
+
+The script's source is `publish/Scripts/Source/User/NEC.psc.in`, and its
+comments are the API's document. Each build writes `NEC.psc` from it with the
+version and compiles `NEC.pex` from that, see `xmake/papyrus.lua`. `xmake
+apidoc` writes the document from those comments into
+`publish/NEC_Papyrus_API.txt` and `publish/nexusmods/article_api.bbcode`, and
+`xmake release` stops when either differs from a fresh run, see
+`xmake/apidoc.lua`.
 
 A feature that has grown past one pair of files has a folder named after its
 namespace: the feature's own header and source, a private header for what the
@@ -298,7 +329,15 @@ and one row in `src/Features.cpp`. `src/main.cpp` walks the rows:
 4. **OnMovieLoaded**, for every menu movie the game loads, through
    `src/UI/MenuMovies.cpp`.
 
-Outside the 4 steps, `src/main.cpp` drops what play remembers of the last
+The script VM comes apart at every full reset, so the Papyrus layer binds its
+functions each time F4SE asks and keeps no VM. A function reads NEC's live
+values at every call and keeps nothing for the next. An item function holds
+the item's inventory as a writer while it reads or writes, and what may not
+run under that lock goes as 1 task on F4SE's queue. A place that changes an
+item notes its event in `src/Core/ScriptEvents`, and that task hands it on,
+so no script runs inside NEC.
+
+Outside the 4 steps, `src/Session.cpp` drops what play remembers of the last
 game, the gun that jammed, the fire speeds, the weapon in hand, the HUD's last
 reading and the NPC wear still waiting for a busy inventory, when a save
 loads, a new game begins or the main menu opens. As a save loads, a new game

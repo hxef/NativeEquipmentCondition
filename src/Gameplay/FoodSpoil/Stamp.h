@@ -39,14 +39,8 @@ namespace FoodSpoil
 	// stamp.
 	[[nodiscard]] std::optional<float> StampOf(const RE::ExtraDataList* a_extra);
 
-	// Whether a_extra's food has spoiled.
-	[[nodiscard]] bool IsSpoiled(RE::ExtraDataList* a_extra);
-
 	// Stamps a_extra's food as starting to spoil on a_day.
 	void Stamp(RE::ExtraDataList& a_extra, float a_day);
-
-	// Takes a_extra's stamp off and gives it the spoiled health.
-	void Spoil(RE::ExtraDataList& a_extra);
 
 	// The starting freshness a_extra's found food waits with, or nothing for
 	// food that starts fresh. Nothing while Worn loot is off, so found food

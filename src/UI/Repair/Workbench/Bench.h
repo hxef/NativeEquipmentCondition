@@ -11,15 +11,6 @@
 // The basics the weapon and armor bench code uses. Private to this folder.
 namespace Workbench
 {
-	// Above this condition a repair is free and immediate, and the button reads
-	// MEND. At the default floor of full, one shot closes the slots, and
-	// charging for that would make every shot cost components. It takes
-	// nothing off a real repair, since an item below it pays the whole way up
-	// to full.
-	// iFreeMendAbove kept between 0 and 100, see Settings.h, so at 100 nothing
-	// is free and at 0 everything but a broken item is.
-	[[nodiscard]] std::uint32_t FreeAbove();
-
 	// True while fBenchCostMult is 0 or below. A repair then costs nothing, so
 	// every repair works like MEND.
 	[[nodiscard]] bool FreeRepairs();

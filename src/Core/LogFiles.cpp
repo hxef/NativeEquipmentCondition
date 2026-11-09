@@ -251,9 +251,10 @@ namespace LogFiles
 			}
 		}
 
-		// Documents\My Games\<save folder>\F4SE\NEC.log, worked out as
-		// F4SE::Init does, keeping Documents for Shown. Empty, with a_why
-		// filled in, when Windows or F4SE names no folder.
+		// Documents\My Games\<save folder>\F4SE\NEC\NEC.log, worked out as
+		// F4SE::Init does, keeping Documents for Shown. The sink makes the
+		// NEC folder. Logs of NEC before it, straight in F4SE, stay there.
+		// Empty, with a_why filled in, when Windows or F4SE names no folder.
 		std::filesystem::path MainPath(std::string& a_why)
 		{
 			const auto saveFolder = F4SE::GetSaveFolderName();
@@ -272,7 +273,7 @@ namespace LogFiles
 
 			g_documents = documents.get();
 			std::filesystem::path path = g_documents;
-			path /= std::format("My Games/{}/F4SE", saveFolder);
+			path /= std::format("My Games/{}/F4SE/NEC", saveFolder);
 			path /= MAIN_FILE;
 			// Windows gives Documents with backslashes and the folders after it
 			// join with forward slashes. make_preferred turns all of them into

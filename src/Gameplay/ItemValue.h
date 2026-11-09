@@ -17,6 +17,9 @@ namespace ItemValue
 	// Whether that pair is in, so a worn item is worth less.
 	[[nodiscard]] bool Works();
 
+	// The share of its price an item at a_health keeps.
+	[[nodiscard]] float Share(float a_health);
+
 	// Prices items as sound, meaning without wear and without the barter
 	// markup, while one of these exists on this thread. Only a repair priced in
 	// caps needs it: a broken item priced against its own broken value would

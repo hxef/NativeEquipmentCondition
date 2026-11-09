@@ -186,6 +186,11 @@ namespace ItemValue
 		return g_held.Intact();
 	}
 
+	float Share(float a_health)
+	{
+		return ValueMult(a_health);
+	}
+
 	// Nested, so asking for a sound price inside a call that already asked
 	// leaves the outer one in effect.
 	ScopedSoundPrice::ScopedSoundPrice() :

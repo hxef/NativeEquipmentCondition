@@ -20,4 +20,8 @@ namespace CritMeter
 	// condition on the same curve. The player's roll is left alone, since the
 	// player's criticals already follow the meter.
 	void Install();
+
+	// The share of the meter's charge, and of an NPC's critical chance, a
+	// weapon at a_health keeps.
+	[[nodiscard]] float Share(float a_health);
 }

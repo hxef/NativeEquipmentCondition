@@ -55,6 +55,10 @@ namespace Workbench
 	// result.
 	[[nodiscard]] Priced PriceOf(const Selection& a_selection);
 
+	// The same on the scrap lists as last read, for a thread where a script
+	// may change a list meanwhile, see Materials::ReadScrapLists.
+	[[nodiscard]] Priced PriceAsLastRead(const Selection& a_selection);
+
 	// The components one repair takes, from one condition to another: the part
 	// of the order between what is owed at each end, so a repair in steps adds
 	// up to one in one go. Never empty while fBenchCostMult is above 0: where

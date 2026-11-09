@@ -6,9 +6,12 @@
 #include "Core/TraceLog.h"
 #include "UI/Repair/Columns/Columns.h"
 #include "UI/Repair/Gains.h"
+#include "UI/Repair/VendorRepair/VendorRepair.h"
 
 #include <algorithm>
 #include <cstddef>
+#include <cstdint>
+#include <optional>
 #include <utility>
 
 namespace VendorRepair
@@ -63,6 +66,27 @@ namespace VendorRepair
 			steps.push_back({ level, caps > 0 ? caps : 1U });
 		}
 		return Repair::Distinct(std::move(steps));
+	}
+
+	std::optional<std::uint32_t> PriceFor(RE::Actor& a_trader, RE::TESBoundObject& a_object, std::uint32_t a_percent,
+		std::uint32_t a_worth, std::uint32_t a_to)
+	{
+		const auto ceiling = LevelFor(a_trader, a_object);
+		if (a_to > ceiling || a_to <= a_percent) {
+			return std::nullopt;
+		}
+		Selection selection;
+		selection.object = &a_object;
+		selection.percent = a_percent;
+		selection.kind = Condition::KindOf(a_object);
+		selection.worth = a_worth;
+		selection.trade = TradeOf(a_object);
+		for (const auto& quote : Quotes(selection, ceiling)) {
+			if (quote.level >= a_to) {
+				return quote.price;
+			}
+		}
+		return std::nullopt;
 	}
 
 	std::vector<Quote> Afforded(const std::vector<Quote>& a_quotes)

@@ -38,6 +38,11 @@ namespace Materials
 	// vanilla.
 	[[nodiscard]] std::uint32_t ScrapIn(std::uint32_t a_count, std::uint32_t a_percent);
 
+	// The share of a count scrapping gives, fBuildableScrapCountMultBase in
+	// vanilla, in tenths. A spare's count goes in divided by it, so vanilla's
+	// count gives the whole count back.
+	inline constexpr std::uint32_t SCRAPPED_TENTHS = 5;
+
 	// What a_object with a_extra at a_percent is worth as a spare, component by
 	// component: its scrap as the bench works it out, without the halving. The
 	// bench's walk is the recipe of every enabled mod, the legendary one too,
@@ -48,9 +53,10 @@ namespace Materials
 	// game counts at 0 is left out, so without Scrapper a spare holds only the
 	// common ones, and a worn spare left with none holds the 1 component of
 	// LeastPart. a_tenths scales the doubled count before vanilla's count, in
-	// tenths and rounded down, 10 for none and 5 for exactly what scrapping
-	// gives. With a_scrapper false the components only a Scrapper rank gives
-	// count as 0, as for a player with no rank. a_extra can be null.
+	// tenths and rounded down, 10 for none and SCRAPPED_TENTHS for exactly
+	// what scrapping gives. With a_scrapper false the components only a
+	// Scrapper rank gives count as 0, as for a player with no rank. a_extra
+	// can be null.
 	[[nodiscard]] std::vector<Part> Yield(const RE::TESBoundObject& a_object, const RE::ExtraDataList* a_extra,
 		std::uint32_t a_percent, std::uint32_t a_tenths, bool a_scrapper = true);
 }

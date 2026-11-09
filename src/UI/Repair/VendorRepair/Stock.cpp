@@ -5,6 +5,7 @@
 #include "Core/TraceLog.h"
 #include "Gameplay/ItemValue.h"
 #include "UI/Repair/VendorRepair/Restock.h"
+#include "UI/Repair/VendorRepair/VendorRepair.h"
 
 #include <cmath>
 #include <format>
@@ -203,13 +204,28 @@ namespace VendorRepair
 		}
 		out.trade = TradeOf(*out.object);
 
-		// The sound price, with the wear and the trader's markup put aside.
-		const auto worth = [&] {
-			const ItemValue::ScopedSoundPrice sound;
-			return out.item->GetInventoryValue(out.stack, false);
-		}();
-		out.worth = worth > 0 ? static_cast<std::uint32_t>(worth) : 0U;
+		out.worth = SoundWorth(*out.item, out.stack);
 		return out;
+	}
+
+	std::uint32_t SoundWorth(const RE::BGSInventoryItem& a_item, std::uint32_t a_stack)
+	{
+		const ItemValue::ScopedSoundPrice sound;
+		const auto                        worth = a_item.GetInventoryValue(a_stack, false);
+		return worth > 0 ? static_cast<std::uint32_t>(worth) : 0U;
+	}
+
+	std::uint32_t LevelFor(RE::Actor& a_trader, const RE::TESBoundObject& a_object)
+	{
+		// The chest the faction names, as a restock reads it, see Upkeep.cpp.
+		// The game works the faction out only when something asks, a trade
+		// first, so a script asking before any trade gets it worked out here.
+		a_trader.UpdateVendorFaction();
+		const auto* faction = a_trader.vendorFaction;
+		if (!faction) {
+			return 0;
+		}
+		return CeilingsOf(faction->vendorData.merchantContainer, a_trader, ", worked out for a script").Of(TradeOf(a_object));
 	}
 
 	std::uint32_t Ceiling(RE::BarterMenu* a_menu, const Selection& a_selection)

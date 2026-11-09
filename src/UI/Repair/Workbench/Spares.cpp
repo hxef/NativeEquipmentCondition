@@ -292,6 +292,24 @@ namespace Workbench
 		return std::nullopt;
 	}
 
+	std::optional<std::uint32_t> SpareGain(const RE::TESBoundObject& a_object, const RE::ExtraDataList* a_item,
+		const RE::ExtraDataList* a_spare)
+	{
+		if (!Repairs() || !Settings::bSpareRepair.GetValue()) {
+			return std::nullopt;
+		}
+		auto item = Held(a_object, a_item);
+		if (!item || !item->Worn()) {
+			return std::nullopt;
+		}
+		// The entry Held points at is the player's, which may change once its
+		// lock is let go, so the name comes from the form.
+		item->item = nullptr;
+		const auto priced = PriceAsLastRead(*item);
+		const auto spare = priced.units > 0 ? SpareOn(*item, priced, a_spare) : std::nullopt;
+		return spare ? std::optional{ spare->gain } : std::nullopt;
+	}
+
 	Payment Pay(const Spare& a_spare, const Selection& a_item, const Priced& a_priced)
 	{
 		auto cheapest = a_spare.scrap;

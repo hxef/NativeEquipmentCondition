@@ -47,7 +47,7 @@ namespace SpawnCondition
 			OpenBlock(nullptr);
 			Report(true, "first look", "{:<30s} [{:08X}] first look at it in the world, rolled for the player", NameOf(*base, "unnamed item"),
 				base->formID);
-			Roll(list, base, extra, 1, true);
+			Roll(list, base, extra, 1, true, true);
 			return true;
 		}
 

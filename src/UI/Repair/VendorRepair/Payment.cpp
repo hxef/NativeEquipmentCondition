@@ -119,7 +119,7 @@ namespace VendorRepair
 
 		// The stack under the highlight, by its number, see Restore.h.
 		RE::BGSInventoryItem::CheckStackIDFunctor find{ selection.stack };
-		Restore::Write(*player, *selection.object, find, a_quote.level);
+		Restore::Write(*player, *selection.object, find, a_quote.level, ScriptEvents::Cause::kRepair);
 
 		const auto said = Text::RepairPaid(a_quote.level, a_quote.price);
 		TraceLog::Line("menu", "{:s} repaired {:s} from {:d}% to {:d}%, one of a stack of {:d}, for {:d} of the {:d} caps the player had, saying \"{:s}\"",

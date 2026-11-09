@@ -18,7 +18,6 @@
 #include <string_view>
 #include <unordered_set>
 #include <utility>
-#include <variant>
 
 // MCM.swf asks root.mcm for a value as
 // GetModSettingBool("NEC", "bSpawnCondition:Features"), changes it with the
@@ -79,34 +78,6 @@ namespace Mcm
 			}
 		}
 
-		Settings::Live<bool>* SwitchFor(std::string_view a_id)
-		{
-			for (auto* on : Settings::Switches()) {
-				if (IsIdOf(*on, a_id)) {
-					return on;
-				}
-			}
-			for (auto* on : { &Settings::bPlainApparelNeverWears, &Settings::bPowerArmorBar, &Settings::bSpareRepair, &Settings::bRepairBoxColumns, &Settings::bFridgeIcon, &Settings::bHudBarHidesWithCounter, &Settings::bHudBarStandsAlone, &Settings::bHudBarShowsWord, &Settings::bPowerArmorBarShowsWord, &Settings::bPickupBar, &Settings::bPickupBarShowsWord, &Settings::bTraceLogs }) {
-				if (IsIdOf(*on, a_id)) {
-					return on;
-				}
-			}
-			return nullptr;
-		}
-
-		// A number by its id on the page, a float or a whole number as T asks.
-		template <class T>
-		Settings::Live<T>* NumberFor(std::string_view a_id)
-		{
-			for (const auto& number : Settings::Numbers()) {
-				auto* const* live = std::get_if<Settings::Live<T>*>(&number);
-				if (live && IsIdOf(**live, a_id)) {
-					return *live;
-				}
-			}
-			return nullptr;
-		}
-
 		void QueueFollowUps(const Settings::Named& a_setting)
 		{
 			for (const auto& [setting, followUp] : OWES) {
@@ -120,13 +91,6 @@ namespace Mcm
 		{
 			return a_value ? "true"sv : "false"sv;
 		}
-	}
-
-	bool IsIdOf(const Settings::Named& a_setting, std::string_view a_id)
-	{
-		return a_id.size() == a_setting.key.size() + 1 + a_setting.section.size() &&
-		       a_id.starts_with(a_setting.key) && a_id[a_setting.key.size()] == ':' &&
-		       a_id.ends_with(a_setting.section);
 	}
 
 	// -------------------------------------------------------------------
@@ -146,7 +110,7 @@ namespace Mcm
 			Answer(a_params, *shows);
 			return;
 		}
-		const auto* on = SwitchFor(a_id);
+		const auto* on = Settings::SwitchById(a_id);
 		if (!on) {
 			Unknown(a_id);
 		}
@@ -155,7 +119,7 @@ namespace Mcm
 
 	void GetInt(const Params& a_params, std::string_view a_id)
 	{
-		if (const auto* whole = NumberFor<std::int32_t>(a_id)) {
+		if (const auto* whole = Settings::NumberById<std::int32_t>(a_id)) {
 			Answer(a_params, whole->GetValue());
 			return;
 		}
@@ -173,7 +137,7 @@ namespace Mcm
 			Answer(a_params, *shown);
 			return;
 		}
-		const auto* number = NumberFor<float>(a_id);
+		const auto* number = Settings::NumberById<float>(a_id);
 		if (!number) {
 			Unknown(a_id);
 		}
@@ -184,7 +148,7 @@ namespace Mcm
 	// CallPatch.h, so the page cannot turn it on.
 	void SetBool(const Params& a_params, std::string_view a_id)
 	{
-		auto* on = SwitchFor(a_id);
+		auto* on = Settings::SwitchById(a_id);
 		if (!on) {
 			Unknown(a_id);
 		}
@@ -224,7 +188,7 @@ namespace Mcm
 
 	void SetInt(const Params& a_params, std::string_view a_id)
 	{
-		auto* whole = NumberFor<std::int32_t>(a_id);
+		auto* whole = Settings::NumberById<std::int32_t>(a_id);
 		if (!whole && a_id != LOG_LEVEL_ID) {
 			Unknown(a_id);
 		}
@@ -263,7 +227,7 @@ namespace Mcm
 
 	void SetFloat(const Params& a_params, std::string_view a_id)
 	{
-		auto* number = NumberFor<float>(a_id);
+		auto* number = Settings::NumberById<float>(a_id);
 		if (!number) {
 			Unknown(a_id);
 		}

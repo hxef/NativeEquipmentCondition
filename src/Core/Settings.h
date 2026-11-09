@@ -24,14 +24,11 @@
 // the change in NEC_custom.ini, see UI/Mcm/Mcm.h.
 //
 // A setting added here or in SettingsTuning.h is added to publish/NEC.ini too,
-// with a line saying what it does, and to SWITCHES or NUMBERS in
+// with a line saying what it does, and to EVERY_SWITCH or NUMBERS in
 // SettingsLine.cpp in NEC.ini's order. A setting left out of those is missing
-// from the Settings line, and the MCM page can neither read nor change it. The
-// 11 switches with no row of their own in Features.cpp, bPowerArmorBar,
-// bSpareRepair, bRepairBoxColumns, bFridgeIcon, bHudBarHidesWithCounter,
-// bHudBarStandsAlone, bHudBarShowsWord, bPowerArmorBarShowsWord, bPickupBar,
-// bPickupBarShowsWord and bTraceLogs, are named in SettingsLine.cpp's
-// ReportLine and in UI/Mcm/Bridge.cpp's SwitchFor instead.
+// from the Settings line, and neither the MCM page nor a script can read or
+// change it. A switch on a row of Features.cpp goes in SWITCHES too, and any
+// other switch gets its place on the Settings line in ReportLine.
 namespace Settings
 {
 	// Where a setting sits in NEC.ini, which is also its id on the MCM page.
@@ -234,4 +231,28 @@ namespace Settings
 	// page.
 	[[nodiscard]] std::span<Live<bool>* const> Switches();
 	[[nodiscard]] std::span<const Number>      Numbers();
+
+	// Whether a_id names a_setting as the MCM page and the Papyrus API write
+	// it, key:section, such as bSpawnCondition:Features. In any case, since
+	// Papyrus keeps 1 spelling of each text for the whole game, so a script's
+	// id can arrive as bspawncondition:features.
+	[[nodiscard]] bool IsIdOf(const Named& a_setting, std::string_view a_id);
+
+	// The switch a_id names, any of the 20 in NEC.ini, or nullptr for an id
+	// NEC does not know.
+	[[nodiscard]] Live<bool>* SwitchById(std::string_view a_id);
+
+	// The number a_id names, a float or a whole number as T asks, or nullptr
+	// for an id NEC does not know or a number of the other kind.
+	template <class T>
+	[[nodiscard]] Live<T>* NumberById(std::string_view a_id)
+	{
+		for (const auto& number : Numbers()) {
+			auto* const* live = std::get_if<Live<T>*>(&number);
+			if (live && IsIdOf(**live, a_id)) {
+				return *live;
+			}
+		}
+		return nullptr;
+	}
 }

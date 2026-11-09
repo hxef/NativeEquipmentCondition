@@ -160,4 +160,9 @@ namespace CritMeter
 			REX::INFO("An NPC's worn weapon lands fewer critical hits, down to {:.2f} of the chance at nothing.", floor);
 		}
 	}
+
+	float Share(float a_health)
+	{
+		return ChargeMult(a_health);
+	}
 }

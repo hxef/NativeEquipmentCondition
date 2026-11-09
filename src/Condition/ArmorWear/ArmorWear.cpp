@@ -5,6 +5,8 @@
 #include "Condition/ArmorWear/Skins.h"
 #include "Condition/Condition.h"
 #include "Condition/Equipped.h"
+#include "Condition/WeaponWear/WeaponWear.h"
+#include "Core/ScriptEvents.h"
 #include "Core/Settings.h"
 #include "Core/Text/Text.h"
 #include "Core/TraceLog.h"
@@ -188,7 +190,7 @@ namespace ArmorWear
 	{
 		FindStack find{ a_armor, a_damage, a_source, a_theirs };
 		auto&     wear = find.wear;
-		Equipped::WriteStack(a_owner, a_armor, find, wear);
+		const auto written = Equipped::WriteStack(a_owner, a_armor, find, wear);
 		const auto count = find.equipped.count;
 
 		// A split that leaves the health unchanged merges straight back, so
@@ -202,6 +204,15 @@ namespace ArmorWear
 		if (wear.broke && !a_theirs) {
 			AfterBreak(a_armor);
 		}
+		if (wear.moved) {
+			ScriptEvents::Wrote(a_owner, a_armor, written.held.get(), written.before, written.after, ScriptEvents::Cause::kWear,
+				wear.broke);
+		}
 		return wear.moved;
+	}
+
+	float PerHit(const RE::TESObjectARMO& a_armor, const RE::ExtraDataList* a_extra, bool a_theirs)
+	{
+		return Rate(a_armor, a_extra, WeaponWear::ReferenceDamage(), a_theirs);
 	}
 }

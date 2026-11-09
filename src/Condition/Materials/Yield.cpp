@@ -14,11 +14,6 @@ namespace Materials
 {
 	namespace
 	{
-		// The share of a count scrapping gives, fBuildableScrapCountMultBase
-		// in vanilla, in tenths. A spare's count goes in divided by it, so
-		// vanilla's count gives the whole count back.
-		constexpr std::uint64_t HALVED_TENTHS = 5;
-
 		// Scrapper is no entry point of the count. Its ranks raise 2 globals
 		// from 0 to 0.5 through PerksQuest's stages, ModScrapScalar_Uncommon
 		// and ModScrapScalar_Rare, here by their Fallout4.esm IDs, the same on
@@ -146,7 +141,7 @@ namespace Materials
 			}
 			// Whole numbers again: 5 Steel at 0.7F over 0.5 comes to 6.9999999
 			// and would round down to 6, where 7 tenths give 7.
-			const auto in = std::uint64_t{ ScrapIn(count, a_percent) } * a_tenths / HALVED_TENTHS;
+			const auto in = std::uint64_t{ ScrapIn(count, a_percent) } * a_tenths / SCRAPPED_TENTHS;
 
 			// The bench's flags: the halving on, and the component's share.
 			const auto* scalar = form == component ? component->modScrapScalar : nullptr;

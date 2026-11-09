@@ -3,6 +3,7 @@
 #include "Condition/Condition.h"
 #include "Condition/Equipped.h"
 #include "Core/CallPatch/CallPatch.h"
+#include "Core/ScriptEvents.h"
 #include "Core/Settings.h"
 #include "Core/TraceLog.h"
 #include "Gameplay/WeaponEvents/WeaponEvents.h"
@@ -38,18 +39,6 @@ namespace Jam
 		{
 			const auto value = a_setting.GetValue();
 			return value > 0.0F ? std::min(value, 1.0F) : 0.0F;
-		}
-
-		// The chance that a magazine of a gun at a_health jams, see Jam.h. The
-		// division runs only for a health below the start, so the start is
-		// above 0 there.
-		float ChancePerMagazine(float a_health)
-		{
-			const auto start = Clamped(Settings::fJamStart);
-			if (a_health >= start) {
-				return 0.0F;
-			}
-			return std::clamp(Clamped(Settings::fJamChance) * (1.0F - (a_health / start)), 0.0F, 1.0F);
 		}
 
 		// The chance that the next shot jams, for a magazine of a_capacity that
@@ -126,8 +115,9 @@ namespace Jam
 		}
 
 		// What every jam does: the magazine empties, the gun clicks as with no
-		// ammo, and the HUD says it jammed.
-		void JamGun(RE::Actor& a_actor, RE::BGSEquipIndex a_index, const RE::TESObjectWEAP::InstanceData& a_stats)
+		// ammo, the HUD says it jammed, and scripts hear of it.
+		void JamGun(RE::Actor& a_actor, const RE::TESObjectWEAP& a_weapon, RE::BGSEquipIndex a_index,
+			const RE::TESObjectWEAP::InstanceData& a_stats)
 		{
 			EmptyMagazine(a_actor, a_index);
 
@@ -144,6 +134,9 @@ namespace Jam
 			if (TraceLog::IsOpen()) {
 				TraceLog::Line("jam", "the magazine holds {:d} after the jam", a_actor.GetCurrentAmmoCount(a_index));
 			}
+
+			ScriptEvents::Jammed(a_actor, a_weapon);
+			ScriptEvents::Kick();
 		}
 
 		// How many rounds the weapon in one of an actor's equip slots holds.
@@ -213,7 +206,7 @@ namespace Jam
 			TraceLog::Line("jam", "{:s} at {:.2f}% on the reload, condition {:.3f}", jammed ? "JAMMED" : "clear", perMagazine * 100.0, health);
 			if (jammed) {
 				g_retryLoads = &weapon;
-				JamGun(a_player, RE::BGSEquipIndex{ a_equipIndex }, stats);
+				JamGun(a_player, weapon, RE::BGSEquipIndex{ a_equipIndex }, stats);
 			}
 		}
 
@@ -340,7 +333,7 @@ namespace Jam
 		TraceLog::Line("jam", "{:s} at {:.2f}% with {:d} of {:d} loaded, {:.2f} a magazine at condition {:.3f}",
 			jammed ? "JAMMED" : "clear", perShot * 100.0, loaded, capacity, perMagazine, a_health);
 		if (jammed) {
-			JamGun(a_player, index, stats);
+			JamGun(a_player, weapon, index, stats);
 		}
 		return jammed;
 	}
@@ -348,5 +341,16 @@ namespace Jam
 	bool Jams()
 	{
 		return Clamped(Settings::fJamChance) > 0.0F && Clamped(Settings::fJamStart) > 0.0F;
+	}
+
+	float ChancePerMagazine(float a_health)
+	{
+		// The division runs only for a health below the start, so the start
+		// is above 0 there.
+		const auto start = Clamped(Settings::fJamStart);
+		if (a_health >= start) {
+			return 0.0F;
+		}
+		return std::clamp(Clamped(Settings::fJamChance) * (1.0F - (a_health / start)), 0.0F, 1.0F);
 	}
 }

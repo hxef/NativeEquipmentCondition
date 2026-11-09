@@ -4,11 +4,13 @@
 #include "Condition/Equipped.h"
 #include "Condition/WeaponWear/Copy.h"
 #include "Condition/WeaponWear/Rate.h"
+#include "Core/ScriptEvents.h"
 #include "Core/Settings.h"
 #include "Core/TraceLog.h"
 
 #include <cstdint>
 #include <string_view>
+#include <utility>
 
 namespace WeaponWear
 {
@@ -191,32 +193,43 @@ namespace WeaponWear
 			auto*      weapon = &a_weapon;
 			tasks->AddTask([handle, weapon]() {
 				const auto owner = handle.get();
-				auto*      holder = owner ? owner->As<RE::Actor>() : nullptr;
-				auto*      equipment = RE::ActorEquipManager::GetSingleton();
-				if (!holder || !equipment) {
-					return;
+				if (auto* holder = owner ? owner->As<RE::Actor>() : nullptr) {
+					PutAwayNow(*holder, *weapon);
 				}
-
-				// Null instance data lets the engine work out which copy is in
-				// hand, as it does when it equips one. Equipped::ANY_STACK does
-				// the same for the stack, and the rest is what the game passes
-				// for an unequip from the Pip-Boy.
-				const RE::BGSObjectInstance instance{ weapon, nullptr };
-				equipment->UnequipObject(holder, &instance, 1, nullptr, Equipped::ANY_STACK,
-					false, false, true, false, nullptr);
-
-				// The message is for the player, whose weapon alone comes
-				// here, see Wear. The setting's text ends in a 0 byte, so
-				// data() is safe to pass on.
-				const auto message = BreakMessage();
-				if (holder == RE::PlayerCharacter::GetSingleton() && !message.empty()) {
-					RE::SendHUDMessage::ShowHUDMessage(message.data(), nullptr, true, false);
-				}
-
-				TraceLog::Line("wear", "{:s} [{:08X}] is worn out and has been put away",
-					RE::TESFullName::GetFullName(*weapon), weapon->formID);
 			});
 		}
+	}
+
+	float PerUse(const RE::TESObjectWEAP& a_weapon, const RE::ExtraDataList* a_extra, bool a_theirs)
+	{
+		const auto& instance = Condition::InstanceDataOf<RE::TESObjectWEAP::InstanceData>(a_extra, a_weapon.weaponData);
+		return Rate(a_weapon, instance, a_extra, a_theirs, false);
+	}
+
+	void PutAwayNow(RE::Actor& a_owner, RE::TESObjectWEAP& a_weapon)
+	{
+		auto* equipment = RE::ActorEquipManager::GetSingleton();
+		if (!equipment) {
+			return;
+		}
+
+		// Null instance data lets the engine work out which copy is in hand,
+		// as it does when it equips one. Equipped::ANY_STACK does the same for
+		// the stack, and the rest is what the game passes for an unequip from
+		// the Pip-Boy.
+		const RE::BGSObjectInstance instance{ &a_weapon, nullptr };
+		equipment->UnequipObject(&a_owner, &instance, 1, nullptr, Equipped::ANY_STACK,
+			false, false, true, false, nullptr);
+
+		// The message is for the player. The setting's text ends in a 0 byte,
+		// so data() is safe to pass on.
+		const auto message = BreakMessage();
+		if (&a_owner == RE::PlayerCharacter::GetSingleton() && !message.empty()) {
+			RE::SendHUDMessage::ShowHUDMessage(message.data(), nullptr, true, false);
+		}
+
+		TraceLog::Line("wear", "{:s} [{:08X}] is worn out and has been put away",
+			RE::TESFullName::GetFullName(a_weapon), a_weapon.formID);
 	}
 
 	Worn WearCopy(RE::TESObjectREFR& a_owner, RE::TESObjectWEAP& a_weapon, const char* a_source, float a_scale, bool a_theirs,
@@ -224,7 +237,7 @@ namespace WeaponWear
 	{
 		FindStack find{ a_weapon, a_source, a_scale, a_theirs, a_keeper };
 		auto&     wear = find.wear;
-		Equipped::WriteStack(a_owner, a_weapon, find, wear);
+		auto      written = Equipped::WriteStack(a_owner, a_weapon, find, wear);
 		const auto count = find.equipped.count;
 
 		// A split that leaves the health unchanged merges straight back, so
@@ -232,7 +245,7 @@ namespace WeaponWear
 		if (wear.moved && count > 1) {
 			TraceLog::For(a_theirs).Line("wear", "worn copy split off a stack of {:d}", count);
 		}
-		return { count, wear.moved, wear.broke };
+		return { count, wear.moved, wear.broke, std::move(written) };
 	}
 
 	bool Wear(RE::TESObjectREFR& a_owner, RE::TESObjectWEAP& a_weapon, const char* a_source, float a_scale)
@@ -243,6 +256,10 @@ namespace WeaponWear
 		// safe.
 		if (worn.broke) {
 			PutAway(a_owner, a_weapon);
+		}
+		if (worn.moved) {
+			ScriptEvents::Wrote(a_owner, a_weapon, worn.written.held.get(), worn.written.before, worn.written.after,
+				ScriptEvents::Cause::kWear, worn.broke);
 		}
 		return worn.moved;
 	}

@@ -51,7 +51,7 @@ namespace Papyrus
 		// The health a_ask leaves on a copy at a_health, kept between 0 and
 		// MAX_HEALTH, so a write to 100 never removes the health.
 		float TargetOf(const Ask& a_ask, float a_health, const RE::TESBoundObject& a_base, const RE::ExtraDataList* a_extra,
-			bool a_theirs)
+			bool a_theirs, float a_crew)
 		{
 			auto target = a_health;
 			switch (a_ask.mode) {
@@ -65,7 +65,7 @@ namespace Papyrus
 				target = a_health + a_ask.value / 100.0F;
 				break;
 			case Mode::kWear:
-				target = a_health - PerUseOf(a_base, a_extra, a_theirs) * a_ask.value;
+				target = a_health - PerUseOf(a_base, a_extra, a_theirs, a_crew) * a_ask.value;
 				break;
 			}
 			if (target <= Condition::MIN_HEALTH) {
@@ -84,11 +84,12 @@ namespace Papyrus
 			public RE::BGSInventoryItem::StackDataCompareFunctor
 		{
 		public:
-			NewHealth(const Ask& a_ask, const RE::TESBoundObject& a_base, const RE::ExtraDataList* a_extra, bool a_theirs) noexcept :
+			NewHealth(const Ask& a_ask, const RE::TESBoundObject& a_base, const RE::ExtraDataList* a_extra, bool a_theirs, float a_crew) noexcept :
 				ask(a_ask),
 				base(a_base),
 				extra(a_extra),
-				theirs(a_theirs)
+				theirs(a_theirs),
+				crew(a_crew)
 			{}
 
 			bool CompareData(const RE::BGSInventoryItem::Stack& a_stack) override
@@ -97,7 +98,7 @@ namespace Papyrus
 					return false;
 				}
 				const auto health = StartOf(Condition::HealthOf(&a_stack));
-				target = TargetOf(ask, health, base, extra, theirs);
+				target = TargetOf(ask, health, base, extra, theirs, crew);
 				return target != health;
 			}
 
@@ -105,6 +106,7 @@ namespace Papyrus
 			const RE::TESBoundObject& base;
 			const RE::ExtraDataList*  extra;
 			bool                      theirs;
+			float                     crew;
 			float                     target{ Condition::MAX_HEALTH };
 		};
 
@@ -148,7 +150,7 @@ namespace Papyrus
 		Done WriteInStack(const Found& a_found, const Ask& a_ask)
 		{
 			auto&      holder = *a_found.holder;
-			NewHealth  pick{ a_ask, *a_found.base, a_found.extra, HeldByNpc(a_found) };
+			NewHealth  pick{ a_ask, *a_found.base, a_found.extra, HeldByNpc(a_found), a_found.crew };
 			Put        put{ pick };
 			const auto written = Equipped::WriteStack(holder, *a_found.base, pick, put);
 
@@ -188,7 +190,7 @@ namespace Papyrus
 			}
 			const auto had = Condition::HealthOf(extra);
 			const auto health = StartOf(had);
-			const auto target = TargetOf(a_ask, health, *a_found.base, extra, false);
+			const auto target = TargetOf(a_ask, health, *a_found.base, extra, false, 1.0F);
 			done.before = PercentOf(had);
 			if (target == health) {
 				done.ok = true;

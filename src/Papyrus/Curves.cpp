@@ -109,7 +109,7 @@ namespace Papyrus
 		{
 			Holding held{ a_item };
 			if (const auto* found = held.found(); found && Tracked(*found)) {
-				points = PerUseOf(*found->base, found->extra, HeldByNpc(*found)) * 100.0F;
+				points = PerUseOf(*found->base, found->extra, HeldByNpc(*found), found->crew) * 100.0F;
 			}
 		}
 		return Result(points);

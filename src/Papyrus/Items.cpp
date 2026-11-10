@@ -2,6 +2,7 @@
 
 #include "Condition/ArmorWear/ArmorWear.h"
 #include "Condition/Condition.h"
+#include "Condition/Crew.h"
 #include "Condition/UniqueID.h"
 #include "Condition/WeaponWear/WeaponWear.h"
 #include "Core/ScriptEvents.h"
@@ -124,6 +125,15 @@ namespace Papyrus
 			return;
 		}
 
+		// Both shares are read before the lock, since the item's kind is known
+		// only once its stack is found.
+		auto weapons = 1.0F;
+		auto armor = 1.0F;
+		if (const auto* actor = HeldByNpc(_found) ? _found.holder->As<RE::Actor>() : nullptr) {
+			weapons = Crew::Of(*actor, Crew::Gear::kWeapons).mult;
+			armor = Crew::Of(*actor, Crew::Gear::kArmor).mult;
+		}
+
 		auto* inv = _found.holder->inventoryList;
 		if (!inv) {
 			TraceLog::Papyrus::Line("gone", "{:s} has no inventory loaded", Hex(_found.holder.get()));
@@ -145,6 +155,7 @@ namespace Papyrus
 			WarnLater(Log::Warning::kGone, Shown(a_item));
 			return;
 		}
+		_found.crew = Condition::KindOf(*_found.base) == Condition::Kind::kArmor ? armor : weapons;
 		TraceFound(_found);
 		_ok = true;
 	}
@@ -263,12 +274,12 @@ namespace Papyrus
 		return a_found.holder && a_found.holder->IsActor() && !a_found.holder->IsPlayerRef();
 	}
 
-	float PerUseOf(const RE::TESBoundObject& a_base, const RE::ExtraDataList* a_extra, bool a_theirs)
+	float PerUseOf(const RE::TESBoundObject& a_base, const RE::ExtraDataList* a_extra, bool a_theirs, float a_crew)
 	{
 		if (Condition::KindOf(a_base) == Condition::Kind::kArmor) {
-			return ArmorWear::PerHit(static_cast<const RE::TESObjectARMO&>(a_base), a_extra, a_theirs);
+			return ArmorWear::PerHit(static_cast<const RE::TESObjectARMO&>(a_base), a_extra, a_theirs) * a_crew;
 		}
-		return WeaponWear::PerUse(static_cast<const RE::TESObjectWEAP&>(a_base), a_extra, a_theirs);
+		return WeaponWear::PerUse(static_cast<const RE::TESObjectWEAP&>(a_base), a_extra, a_theirs) * a_crew;
 	}
 
 	// -------------------------------------------------------------------

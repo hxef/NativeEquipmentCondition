@@ -60,13 +60,15 @@ namespace WeaponWear
 	bool TheirsWear();
 
 	// Wear for an NPC's copy, at fNpcWearRateMult with its lines in the NPC
-	// log. It never waits for their inventory: while it is busy the wear
-	// waits and is tried again at the next shot or blow of anybody, see
-	// Theirs.cpp. It is dropped only when they are gone or no longer hold the
-	// weapon, after many busy tries, or when the game ends with a save load, a
-	// new game, the main menu or a full reset. An essential NPC's own weapon
-	// from the editor keeps its condition, see Equipped::Issued, and a weapon
-	// worn to 0 stays in their hands: the game only refuses to equip it again.
+	// log, times fCompanionWearRateMult for a companion's weapon and
+	// fSettlerWearRateMult for a settler's, see Condition/Crew.h. It never
+	// waits for their inventory: while it is busy the wear waits and is tried
+	// again at the next shot or blow of anybody, see Theirs.cpp. It is
+	// dropped only when they are gone or no longer hold the weapon, after many
+	// busy tries, or when the game ends with a save load, a new game, the main
+	// menu or a full reset. An essential NPC's own weapon from the editor keeps
+	// its condition, see Equipped::Issued, and a weapon worn to 0 stays in
+	// their hands: the game only refuses to equip it again.
 	void WearTheirs(RE::Actor& a_owner, RE::TESObjectWEAP& a_weapon, const char* a_source, float a_scale);
 
 	// Queues a try of the NPC wear still waiting, if any waits and no try is

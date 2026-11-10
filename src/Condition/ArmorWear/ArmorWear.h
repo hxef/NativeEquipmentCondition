@@ -82,12 +82,14 @@ namespace ArmorWear
 	// Wears down the copy of a piece a_owner has on, and that copy alone, see
 	// Equipped::WriteStack. a_source names the hit on the trace line, and
 	// a_theirs is for an NPC's piece, at their rate with the line in the NPC
-	// log, see Rate.h. A piece worn to 0 stays on and the player is told. The
-	// game refuses to put a broken piece back on, so once the player takes it
-	// off it has to be repaired before it can be worn again, see BrokenEquip.h.
+	// log, see Rate.h. a_scale multiplies the wear, a crew member's armor
+	// share, see Condition/Crew.h. A piece worn to 0 stays on and the player
+	// is told. The game refuses to put a broken piece back on, so once the
+	// player takes it off it has to be repaired before it can be worn again,
+	// see BrokenEquip.h.
 	// Returns true when the health changed. Call it without holding the
 	// inventory lock, see ItemCards.h.
-	bool Wear(RE::Actor& a_owner, RE::TESObjectARMO& a_armor, float a_damage, const char* a_source, bool a_theirs);
+	bool Wear(RE::Actor& a_owner, RE::TESObjectARMO& a_armor, float a_damage, const char* a_source, bool a_theirs, float a_scale = 1.0F);
 
 	// What 1 hit as hard as the ordinary weapon's costs the copy whose list is
 	// a_extra, at the player's rate or with a_theirs at an NPC's, the wear

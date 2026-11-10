@@ -1,5 +1,6 @@
 #include "Condition/WeaponWear/WeaponWear.h"
 
+#include "Condition/Crew.h"
 #include "Condition/WeaponWear/Copy.h"
 #include "Condition/WeaponWear/Rate.h"
 #include "Core/ScriptEvents.h"
@@ -207,15 +208,20 @@ namespace WeaponWear
 
 	void WearTheirs(RE::Actor& a_owner, RE::TESObjectWEAP& a_weapon, const char* a_source, float a_scale)
 	{
-		const auto tried = TryWear(a_owner, a_weapon, a_source, a_scale, {});
-		if (tried == Tried::kNotHeld) {
-			TraceLog::Npc::Line("wear", "{:s} [{:08X}] is not in their hands, so no wear",
-				RE::TESFullName::GetFullName(a_weapon), a_weapon.formID);
-		} else if (tried == Tried::kBusy) {
-			TraceLog::Npc::Line("wear", "their inventory is busy, so the wear waits for a later try");
-			const auto             handle = a_owner.GetHandle();
-			const std::scoped_lock l{ g_owedLock };
-			Owe({ .owner = handle, .ownerID = a_owner.formID, .weapon = &a_weapon, .source = a_source, .scale = a_scale, .tries = 1, .dropAt = Clock::now() + MOST_WAIT });
+		// The crew share rides in the scale, so a late try keeps it.
+		const auto crew = Crew::Of(a_owner, Crew::Gear::kWeapons);
+		if (Crew::Wears(crew)) {
+			const auto scale = a_scale * crew.mult;
+			const auto tried = TryWear(a_owner, a_weapon, a_source, scale, {});
+			if (tried == Tried::kNotHeld) {
+				TraceLog::Npc::Line("wear", "{:s} [{:08X}] is not in their hands, so no wear",
+					RE::TESFullName::GetFullName(a_weapon), a_weapon.formID);
+			} else if (tried == Tried::kBusy) {
+				TraceLog::Npc::Line("wear", "their inventory is busy, so the wear waits for a later try");
+				const auto             handle = a_owner.GetHandle();
+				const std::scoped_lock l{ g_owedLock };
+				Owe({ .owner = handle, .ownerID = a_owner.formID, .weapon = &a_weapon, .source = a_source, .scale = scale, .tries = 1, .dropAt = Clock::now() + MOST_WAIT });
+			}
 		}
 		SettleSoon();
 	}

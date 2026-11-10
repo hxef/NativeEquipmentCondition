@@ -35,6 +35,9 @@ namespace ArmorWear
 		} else {
 			REX::INFO("NPC armor never wears, since fNpcArmorWearRateMult is {:g}.", theirs);
 		}
+		REX::INFO("Your companions' weapons wear at fCompanionWearRateMult {:g} and their armor at fCompanionArmorWearRateMult {:g}, your settlers' weapons at fSettlerWearRateMult {:g} and their armor at fSettlerArmorWearRateMult {:g}, on top of the NPC rates.",
+			Settings::fCompanionWearRateMult.GetValue(), Settings::fCompanionArmorWearRateMult.GetValue(),
+			Settings::fSettlerWearRateMult.GetValue(), Settings::fSettlerArmorWearRateMult.GetValue());
 
 		// Said only when fArmorPenaltyStart is below full.
 		const auto start = Condition::Start(Condition::Kind::kArmor);
@@ -137,10 +140,10 @@ namespace ArmorWear
 			public RE::BGSInventoryItem::StackDataCompareFunctor
 		{
 		public:
-			FindStack(const RE::TESObjectARMO& a_armor, float a_damage, const char* a_source, bool a_theirs) noexcept :
+			FindStack(const RE::TESObjectARMO& a_armor, float a_damage, const char* a_source, bool a_theirs, float a_scale) noexcept :
 				armor(&a_armor),
 				damage(a_damage),
-				wear(a_source, 1.0F, a_theirs)
+				wear(a_source, a_scale, a_theirs)
 			{}
 
 			bool CompareData(const RE::BGSInventoryItem::Stack& a_stack) override
@@ -148,7 +151,7 @@ namespace ArmorWear
 				if (!equipped.CompareData(a_stack)) {
 					return false;
 				}
-				wear.amount = Rate(*armor, a_stack.extra.get(), damage, wear.theirs);
+				wear.amount = Rate(*armor, a_stack.extra.get(), damage, wear.theirs) * wear.scale;
 				return Condition::Lowers(Condition::HealthOf(&a_stack), *armor, wear.amount, wear.source, wear.theirs);
 			}
 
@@ -186,9 +189,9 @@ namespace ArmorWear
 		}
 	}
 
-	bool Wear(RE::Actor& a_owner, RE::TESObjectARMO& a_armor, float a_damage, const char* a_source, bool a_theirs)
+	bool Wear(RE::Actor& a_owner, RE::TESObjectARMO& a_armor, float a_damage, const char* a_source, bool a_theirs, float a_scale)
 	{
-		FindStack find{ a_armor, a_damage, a_source, a_theirs };
+		FindStack find{ a_armor, a_damage, a_source, a_theirs, a_scale };
 		auto&     wear = find.wear;
 		const auto written = Equipped::WriteStack(a_owner, a_armor, find, wear);
 		const auto count = find.equipped.count;

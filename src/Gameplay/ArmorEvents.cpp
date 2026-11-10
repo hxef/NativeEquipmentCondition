@@ -1,6 +1,7 @@
 #include "Gameplay/ArmorEvents.h"
 
 #include "Condition/ArmorWear/ArmorWear.h"
+#include "Condition/Crew.h"
 #include "Condition/Equipped.h"
 #include "Core/TraceLog.h"
 #include "Gameplay/ArmorRating.h"
@@ -126,10 +127,16 @@ namespace ArmorEvents
 			if (pieces.empty()) {
 				return RE::BSEventNotifyControl::kContinue;
 			}
+			// A companion's or a settler's armor share, read once per blow
+			// before any piece's inventory lock. At 0 their pieces never wear.
+			const auto crew = Crew::Of(*target, Crew::Gear::kArmor);
 
 			// One block per blow, in the log of whoever was struck.
 			const auto where = condition ? RE::TESFullName::GetFullName(*condition) : "the whole body"sv;
 			TraceLog::For(theirs).Begin("ARMOR", "{:s} struck on {:s} for {:.2f}", TraceLog::Who{ target.get() }, where, damage);
+			if (!Crew::Wears(crew)) {
+				return RE::BSEventNotifyControl::kContinue;
+			}
 
 			// The pieces on the limb struck, every piece on a limb for a blow
 			// that names none, and the pieces on no limb, which cover the whole
@@ -158,7 +165,7 @@ namespace ArmorEvents
 					continue;
 				}
 				const auto split = onNoLimb ? sharing : 1;
-				moved = ArmorWear::Wear(*target, *piece.armor, damage / static_cast<float>(split), split > 1 ? "shared hit" : "hit", theirs) || moved;
+				moved = ArmorWear::Wear(*target, *piece.armor, damage / static_cast<float>(split), split > 1 ? "shared hit" : "hit", theirs, crew.mult) || moved;
 			}
 			if (!moved) {
 				return RE::BSEventNotifyControl::kContinue;

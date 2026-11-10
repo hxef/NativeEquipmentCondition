@@ -98,6 +98,7 @@ src/
 
   Condition/
     Condition.h/.cpp         the reading, its bounds, the share a stat keeps, what takes part, the write
+    Crew.h/.cpp              the share of the NPC rates the player's companions' and settlers' gear wears at
     Equipped.h/.cpp          what an actor holds and has on, and writing to the copy in use
     Excluded.h/.cpp          the weapons and armor a patch's file in NEC/Exclude tells NEC to leave alone
     UniqueID.h/.cpp          the number that names 1 stack inside a container to a script

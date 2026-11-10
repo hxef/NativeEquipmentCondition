@@ -27,6 +27,20 @@ namespace Settings
 	// The same for every NPC's armor, in place of fArmorWearRateMult.
 	inline Live<float> fNpcArmorWearRateMult{ "Balance", "fNpcArmorWearRateMult", 1.0F };
 
+	// What a companion's weapon wear is multiplied by, up to 1, on top of
+	// fNpcWearRateMult, see Condition/Crew.h.
+	inline Live<float> fCompanionWearRateMult{ "Balance", "fCompanionWearRateMult", 1.0F };
+
+	// The same for the weapons of a settler of a settlement the player owns.
+	inline Live<float> fSettlerWearRateMult{ "Balance", "fSettlerWearRateMult", 1.0F };
+
+	// What a companion's armor and clothing wear is multiplied by, up to 1, on
+	// top of fNpcArmorWearRateMult.
+	inline Live<float> fCompanionArmorWearRateMult{ "Balance", "fCompanionArmorWearRateMult", 1.0F };
+
+	// The same for a settler's armor and clothing.
+	inline Live<float> fSettlerArmorWearRateMult{ "Balance", "fSettlerArmorWearRateMult", 1.0F };
+
 	// What a weapon at nothing still hits for, as a share of its full damage,
 	// see HealthDamage/Curve.h.
 	inline Live<float> fDamageFloor{ "Balance", "fDamageFloor", 0.66F };

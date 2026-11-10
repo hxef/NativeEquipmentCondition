@@ -50,6 +50,11 @@ namespace Papyrus
 
 		std::uint32_t count{ 0 };
 		bool          equipped{ false };
+
+		// What the holder's wear of this item is multiplied by, a
+		// companion's or a settler's share for its kind of gear, see
+		// Condition/Crew.h. 1 for anyone else.
+		float crew{ 1.0F };
 	};
 
 	// Finds what a_item names and, for a stack, holds the holder's inventory
@@ -138,8 +143,8 @@ namespace Papyrus
 	// True for a stack an NPC holds, which wears at the NPC rate.
 	[[nodiscard]] bool HeldByNpc(const Found& a_found);
 
-	// What 1 use costs the copy whose list is a_extra, as a health. Armor
-	// takes hits as hard as the ordinary weapon's. Under the lock that keeps
-	// a_extra.
-	[[nodiscard]] float PerUseOf(const RE::TESBoundObject& a_base, const RE::ExtraDataList* a_extra, bool a_theirs);
+	// What 1 use costs the copy whose list is a_extra, as a health, times
+	// a_crew, the holder's share in Found. Armor takes hits as hard as the
+	// ordinary weapon's. Under the lock that keeps a_extra.
+	[[nodiscard]] float PerUseOf(const RE::TESBoundObject& a_base, const RE::ExtraDataList* a_extra, bool a_theirs, float a_crew);
 }

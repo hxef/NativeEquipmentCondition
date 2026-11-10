@@ -1,3 +1,8 @@
+1.9.1
+v1.9.1 adds MCM sliders that slow or stop your companions' and settlers' gear wear, on top of the NPC wear speeds. Armor mods that raise Health now slow wear. An MCM switch hides repair gains, and Papyrus calls wait on a locked inventory.
+
+OG/AE only
+
 1.9.0
 v1.9.0 adds a Papyrus API: functions to read and change the condition of any weapon, armor or food, the repair costs and the curves, and events for condition changes, breaks, jams and spoiled food. NEC's logs move to F4SE\NEC.
 

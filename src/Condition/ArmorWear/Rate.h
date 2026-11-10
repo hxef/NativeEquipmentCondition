@@ -9,6 +9,7 @@ namespace ArmorWear
 	// How much health one hit of a_damage costs this copy, given what it is
 	// built from, which the piece and its extra data say. a_theirs for an
 	// NPC's piece, at fNpcArmorWearRateMult with the line in the NPC log.
+	// Armor mods that change the copy's Health change it, see Health.h.
 	float Rate(const RE::TESObjectARMO& a_armor, const RE::ExtraDataList* a_extra, float a_damage, bool a_theirs);
 
 	// How many blows of the ordinary weapon take a piece of ordinary make from

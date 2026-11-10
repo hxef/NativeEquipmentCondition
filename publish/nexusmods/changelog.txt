@@ -1,5 +1,6 @@
 1.9.1
 * 4 new MCM sliders slow or stop the wear of your companions' and settlers' gear, on top of the NPC wear speeds: Companion weapon wear speed (fCompanionWearRateMult, 1) and Settler weapon wear speed (fSettlerWearRateMult, 1) on the Weapons page, Companion armor wear speed (fCompanionArmorWearRateMult, 1) and Settler armor wear speed (fSettlerArmorWearRateMult, 1) on the Armor page.
+* Armor mods that change a piece's Health, by a multiplier or a flat amount, now make it wear slower or faster by the same share.
 * Papyrus API: a call on an item whose inventory the game has locked now waits until the lock is free and then answers, instead of answering as if the item no longer existed.
 
 1.9.0

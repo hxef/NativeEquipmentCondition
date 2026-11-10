@@ -1,6 +1,7 @@
 #include "Condition/ArmorWear/Mods.h"
 
 #include "Condition/ArmorWear/ArmorWear.h"
+#include "Condition/ArmorWear/Health.h"
 #include "Condition/ArmorWear/Skins.h"
 
 #include <algorithm>
@@ -81,14 +82,6 @@ namespace ArmorWear
 						return false;
 				}
 			});
-		}
-
-		// Whether a mod is for armor. The game applies a mod with no target
-		// type to armor too.
-		bool ForArmor(const Mod& a_mod)
-		{
-			const auto type = a_mod.targetFormType.get();
-			return type == RE::ENUM_FORM_ID::kARMO || type == RE::ENUM_FORM_ID::kNONE;
 		}
 
 		// A mod with no target type counts only when it adds something
@@ -295,12 +288,13 @@ namespace ArmorWear
 		}
 
 		g_said = MeasureAndSwap();
-		if (!ModsMeasured()) {
+		if (ModsMeasured()) {
+			REX::INFO("{:d} armor mods add protection, an effect or a bonus. Of the {:d} pieces the player can carry, {:d} give nothing, with no protection, no effect and no such mod that fits, so their wear lowers only their price and traders sell them new.",
+				g_said.giving, g_said.carried, g_said.nothing);
+		} else {
 			WarnUnread();
-			return;
 		}
-		REX::INFO("{:d} armor mods add protection, an effect or a bonus. Of the {:d} pieces the player can carry, {:d} give nothing, with no protection, no effect and no such mod that fits, so their wear lowers only their price and traders sell them new.",
-			g_said.giving, g_said.carried, g_said.nothing);
+		MeasureHealth();
 	}
 
 	void MeasureModsAgain()
@@ -320,6 +314,7 @@ namespace ArmorWear
 				counts.giving, counts.nothing, counts.carried);
 		}
 		g_said = counts;
+		MeasureHealth();
 	}
 
 	void UnloadMods()
@@ -330,6 +325,7 @@ namespace ArmorWear
 			g_slots.swap(old);
 		}
 		UnloadSkins();
+		ForgetHealth();
 		g_said = {};
 	}
 
@@ -356,5 +352,11 @@ namespace ArmorWear
 			}
 		}
 		return false;
+	}
+
+	bool ForArmor(const Mod& a_mod)
+	{
+		const auto type = a_mod.targetFormType.get();
+		return type == RE::ENUM_FORM_ID::kARMO || type == RE::ENUM_FORM_ID::kNONE;
 	}
 }

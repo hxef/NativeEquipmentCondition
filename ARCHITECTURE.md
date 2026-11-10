@@ -120,6 +120,7 @@ src/
       Mods.h/.cpp            which armor mods add protection, an effect or a bonus, the first row to load
       Skins.h/.cpp           which pieces the game wears as a race's or a character's skin, measured with the mods
       Rate.h/.cpp            how fast a piece of armor wears
+      Health.h/.cpp          how much longer a copy lasts for the mods that change its Health
     CraftingPerks/
       CraftingPerks.h/.cpp   the perk behind an item, the player's rank in it
       Ladder.h/.cpp          walking a perk's ring of ranks

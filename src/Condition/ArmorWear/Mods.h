@@ -14,4 +14,8 @@ namespace ArmorWear
 	// table is built: before LoadMods, after UnloadMods, and when the armor
 	// mods could not be read.
 	std::optional<bool> GivingModFits(const RE::TESObjectARMO& a_armor);
+
+	// Whether a mod is for armor. The game applies a mod with no target type
+	// to armor too.
+	bool ForArmor(const RE::BGSMod::Attachment::Mod& a_mod);
 }

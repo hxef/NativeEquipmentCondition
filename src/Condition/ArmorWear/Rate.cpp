@@ -1,5 +1,6 @@
 #include "Condition/ArmorWear/Rate.h"
 
+#include "Condition/ArmorWear/Health.h"
 #include "Condition/Materials/Materials.h"
 #include "Condition/WeaponWear/WeaponWear.h"
 #include "Core/Settings.h"
@@ -50,10 +51,15 @@ namespace ArmorWear
 		// condition from every blow. An NPC's piece takes
 		// fNpcArmorWearRateMult instead, and its line ends with it.
 		const auto mult = std::max(0.0F, (a_theirs ? Settings::fNpcArmorWearRateMult : Settings::fArmorWearRateMult).GetValue());
+		// A copy whose mods change its Health wears slower or faster by the same share, see Health.h.
+		const auto lasts = HealthMult(a_armor, a_extra);
 		const auto wear = RATE_AT_REFERENCE * mult *
-		                  (a_damage / reference) * (Materials::ReferenceQuality(Condition::Kind::kArmor) / quality);
+		                  (a_damage / reference) * (Materials::ReferenceQuality(Condition::Kind::kArmor) / quality) / lasts;
 
-		const auto tail = a_theirs && TraceLog::IsOpen() ? std::format(", NPC rate x{:.2f}", mult) : std::string{};
+		auto tail = a_theirs && TraceLog::IsOpen() ? std::format(", NPC rate x{:.2f}", mult) : std::string{};
+		if (lasts != 1.0F && TraceLog::IsOpen()) {
+			tail += std::format(", Health x{:.2f}", lasts);
+		}
 		TraceLog::For(a_theirs).Line("rate", "a blow of {:.0f} on armor at quality {:.1f} costs {:.6f}{:s}", a_damage, quality, wear, tail);
 		return wear;
 	}

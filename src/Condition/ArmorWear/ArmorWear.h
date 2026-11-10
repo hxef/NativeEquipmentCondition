@@ -24,7 +24,8 @@ namespace ArmorWear
 	// looks, like a paint AWKCR gives every ring, does not count. Keeps
 	// keywords and skins, so UnloadMods lets them go. When no armor mod adds
 	// anything, which only a misread gives, the log warns and every slot
-	// counts.
+	// counts. It also measures the Health a piece with none counts as, see
+	// Health.h.
 	void LoadMods();
 
 	// Forgets what LoadMods found, and every slot counts and no piece is a
@@ -36,7 +37,8 @@ namespace ArmorWear
 	// RobCo Patcher can change them after LoadMods. Says only what moved.
 	// Builds a whole table and swaps it in under a lock that readers share,
 	// the way FireRate guards its NPC readings, since item cards, hits and
-	// inventories ask WhyNoCondition from other threads meanwhile.
+	// inventories ask WhyNoCondition from other threads meanwhile. The median
+	// Health is measured again with them.
 	void MeasureModsAgain();
 
 	// Whether this armor takes part, as a reason: nullptr for one that does,

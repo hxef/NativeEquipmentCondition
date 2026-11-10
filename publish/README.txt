@@ -57,6 +57,8 @@ Armor and clothing:
   yours and NPCs' alike. Explosions wear every piece, and pieces that cover no
   limb, like a mask or a super mutant's armor, share each hit between them.
 * Worn armor protects less, yours and NPCs' alike, down to 66% at 0 condition.
+* Armor mods that change a piece's Health, by a multiplier or a flat amount,
+  make it wear slower or faster by the same share.
 * A broken piece stays on and keeps its bonuses, like a +1 to a stat or a
   legendary effect, until you take it off. After that it can't be equipped
   again until it is repaired.

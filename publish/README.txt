@@ -156,8 +156,8 @@ SEE IT AT A GLANCE
 
 MAKE IT YOURS
 * With MCM, every setting changes on the spot. The main page shows NEC's
-  version, Log and any part another mod took over. The Weapons, Armor, Loot and
-  repairs, UI and Little extras pages hold the rest: switch features off, or
+  version, Log and any part another mod took over. The Weapons, Armor, Loot,
+  Repairs, UI and Little extras pages hold the rest: switch features off, or
   tune wear, penalties, loot condition, prices and repair costs.
 * Without MCM, NEC.ini in Data\F4SE\Plugins explains every setting. Copy a
   line into NEC_custom.ini beside it, under the same section heading, change

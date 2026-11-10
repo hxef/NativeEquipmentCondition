@@ -122,6 +122,7 @@ namespace
 		{ &Settings::iUnscrappableSpares, &Settings::fBenchCostMult, BENCH },
 		{ &Settings::iRepairBoxRow, &Settings::fBenchCostMult, BENCH },
 		{ &Settings::bRepairBoxColumns, &Settings::fBenchCostMult, REPAIR_BOXES },
+		{ &Settings::bRepairBoxGains, &Settings::fBenchCostMult, REPAIR_BOXES },
 		{ &Settings::bLoadingTips, nullptr, TIPS },
 		{ &Settings::bHudCondition, nullptr, HUD_BARS },
 		// The power armor bar's switch rides on HUD condition bars as the

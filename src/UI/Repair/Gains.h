@@ -31,7 +31,8 @@ namespace Gains
 	// The card's numbers for a_item now and at each of a_levels, whole
 	// percents. 1 column per type the card would print at any of those levels
 	// and has a word for, in the card's order. Empty for an item that is
-	// neither a weapon nor a piece of armor, or one no longer found.
+	// neither a weapon nor a piece of armor, or one no longer found, and empty
+	// for every item while bRepairBoxGains is off.
 	[[nodiscard]] std::vector<Column> Read(const SelectedItem::Item& a_item, const std::vector<std::uint32_t>& a_levels);
 
 	// Adds a row to a_table: a_kept, then the cell of each of a_columns for the
@@ -41,6 +42,7 @@ namespace Gains
 
 	// The 2 card numbers of every column for the level of a_row and the gain
 	// shown, for the trace, each type by the card's number for it:
-	// "type 1 21.60 to 24.30 +3, type 4 4.00 to 4.50 +0", or "no numbers".
+	// "type 1 21.60 to 24.30 +3, type 4 4.00 to 4.50 +0", or "no numbers", or
+	// "gains off" while bRepairBoxGains is off.
 	[[nodiscard]] std::string Spelled(const std::vector<Column>& a_columns, std::size_t a_row);
 }

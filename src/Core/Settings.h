@@ -167,6 +167,13 @@ namespace Settings
 	// and Trader repairs. On by default.
 	inline Live<bool> bRepairBoxColumns{ "Features", "bRepairBoxColumns", true };
 
+	// What each repair adds to the item's damage or resistances, at the end of
+	// the rows of the repair boxes at a workbench and at a trader and of the box
+	// that lists the spares, see Repair/Gains.h. When off, Gains::Read reads
+	// nothing. No feature's row: it rides on Workbench repairs and Trader
+	// repairs. On by default.
+	inline Live<bool> bRepairBoxGains{ "Features", "bRepairBoxGains", true };
+
 	// Loading screen tips about condition.
 	inline Live<bool> bLoadingTips{ "Features", "bLoadingTips", true };
 

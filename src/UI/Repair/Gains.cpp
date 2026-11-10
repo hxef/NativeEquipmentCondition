@@ -1,6 +1,7 @@
 #include "UI/Repair/Gains.h"
 
 #include "Condition/Condition.h"
+#include "Core/Settings.h"
 #include "Core/Text/Text.h"
 #include "Gameplay/ArmorRating.h"
 #include "Gameplay/HealthDamage/HealthDamage.h"
@@ -53,6 +54,9 @@ namespace Gains
 	std::vector<Column> Read(const SelectedItem::Item& a_item, const std::vector<std::uint32_t>& a_levels)
 	{
 		std::vector<Column> out;
+		if (!Settings::bRepairBoxGains.GetValue()) {
+			return out;
+		}
 		const auto* stack = a_item.item ? a_item.item->GetStackByID(a_item.stack) : nullptr;
 		const auto  card = a_item.object && (a_item.object->Is(RE::ENUM_FORM_ID::kWEAP) || a_item.object->Is(RE::ENUM_FORM_ID::kARMO));
 		if (!stack || !card) {
@@ -100,6 +104,9 @@ namespace Gains
 			out += std::format("{:s}type {:d} {:.2f} to {:.2f} +{:d}", out.empty() ? "" : ", ", column.type, column.now,
 				To(column, a_row), Gain(column, a_row));
 		}
-		return out.empty() ? std::string{ "no numbers" } : out;
+		if (out.empty()) {
+			return Settings::bRepairBoxGains.GetValue() ? "no numbers" : "gains off";
+		}
+		return out;
 	}
 }

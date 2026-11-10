@@ -235,7 +235,7 @@ namespace Papyrus
 	bool NameStack(RE::TESObjectREFR& a_holder, const RE::ExtraDataList* a_list, const RE::TESBoundObject& a_base,
 		const std::function<bool(const Item&)>& a_inside)
 	{
-		Hold       hold{ .once = true, .inside = &a_inside };
+		Hold       hold{ .inside = &a_inside };
 		const auto items = a_list ? HandlesFor(a_holder, ByList(a_list), hold) : HandlesFor(a_holder, FirstEquipped(a_base), hold);
 		if (hold.busy) {
 			return false;

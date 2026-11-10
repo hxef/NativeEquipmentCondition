@@ -18,6 +18,7 @@
 #include <mutex>
 #include <string>
 #include <utility>
+#include <vector>
 
 namespace Papyrus::Log
 {
@@ -26,9 +27,9 @@ namespace Papyrus::Log
 		constexpr std::string_view FILE_NAME = "NEC.papyrus.log";
 
 		constexpr std::array<std::string_view, 3> HEAD{
-			"; NEC's Papyrus API: each time the game builds its script VM, which scripts each event reached first, and what",
-			"; a script asked that NEC could not do. NEC.papyrus.trace.log adds, with Bug report logs on in MCM, the calls",
-			"; and the events.",
+			"; NEC's Papyrus API: each time the game builds its script VM, which scripts each event reached first, and the",
+			"; errors in scripts' calls to NEC. NEC.papyrus.trace.log adds, with Bug report logs on in MCM, the calls and the",
+			"; events.",
 		};
 
 		// A warning of 1 function gets a line at most this often.
@@ -46,6 +47,18 @@ namespace Papyrus::Log
 		};
 
 		thread_local std::string_view t_calling;
+
+		// A warning Hold kept back, as WarnFor was given it.
+		struct Held
+		{
+			std::string   event;
+			Warning       warning;
+			std::string   detail;
+			std::uint32_t count;
+		};
+
+		thread_local bool              t_holding{ false };
+		thread_local std::vector<Held> t_held;
 
 		// Guards the file and the tables. Taken by script calls and the
 		// event task, never under an inventory lock.
@@ -124,8 +137,6 @@ namespace Papyrus::Log
 				return std::format("NEC.{:s} was given {:s}, which it does not take, so it did nothing.", a_function, a_detail);
 			case Warning::kClamped:
 				return std::format("NEC.{:s} was given {:s}.", a_function, a_detail);
-			case Warning::kBusy:
-				return std::format("NEC.{:s} found the inventory of {:s} busy for 5 ms, so it answered as for a gone item.", a_function, a_detail);
 			case Warning::kLoading:
 				return std::format("NEC.{:s} was called while a save loaded, so it did nothing.", a_function);
 			case Warning::kFrozen:
@@ -165,6 +176,10 @@ namespace Papyrus::Log
 		if (a_count == 0) {
 			return;
 		}
+		if (t_holding) {
+			t_held.push_back({ std::string{ a_event }, a_warning, std::string{ a_detail }, a_count });
+			return;
+		}
 		const auto             now = Clock::now();
 		const std::scoped_lock l(g_lock);
 		auto [at, first] = g_counts.try_emplace({ a_warning, std::string{ a_event } });
@@ -180,6 +195,24 @@ namespace Papyrus::Log
 		counted.waiting = 0;
 		counted.lastLine = now;
 		counted.lastAt = clock;
+	}
+
+	void Hold()
+	{
+		t_held.clear();
+		t_holding = true;
+	}
+
+	void Release(bool a_keep)
+	{
+		t_holding = false;
+		auto held = std::move(t_held);
+		t_held.clear();
+		if (a_keep) {
+			for (const auto& one : held) {
+				WarnFor(one.event, one.warning, one.detail, one.count);
+			}
+		}
 	}
 
 	void Bound(std::uint32_t a_functions, std::uint32_t a_tasklets)

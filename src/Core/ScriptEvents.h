@@ -8,7 +8,7 @@
 #include <string_view>
 #include <vector>
 
-// The notes behind the 4 events other mods' scripts hear, see NEC.psc.in.
+// The notes behind the events other mods' scripts hear, see NEC.psc.in.
 // The places that change an item push a note here as they happen, and 1
 // task on F4SE's queue hands them on to the scripts, see Papyrus/Events.cpp.
 // A script never runs inside the change that raised its event, and no note

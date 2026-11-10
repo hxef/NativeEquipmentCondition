@@ -93,6 +93,8 @@ src/
         MenuNotes.cpp        the MCM page's grey lines about parts left to other mods
         MenuPieces.cpp       a part with its pieces in brackets, what still works, and a setting's sentence with pieces off
     TraceLog.h/.cpp          the trace logs, for lines that arrive in floods
+    TraceHold.h/.cpp         a script call's Papyrus trace lines, held until the call knows which try counts
+    TraceWords.h/.cpp        how a trace line names an actor and a damage type, which TraceLog.h includes
 
   Condition/
     Condition.h/.cpp         the reading, its bounds, the share a stat keeps, what takes part, the write
@@ -287,6 +289,7 @@ src/
     Pack.h/.cpp              an event's arguments packed as exactly the types its callback declares
     Log.h/.cpp               NEC.papyrus.log: each script VM built, the scripts each event reached first, and the errors in a script's calls
     Register.cpp             the bind, which F4SE runs each time the game builds its script VM
+    Waiting.h/.cpp           a call that finds an inventory locked, run again at the VM's next update
     Version.cpp              GetVersion, GetVersionString, and NEC.pex's version checked against NEC.dll's
     Settings.cpp             IsFeatureOn, IsFeatureTakenOver and the settings by their MCM ids
 ```

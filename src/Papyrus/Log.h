@@ -8,13 +8,12 @@
 
 // NEC.papyrus.log, beside NEC.log and always written: each time the game
 // builds its script VM, the scripts each event reached first in a game, and
-// what a script asked that NEC could not do. A warning is written the first
-// time it comes for a function, then at most once each 10 s with how many
-// came since its last line, so a script calling in a loop cannot flood the
-// file. Nothing here is called under an inventory lock, since a line can
-// wait on the disk. Every event and every call but the version and settings
-// functions go to NEC.papyrus.trace.log, see Core/TraceLog.h. Private to this
-// folder.
+// the errors in scripts' calls. A warning is written the first time it comes
+// for a function, then at most once each 10 s with how many came since its
+// last line, so a script calling in a loop cannot flood the file. Nothing here
+// is called under an inventory lock, since a line can wait on the disk. Every
+// event and every call but the version and settings functions go to
+// NEC.papyrus.trace.log, see Core/TraceLog.h. Private to this folder.
 namespace Papyrus::Log
 {
 	enum class Warning : std::uint8_t
@@ -24,7 +23,6 @@ namespace Papyrus::Log
 		kUntracked,  // a write on an item NEC does not change
 		kRefused,    // a value the function does not take
 		kClamped,    // a value past what the function takes, kept at its end
-		kBusy,       // the item's inventory busy for 5 ms
 		kLoading,    // called while a save loads
 		kFrozen,     // called while the game froze its scripts
 		kEventBusy,  // an event's inventory busy for 2 s, so its item is None
@@ -41,6 +39,13 @@ namespace Papyrus::Log
 	// item, the holder, or what was given and used.
 	void Warn(Warning a_warning, std::string_view a_detail = {}, std::uint32_t a_count = 1);
 	void WarnFor(std::string_view a_event, Warning a_warning, std::string_view a_detail = {}, std::uint32_t a_count = 1);
+
+	// Keeps this thread's warnings back from Hold to Release, which writes
+	// them with a_keep and drops them without. A try of a script's call that
+	// the VM runs again drops its own, see Waiting.h, so a call counts each
+	// warning once.
+	void Hold();
+	void Release(bool a_keep);
 
 	// The bind of the VM being built: a_functions bound, a_tasklets of them
 	// answering at once. NEC.log and the trace log say so now, and

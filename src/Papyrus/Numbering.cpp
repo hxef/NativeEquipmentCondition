@@ -3,6 +3,7 @@
 #include "Condition/Equipped.h"
 #include "Condition/UniqueID.h"
 #include "Core/TraceLog.h"
+#include "Papyrus/Waiting.h"
 
 #include <cstddef>
 #include <cstdint>
@@ -123,11 +124,8 @@ namespace Papyrus
 				TraceLog::Papyrus::Line("gone", "{:s} has no inventory loaded", Hex(&a_holder));
 				return std::nullopt;
 			}
-			if (a_hold.once ? !inv->rwLock.try_lock_write() : !TryLock(*inv)) {
-				if (!a_hold.once) {
-					TraceLog::Papyrus::Line("busy", "{:s} held by another thread for 5 ms", Hex(&a_holder));
-					Log::Warn(Log::Warning::kBusy, Hex(&a_holder));
-				}
+			if (!inv->rwLock.try_lock_write()) {
+				Waiting::Locked(a_holder);
 				a_hold.busy = true;
 				return std::nullopt;
 			}

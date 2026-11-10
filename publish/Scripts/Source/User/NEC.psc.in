@@ -55,15 +55,20 @@ Scriptname NEC Native Hidden
 ; # When a call runs
 ; Every function but GetVersion, GetVersionString and GetScriptVersion is latent: it runs on the next Papyrus tick,
 ; during play and while a menu pauses the game, and returns when its work is done. So a call takes about 1 frame,
-; and a script that calls in a loop advances 1 call per frame. The 3 version functions return at once.
+; and a script that calls in a loop advances 1 call per frame. The version functions return at once.
 ;
-; A call fails safely when the game locks that item's inventory for more than 5 ms, and during a save, a load or a
-; quit to the main menu: it answers as if the item no longer existed and writes nothing. NEC.papyrus.log records
-; each such call. A save made while a script was inside a call to NEC loads only with NEC installed, since without
-; NEC the game refuses it as corrupt.
+; A call on an item whose inventory the game has locked tries again at each tick and returns once the lock is free.
+; Only the calling script waits, and its calls keep their order.
+;
+; During a save, a load or a quit to the main menu a call writes nothing and answers as if the item no longer
+; existed. NEC.papyrus.log records each such call. A save made while a script was inside a call to NEC loads only
+; with NEC installed, since without NEC the game refuses it as corrupt.
 ;
 ; # Versions
 ; 10900 is 1.9.0, the first NEC with this script.
+;
+; 10901 is 1.9.1: a call on a locked inventory waits for the lock instead of answering as if the item no longer
+; existed.
 
 ; # Functions
 

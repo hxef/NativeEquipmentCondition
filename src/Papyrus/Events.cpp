@@ -6,6 +6,7 @@
 #include "Papyrus/Log.h"
 #include "Papyrus/Pack.h"
 #include "Papyrus/Papyrus.h"
+#include "Papyrus/Waiting.h"
 
 #include <array>
 #include <atomic>
@@ -344,6 +345,7 @@ namespace Papyrus
 	void EndGame()
 	{
 		Log::EndGame();
+		Waiting::Forget();
 	}
 
 	void BeforeSave()

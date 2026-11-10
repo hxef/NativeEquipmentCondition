@@ -38,8 +38,7 @@ namespace Papyrus
 	[[nodiscard]] std::int32_t GetSettingInt(std::monostate, std::string a_id);
 	[[nodiscard]] bool         GetSettingBool(std::monostate, std::string a_id);
 
-	// 1 handle per stack, see Handles.cpp. None for a None holder or actor
-	// and while the inventory is busy.
+	// 1 handle per stack, see Handles.cpp. None for a None holder or actor.
 	[[nodiscard]] std::optional<std::vector<Item>> GetItems(std::monostate, RE::TESObjectREFR* a_holder, RE::TESForm* a_base);
 	[[nodiscard]] Item                             GetEquippedWeapon(std::monostate, RE::Actor* a_actor);
 	[[nodiscard]] Item                             GetWornItem(std::monostate, RE::Actor* a_actor, std::int32_t a_slot);

@@ -31,13 +31,10 @@ namespace Papyrus
 	// inventory's order, with the holder as an actor or null.
 	using Pick = std::function<void(RE::Actor*, const RE::BGSInventoryList&, std::vector<Target>&)>;
 
-	// How HandlesFor takes the lock, and what runs before it lets go.
+	// What runs before HandlesFor lets go of the lock, which it tries once a
+	// round and never waits for.
 	struct Hold
 	{
-		// 1 try a round and never a wait, for F4SE's queue, see
-		// Equipped.h. A script's call tries for up to 5 ms.
-		bool once{ false };
-
 		// Run on each handle under the lock. False takes back a number
 		// this call gave.
 		const std::function<bool(const Item&)>* inside{ nullptr };

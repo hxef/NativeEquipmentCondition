@@ -57,12 +57,13 @@ namespace Papyrus
 	// meanwhile. The engine's own readers and writers count this thread in,
 	// so code that takes this same inventory's lock may run inside. Code
 	// that takes another lock may not, see Core/ItemCards.h. The lock is
-	// tried for at most 5 ms and never waited on: a thread holding it may be
-	// waiting for this one. found() is null for None, a gone item, a busy
-	// inventory, one the game has not loaded, and while a save loads or the
-	// game froze its scripts, see Core/ScriptEvents.h. The trace log says
-	// which, and NEC.papyrus.log counts each but the inventory not loaded,
-	// after the lock is gone.
+	// tried once and never waited on, since a thread holding it may wait
+	// for this one, and a script's call that finds it held runs again at the
+	// VM's next update, see Waiting.h. found() is null for None, a gone
+	// item, a locked inventory, one the game has not loaded, and while a
+	// save loads or the game froze its scripts, see Core/ScriptEvents.h. The
+	// trace log says which, and NEC.papyrus.log counts each but a locked
+	// inventory and one not loaded, after the lock is gone.
 	class Holding
 	{
 	public:
@@ -103,10 +104,6 @@ namespace Papyrus
 	// not: a save is loading or the game froze its scripts, see
 	// Core/ScriptEvents.h.
 	[[nodiscard]] bool Answering();
-
-	// Tries a_list's lock as a writer for at most 5 ms, yielding between
-	// tries. True once held, and the caller then unlocks it.
-	[[nodiscard]] bool TryLock(RE::BGSInventoryList& a_list);
 
 	// The trace log's words: an item as "item 2 in container 00000014", "ref
 	// FF014729" or "none", a form as 8 hex digits or "none", a health with 9

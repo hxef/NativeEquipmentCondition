@@ -1,3 +1,6 @@
+1.9.1
+* Papyrus API: a call on an item whose inventory the game has locked now waits until the lock is free and then answers, instead of answering as if the item no longer existed.
+
 1.9.0
 * A Papyrus API: functions to read and change the condition of any weapon, armor or food, the repair costs and the curves, and events when condition changes, an item breaks, a gun jams or food spoils. The API is documented in NEC_Papyrus_API.txt and in the Papyrus API article.
 * NEC writes its logs in a folder of their own, Documents\My Games\Fallout4\F4SE\NEC, under the same names. The logs of earlier versions stay in the F4SE folder.

@@ -7,13 +7,12 @@
 #include "Core/ScriptEvents.h"
 #include "Core/TraceLog.h"
 #include "Papyrus/Natives.h"
+#include "Papyrus/Waiting.h"
 
-#include <chrono>
 #include <cstdint>
 #include <format>
 #include <iterator>
 #include <string>
-#include <thread>
 #include <utility>
 #include <variant>
 
@@ -130,9 +129,8 @@ namespace Papyrus
 			TraceLog::Papyrus::Line("gone", "{:s} has no inventory loaded", Hex(_found.holder.get()));
 			return;
 		}
-		if (!TryLock(*inv)) {
-			TraceLog::Papyrus::Line("busy", "{:s} held by another thread for 5 ms", Hex(_found.holder.get()));
-			Log::Warn(Log::Warning::kBusy, Hex(_found.holder.get()));
+		if (!inv->rwLock.try_lock_write()) {
+			Waiting::Locked(*_found.holder);
 			return;
 		}
 		_locked = inv;
@@ -179,27 +177,6 @@ namespace Papyrus
 	{
 		_warning = a_warning;
 		_detail = std::move(a_detail);
-	}
-
-	bool TryLock(RE::BGSInventoryList& a_list)
-	{
-		// The first tries only give up the rest of the thread's turn, which
-		// is cheap. Past that the thread sleeps for 0 ms, which lets a thread
-		// of lower priority holding the lock run.
-		const auto until = std::chrono::steady_clock::now() + std::chrono::milliseconds{ 5 };
-		for (std::uint32_t tries = 0;; ++tries) {
-			if (a_list.rwLock.try_lock_write()) {
-				return true;
-			}
-			if (std::chrono::steady_clock::now() >= until) {
-				return false;
-			}
-			if (tries < 64) {
-				std::this_thread::yield();
-			} else {
-				REX::W32::Sleep(0);
-			}
-		}
 	}
 
 	// -------------------------------------------------------------------

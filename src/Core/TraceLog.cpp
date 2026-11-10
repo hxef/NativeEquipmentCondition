@@ -2,6 +2,7 @@
 
 #include "Core/LogFiles.h"
 #include "Core/Settings.h"
+#include "Core/TraceHold.h"
 
 #include <spdlog/details/os.h>
 #include <spdlog/spdlog.h>
@@ -9,6 +10,7 @@
 #include <algorithm>
 #include <array>
 #include <atomic>
+#include <cstddef>
 #include <chrono>
 #include <exception>
 #include <filesystem>
@@ -25,6 +27,10 @@ namespace TraceLog
 {
 	namespace
 	{
+		// -------------------------------------------------------------------
+		// The 5 files
+		// -------------------------------------------------------------------
+
 		using Clock = std::chrono::steady_clock;
 
 		// A block stays open while its lines come less than this far apart.
@@ -110,6 +116,10 @@ namespace TraceLog
 				return g_game;
 			}
 		}
+
+		// -------------------------------------------------------------------
+		// Writing a line into its block
+		// -------------------------------------------------------------------
 
 		// The time of day to the millisecond, in the local time zone.
 		std::string ClockTime()
@@ -208,6 +218,10 @@ namespace TraceLog
 			a_write(file, thread, Clock::now());
 		}
 
+		// -------------------------------------------------------------------
+		// Opening the files
+		// -------------------------------------------------------------------
+
 		// Opens one file beside NEC.log by replacing its extension:
 		// NEC.trace.log, NEC.ui.trace.log, NEC.npc.trace.log, NEC.food.trace.log,
 		// NEC.papyrus.trace.log.
@@ -272,26 +286,17 @@ namespace TraceLog
 		return g_open.load(std::memory_order_acquire);
 	}
 
+	// -------------------------------------------------------------------
+	// Each kind of line
+	// -------------------------------------------------------------------
+
 	namespace detail
 	{
-		std::string Name(const RE::TESForm* a_form)
-		{
-			if (!a_form) {
-				return "nobody";
-			}
-
-			// A reference is named as shown, which a renamed or leveled actor
-			// need not share with its base record.
-			const char* shown = nullptr;
-			if (a_form->IsActor()) {
-				shown = const_cast<RE::Actor*>(static_cast<const RE::Actor*>(a_form))->GetDisplayFullName();
-			}
-			const auto name = shown ? std::string_view{ shown } : RE::TESFullName::GetFullName(*a_form);
-			return std::format("{:s} [{:08X}]", name.empty() ? "?"sv : name, a_form->formID);
-		}
-
 		void Begin(Target a_target, std::string_view a_tag, std::string_view a_text)
 		{
+			if (Kept(a_target, true, a_tag, a_text)) {
+				return;
+			}
 			Locked(a_target, [&](File& a_file, std::size_t a_thread, Clock::time_point a_now) {
 				OpenBlock(a_file, a_tag, a_text, a_thread, a_now);
 			});
@@ -308,6 +313,9 @@ namespace TraceLog
 
 		void Line(Target a_target, std::string_view a_tag, std::string_view a_text)
 		{
+			if (Kept(a_target, false, a_tag, a_text)) {
+				return;
+			}
 			Locked(a_target, [&](File& a_file, std::size_t a_thread, Clock::time_point a_now) {
 				Put(a_file, a_tag, a_text, a_thread, a_now);
 			});
@@ -378,15 +386,5 @@ namespace TraceLog
 		{
 			return FileFor(a_target).blocks.load(std::memory_order_relaxed);
 		}
-	}
-
-	std::string_view TypeName(const RE::BGSDamageType& a_type)
-	{
-		const char* own = a_type.GetFormEditorID();
-		if (own && *own) {
-			return own;
-		}
-		const char* resistance = a_type.data.resistance ? a_type.data.resistance->GetFormEditorIDString().c_str() : nullptr;
-		return resistance && *resistance ? resistance : "a damage type";
 	}
 }

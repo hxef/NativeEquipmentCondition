@@ -4,9 +4,9 @@
 #include "Papyrus/Events.h"
 #include "Papyrus/Log.h"
 #include "Papyrus/Natives.h"
+#include "Papyrus/Waiting.h"
 
 #include <cstdint>
-#include <optional>
 #include <string_view>
 
 // The bind. F4SE calls Bind on a thread of its own while the game builds each
@@ -24,17 +24,26 @@ namespace Papyrus
 			// marked callable from tasklets, and then it runs at once on the
 			// script's own thread, beside anything the game does. Only the 2
 			// version functions are, since they read only the version and the
-			// event queue, which has a lock of its own.
+			// event queue, which has a lock of its own. A call that finds an
+			// inventory locked runs again at the VM's next update, see
+			// Waiting.h.
 			std::uint32_t bound = 0;
 			std::uint32_t tasklets = 0;
-			const auto    bind = [&](std::string_view a_function, auto a_native, std::optional<bool> a_tasklets = std::nullopt) {
-				if (a_vm->BindNativeMethod("NEC"sv, a_function, a_native, a_tasklets)) {
+			const auto    version = [&](std::string_view a_function, auto a_native) {
+				if (a_vm->BindNativeMethod("NEC"sv, a_function, a_native, true)) {
 					bound++;
-					tasklets += a_tasklets.value_or(false) ? 1 : 0;
+					tasklets++;
 				}
 			};
-			bind("GetVersion"sv, GetVersion, true);
-			bind("GetVersionString"sv, GetVersionString, true);
+			const auto bind = [&](std::string_view a_function, auto a_native) {
+				if (a_vm->BindNativeMethod(Waiting::Make(a_function, a_native))) {
+					bound++;
+				} else {
+					REX::ERROR("Papyrus: the VM did not bind NEC.{:s}.", a_function);
+				}
+			};
+			version("GetVersion"sv, GetVersion);
+			version("GetVersionString"sv, GetVersionString);
 			bind("IsFeatureOn"sv, IsFeatureOn);
 			bind("IsFeatureTakenOver"sv, IsFeatureTakenOver);
 			bind("GetSettingFloat"sv, GetSettingFloat);

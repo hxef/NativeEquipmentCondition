@@ -1,7 +1,9 @@
 #pragma once
 
 #include "Core/Plugin.h"
+#include "Core/TraceWords.h"
 
+#include <cstddef>
 #include <cstdint>
 #include <format>
 #include <string>
@@ -229,7 +231,15 @@ namespace TraceLog
 	using Npc = detail::Named<detail::Target::kNpc, true>;
 
 	// The same for NEC.papyrus.trace.log, 1 block per call of a script.
-	using Papyrus = detail::Named<detail::Target::kPapyrus, false>;
+	struct Papyrus : detail::Named<detail::Target::kPapyrus, false>
+	{
+		// From Hold to Release this thread's Begin and Line for this file
+		// wait in a list of the thread's own. Release writes the first
+		// a_lines in order, SIZE_MAX for all, and drops the rest. For the
+		// tries of a script's call, see Papyrus/Waiting.h.
+		static void Hold();
+		static void Release(std::size_t a_lines);
+	};
 
 	// The files a line about somebody's item goes to: the NPC file for theirs,
 	// the player's files for the player's own. For a reader both share, so it
@@ -263,33 +273,4 @@ namespace TraceLog
 	{
 		return Files{ a_theirs };
 	}
-
-	// An actor in a line: the name the player sees and the form ID in brackets,
-	// since a fight is often several actors with 1 name. The name is looked up
-	// as the line is written, so a switched off line never calls into the
-	// engine for it.
-	struct Who
-	{
-		const RE::TESForm* form{ nullptr };
-	};
-
-	namespace detail
-	{
-		[[nodiscard]] std::string Name(const RE::TESForm* a_form);
-	}
-
-	// A damage type in a line. It has no name, and the game keeps no editor
-	// ID for most forms unless another DLL mod keeps them. The resistance it
-	// is checked against keeps its own, such as EnergyResist.
-	[[nodiscard]] std::string_view TypeName(const RE::BGSDamageType& a_type);
 }
-
-// Lets a TraceLog::Who stand in a format string wherever a name would.
-template <>
-struct std::formatter<TraceLog::Who> : std::formatter<std::string_view>
-{
-	auto format(const TraceLog::Who& a_who, std::format_context& a_context) const
-	{
-		return std::formatter<std::string_view>::format(TraceLog::detail::Name(a_who.form), a_context);
-	}
-};

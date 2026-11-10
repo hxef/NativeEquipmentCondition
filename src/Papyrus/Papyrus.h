@@ -22,7 +22,8 @@ namespace Papyrus
 	void Unload();
 
 	// The warnings NEC.papyrus.log has counted and not written yet, as a
-	// game ends: a save loads, a new game begins or the main menu opens.
+	// game ends: a save loads, a new game begins or the main menu opens. The
+	// calls waiting for a locked inventory count their tries from 1 again.
 	void EndGame();
 
 	// The task that runs a write's work and hands the waiting events to

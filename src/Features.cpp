@@ -37,6 +37,7 @@
 #include "UI/PerkChart.h"
 #include "UI/Repair/ConfirmScroll.h"
 #include "UI/Repair/ConsoleRepair.h"
+#include "UI/Repair/VendorRepair/TraderList.h"
 #include "UI/Repair/VendorRepair/VendorRepair.h"
 #include "UI/Repair/Workbench/Workbench.h"
 
@@ -92,6 +93,9 @@ namespace
 		// leveled list and outfit. Only SpawnCondition uses it, and it measures
 		// whatever the switch says.
 		{ .name = "Provenance", .Load = Provenance::Load, .Unload = Provenance::Unload },
+		// How far a trader, an NPC record or a faction repairs a kind, as a
+		// player sets it by hand. Read whatever Trader repairs says.
+		{ .name = "TraderList", .Load = VendorRepair::TraderList::Load, .Unload = VendorRepair::TraderList::Unload },
 
 		// Gameplay: hooks that change play.
 

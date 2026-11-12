@@ -105,8 +105,8 @@ namespace VendorRepair
 	[[nodiscard]] std::string Repairs(const Ceilings& a_ceilings);
 
 	// How far a_trader repairs each kind, from what they restock with, see
-	// Restock for a_merchant. The counts go to the trace log, with a_now on the
-	// end.
+	// Restock for a_merchant, or as a line of the trader list sets it, see
+	// TraderList.h. The counts go to the trace log, with a_now after them.
 	[[nodiscard]] Ceilings CeilingsOf(RE::TESObjectREFR* a_merchant, RE::Actor& a_trader, std::string_view a_now);
 
 	// The item highlighted on the player's side of the screen, with what it is

@@ -5,6 +5,7 @@
 #include "Core/TraceLog.h"
 #include "Gameplay/ItemValue.h"
 #include "UI/Repair/VendorRepair/Restock.h"
+#include "UI/Repair/VendorRepair/TraderList.h"
 #include "UI/Repair/VendorRepair/VendorRepair.h"
 
 #include <cmath>
@@ -46,6 +47,35 @@ namespace VendorRepair
 		[[nodiscard]] std::size_t Whole(double a_rows)
 		{
 			return static_cast<std::size_t>(std::floor(a_rows + 0.5 + 1e-9));
+		}
+
+		// "100%", or "none" for a level of 0.
+		[[nodiscard]] std::string LevelText(std::uint32_t a_level)
+		{
+			return a_level > 0 ? std::format("{:d}%", a_level) : "none";
+		}
+
+		// The levels the trader list sets in place of a_ceilings, see
+		// TraderList.h, and for the trace log what each line set, as ",
+		// armor 90% by Traders/MyTraders.ini line 4, measured 70%".
+		[[nodiscard]] std::string Listed(const RE::Actor& a_trader, Ceilings& a_ceilings)
+		{
+			std::string notes;
+			for (const auto trade : { Trade::kWeapons, Trade::kArmor, Trade::kClothing }) {
+				const auto set = TraderList::Find(a_trader, trade);
+				if (!set) {
+					continue;
+				}
+				auto& level = trade == Trade::kWeapons ? a_ceilings.weapons : trade == Trade::kArmor ? a_ceilings.armor : a_ceilings.clothing;
+				if (!set->level) {
+					notes += std::format(", {:s} measured by {:s} line {:d}", Named(trade), set->file, set->line);
+					continue;
+				}
+				notes += std::format(", {:s} {:s} by {:s} line {:d}, measured {:s}", Named(trade), LevelText(*set->level), set->file, set->line,
+					LevelText(level));
+				level = *set->level;
+			}
+			return notes;
 		}
 	}
 
@@ -132,14 +162,24 @@ namespace VendorRepair
 
 		// Each on its own rows, and nothing stands beside clothing, see
 		// Stock.h.
-		const Ceilings out{
+		Ceilings out{
 			CeilingOf(Trade::kWeapons, Whole(weapons), Whole(rounds) + Whole(thrown), Whole(rows)),
 			CeilingOf(Trade::kArmor, Whole(armor), Whole(powerArmor), Whole(rows)),
 			CeilingOf(Trade::kClothing, Whole(clothing), 0, Whole(rows)),
 		};
-		TraceLog::Line("menu", "{:s} restocks {:d} rows of weapons, {:d} of ammunition, {:d} of grenades and mines, {:d} of armor, {:d} of power armor and {:d} of clothing out of {:d}{:s}, and repairs {:s}",
+
+		// A line may name the trader's vendor faction, which the game works
+		// out only when something asks, as LevelFor says.
+		if (!a_trader.vendorFaction) {
+			a_trader.UpdateVendorFaction();
+		}
+		const auto notes = Listed(a_trader, out);
+		if (TraceLog::IsOpen()) {
+			TraceLog::Line("menu", "{:s} for the trader list: {:s}", Trader(&a_trader), TraderList::Ids(a_trader));
+		}
+		TraceLog::Line("menu", "{:s} restocks {:d} rows of weapons, {:d} of ammunition, {:d} of grenades and mines, {:d} of armor, {:d} of power armor and {:d} of clothing out of {:d}{:s}, and repairs {:s}{:s}",
 			Trader(&a_trader), Whole(weapons), Whole(rounds), Whole(thrown), Whole(armor), Whole(powerArmor), Whole(clothing),
-			Whole(rows), a_now, Repairs(out));
+			Whole(rows), a_now, Repairs(out), notes);
 		return out;
 	}
 

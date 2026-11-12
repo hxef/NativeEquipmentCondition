@@ -273,6 +273,33 @@ Fridge\NEC_Default.ini with the vanilla coolers and unbroken fridges.
 Food\NEC_Example.ini and Fridge\NEC_Example.ini are examples that change
 nothing as they are.
 
+TRADER LIST
+To set by hand how far a trader repairs a kind of gear, add a line to a file in
+Data\F4SE\Plugins\NEC\Traders.
+
+  ; Traders\MyTraders.ini
+  Fallout4.esm|002CB9 = armor none    ; Arturo Rodriguez repairs no armor
+  Fallout4.esm|1679CE = armor 90      ; Lucas Miller's caravan, armor to 90%
+  Fallout4.esm|10C03F = weapons 50    ; every settlement weapon store, to 50%
+
+A line names a trader, a kind of gear (weapons, armor or clothing) and how far
+they repair it, from 30 to 100 in steps of 10. "none" means they don't repair
+that kind. "measured" leaves it to NEC, as if there were no line, which exempts
+1 trader from their faction's line.
+
+The ID can be the trader's ref ID, their base ID or the form ID of the faction
+they trade under, which covers a whole caravan or every store of a kind. The ref
+ID beats the base ID, which beats the faction. The fastest way to get a ref ID
+is to click the trader in the console. To get all 3, turn on "Bug report logs"
+and trade with them. NEC.ui.trace.log then lists them in this form, the ref ID
+as placed and the base ID as NPC. A ref ID that starts with FF belongs to an NPC
+the game created during play, such as a spawned settler. NEC skips such a line,
+because that ID is stored in the save (in another save, or after that NPC is
+removed, it can point to a different NPC). Use their base ID or faction instead.
+
+NEC.log lists what each file sets and any line it skips. NEC ships
+Traders\NEC_Example.ini, an example that changes nothing as it is.
+
 REQUIREMENTS
 * Fallout 4 1.11.240 (AE) or 1.10.163 (OG)
 * Fallout 4 Script Extender (F4SE), version 0.7.9 on AE or 0.6.23 on OG

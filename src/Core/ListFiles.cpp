@@ -152,6 +152,7 @@ namespace ListFiles
 		struct Item
 		{
 			std::string_view plugin;
+			std::string_view digits;  // the ID's hex digits, without 0x
 			std::uint32_t    id = 0;
 			std::string_view word{};
 		};
@@ -176,7 +177,7 @@ namespace ListFiles
 			}
 			const auto digits = id.substr(0, id.find_first_not_of("0123456789abcdefABCDEF"));
 			auto       after = IniText::Trimmed(id.substr(digits.size()));
-			Item       item{ IniText::Trimmed(a_line.substr(0, bar)) };
+			Item       item{ IniText::Trimmed(a_line.substr(0, bar)), digits };
 			if (!a_list.word.empty()) {
 				if (!after.starts_with('=')) {
 					return std::nullopt;
@@ -198,10 +199,20 @@ namespace ListFiles
 		// Finding the forms
 		// -------------------------------------------------------------------
 
-		// The form a line names, or nothing once a_faults says why there is
-		// none. A plugin not in the load order adds its line to a_missing
-		// instead.
-		RE::TESForm* FormOf(const Item& a_item, const File& a_file, std::size_t a_line, Faults& a_faults,
+		// Where a line's form is: its plugin, its ID there, and the form, or
+		// nothing while it is not loaded.
+		struct Place
+		{
+			const RE::TESFile* plugin = nullptr;
+			std::uint32_t      local = 0;
+			RE::TESForm*       form = nullptr;
+		};
+
+		// Where the form a line names is, or no plugin once a_faults says why
+		// there is none. A plugin not in the load order adds its line to
+		// a_missing instead. A form that is not loaded is a fault unless
+		// a_unloaded says the list takes such a line.
+		Place PlaceOf(const Item& a_item, const File& a_file, std::size_t a_line, bool a_unloaded, Faults& a_faults,
 			std::vector<std::pair<std::string_view, std::size_t>>& a_missing)
 		{
 			const auto* plugin = g_dataHandler->LookupModByName(a_item.plugin);
@@ -212,7 +223,7 @@ namespace ListFiles
 				} else {
 					a_missing.emplace_back(a_item.plugin, 1);
 				}
-				return nullptr;
+				return {};
 			}
 
 			// The top 2 digits are a load order slot and never count. A light
@@ -223,19 +234,22 @@ namespace ListFiles
 			if (light && local > 0xFFF) {
 				a_faults.Add(std::format("{:s} line {:d}: {:s} is a light plugin, whose form IDs end at FFF, so NEC skips {:X}.",
 					a_file.name, a_line, plugin->GetFilename(), local));
-				return nullptr;
+				return {};
 			}
-			auto* form = RE::TESForm::GetFormByID(plugin->GetLoadOrderFormID(local));
-			if (!form) {
+			const Place place{ plugin, local, RE::TESForm::GetFormByID(plugin->GetLoadOrderFormID(local)) };
+			if (!place.form && !a_unloaded) {
 				a_faults.Add(std::format("{:s} line {:d}: {:s} has no form {:0{}X}, so NEC skips it.", a_file.name, a_line,
 					plugin->GetFilename(), local, light ? 3 : 6));
+				return {};
 			}
-			return form;
+			return place;
 		}
 
-		// Every line of 1 file to a_take, then its summary.
+		// Every line of 1 file to a_take, or to a_unloaded when it has one and
+		// the form is not loaded, then its summary.
 		void ReadLines(const List& a_list, const File& a_file, std::string_view a_text,
-			const std::function<void(const Line&, Faults&)>& a_take)
+			const std::function<void(const Line&, Faults&)>&     a_take,
+			const std::function<void(const Unloaded&, Faults&)>& a_unloaded)
 		{
 			Faults                                                faults{ a_list };
 			std::vector<std::pair<std::string_view, std::size_t>> missing;
@@ -252,8 +266,18 @@ namespace ListFiles
 						a_list.word.empty() ? "" : " = ", a_list.word));
 					continue;
 				}
-				if (auto* form = FormOf(*item, a_file, line, faults, missing)) {
-					a_take({ a_file.name, line, *form, item->word }, faults);
+				// The plugin's ID keeps the last 6 digits, so FF001234 would
+				// name its 001234.
+				if (item->digits.size() == 8 && (item->id >> 24) == 0xFF) {
+					faults.Add(std::format("{:s} line {:d}: {:s} is a form the game made in 1 save, so NEC skips it.{:s}{:s}",
+						a_file.name, line, item->digits, a_list.madeHint.empty() ? "" : " ", a_list.madeHint));
+					continue;
+				}
+				const auto place = PlaceOf(*item, a_file, line, static_cast<bool>(a_unloaded), faults, missing);
+				if (place.form) {
+					a_take({ a_file.name, line, *place.form, item->word }, faults);
+				} else if (place.plugin) {
+					a_unloaded({ a_file.name, line, *place.plugin, place.local, item->word }, faults);
 				}
 			}
 
@@ -277,6 +301,12 @@ namespace ListFiles
 	void Read(const List& a_list, const std::function<void(const Line&, Faults&)>& a_line,
 		const std::function<void(std::string_view)>& a_done)
 	{
+		Read(a_list, a_line, {}, a_done);
+	}
+
+	void Read(const List& a_list, const std::function<void(const Line&, Faults&)>& a_line,
+		const std::function<void(const Unloaded&, Faults&)>& a_unloaded, const std::function<void(std::string_view)>& a_done)
+	{
 		if (!g_dataHandler) {
 			return;
 		}
@@ -284,7 +314,7 @@ namespace ListFiles
 			if (Lowered(file.path.extension().native()) != L".ini") {
 				Info(a_list, std::format("{:s} is not an .ini file, so NEC does not read it.", file.name));
 			} else if (const auto text = TextOf(a_list, file)) {
-				ReadLines(a_list, file, *text, a_line);
+				ReadLines(a_list, file, *text, a_line, a_unloaded);
 				a_done(file.name);
 			}
 		}

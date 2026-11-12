@@ -3,6 +3,7 @@
 #include "Core/Plugin.h"
 
 #include <cstddef>
+#include <cstdint>
 #include <functional>
 #include <string>
 #include <string_view>
@@ -38,6 +39,10 @@ namespace ListFiles
 		// food and fridge lists keep NEC.food.log. Such a log names a file
 		// in Windows' spelling, "Food\MyMod.ini". Empty for NEC.log.
 		void (*say)(const std::string& a_line) = nullptr;
+
+		// What the log adds after it skips an ID the game made, which lasts
+		// 1 save, such as what to name instead. Empty for nothing.
+		std::string_view madeHint{};
 	};
 
 	// A file's warnings. The first 10 go to the list's log and the rest are
@@ -67,12 +72,30 @@ namespace ListFiles
 		std::string_view word;    // trimmed, empty for a list with no word
 	};
 
+	// 1 line whose plugin is in the load order but whose form is not loaded,
+	// as a reference the game loads only with its cell.
+	struct Unloaded
+	{
+		std::string_view   file;    // as the list's log names it
+		std::size_t        number;  // the first line is 1
+		const RE::TESFile& plugin;
+		std::uint32_t      local;  // its ID in the plugin, see TESFile.h
+		std::string_view   word;   // trimmed, empty for a list with no word
+	};
+
 	// Reads every .ini file in a_list's folder in name order. a_line gets each
 	// line that names a form and says in the list's log what it does with it.
-	// After a file's lines, the log gets its faults past the first 10 and its
-	// plugins missing from the load order, then a_done gets the file's name
-	// for its own summary. Reads nothing while the folder is missing or empty, or
-	// before the game data has loaded.
+	// An 8 digit ID that starts with FF is a form the game made, so the log
+	// skips its line before it looks for the plugin. After a file's lines, the
+	// log gets its faults past the first 10 and its plugins missing from the
+	// load order, then a_done gets the file's name for its own summary. Reads
+	// nothing while the folder is missing or empty, or before the game data
+	// has loaded.
 	void Read(const List& a_list, const std::function<void(const Line&, Faults&)>& a_line,
 		const std::function<void(std::string_view)>& a_done);
+
+	// The same, but a line whose form is not loaded goes to a_unloaded
+	// instead of the log's "has no form".
+	void Read(const List& a_list, const std::function<void(const Line&, Faults&)>& a_line,
+		const std::function<void(const Unloaded&, Faults&)>& a_unloaded, const std::function<void(std::string_view)>& a_done);
 }

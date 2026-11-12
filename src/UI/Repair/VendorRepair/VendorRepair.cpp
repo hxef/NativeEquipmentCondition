@@ -3,6 +3,7 @@
 #include "Condition/Repair.h"
 #include "Core/CallPatch/CallPatch.h"
 #include "Core/ItemCards.h"
+#include "Core/Text/Text.h"
 #include "Core/TraceLog.h"
 #include "UI/Repair/VendorRepair/Button.h"
 #include "UI/Repair/VendorRepair/Payment.h"
@@ -163,11 +164,11 @@ namespace VendorRepair
 			return _OnButtonEventRelease(a_menu, a_event);
 		}
 
-		// A new screen forgets the last one before the game builds its lists.
-		// The screen being put away takes its sign out. The vanilla handling
-		// stops the markup on every price, so the Pip-Boy is told about a
-		// repair a moment after, through F4SE's task queue, once for each kind
-		// repaired.
+		// A new screen forgets the last one before the game builds its lists,
+		// and reads its word for caps. The screen being put away takes its
+		// sign out. The vanilla handling stops the markup on every price, so
+		// the Pip-Boy is told about a repair a moment after, through F4SE's
+		// task queue, once for each kind repaired.
 		RE::UI_MESSAGE_RESULTS ProcessMessageHk(RE::BarterMenu* a_menu, RE::UIMessage& a_message)
 		{
 			// Only the message that opens the screen brings a waiting place
@@ -182,10 +183,14 @@ namespace VendorRepair
 				ForgetQuestion();
 				ForgetWait();
 				Sign::Forget(a_menu);
+				if (a_menu->uiMovie) {
+					Text::ReadCurrency(*a_menu->uiMovie);
+				}
 			}
 			const auto result = _ProcessMessage(a_menu, a_message);
 			if (*a_message.type == RE::UI_MESSAGE_TYPE::kHide) {
 				Sign::Forget(a_menu);
+				Text::ForgetCurrency();
 				const auto* tasks = F4SE::GetTaskInterface();
 				for (const auto owed : TakeCardsOwed()) {
 					if (tasks) {

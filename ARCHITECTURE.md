@@ -75,7 +75,7 @@ src/
       FileText.h/.cpp        what a language file must be: its encoding and the {n} slots of each line
       Lines.h                what the files here and in Names and Menu share, and the keys the build writes from en.ini
       Repair.cpp             the repair question and the bench's sentences
-      Trader.cpp             what a trader says about a repair
+      Trader.cpp             what a trader says about a repair, in the barter screen's word for caps
       Tips.cpp               the loading screen's tips
       Names/
         PartsPlay.cpp        the names of the parts that change play, up to Fertilizer from spoiled food

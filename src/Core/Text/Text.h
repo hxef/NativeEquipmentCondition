@@ -112,6 +112,14 @@ namespace Text
 	// each with its count past 1.
 	[[nodiscard]] std::string SpareSalvaged(std::span<const std::string> a_parts);
 
+	// Reads the barter screen's word for caps from a_movie's translations as
+	// the screen opens. When a mod renamed the currency, the 3 lines below that
+	// name caps use that word until the screen closes: "240 tickets".
+	void ReadCurrency(Scaleform::GFx::Movie& a_movie);
+
+	// Back to the language file's word for caps, as the barter screen closes.
+	void ForgetCurrency();
+
 	// "240 caps", the column after the level in a row of the question a
 	// trader asks, see VendorRepair.h.
 	[[nodiscard]] std::string RepairCaps(std::uint32_t a_caps);

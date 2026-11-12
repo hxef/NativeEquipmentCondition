@@ -36,6 +36,8 @@ namespace
 	constexpr Piece TRADER_REPAIRS[]{ kTraderRepairs };
 	constexpr Piece TRADER_REPAIRS_SIDE[]{ kStockMerchant, kStockLinked, kPrices };
 	constexpr Piece TRADER_PRICE_SIDE[]{ kPrices };
+	// How far a trader repairs comes from what their chests restock with.
+	constexpr Piece TRADER_STOCK_SIDE[]{ kStockMerchant, kStockLinked };
 	// A tip about a part that is off hides on purpose, so it loses nothing
 	// else.
 	constexpr Piece TIPS[]{ kTips };
@@ -158,6 +160,8 @@ namespace
 		{ &Settings::iFreeMendAbove, &Settings::fBenchCostMult, BENCH },
 		{ &Settings::fModLockStart, &Settings::fBenchCostMult, BENCH, MOD_LOCK_SIDE },
 		{ &Settings::fTraderPriceMult, &Settings::bVendorRepair, TRADER_REPAIRS, TRADER_PRICE_SIDE },
+		{ &Settings::iTraderLeeway, &Settings::bVendorRepair, TRADER_REPAIRS, TRADER_STOCK_SIDE },
+		{ &Settings::iTraderFullStock, &Settings::bVendorRepair, TRADER_REPAIRS, TRADER_STOCK_SIDE },
 		{ &Settings::fRawFoodDays, &Settings::bFoodSpoils, FOOD },
 		{ &Settings::fCookedFoodDays, &Settings::bFoodSpoils, FOOD },
 		{ &Settings::fFridgeSpoilSpeed, &Settings::bFoodSpoils, FOOD },

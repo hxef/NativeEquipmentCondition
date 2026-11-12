@@ -106,6 +106,16 @@ namespace Settings
 	// VendorRepair/Quote.h.
 	inline Live<float> fTraderPriceMult{ "Balance", "fTraderPriceMult", 1.0F };
 
+	// A kind of gear under its share of a trader's stock is repaired 10%
+	// lower, and 10% lower again for every this many percent more of other
+	// goods, see VendorRepair/Stock.h. Counts as 0 to 20, and 0 stops the
+	// repair at once.
+	inline Live<std::int32_t> iTraderLeeway{ "Balance", "iTraderLeeway", 8 };
+
+	// How many rows of a kind a trader must restock to repair it to full,
+	// weapons 2 more, see VendorRepair/Stock.h. Counts as 10 to 30.
+	inline Live<std::int32_t> iTraderFullStock{ "Balance", "iTraderFullStock", 16 };
+
 	// How many game days raw food and crops keep before they spoil, see
 	// FoodSpoil.h. Counts as 0.25 to 30.
 	inline Live<float> fRawFoodDays{ "Balance", "fRawFoodDays", 2.0F };

@@ -26,6 +26,8 @@ namespace Text
 			{ &Settings::iFreeMendAbove, FREE_MEND_NAME, FREE_MEND_HELP },
 			{ &Settings::fModLockStart, MOD_LOCK_NAME, MOD_LOCK_HELP },
 			{ &Settings::fTraderPriceMult, TRADER_PRICE_NAME, TRADER_PRICE_HELP },
+			{ &Settings::iTraderLeeway, TRADER_LEEWAY_NAME, TRADER_LEEWAY_HELP },
+			{ &Settings::iTraderFullStock, TRADER_FULL_STOCK_NAME, TRADER_FULL_STOCK_HELP },
 			{ &Settings::fRawFoodDays, RAW_FOOD_DAYS_NAME, RAW_FOOD_DAYS_HELP },
 			{ &Settings::fCookedFoodDays, COOKED_FOOD_DAYS_NAME, COOKED_FOOD_DAYS_HELP },
 			{ &Settings::fFridgeSpoilSpeed, FRIDGE_SPEED_NAME, FRIDGE_SPEED_HELP },

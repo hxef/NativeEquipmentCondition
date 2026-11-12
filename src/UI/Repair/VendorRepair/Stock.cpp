@@ -2,14 +2,17 @@
 
 #include "Condition/ArmorWear/ArmorWear.h"
 #include "Condition/Condition.h"
+#include "Core/Settings.h"
 #include "Core/TraceLog.h"
 #include "Gameplay/ItemValue.h"
 #include "UI/Repair/VendorRepair/Restock.h"
 #include "UI/Repair/VendorRepair/TraderList.h"
 #include "UI/Repair/VendorRepair/VendorRepair.h"
 
+#include <algorithm>
 #include <cmath>
 #include <format>
+#include <iterator>
 #include <optional>
 #include <string>
 #include <vector>
@@ -21,6 +24,9 @@ namespace VendorRepair
 		// The levels are 10 apart. See Repair.h.
 		constexpr std::uint32_t STEP = 10;
 
+		// The 3 kinds in the order the trace log notes them.
+		constexpr Trade TRADES[]{ Trade::kWeapons, Trade::kArmor, Trade::kClothing };
+
 		// The row under the highlight and which of the 2 sides it is in.
 		std::int32_t g_row = -1;
 		bool         g_inContainer = false;
@@ -29,16 +35,59 @@ namespace VendorRepair
 		// is built again. Empty until a worn item asks again.
 		std::optional<Ceilings> g_ceilings;
 
-		// Whether a_count rows of a_trade, with a_filler rows of what goes with
-		// it, out of a_rows in stock, make this trader repair that kind, and
-		// how far if so.
-		[[nodiscard]] std::uint32_t CeilingOf(Trade a_trade, std::size_t a_count, std::size_t a_filler, std::size_t a_rows)
+		// How far a trader repairs a kind, and for the trace log how far past
+		// its share of the stock other goods took it, in percent and in steps
+		// of 10% lower.
+		struct Measured
 		{
-			const bool many = a_count >= MANY_ROWS && a_count * MANY_SHARE >= a_rows;
-			const bool some = a_count > 0 &&
-			                  a_count + a_filler >= SOME_ROWS &&
-			                  (a_count + a_filler) * SOME_SHARE >= a_rows;
-			return many || some ? Reach(a_trade, a_count) : 0U;
+			std::uint32_t ceiling{ 0 };
+			std::size_t   past{ 0 };
+			std::size_t   steps{ 0 };
+		};
+
+		// How far a_count rows of a_trade, with a_filler rows of what goes
+		// with it, out of a_rows in stock, make this trader repair that kind.
+		[[nodiscard]] Measured CeilingOf(Trade a_trade, std::size_t a_count, std::size_t a_filler, std::size_t a_rows)
+		{
+			// The most rows either test lets the stock hold, 0 for a kind too
+			// thin for both.
+			std::size_t allowed = a_count >= MANY_ROWS ? a_count * MANY_SHARE : 0;
+			if (a_count > 0 && a_count + a_filler >= SOME_ROWS) {
+				allowed = std::max(allowed, (a_count + a_filler) * SOME_SHARE);
+			}
+			if (allowed == 0) {
+				return {};
+			}
+			const auto top = Reach(a_trade, a_count);
+			if (a_rows <= allowed) {
+				return { top };
+			}
+
+			// Rounded up on purpose, so 1 row past already costs a step, and
+			// the percent the trace shows gives the same steps.
+			const auto over = a_rows - allowed;
+			const auto past = (over * 100 + allowed - 1) / allowed;
+			const auto leeway = Leeway();
+			if (leeway == 0) {
+				return { 0, past, 0 };
+			}
+			const auto steps = (over * 100 + leeway * allowed - 1) / (leeway * allowed);
+			const auto lower = static_cast<std::uint32_t>(steps) * STEP;
+			return { top >= MIN_CEILING + lower ? top - lower : 0U, past, steps };
+		}
+
+		// For the trace log, how far other goods took a_trade down, as ",
+		// armor 2 steps lower at 12% past its share".
+		[[nodiscard]] std::string Lowered(Trade a_trade, const Measured& a_measured)
+		{
+			if (a_measured.past == 0) {
+				return {};
+			}
+			if (a_measured.ceiling == 0) {
+				return std::format(", {:s} none at {:d}% past its share", Named(a_trade), a_measured.past);
+			}
+			return std::format(", {:s} {:d} {:s} lower at {:d}% past its share", Named(a_trade), a_measured.steps,
+				a_measured.steps == 1 ? "step" : "steps", a_measured.past);
 		}
 
 		// A count of rows rounded to whole, half up. The chances are added in
@@ -56,12 +105,15 @@ namespace VendorRepair
 		}
 
 		// The levels the trader list sets in place of a_ceilings, see
-		// TraderList.h, and for the trace log what each line set, as ",
+		// TraderList.h, and for the trace log, kind by kind, how far other
+		// goods took it down, see Lowered, and what each line set, as ",
 		// armor 90% by Traders/MyTraders.ini line 4, measured 70%".
-		[[nodiscard]] std::string Listed(const RE::Actor& a_trader, Ceilings& a_ceilings)
+		[[nodiscard]] std::string Listed(const RE::Actor& a_trader, const Measured (&a_measured)[std::size(TRADES)], Ceilings& a_ceilings)
 		{
 			std::string notes;
-			for (const auto trade : { Trade::kWeapons, Trade::kArmor, Trade::kClothing }) {
+			for (std::size_t i = 0; i < std::size(TRADES); i++) {
+				const auto trade = TRADES[i];
+				notes += Lowered(trade, a_measured[i]);
 				const auto set = TraderList::Find(a_trader, trade);
 				if (!set) {
 					continue;
@@ -162,18 +214,19 @@ namespace VendorRepair
 
 		// Each on its own rows, and nothing stands beside clothing, see
 		// Stock.h.
-		Ceilings out{
+		const Measured measured[]{
 			CeilingOf(Trade::kWeapons, Whole(weapons), Whole(rounds) + Whole(thrown), Whole(rows)),
 			CeilingOf(Trade::kArmor, Whole(armor), Whole(powerArmor), Whole(rows)),
 			CeilingOf(Trade::kClothing, Whole(clothing), 0, Whole(rows)),
 		};
+		Ceilings out{ measured[0].ceiling, measured[1].ceiling, measured[2].ceiling };
 
 		// A line may name the trader's vendor faction, which the game works
 		// out only when something asks, as LevelFor says.
 		if (!a_trader.vendorFaction) {
 			a_trader.UpdateVendorFaction();
 		}
-		const auto notes = Listed(a_trader, out);
+		const auto notes = Listed(a_trader, measured, out);
 		if (TraceLog::IsOpen()) {
 			TraceLog::Line("menu", "{:s} for the trader list: {:s}", Trader(&a_trader), TraderList::Ids(a_trader));
 		}
@@ -181,6 +234,17 @@ namespace VendorRepair
 			Trader(&a_trader), Whole(weapons), Whole(rounds), Whole(thrown), Whole(armor), Whole(powerArmor), Whole(clothing),
 			Whole(rows), a_now, Repairs(out), notes);
 		return out;
+	}
+
+	std::size_t Leeway()
+	{
+		return static_cast<std::size_t>(std::clamp(Settings::iTraderLeeway.GetValue(), 0, MOST_LEEWAY));
+	}
+
+	std::size_t FullRows(Trade a_trade)
+	{
+		const auto rows = static_cast<std::size_t>(std::clamp(Settings::iTraderFullStock.GetValue(), FEWEST_FULL_ROWS, MOST_FULL_ROWS));
+		return a_trade == Trade::kWeapons ? rows + GUN_EXTRA_ROWS : rows;
 	}
 
 	std::uint32_t Reach(Trade a_trade, std::size_t a_rows)

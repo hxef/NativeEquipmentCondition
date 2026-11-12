@@ -248,7 +248,15 @@
         { "id": "fTraderPriceMult:Balance", "type": "slider", "groupCondition": 18,
           "text": "NEC|fTraderPriceMult", "textFromFormName": true,
           "help": "NEC|fTraderPriceMult.help", "helpFromFormName": true,
-          "valueOptions": { "min": 0, "max": 10, "step": 0.1, "sourceType": "ModSettingFloat" } }
+          "valueOptions": { "min": 0, "max": 10, "step": 0.1, "sourceType": "ModSettingFloat" } },
+        { "id": "iTraderLeeway:Balance", "type": "slider", "groupCondition": 18,
+          "text": "NEC|iTraderLeeway", "textFromFormName": true,
+          "help": "NEC|iTraderLeeway.help", "helpFromFormName": true,
+          "valueOptions": { "min": 0, "max": 20, "step": 1, "sourceType": "ModSettingInt" } },
+        { "id": "iTraderFullStock:Balance", "type": "slider", "groupCondition": 18,
+          "text": "NEC|iTraderFullStock", "textFromFormName": true,
+          "help": "NEC|iTraderFullStock.help", "helpFromFormName": true,
+          "valueOptions": { "min": 10, "max": 30, "step": 1, "sourceType": "ModSettingInt" } }
       ]
     },
     {

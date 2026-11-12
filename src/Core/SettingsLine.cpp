@@ -65,6 +65,8 @@ namespace Settings
 			&iFreeMendAbove,
 			&fModLockStart,
 			&fTraderPriceMult,
+			&iTraderLeeway,
+			&iTraderFullStock,
 			&fRawFoodDays,
 			&fCookedFoodDays,
 			&fFridgeSpoilSpeed,

@@ -261,6 +261,13 @@ namespace VendorRepair
 			}
 			REX::INFO("How far they take {:s} back, by rows of that kind in stock, {:s}", Named(trade), reach);
 		}
+		if (const auto leeway = Leeway(); leeway > 0) {
+			REX::INFO("A kind under its share of a trader's stock is repaired 10% lower, "
+					  "and 10% lower again for every {:d}% more of other goods, down to {:d}%.",
+				leeway, MIN_CEILING);
+		} else {
+			REX::INFO("A kind under its share of a trader's stock is not repaired.");
+		}
 		REX::INFO("An item at nothing owes a trader {:.2f} times what it is worth, and at each level {:s}",
 			Repair::Debt(0, Scaled(WRECK_MULTIPLE)), Repair::Ladder(Scaled(WRECK_MULTIPLE)));
 

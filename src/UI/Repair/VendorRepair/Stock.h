@@ -41,13 +41,14 @@
 // Harbor and the Institute both.
 //
 // How far a trader repairs a kind follows how many rows of it they stock, in
-// a straight line from 30% at 1 row to full at 16 rows, rounded down to a
-// step of 10%, so 5 rows reach 40%, 10 reach 70% and 14 reach 90%. Weapons
-// need more, 18 rows, so 10 rows of guns reach 60% and only the best gun
-// shops repair a broken gun to full. In vanilla that takes the gunsmiths of
-// Diamond City, Goodneighbor, Nuka-World and Far Harbor, Cricket, and Smiling
-// Larry at a level 3 store to full for weapons, Ronnie Shaw at one, Eleanor
-// and the Dunmores to 90%, and a level 3 store of the player's own to 80%.
+// a straight line from 30% at 1 row to full at 16 rows by default, rounded
+// down to a step of 10%, so 5 rows reach 40%, 10 reach 70% and 14 reach 90%.
+// Weapons need more, 18 rows by default, so 10 rows of guns reach 60% and
+// only the best gun shops repair a broken gun to full. In vanilla that takes
+// the gunsmiths of Diamond City, Goodneighbor, Nuka-World and Far Harbor,
+// Cricket, and Smiling Larry at a level 3 store to full for weapons, Ronnie
+// Shaw at one, Eleanor and the Dunmores to 90%, and a level 3 store of the
+// player's own to 80%.
 //
 // Each of the 3 kinds is separate. A trader repairs what they stock, each kind
 // as far as its own rows go, so a trader with shelves full of all 3 repairs all
@@ -58,7 +59,8 @@ namespace VendorRepair
 	// The 2 tests: MANY_ROWS rows of the trade with one row in MANY_SHARE one
 	// of them, or SOME_ROWS rows of the trade and what goes with it,
 	// ammunition, grenades and mines for weapons and power armor for armor,
-	// with one row in SOME_SHARE one of those.
+	// with one row in SOME_SHARE one of those. A kind with the rows but under
+	// its share is repaired lower by iTraderLeeway, see Settings.h.
 	inline constexpr std::size_t MANY_ROWS = 5;
 	inline constexpr std::size_t MANY_SHARE = 6;
 	inline constexpr std::size_t SOME_ROWS = 3;
@@ -72,14 +74,24 @@ namespace VendorRepair
 	// with FullRows of it repairs it to full, in a straight line between,
 	// rounded down to a level the question can offer.
 	inline constexpr std::uint32_t MIN_CEILING = 30;
-	inline constexpr std::size_t   FULL_ROWS = 16;
-	inline constexpr std::size_t   FULL_GUN_ROWS = 18;
 
-	// How many rows of a_trade it takes to repair that kind to full.
-	[[nodiscard]] constexpr std::size_t FullRows(Trade a_trade)
-	{
-		return a_trade == Trade::kWeapons ? FULL_GUN_ROWS : FULL_ROWS;
-	}
+	// The rows iTraderFullStock may ask for a full repair, as the MCM slider
+	// allows.
+	inline constexpr std::int32_t FEWEST_FULL_ROWS = 10;
+	inline constexpr std::int32_t MOST_FULL_ROWS = 30;
+
+	// How many more rows weapons need than armor and clothing.
+	inline constexpr std::size_t GUN_EXTRA_ROWS = 2;
+
+	// The most iTraderLeeway counts for, as the MCM slider allows.
+	inline constexpr std::int32_t MOST_LEEWAY = 20;
+
+	// iTraderLeeway, see Settings.h, kept to 0 to MOST_LEEWAY.
+	[[nodiscard]] std::size_t Leeway();
+
+	// How many rows of a_trade it takes to repair that kind to full, from
+	// iTraderFullStock, see Settings.h.
+	[[nodiscard]] std::size_t FullRows(Trade a_trade);
 
 	// How far a trader with a_rows rows of a_trade repairs that kind.
 	[[nodiscard]] std::uint32_t Reach(Trade a_trade, std::size_t a_rows);

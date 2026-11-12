@@ -25,7 +25,7 @@ namespace Crew
 		const char* who;
 	};
 
-	// A_actor's share for a_gear, each slider kept between 0 and 1. A
+	// The share of a_actor for a_gear, each slider kept between 0 and 1. A
 	// teammate takes the companion speed first, so a companion who lives in a
 	// settlement wears as a companion. Then an actor of a settlement the
 	// player owns takes the settler speed. The player and anyone else take 1.

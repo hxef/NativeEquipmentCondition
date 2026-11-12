@@ -51,16 +51,17 @@ namespace Gains
 		}
 	}
 
-	std::vector<Column> Read(const SelectedItem::Item& a_item, const std::vector<std::uint32_t>& a_levels)
+	Found Read(const SelectedItem::Item& a_item, const std::vector<std::uint32_t>& a_levels)
 	{
-		std::vector<Column> out;
+		Found found;
 		if (!Settings::bRepairBoxGains.GetValue()) {
-			return out;
+			found.off = true;
+			return found;
 		}
 		const auto* stack = a_item.item ? a_item.item->GetStackByID(a_item.stack) : nullptr;
 		const auto  card = a_item.object && (a_item.object->Is(RE::ENUM_FORM_ID::kWEAP) || a_item.object->Is(RE::ENUM_FORM_ID::kARMO));
 		if (!stack || !card) {
-			return out;
+			return found;
 		}
 
 		const auto now = At(a_item, stack, Condition::HealthOf(stack));
@@ -77,35 +78,35 @@ namespace Gains
 			if (!shown || Text::GainByType(0, type, a_item.Armor(), false).empty()) {
 				continue;
 			}
-			auto& column = out.emplace_back(Column{ type, number, {}, a_item.Armor() });
+			auto& column = found.columns.emplace_back(Column{ type, number, {}, a_item.Armor() });
 			for (const auto& at : after) {
 				column.at.push_back(Of(at, type));
 			}
 		}
-		return out;
+		return found;
 	}
 
-	void AddRow(Columns::Table& a_table, std::vector<std::string> a_kept, const std::vector<Column>& a_columns, std::size_t a_row)
+	void AddRow(Columns::Table& a_table, std::vector<std::string> a_kept, const Found& a_found, std::size_t a_row)
 	{
 		a_table.kept = a_kept.size();
 		auto& full = a_table.rows.emplace_back(std::move(a_kept));
 		auto& shortWords = a_table.shortGains.emplace_back();
-		for (const auto& column : a_columns) {
+		for (const auto& column : a_found.columns) {
 			const auto gain = Gain(column, a_row);
 			full.push_back(Text::GainByType(gain, column.type, column.armor, false));
 			shortWords.push_back(Text::GainByType(gain, column.type, column.armor, true));
 		}
 	}
 
-	std::string Spelled(const std::vector<Column>& a_columns, std::size_t a_row)
+	std::string Spelled(const Found& a_found, std::size_t a_row)
 	{
 		std::string out;
-		for (const auto& column : a_columns) {
+		for (const auto& column : a_found.columns) {
 			out += std::format("{:s}type {:d} {:.2f} to {:.2f} +{:d}", out.empty() ? "" : ", ", column.type, column.now,
 				To(column, a_row), Gain(column, a_row));
 		}
 		if (out.empty()) {
-			return Settings::bRepairBoxGains.GetValue() ? "no numbers" : "gains off";
+			return a_found.off ? "gains off" : "no numbers";
 		}
 		return out;
 	}

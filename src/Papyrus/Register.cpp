@@ -38,8 +38,6 @@ namespace Papyrus
 			const auto bind = [&](std::string_view a_function, auto a_native) {
 				if (a_vm->BindNativeMethod(Waiting::Make(a_function, a_native))) {
 					bound++;
-				} else {
-					REX::ERROR("Papyrus: the VM did not bind NEC.{:s}.", a_function);
 				}
 			};
 			version("GetVersion"sv, GetVersion);

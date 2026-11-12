@@ -38,7 +38,6 @@ namespace ArmorWear
 		{
 			const RE::BGSMod::Property::Mod* property;
 			std::int8_t                      priority;
-			RE::BGSMod::Property::OP         op;
 			std::uint8_t                     rank;
 		};
 
@@ -60,7 +59,7 @@ namespace ArmorWear
 				}
 				for (const auto& property : mod->GetBuffer<Property>(std::to_underlying(RE::BGSMod::Property::BLOCKIDS::kPMOD))) {
 					if (static_cast<TARGET>(property.target) == TARGET::kHealth) {
-						steps.push_back({ &property, mod->priority, property.op, entry.rank });
+						steps.push_back({ &property, mod->priority, entry.rank });
 					}
 				}
 			}
@@ -140,7 +139,7 @@ namespace ArmorWear
 		// first, and in each priority every kSet, then every kMul, then every
 		// kAdd, each in the order of the mod list. Each step is the game's own
 		// sum, see Property::Mod::ApplyToInt in CommonLibF4.
-		std::ranges::stable_sort(steps, {}, [](const Step& a_step) { return std::pair{ a_step.priority, std::to_underlying(a_step.op) }; });
+		std::ranges::stable_sort(steps, {}, [](const Step& a_step) { return std::pair{ a_step.priority, std::to_underlying(a_step.property->op) }; });
 		auto health = base;
 		for (const auto& step : steps) {
 			health = step.property->ApplyToInt(health, base, step.rank);

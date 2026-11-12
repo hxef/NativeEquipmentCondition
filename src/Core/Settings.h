@@ -233,7 +233,7 @@ namespace Settings
 	// whole number where the setting only takes whole steps.
 	using Number = std::variant<Live<float>*, Live<std::int32_t>*>;
 
-	// The 8 switches under [Features] and the 44 numbers under [Features],
+	// The 8 switches under [Features] and the 48 numbers under [Features],
 	// [Loot], [Balance] and [HUD], in NEC.ini's order, for Report and the MCM
 	// page.
 	[[nodiscard]] std::span<Live<bool>* const> Switches();
@@ -245,7 +245,7 @@ namespace Settings
 	// id can arrive as bspawncondition:features.
 	[[nodiscard]] bool IsIdOf(const Named& a_setting, std::string_view a_id);
 
-	// The switch a_id names, any of the 20 in NEC.ini, or nullptr for an id
+	// The switch a_id names, any of the 21 in NEC.ini, or nullptr for an id
 	// NEC does not know.
 	[[nodiscard]] Live<bool>* SwitchById(std::string_view a_id);
 

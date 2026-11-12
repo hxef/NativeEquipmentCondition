@@ -17,7 +17,7 @@
 // cell, measured in the font the box draws its rows in, with a gap after it.
 // With bRepairBoxColumns off, each row is its cells joined by 2 spaces in a
 // centred paragraph, as vanilla centres its rows. With bRepairBoxGains off, a
-// table holds no gains and lays as a box with no gains to show.
+// table holds no gains and is laid out as a box with no gains to show.
 //
 // The gains are drawn at size 14 and the other cells at 18. Where the widest
 // row would pass the room, see MessageBox::RowRoom, every row takes these steps

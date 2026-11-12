@@ -51,7 +51,8 @@ namespace ArmorWear
 		// condition from every blow. An NPC's piece takes
 		// fNpcArmorWearRateMult instead, and its line ends with it.
 		const auto mult = std::max(0.0F, (a_theirs ? Settings::fNpcArmorWearRateMult : Settings::fArmorWearRateMult).GetValue());
-		// A copy whose mods change its Health wears slower or faster by the same share, see Health.h.
+		// A copy whose mods change its Health wears slower or faster by the same
+		// share, see Health.h.
 		const auto lasts = HealthMult(a_armor, a_extra);
 		const auto wear = RATE_AT_REFERENCE * mult *
 		                  (a_damage / reference) * (Materials::ReferenceQuality(Condition::Kind::kArmor) / quality) / lasts;

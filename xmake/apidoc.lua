@@ -18,6 +18,10 @@
 -- The lines right above a Function or a Struct are its 1 line, and a
 -- function with no line above it stops the document. A function with a body
 -- is listed by its signature alone.
+--
+-- ${NEC_VERSION} and ${NEC_VERSION_NUMBER} in any line get the project's
+-- version, from xmake/version.lua as NEC.psc gets it, so no release types a
+-- version here. Any other ${...} stops the document.
 
 -- The files, from the project's root.
 local SOURCE = "publish/Scripts/Source/User/NEC.psc.in"
@@ -132,9 +136,27 @@ local function stripped(a_signature)
     return (a_signature:gsub("^%s+", ""))
 end
 
--- NEC.psc.in as its lead line and its sections and groups in order.
-local function parse(a_file)
-    local lines = lines_of(a_file)
+-- a_lines with each ${NAME} replaced from a_vars. Every line is filled, as
+-- xmake fills NEC.psc, so the lead line and the signatures get it too.
+local function filled(a_lines, a_vars)
+    for i, line in ipairs(a_lines) do
+        line = line:gsub("%${([%w_]+)}", function (a_name)
+            return a_vars[a_name] ~= nil and tostring(a_vars[a_name]) or nil
+        end)
+        -- The name alone in the error, since raise reads ${...} as a color.
+        local left = line:match("%${([^}]*)")
+        if left then
+            fail(i, "\"%s\" is no name xmake/version.lua fills", left)
+        end
+        a_lines[i] = line
+    end
+    return a_lines
+end
+
+-- NEC.psc.in as its lead line and its sections and groups in order, every
+-- line filled from a_vars.
+local function parse(a_file, a_vars)
+    local lines = filled(lines_of(a_file), a_vars)
     local doc = { blocks = {} }
     local current
     -- The comment lines read since the last code line, with their numbers.
@@ -428,8 +450,10 @@ end
 -- Both files as this writes them, each with its path from the project's
 -- root.
 local function documents()
+    import("core.project.project")
+    import("version", { rootdir = path.join(os.projectdir(), "xmake") })
     local root = os.projectdir()
-    local doc = parse(path.join(root, SOURCE))
+    local doc = parse(path.join(root, SOURCE), version.configvars(project.target("NEC"):version()))
     add_features(doc, path.join(root, FEATURES))
     return { { TEXT, as_text(doc) }, { ARTICLE, as_article(doc) } }
 end
@@ -442,13 +466,13 @@ function write()
             io.writefile(file, document[2], { encoding = "binary" })
             cprint("${bright green}wrote${clear} %s", document[1])
         else
-            cprint("%s is as NEC.psc.in writes it", document[1])
+            cprint("%s is as NEC.psc.in and the version write it", document[1])
         end
     end
 end
 
 -- What xmake release runs first: it stops when a committed copy differs from
--- what NEC.psc.in writes, naming its first line that does.
+-- what NEC.psc.in and the version write, naming its first line that does.
 function check()
     local differ = {}
     for _, document in ipairs(documents()) do
@@ -467,6 +491,6 @@ function check()
         end
     end
     if #differ > 0 then
-        raise("the API document differs from NEC.psc.in, so run xmake apidoc and commit what it writes:\n  %s", table.concat(differ, "\n  "))
+        raise("the API document differs from what NEC.psc.in and the version write, so run xmake apidoc and commit what it writes:\n  %s", table.concat(differ, "\n  "))
     end
 end

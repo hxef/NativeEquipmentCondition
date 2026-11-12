@@ -2,7 +2,7 @@ The Papyrus API of Native Equipment Condition, for mods that read or change the 
 
 [size=3][b][font=Georgia][color=#1AFF80]What this is[/color][/font][/b][/size]
 
-NEC is the script Native Equipment Condition ships. Other mods call its functions to read and change the condition of weapons and armor, the freshness of food, the repair costs and the curves, and hear its events.
+NEC is the script Native Equipment Condition has shipped since 1.9.0. Other mods call its functions to read and change the condition of weapons and armor, the freshness of food, the repair costs and the curves, and hear its events.
 
 Compile against NEC.psc, which NEC installs in Data\Scripts\Source\User: keep that folder among your import folders. Never ship a copy of NEC.pex or NEC.psc with your mod.
 
@@ -50,21 +50,15 @@ A call on an item whose inventory the game has locked tries again at each tick a
 
 During a save, a load or a quit to the main menu a call writes nothing and answers as if the item no longer existed. NEC.papyrus.log records each such call. A save made while a script was inside a call to NEC loads only with NEC installed, since without NEC the game refuses it as corrupt.
 
-[size=3][b][font=Georgia][color=#1AFF80]Versions[/color][/font][/b][/size]
-
-10900 is 1.9.0, the first NEC with this script.
-
-10901 is 1.9.1: a call on a locked inventory waits for the lock instead of answering as if the item no longer existed.
-
 [size=3][b][font=Georgia][color=#1AFF80]Functions[/color][/font][/b][/size]
 
 [b]Version[/b]
 
 [list]
 [*][font=Courier New]int Function GetVersion()[/font]
-The version of NEC.dll as 1 number, major times 10000 plus minor times 100 plus patch: 10900 for 1.9.0.
+The version of NEC.dll as 1 number, major times 10000 plus minor times 100 plus patch: 10901 for 1.9.1.
 [*][font=Courier New]string Function GetVersionString()[/font]
-The version of NEC.dll as text: "1.9.0".
+The version of NEC.dll as text: "1.9.1".
 [*][font=Courier New]int Function GetScriptVersion()[/font]
 The version this NEC.pex belongs to, equal to GetVersion when the DLL and NEC.pex come from 1 release.
 [/list]

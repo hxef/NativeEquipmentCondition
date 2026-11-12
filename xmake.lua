@@ -76,13 +76,17 @@ target("NEC")
     add_cxflags("/utf-8", { tools = { "cl", "clang_cl" } })
 
     -- Core/Text/Keys.h and NEC.psc are written into the generated folder
-    -- first, see xmake/texts.lua. NEC.psc gets the version as 1 number,
-    -- 10900 for 1.9.0, which its GetScriptVersion returns.
+    -- first, see xmake/texts.lua. NEC.psc gets the version as text, such as
+    -- 1.9.1, and as 1 number, such as 10901, in its comments and in what
+    -- GetScriptVersion returns. xmake/version.lua makes both, for xmake
+    -- apidoc too.
     add_configfiles("publish/Scripts/Source/User/NEC.psc.in", { prefixdir = "papyrus" })
     on_config(function (target)
         target:add("includedirs", target:autogendir())
-        local major, minor, patch = target:version():match("^(%d+)%.(%d+)%.(%d+)")
-        target:set("configvar", "NEC_VERSION_NUMBER", tonumber(major) * 10000 + tonumber(minor) * 100 + tonumber(patch))
+        import("version", { rootdir = path.join(os.projectdir(), "xmake") })
+        for name, value in pairs(version.configvars(target:version())) do
+            target:set("configvar", name, value)
+        end
     end)
     before_build(function (target)
         import("texts", { rootdir = path.join(os.projectdir(), "xmake") })
@@ -341,8 +345,9 @@ task_end()
 
 -- Writes the Papyrus API's document from the comments of NEC.psc.in into
 -- publish/NEC_Papyrus_API.txt and publish/nexusmods/article_api.bbcode, see
--- xmake/apidoc.lua. Commit both with the change to NEC.psc.in, since xmake
--- release stops when either differs from what this writes.
+-- xmake/apidoc.lua. Commit both with the change to NEC.psc.in or to the
+-- version, since xmake release stops when either differs from what this
+-- writes.
 --
 --     xmake apidoc
 --

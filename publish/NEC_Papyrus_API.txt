@@ -8,9 +8,9 @@ weapons, armor and food. Every function is global: call NEC.GetCondition(akItem)
 What this is
 ============
 
-NEC is the script Native Equipment Condition ships. Other mods call its functions to read and change
-the condition of weapons and armor, the freshness of food, the repair costs and the curves, and hear
-its events.
+NEC is the script Native Equipment Condition has shipped since 1.9.0. Other mods call its functions
+to read and change the condition of weapons and armor, the freshness of food, the repair costs and
+the curves, and hear its events.
 
 Compile against NEC.psc, which NEC installs in Data\Scripts\Source\User: keep that folder among your
 import folders. Never ship a copy of NEC.pex or NEC.psc with your mod.
@@ -92,15 +92,6 @@ longer existed. NEC.papyrus.log records each such call. A save made while a scri
 to NEC loads only with NEC installed, since without NEC the game refuses it as corrupt.
 
 
-Versions
-========
-
-10900 is 1.9.0, the first NEC with this script.
-
-10901 is 1.9.1: a call on a locked inventory waits for the lock instead of answering as if the item
-no longer existed.
-
-
 Functions
 =========
 
@@ -109,11 +100,11 @@ Version
 -------
 
 int Function GetVersion()
-    The version of NEC.dll as 1 number, major times 10000 plus minor times 100 plus patch: 10900 for
-    1.9.0.
+    The version of NEC.dll as 1 number, major times 10000 plus minor times 100 plus patch: 10901 for
+    1.9.1.
 
 string Function GetVersionString()
-    The version of NEC.dll as text: "1.9.0".
+    The version of NEC.dll as text: "1.9.1".
 
 int Function GetScriptVersion()
     The version this NEC.pex belongs to, equal to GetVersion when the DLL and NEC.pex come from 1

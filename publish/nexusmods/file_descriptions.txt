@@ -1,3 +1,8 @@
+1.9.2
+v1.9.2 adds a barter screen sign that shows how far each trader repairs weapons, armor and clothing, and new trader list ini files to set that by hand. Traders who stock only a little of a kind of gear now repair it too, to a lower level.
+
+OG/AE only
+
 1.9.1
 v1.9.1 adds MCM sliders that slow or stop your companions' and settlers' gear wear, on top of the NPC wear speeds. Armor mods that raise Health now slow wear. An MCM switch hides repair gains, and Papyrus calls wait on a locked inventory.
 

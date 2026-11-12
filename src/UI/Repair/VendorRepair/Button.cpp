@@ -7,6 +7,7 @@
 #include "UI/Repair/VendorRepair/Payment.h"
 #include "UI/Repair/VendorRepair/Quote.h"
 #include "UI/Repair/VendorRepair/Retry.h"
+#include "UI/Repair/VendorRepair/Sign.h"
 #include "UI/Repair/VendorRepair/Stock.h"
 #include "UI/Roles/Bars.h"
 #include "UI/Roles/Boxes.h"
@@ -212,20 +213,20 @@ namespace VendorRepair
 		};
 
 		// Puts the button on the bar the barter screen draws now, since a movie
-		// can hand its bar a fresh list later. The hint is built first, so the
-		// key answers even when no bar holds it.
+		// can hand its bar a fresh list later, and the sign under that bar,
+		// also on a screen that refuses the button, see Sign.h. The hint is
+		// built first, so the key answers even when no bar holds it.
 		[[nodiscard]] Wired Wire(RE::BarterMenu* a_menu)
 		{
-			if (g_refused || !a_menu || !a_menu->uiMovie || !a_menu->menuObj.IsObject()) {
+			if (!a_menu || !a_menu->uiMovie || !a_menu->menuObj.IsObject()) {
 				return Wired::kOff;
 			}
-			auto hint = Hint(a_menu);
-			if (!hint.IsObject() && !Build(a_menu, hint)) {
-				return Wired::kOff;
-			}
-			auto bar = Roles::Bars::InUse(*a_menu, hint);
-			if (!bar) {
-				return Wired::kWaiting;
+			auto       hint = Hint(a_menu);
+			const auto refused = g_refused || (!hint.IsObject() && !Build(a_menu, hint));
+			auto       bar = Roles::Bars::InUse(*a_menu, hint);
+			Sign::Place(a_menu, bar);
+			if (refused || !bar) {
+				return refused ? Wired::kOff : Wired::kWaiting;
 			}
 			if (bar->ours) {
 				return Wired::kOn;

@@ -8,6 +8,7 @@
 #include "UI/Repair/VendorRepair/Payment.h"
 #include "UI/Repair/VendorRepair/Quote.h"
 #include "UI/Repair/VendorRepair/Retry.h"
+#include "UI/Repair/VendorRepair/Sign.h"
 #include "UI/Repair/VendorRepair/Stock.h"
 #include "UI/Repair/VendorRepair/Upkeep.h"
 
@@ -125,7 +126,8 @@ namespace VendorRepair
 		// A list rebuilt, which can come with a fresh list of hints for the
 		// bar. What the trader restocks with is forgotten before the game
 		// builds their side again, see ForgetStock, so a highlight the rebuild
-		// sets off reads it again.
+		// sets off reads it again, and their side gets its sign again, which
+		// Refresh puts in place.
 		void UpdateListHk(RE::BarterMenu* a_menu, bool a_inContainer)
 		{
 			if (!g_listLink.Runs() || !g_messagesLink.Live()) {
@@ -136,6 +138,9 @@ namespace VendorRepair
 				ForgetStock();
 			}
 			_UpdateList(a_menu, a_inContainer);
+			if (a_inContainer) {
+				Sign::Draw(a_menu);
+			}
 			Refresh(a_menu);
 		}
 
@@ -159,9 +164,10 @@ namespace VendorRepair
 		}
 
 		// A new screen forgets the last one before the game builds its lists.
-		// The screen being put away: the vanilla handling stops the markup
-		// on every price, so the Pip-Boy is told about a repair a moment after,
-		// through F4SE's task queue, once for each kind repaired.
+		// The screen being put away takes its sign out. The vanilla handling
+		// stops the markup on every price, so the Pip-Boy is told about a
+		// repair a moment after, through F4SE's task queue, once for each kind
+		// repaired.
 		RE::UI_MESSAGE_RESULTS ProcessMessageHk(RE::BarterMenu* a_menu, RE::UIMessage& a_message)
 		{
 			// Only the message that opens the screen brings a waiting place
@@ -175,9 +181,11 @@ namespace VendorRepair
 				ForgetKey();
 				ForgetQuestion();
 				ForgetWait();
+				Sign::Forget(a_menu);
 			}
 			const auto result = _ProcessMessage(a_menu, a_message);
 			if (*a_message.type == RE::UI_MESSAGE_TYPE::kHide) {
+				Sign::Forget(a_menu);
 				const auto* tasks = F4SE::GetTaskInterface();
 				for (const auto owed : TakeCardsOwed()) {
 					if (tasks) {

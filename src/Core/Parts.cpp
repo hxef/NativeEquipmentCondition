@@ -120,6 +120,7 @@ namespace
 	constexpr SettingLink SETTINGS[]{
 		{ &Settings::bSpawnCondition, nullptr, WORN_LOOT, WORN_LOOT_SIDE, WORN_LOOT_EXCEPTIONS },
 		{ &Settings::bVendorRepair, nullptr, TRADER_REPAIRS, TRADER_REPAIRS_SIDE },
+		{ &Settings::bTraderSign, &Settings::bVendorRepair, TRADER_REPAIRS },
 		{ &Settings::bSpareRepair, &Settings::fBenchCostMult, BENCH, SPARE_SIDE },
 		{ &Settings::iUnscrappableSpares, &Settings::fBenchCostMult, BENCH },
 		{ &Settings::iRepairBoxRow, &Settings::fBenchCostMult, BENCH },

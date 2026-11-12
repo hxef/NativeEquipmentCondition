@@ -2,7 +2,8 @@
 
 #include "Core/Text/Lines.h"
 
-// What a trader says about a repair, the [Trader] lines of the language files.
+// What a trader says about a repair and the sign under their caps, the
+// [Trader] lines of the language files.
 namespace Text
 {
 	namespace
@@ -52,5 +53,20 @@ namespace Text
 	std::string RepairTradePending()
 	{
 		return Pick(REPAIR_TRADE_PENDING);
+	}
+
+	std::string SignTitle()
+	{
+		return Pick(TRADER_SIGN_TITLE);
+	}
+
+	std::string SignNone()
+	{
+		return Pick(TRADER_SIGN_NONE);
+	}
+
+	std::string SignKind(Trade a_trade)
+	{
+		return Pick(Of(a_trade, TRADER_SIGN_WEAPONS, TRADER_SIGN_ARMOR, TRADER_SIGN_CLOTHING));
 	}
 }

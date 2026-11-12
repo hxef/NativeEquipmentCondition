@@ -15,6 +15,9 @@
 // joined one, once its own settings have loaded. So once REPAIR first joins a
 // bar on a screen, the refresh runs each frame for 3 s more whatever it finds,
 // and puts REPAIR back on the new list.
+//
+// After that, the refresh runs on a frame only when the row over the
+// trader's list changed, see Sign::TitleRowChanged.
 namespace VendorRepair
 {
 	// Starts the wait on a_menu's movie. Does nothing while a wait runs there,

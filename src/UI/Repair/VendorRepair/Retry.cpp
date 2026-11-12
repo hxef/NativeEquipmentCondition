@@ -4,6 +4,7 @@
 #include "Core/TraceLog.h"
 #include "UI/Flash.h"
 #include "UI/Repair/VendorRepair/Button.h"
+#include "UI/Repair/VendorRepair/Sign.h"
 #include "UI/Repair/VendorRepair/Stock.h"
 #include "UI/Repair/VendorRepair/VendorRepair.h"
 #include "UI/Roles/Roles.h"
@@ -83,9 +84,10 @@ namespace VendorRepair
 		// -------------------------------------------------------------------
 
 		// Runs the whole refresh each frame of a wait or a watch on its
-		// movie, and returns at once on any other frame. It stays on the
-		// movie after, kept in LISTENER_MEMBER, so later waits and watches on
-		// that movie use it again.
+		// movie, and on any other frame only when the row over the trader's
+		// list changed under the sign's line, see Sign::TitleRowChanged. It
+		// stays on the movie after, kept in LISTENER_MEMBER, so later waits
+		// and watches on that movie use it again.
 		class Listener final : public Scaleform::GFx::FunctionHandler
 		{
 		public:
@@ -94,6 +96,9 @@ namespace VendorRepair
 				const bool waiting = g_deadline && a_params.movie && a_params.movie == g_movie;
 				const bool watching = g_watchEnd && a_params.movie && a_params.movie == g_watched;
 				if (!waiting && !watching) {
+					if (Settings::bVendorRepair.GetValue() && HighlightLive() && Sign::TitleRowChanged(a_params.movie)) {
+						Refresh(OpenBarter());
+					}
 					return;
 				}
 				auto* const menu = OpenBarter();

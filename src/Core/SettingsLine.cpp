@@ -94,6 +94,7 @@ namespace Settings
 			&bPlainApparelNeverWears,
 			&bSpawnCondition,
 			&bVendorRepair,
+			&bTraderSign,
 			&bSpareRepair,
 			&bRepairBoxColumns,
 			&bRepairBoxGains,
@@ -117,7 +118,7 @@ namespace Settings
 		// The switches SWITCHES leaves out, each after the setting NEC.ini has
 		// it after, for the Settings line. bPlainApparelNeverWears comes first
 		// in [Features], so ReportLine says it before the list.
-		Live<bool>* const AFTER_VENDOR_REPAIR[]{ &bSpareRepair, &bRepairBoxColumns, &bRepairBoxGains };
+		Live<bool>* const AFTER_VENDOR_REPAIR[]{ &bTraderSign, &bSpareRepair, &bRepairBoxColumns, &bRepairBoxGains };
 		Live<bool>* const AFTER_HUD_CONDITION[]{ &bPowerArmorBar };
 		Live<bool>* const AFTER_FOOD_SPOILS[]{ &bFridgeIcon };
 		Live<bool>* const AFTER_HUD_BAR[]{ &bHudBarHidesWithCounter, &bHudBarStandsAlone, &bHudBarShowsWord };

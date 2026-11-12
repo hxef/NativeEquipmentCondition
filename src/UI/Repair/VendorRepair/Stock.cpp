@@ -32,7 +32,7 @@ namespace VendorRepair
 		bool         g_inContainer = false;
 
 		// How far this trader repairs each kind, kept until the trader's side
-		// is built again. Empty until a worn item asks again.
+		// is built again. Empty until the sign or a worn item asks again.
 		std::optional<Ceilings> g_ceilings;
 
 		// How far a trader repairs a kind, and for the trace log how far past
@@ -332,22 +332,31 @@ namespace VendorRepair
 		return CeilingsOf(faction->vendorData.merchantContainer, a_trader, ", worked out for a script").Of(TradeOf(a_object));
 	}
 
-	std::uint32_t Ceiling(RE::BarterMenu* a_menu, const Selection& a_selection)
+	std::optional<Ceilings> Now(RE::BarterMenu* a_menu)
 	{
-		if (!a_menu || !a_selection.Worn()) {
-			return 0;
+		if (!a_menu) {
+			return std::nullopt;
 		}
 		if (!g_ceilings) {
 			// What the open screen's trader restocks with says about them.
 			const auto handle = a_menu->vendorActor.get();
 			auto*      trader = handle ? handle->As<RE::Actor>() : nullptr;
 			if (!trader) {
-				return 0;
+				return std::nullopt;
 			}
 			g_ceilings = CeilingsOf(a_menu->vendorChestRef.get().get(), *trader,
 				std::format(", shows {:d} rows now", a_menu->containerInv.stackedEntries.size()));
 		}
-		return g_ceilings->Of(a_selection.trade);
+		return g_ceilings;
+	}
+
+	std::uint32_t Ceiling(RE::BarterMenu* a_menu, const Selection& a_selection)
+	{
+		if (!a_selection.Worn()) {
+			return 0;
+		}
+		const auto now = Now(a_menu);
+		return now ? now->Of(a_selection.trade) : 0;
 	}
 
 	void Forget()

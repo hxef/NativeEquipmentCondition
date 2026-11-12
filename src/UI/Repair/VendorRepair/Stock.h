@@ -7,6 +7,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <optional>
 #include <string>
 #include <string_view>
 
@@ -143,10 +144,14 @@ namespace VendorRepair
 
 	[[nodiscard]] Selection Selected(RE::BarterMenu* a_menu);
 
-	// How far this trader repairs a_selection, or 0 for an item at full
-	// condition or of a kind they do not deal in. What the trader restocks with
-	// is worked out the first time a worn item asks, so building the lists does
-	// not need it, and kept until the game builds the trader's side again.
+	// How far the open screen's trader repairs each kind, or nothing for a
+	// screen with no trader. What they restock with is worked out the first
+	// time the sign or a worn item asks, see Sign.h, and kept until the game
+	// builds the trader's side again.
+	[[nodiscard]] std::optional<Ceilings> Now(RE::BarterMenu* a_menu);
+
+	// How far this trader repairs a_selection, from Now, or 0 for an item at
+	// full condition or of a kind they do not deal in.
 	[[nodiscard]] std::uint32_t Ceiling(RE::BarterMenu* a_menu, const Selection& a_selection);
 
 	// Forgets the highlight and the trader, for a new screen.

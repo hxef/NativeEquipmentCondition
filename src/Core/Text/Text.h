@@ -136,6 +136,16 @@ namespace Text
 	// pressed while a trade is pending, see VendorRepair/Button.h.
 	[[nodiscard]] std::string RepairTradePending();
 
+	// "Repairs up to", the title of the trader's repair sign on the barter
+	// screen, see VendorRepair/Sign.h.
+	[[nodiscard]] std::string SignTitle();
+
+	// "No repairs", the sign of a trader who repairs no kind.
+	[[nodiscard]] std::string SignNone();
+
+	// "Weapons", a kind's name on the sign, which prints the level beside it.
+	[[nodiscard]] std::string SignKind(Trade a_trade);
+
 	// "This item can't be repaired at a workbench. A trader can restore it.",
 	// said when REPAIR is pressed on an item the bench has nothing to rebuild
 	// from, see Workbench/Cost.h.

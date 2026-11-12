@@ -256,7 +256,11 @@
         { "id": "iTraderFullStock:Balance", "type": "slider", "groupCondition": 18,
           "text": "NEC|iTraderFullStock", "textFromFormName": true,
           "help": "NEC|iTraderFullStock.help", "helpFromFormName": true,
-          "valueOptions": { "min": 10, "max": 30, "step": 1, "sourceType": "ModSettingInt" } }
+          "valueOptions": { "min": 10, "max": 30, "step": 1, "sourceType": "ModSettingInt" } },
+        { "id": "bTraderSign:Features", "type": "switcher", "groupCondition": 18,
+          "text": "NEC|bTraderSign", "textFromFormName": true,
+          "help": "NEC|bTraderSign.help", "helpFromFormName": true,
+          "valueOptions": { "sourceType": "ModSettingBool" } }
       ]
     },
     {

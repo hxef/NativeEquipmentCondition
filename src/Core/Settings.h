@@ -145,6 +145,11 @@ namespace Settings
 	// Traders who deal in weapons, armor or clothing repair them for caps.
 	inline Live<bool> bVendorRepair{ "Features", "bVendorRepair", true };
 
+	// A sign on the barter screen says how far the trader repairs each kind,
+	// see VendorRepair/Sign.h. No feature's row: it rides on Trader repairs.
+	// On by default.
+	inline Live<bool> bTraderSign{ "Features", "bTraderSign", true };
+
 	// A USE A SPARE row in a workbench's repair box when the player carries
 	// another of the same weapon or armor, with any mods, see
 	// Workbench/Spares.h. No feature's row: it rides on Workbench repairs. On
@@ -245,7 +250,7 @@ namespace Settings
 	// id can arrive as bspawncondition:features.
 	[[nodiscard]] bool IsIdOf(const Named& a_setting, std::string_view a_id);
 
-	// The switch a_id names, any of the 21 in NEC.ini, or nullptr for an id
+	// The switch a_id names, any of the 22 in NEC.ini, or nullptr for an id
 	// NEC does not know.
 	[[nodiscard]] Live<bool>* SwitchById(std::string_view a_id);
 

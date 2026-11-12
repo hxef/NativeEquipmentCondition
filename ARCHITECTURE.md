@@ -213,6 +213,7 @@ src/
       Card.h/.cpp            the item card and its CND row
       Hud.h/.cpp             the ammo counter, its divider, numbers and colour, the parts beside it, where a quick container row's name starts and ends
       ContainerName.h/.cpp   the container's name at the top of the quick container
+      TraderSide.h/.cpp      the trader's side of the barter screen, the bracket around their list, its title, what it draws and what the screen draws beside it
       Rollover.h/.cpp        the pickup prompt: the name and the button hints under it
       PerkCard.h/.cpp        the perk chart's card and the field its description prints in
       Boxes.h/.cpp           the parts of the bench's confirmation box, where the bench's button bar starts, the message box's background, and whether the barter screen's quantity box is open
@@ -273,7 +274,7 @@ src/
       ConfirmScroll.h/.cpp   the box the bench puts up, grown and scrolled
       Columns/               the repair boxes' rows in columns: the cells measured, the rows fitted to the box's room and sent as html
       Workbench/             repairing at the weapon and armor benches
-      VendorRepair/          paying a trader to repair weapons, armor or clothing, and their stock
+      VendorRepair/          paying a trader to repair weapons, armor or clothing, their stock and the sign under their caps, above their list or left of it
 
   Papyrus/
     Papyrus.h                the script NEC that other mods call

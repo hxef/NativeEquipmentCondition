@@ -4,6 +4,7 @@
 * A trader whose stock is crowded with other goods now repairs that kind of gear a few steps lower, down to 30%, instead of not at all. The new MCM slider Leeway for other goods (iTraderLeeway, 8) softens that drop at higher values, and at 0 they do not repair it.
 * A new MCM slider, Stock for a full repair (iTraderFullStock, 16), sets how many different items of a kind a trader must restock to repair it to 100%.
 * New trader list ini files in Data\F4SE\Plugins\NEC\Traders set how far a trader repairs weapons, armor or clothing, named by ref ID, base ID or faction.
+* A new MCM slider, Surprise loot 1 in (iLootSurpriseOdds, 100), sets how rare the looted item is that ignores its owner's usual condition, and 0 means no surprises.
 * In the exclusion, food and fridge lists, a form ID that starts with FF is now skipped with a log line, since the game makes such forms for 1 save only.
 
 1.9.1

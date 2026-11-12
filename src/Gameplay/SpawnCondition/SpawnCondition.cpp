@@ -310,15 +310,16 @@ namespace SpawnCondition
 		}
 
 		// The limits a weapon can actually arrive at, not the clamp, which is
-		// wider than anything Provenance asks for, at the slider the ini files
+		// wider than anything Provenance asks for, at the sliders the ini files
 		// set, which the MCM page can move later.
 		const auto shift = LootShift();
+		const auto odds = LootSurpriseOdds();
 		const auto lowest = OrdinaryBand(Provenance::LowestCentre(), shift).low;
 		const auto highest = OrdinaryBand(Provenance::HighestCentre(), shift).high;
 
-		REX::INFO("Weapons and armor spawn between {:.0f} and {:.0f} percent condition, worked out from the leveled list they came out of and who is carrying them{:s}. One in {:.0f} ignores that and lands anywhere between {:.0f} and {:.0f}.",
-			lowest * 100.0F, highest * 100.0F, shift != 0 ? std::format(", with the loot condition shift at {:d}", shift) : "", 1.0F / UPSET_CHANCE,
-			std::max(Condition::MIN_HEALTH, WORST_SPAWN) * 100.0F, Condition::MAX_HEALTH * 100.0F);
+		REX::INFO("Weapons and armor spawn between {:.0f} and {:.0f} percent condition, worked out from the leveled list they came out of and who is carrying them{:s}.{:s}",
+			lowest * 100.0F, highest * 100.0F, shift != 0 ? std::format(", with the loot condition shift at {:d}", shift) : "",
+			odds > 0 ? std::format(" One in {:d} ignores that and lands anywhere between {:.0f} and {:.0f}.", odds, std::max(Condition::MIN_HEALTH, WORST_SPAWN) * 100.0F, Condition::MAX_HEALTH * 100.0F) : " None ignores that, with surprise loot at 0.");
 
 		InstallFill();
 		InstallHandover();

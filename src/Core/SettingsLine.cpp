@@ -40,6 +40,7 @@ namespace Settings
 			&iUnscrappableSpares,
 			&iRepairBoxRow,
 			&iLootShift,
+			&iLootSurpriseOdds,
 			&fWearRateMult,
 			&fNpcWearRateMult,
 			&fAutoWearRateMult,

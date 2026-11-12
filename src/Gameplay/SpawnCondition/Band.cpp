@@ -12,12 +12,15 @@ namespace SpawnCondition
 	namespace
 	{
 		// The limits of the ordinary roll, whatever middle it is centred on.
-		// UPSET_CHANCE in Band.h can go past them.
+		// The rare roll, see LootSurpriseOdds in Band.h, can go past them.
 		constexpr float SPAWN_FLOOR = 0.15F;
 		constexpr float SPAWN_CEILING = 1.00F;
 
 		// The slider's ends, -100 and 100.
 		constexpr std::int32_t MOST_SHIFT = 100;
+
+		// The Surprise loot 1 in slider's top, 1 item in 1000.
+		constexpr std::int32_t MOST_ODDS = 1000;
 
 		// The worst an item arrives at, see WORST_SPAWN.
 		float Worst()
@@ -40,6 +43,11 @@ namespace SpawnCondition
 	std::int32_t LootShift()
 	{
 		return std::clamp(Settings::iLootShift.GetValue(), -MOST_SHIFT, MOST_SHIFT);
+	}
+
+	std::int32_t LootSurpriseOdds()
+	{
+		return std::clamp(Settings::iLootSurpriseOdds.GetValue(), 0, MOST_ODDS);
 	}
 
 	Band OrdinaryBand(float a_centre, std::int32_t a_shift)
@@ -95,7 +103,9 @@ namespace SpawnCondition
 			lowest = std::clamp(a_aim.stock->worst, lowest, highest);
 		}
 
-		std::bernoulli_distribution rare{ UPSET_CHANCE };
+		// 1 / N in float, so 100 gives a chance of 0.01. At 0 the chance is 0.
+		const auto odds = LootSurpriseOdds();
+		std::bernoulli_distribution rare{ odds > 0 ? 1.0F / static_cast<float>(odds) : 0.0F };
 		if (rare(engine)) {
 			std::uniform_real_distribution<float> whole{ lowest, highest };
 			return { std::clamp(whole(engine), lowest, highest), true };

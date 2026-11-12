@@ -56,7 +56,7 @@ namespace VendorRepair
 		// do not repair, to 85% to 100% at the top. Each level's band starts
 		// about 8% above the last and is 15% to 20% wide, so neighbouring
 		// levels overlap. Nothing the upkeep rolls is worse than STOCK_WORST,
-		// including the 1 in 100 that ignores its band.
+		// including the 1 in 100 by default that ignores its band.
 		constexpr float STOCK_WORST = 0.30F;
 		constexpr float STOCK_WIDEST = 0.20F;
 		constexpr float STOCK_NARROWEST = 0.15F;

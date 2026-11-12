@@ -213,6 +213,11 @@ namespace Settings
 	// new, above 0, as a share of the way from -100 to 100, see
 	// SpawnCondition/Band.cpp. 0 is the plain roll.
 	inline Live<std::int32_t> iLootShift{ "Loot", "iLootShift", 0 };
+
+	// 1 item in this many ignores its band and rolls across the whole scale, a
+	// trader's stock too, see SpawnCondition/Band.h. Counts as 0 to 1000, and
+	// 0 means no item does.
+	inline Live<std::int32_t> iLootSurpriseOdds{ "Loot", "iLootSurpriseOdds", 100 };
 }
 
 // [Balance] and [HUD]. Each setting joins the setting store as it is made, so
@@ -238,7 +243,7 @@ namespace Settings
 	// whole number where the setting only takes whole steps.
 	using Number = std::variant<Live<float>*, Live<std::int32_t>*>;
 
-	// The 8 switches under [Features] and the 50 numbers under [Features],
+	// The 8 switches under [Features] and the 51 numbers under [Features],
 	// [Loot], [Balance] and [HUD], in NEC.ini's order, for Report and the MCM
 	// page.
 	[[nodiscard]] std::span<Live<bool>* const> Switches();

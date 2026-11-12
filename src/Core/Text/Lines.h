@@ -76,10 +76,10 @@ namespace Text
 	// The 11 switches, bPlainApparelNeverWears, bHudCondition, bPowerArmorBar,
 	// bSpareRepair, iUnscrappableSpares, iRepairBoxRow, bRepairBoxColumns,
 	// bRepairBoxGains, bTraderSign, bFridgeIcon and bTraceLogs, in
-	// MenuSwitches.cpp, the 9 wear speeds, in MenuWear.cpp, iLootShift and the
-	// 26 other Balance numbers, in MenuNumbers.cpp, and the 12 HUD numbers, the
-	// 5 HUD bar switches and sLogLevel, in MenuHudLog.cpp, each in NEC.ini's
-	// order.
+	// MenuSwitches.cpp, the 9 wear speeds, in MenuWear.cpp, the 2 Loot numbers
+	// and the 26 Balance numbers, in MenuNumbers.cpp, and the 12 HUD numbers,
+	// the 5 HUD bar switches and sLogLevel, in MenuHudLog.cpp, each in
+	// NEC.ini's order.
 	[[nodiscard]] std::span<const MenuRow> MenuSwitches();
 	[[nodiscard]] std::span<const MenuRow> MenuWear();
 	[[nodiscard]] std::span<const MenuRow> MenuNumbers();

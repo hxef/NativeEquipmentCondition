@@ -17,14 +17,6 @@ namespace SpawnCondition
 	// little and from a Courser by a lot.
 	inline constexpr float SPREAD = 0.12F;
 
-	// How often an item ignores its band and rolls across the whole scale. 1
-	// item in 100 does, a Courser's beaten rifle or a raider's pristine one.
-	// For loot the rare roll nearly always lands outside its band, and the
-	// further the band is from the middle, the bigger the surprise. Kept rare,
-	// since at about 1 in 20 it would stop being a surprise. A trader's own
-	// stock never rolls lower than its StockBand's worst.
-	inline constexpr float UPSET_CHANCE = 0.01F;
-
 	// The worst condition an item arrives at. A weapon at 0 cannot be equipped,
 	// see MIN_HEALTH in Condition.h, so an NPC given one would spawn unarmed. 0
 	// is reached by use, never by the roll.
@@ -42,6 +34,15 @@ namespace SpawnCondition
 	// The Loot condition shift slider, -100 to 100. Read at each roll and
 	// never kept, so a change on the MCM page counts from the next roll.
 	std::int32_t LootShift();
+
+	// 1 item in this many ignores its band and rolls across the whole scale, a
+	// Courser's beaten rifle or a raider's pristine one. The Surprise loot 1 in
+	// slider, 100 by default and 0 to 1000, read at each roll and never kept,
+	// so a change on the MCM page counts from the next item. 0 means no item
+	// does. For loot the rare roll nearly always lands outside its band, and
+	// the further the band is from the middle, the bigger the surprise. A
+	// trader's stock rolls it too, and never lower than its StockBand's worst.
+	std::int32_t LootSurpriseOdds();
 
 	// Where the ordinary roll lands for an item whose middle is a_centre, with
 	// the slider at a_shift: the middle the slider moved it to, the ends and

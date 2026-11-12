@@ -149,6 +149,7 @@ namespace
 		{ &Settings::fArmorFloor, nullptr, ARMOR },
 		{ &Settings::fArmorPenaltyStart, &Settings::fArmorFloor, ARMOR },
 		{ &Settings::iLootShift, &Settings::bSpawnCondition, WORN_LOOT },
+		{ &Settings::iLootSurpriseOdds, &Settings::bSpawnCondition, WORN_LOOT },
 		{ &Settings::fValueExponent, nullptr, PRICES },
 		{ &Settings::fFireRateFloor, nullptr, FIRE_RATE, FIRE_RATE_SIDE },
 		{ &Settings::fCritMeterFloor, nullptr, CRIT_METER },

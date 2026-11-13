@@ -113,6 +113,8 @@ src/
     WeaponWear/
       WeaponWear.h/.cpp      which weapons take part, wearing the copy in hand
       Rate.h/.cpp            how fast a weapon wears
+      DamageKinds.h/.cpp     the ordinary weapon of each damage type
+      Sources.h/.cpp         the trace log's list of where each weapon keeps its damage
       Copy.h                 wearing the copy in hand, the write the player's wear and an NPC's share
       Theirs.cpp             an NPC's weapon wear, which never waits for their inventory
     ArmorWear/

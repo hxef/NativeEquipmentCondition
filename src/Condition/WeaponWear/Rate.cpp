@@ -2,16 +2,21 @@
 
 #include "Condition/Condition.h"
 #include "Condition/Materials/Materials.h"
+#include "Condition/WeaponWear/DamageKinds.h"
+#include "Condition/WeaponWear/Sources.h"
 #include "Core/Settings.h"
 #include "Core/TraceLog.h"
 
 #include <algorithm>
 #include <atomic>
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
 #include <format>
-#include <mutex>
+#include <map>
 #include <string>
+#include <utility>
+#include <vector>
 
 namespace WeaponWear
 {
@@ -24,18 +29,15 @@ namespace WeaponWear
 		// gets more uses, see Rate.
 		constexpr float RATE_AT_REFERENCE = 0.0009F;
 
-		// What the reference weapon hits for. Measured by Load and
-		// MeasureAgain, since an overhaul that multiplies every damage in the
-		// game would otherwise wear everything out many times faster. A round
-		// number is used until then, and in a load order with no weapon that
-		// hits. Atomic, since wear reads it on other threads.
+		// What the ordinary ballistic weapon hits for, the reference weapon of
+		// armor and of every weapon whose damage type has no reference of its
+		// own. Measured by Load and MeasureAgain, since an overhaul that
+		// multiplies every damage in the game would otherwise wear everything
+		// out many times faster. A round number is used until then, and in a
+		// load order with no weapon that hits. Atomic, since wear reads it on
+		// other threads.
 		constexpr float    DEFAULT_REFERENCE_DAMAGE = 30.0F;
 		std::atomic<float> g_referenceDamage{ DEFAULT_REFERENCE_DAMAGE };
-
-		// The weapons whose damage sources the trace log has listed, by form
-		// ID. Several threads wear weapons, hence the lock.
-		std::mutex                        g_seenLock;
-		std::unordered_set<std::uint32_t> g_seen;
 
 		// How many times a second the ordinary automatic weapon fires, 9.09 in
 		// the game as it ships. Measured with the damage, and 0 while the load
@@ -44,6 +46,10 @@ namespace WeaponWear
 
 		// The most fAutoWearRateMult counts for, as the MCM slider allows.
 		constexpr float MAX_AUTO_MULT = 10.0F;
+
+		// -------------------------------------------------------------------
+		// What a weapon deals
+		// -------------------------------------------------------------------
 
 		// The middle value, the higher of the 2 in the middle for an even
 		// count. 0 for none.
@@ -129,27 +135,36 @@ namespace WeaponWear
 			return damage + ExplosionDamage(a_weapon, a_instance);
 		}
 
-		// Prints the magic effects behind a spell a weapon casts on what it
-		// hits, its object effect or its critical effect. The magnitude is what
-		// a weapon in full condition applies to the target.
-		void LogEffects(const char* a_what, const RE::MagicItem* a_item)
+		// The damage type this copy deals most of, by form ID, or 0 for
+		// ballistic, the base damage and the blast. A type counts only above
+		// that, so the vanilla plasma weapons, which split their damage evenly,
+		// are ballistic. Of 2 types that tie, the lower form ID counts.
+		std::uint32_t KindOf(const RE::TESObjectWEAP& a_weapon, const RE::TESObjectWEAP::InstanceData& a_instance)
 		{
-			if (!a_item) {
-				return;
+			if (!a_instance.damageTypes) {
+				return 0;
 			}
-
-			TraceLog::Line("sources", "  {:s} {:s} [{:08X}], {:d} effects",
-				a_what, RE::TESFullName::GetFullName(*a_item), a_item->formID, a_item->listOfEffects.size());
-
-			for (const auto* effect : a_item->listOfEffects) {
-				if (!effect) {
-					continue;
+			auto          most = BaseDamage(a_instance) + ExplosionDamage(a_weapon, a_instance);
+			std::uint32_t kind = 0;
+			for (const auto& entry : *a_instance.damageTypes) {
+				// A type listed twice counts its entries together.
+				std::int64_t sum = 0;
+				for (const auto& other : *a_instance.damageTypes) {
+					sum += other.first == entry.first ? other.second.i : 0;
 				}
-				const auto* setting = effect->effectSetting;
-				TraceLog::Line("sources", "    {:s} [{:08X}] magnitude {:.2f}",
-					setting ? RE::TESFullName::GetFullName(*setting) : "?"sv,
-					setting ? setting->formID : 0, effect->data.magnitude);
+				const auto damage = static_cast<float>(sum);
+				if (entry.first && (damage > most || (kind != 0 && damage == most && entry.first->formID < kind))) {
+					most = damage;
+					kind = entry.first->formID;
+				}
 			}
+			return kind;
+		}
+
+		// What a weapon that deals mostly a_kind is measured against.
+		float ReferenceFor(std::uint32_t a_kind)
+		{
+			return OwnReference(a_kind).value_or(g_referenceDamage.load());
 		}
 	}
 
@@ -157,9 +172,10 @@ namespace WeaponWear
 	{
 		// The median weapon, not the average. A few hit for hundreds while most
 		// hit for tens. The same for the automatics, where the Minigun fires 3
-		// times as fast as most.
-		std::vector<float> damages;
-		std::vector<float> rates;
+		// times as fast as most. Each damage type keeps its own list.
+		std::vector<float>                          damages;
+		std::map<std::uint32_t, std::vector<float>> byKind;
+		std::vector<float>                          rates;
 		for (auto* weapon : g_dataHandler->GetFormArray<RE::TESObjectWEAP>()) {
 			if (!weapon || !Condition::KindWearsOut(*weapon)) {
 				continue;
@@ -167,6 +183,7 @@ namespace WeaponWear
 			const auto damage = TotalDamage(*weapon, weapon->weaponData);
 			if (damage > 0.0F) {
 				damages.push_back(damage);
+				byKind[KindOf(*weapon, weapon->weaponData)].push_back(damage);
 			}
 			const auto rate = AutoRate(*weapon, weapon->weaponData);
 			if (rate > 0.0F) {
@@ -174,7 +191,23 @@ namespace WeaponWear
 			}
 		}
 
-		const auto ordinary = damages.empty() ? DEFAULT_REFERENCE_DAMAGE : Median(damages);
+		// A damage type with too few weapons wears against the ballistic
+		// weapon, and with too few ballistic weapons every weapon counts.
+		DamageKinds kinds;
+		std::size_t few = 0;
+		for (auto& [type, list] : byKind) {
+			if (type == 0) {
+				continue;
+			}
+			if (list.size() < MIN_KIND_WEAPONS) {
+				few += list.size();
+			} else {
+				kinds.push_back({ type, list.size(), Median(list) });
+			}
+		}
+		auto&      ballistic = byKind[0];
+		const auto ordinary = damages.empty() ? DEFAULT_REFERENCE_DAMAGE :
+		                                        Median(ballistic.size() < MIN_KIND_WEAPONS ? damages : ballistic);
 		const auto ordinaryRate = Median(rates);
 		const auto damageBefore = g_referenceDamage.exchange(ordinary);
 		const auto rateBefore = g_referenceAutoRate.exchange(ordinaryRate);
@@ -187,6 +220,7 @@ namespace WeaponWear
 				REX::INFO("An ordinary weapon in this load order now hits for {:s} instead of {:s}, as a mod changed weapons after game data loaded.",
 					said, saidBefore);
 			}
+			PublishKinds(std::move(kinds), few, true);
 			const auto fires = std::format("{:.2f}", ordinaryRate);
 			const auto firesBefore = std::format("{:.2f}", rateBefore);
 			if (fires == firesBefore) {
@@ -206,12 +240,10 @@ namespace WeaponWear
 
 		// A full reset can give a form ID to another weapon, so each is listed
 		// again.
-		{
-			const std::scoped_lock l(g_seenLock);
-			g_seen.clear();
-		}
+		ForgetSources();
 
 		REX::INFO("An ordinary weapon in this load order hits for {:.0f}.", ordinary);
+		PublishKinds(std::move(kinds), few, false);
 		if (ordinaryRate > 0.0F) {
 			REX::INFO("An ordinary automatic weapon in this load order fires {:.2f} times a second.", ordinaryRate);
 		} else {
@@ -222,48 +254,6 @@ namespace WeaponWear
 	float ReferenceDamage()
 	{
 		return g_referenceDamage.load();
-	}
-
-	void LogDamageSources(const RE::TESBoundObject& a_object, RE::TBO_InstanceData* a_data, bool a_perStack)
-	{
-		if (!a_object.IsWeapon() || !a_data) {
-			return;
-		}
-
-		{
-			const std::scoped_lock l(g_seenLock);
-			if (!g_seen.insert(a_object.formID).second) {
-				return;
-			}
-		}
-
-		const auto* weapon = static_cast<const RE::TESObjectWEAP::InstanceData*>(a_data);
-
-		TraceLog::Line("sources", "{:s} [{:08X}] from {:s} instance data, physical damage {:d}",
-			RE::TESFullName::GetFullName(a_object), a_object.formID,
-			a_perStack ? "per stack" : "base form", weapon->attackDamage);
-
-		if (weapon->damageTypes && !weapon->damageTypes->empty()) {
-			for (const auto& entry : *weapon->damageTypes) {
-				const auto* type = entry.first;
-				const auto* damage = type ? type->As<RE::BGSDamageType>() : nullptr;
-				TraceLog::Line("sources", "  damage type {:s} [{:08X}] value {:d}",
-					damage ? TraceLog::TypeName(*damage) : "?"sv,
-					type ? type->formID : 0, entry.second.i);
-			}
-		} else {
-			TraceLog::Line("sources", "  no damage types");
-		}
-
-		// The weapon's own object effect comes off the form, the ones its mods
-		// add off this copy's data.
-		LogEffects("object effect", static_cast<const RE::TESObjectWEAP&>(a_object).GetBaseEnchanting());
-		if (weapon->enchantments) {
-			for (const auto* effect : *weapon->enchantments) {
-				LogEffects("mod object effect", effect);
-			}
-		}
-		LogEffects("critical effect", weapon->effect);
 	}
 
 	float NpcMult()
@@ -281,6 +271,11 @@ namespace WeaponWear
 	{
 		const auto damage = TotalDamage(a_weapon, a_instance);
 		const auto blast = ExplosionDamage(a_weapon, a_instance);
+
+		// Measured against the ordinary weapon of the damage type it deals
+		// most of, see MeasureReference.
+		const auto kind = KindOf(a_weapon, a_instance);
+		const auto reference = ReferenceFor(kind);
 
 		// What the weapon is built from, see Materials.h. This and the
 		// references are read from the game as it is loaded.
@@ -312,12 +307,15 @@ namespace WeaponWear
 		// as it fires. An NPC's weapon takes fNpcWearRateMult instead.
 		const auto mult = std::max(0.0F, (a_theirs ? Settings::fNpcWearRateMult : Settings::fWearRateMult).GetValue());
 		const auto wear = RATE_AT_REFERENCE * mult *
-		                  (damage / g_referenceDamage.load()) * (Materials::ReferenceQuality(Condition::Kind::kWeapon) / quality) * pace * autoMult;
+		                  (damage / reference) * (Materials::ReferenceQuality(Condition::Kind::kWeapon) / quality) * pace * autoMult;
 
 		// An NPC's line ends with the multiplier it used.
 		auto tail = TraceLog::IsOpen() && pace < 1.0F ? std::format(", cut x{:.4f} for firing {:.2f} a second", pace, rate) : std::string{};
 		if (TraceLog::IsOpen() && autoMult != 1.0F) {
 			tail += std::format(", automatic x{:.2f}", autoMult);
+		}
+		if (TraceLog::IsOpen() && OwnReference(kind)) {
+			tail += std::format(", against {:.0f} for its damage type", reference);
 		}
 		if (a_theirs && TraceLog::IsOpen()) {
 			tail += std::format(", NPC rate x{:.2f}", mult);

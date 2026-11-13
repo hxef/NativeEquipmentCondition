@@ -1,3 +1,6 @@
+1.9.3
+* Each weapon now wears against an ordinary weapon of its own damage type, so a mod that changes only ballistic damage no longer makes energy weapons wear slower. In vanilla this moves wear by 4% or less.
+
 1.9.2
 * On the barter screen, a sign under the trader's caps shows how far they repair weapons, armor and clothing, or says No repairs. The new MCM switch Trader repair sign (bTraderSign, on) turns it off.
 * Under UI replacers such as FallUI - Inventory and DEF_UI, the sign shows above the trader's list.

@@ -4,10 +4,11 @@
 
 // Which weapons take part, how fast one wears, and wearing down the copy in
 // hand. Every shot and hit costs the equipped copy some condition, based on how
-// hard it hits compared with the ordinary weapon of the load order and on what
-// it is built of, see Materials.h. Rate.h has the rate, the ordinary weapon and
-// the ordinary automatic, Copy.h the write the player's wear and an NPC's
-// share, and Theirs.cpp an NPC's wear.
+// hard it hits compared with the ordinary weapon of its damage type in the load
+// order and on what it is built of, see Materials.h. Rate.h has the rate, the
+// ordinary weapon and the ordinary automatic, DamageKinds.h the ordinary weapon
+// of each damage type, Copy.h the write the player's wear and an NPC's share,
+// and Theirs.cpp an NPC's wear.
 namespace WeaponWear
 {
 	// Measures the ordinary weapon and the ordinary automatic of this load
@@ -20,8 +21,10 @@ namespace WeaponWear
 	// Says only what moved.
 	void MeasureAgain();
 
-	// What that ordinary weapon hits for, the number every wear rate is
-	// measured against, a weapon's per shot and a piece of armor's per hit.
+	// What the ordinary ballistic weapon hits for. A piece of armor's wear per
+	// hit is measured against it, and so is a weapon's per shot when it deals
+	// mostly a damage type fewer than 5 weapons deal. Any other weapon's is
+	// measured against the ordinary weapon of its own damage type.
 	float ReferenceDamage();
 
 	// Whether this weapon takes part, as a reason: nullptr for one that does,

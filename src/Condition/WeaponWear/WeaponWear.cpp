@@ -4,6 +4,7 @@
 #include "Condition/Equipped.h"
 #include "Condition/WeaponWear/Copy.h"
 #include "Condition/WeaponWear/Rate.h"
+#include "Condition/WeaponWear/Sources.h"
 #include "Core/ScriptEvents.h"
 #include "Core/Settings.h"
 #include "Core/TraceLog.h"

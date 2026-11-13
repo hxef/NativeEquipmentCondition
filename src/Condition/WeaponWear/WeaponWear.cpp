@@ -67,6 +67,15 @@ namespace WeaponWear
 				automatic);
 		}
 
+		// A line only for a suppressor speed that changes something.
+		const auto suppressed = SuppressedMult();
+		if (suppressed != 1.0F && !SuppressorKeyword()) {
+			REX::INFO("fSuppressedWearRateMult is {:g}, but no keyword HasSilencer is loaded, so no weapon counts as suppressed.", suppressed);
+		} else if (suppressed != 1.0F) {
+			REX::INFO("Weapons with a suppressor, yours and NPCs', wear {:g} times as fast as they fire, by fSuppressedWearRateMult. A bash wears as any other weapon's does.",
+				suppressed);
+		}
+
 		// A line only for a start below full, see Condition::Share.
 		const auto start = Condition::Start(Condition::Kind::kWeapon);
 		if (start <= 0.0F) {

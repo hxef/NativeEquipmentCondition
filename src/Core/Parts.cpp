@@ -144,6 +144,9 @@ namespace
 		// blade's cuts wear through the hit event, so this row still sets
 		// those.
 		{ &Settings::fAutoWearRateMult, &Settings::fWearRateMult, {}, GUN_WEAR, {}, kMotorWear },
+		// A suppressed gun's shots wear through the same fire call, the only
+		// wear this row sets.
+		{ &Settings::fSuppressedWearRateMult, &Settings::fWearRateMult, GUN_WEAR },
 		{ &Settings::fDamageFloor, nullptr, DAMAGE },
 		{ &Settings::fWeaponPenaltyStart, &Settings::fDamageFloor, WEAPON_PENALTIES, WEAPON_PENALTIES_SIDE },
 		{ &Settings::fArmorFloor, nullptr, ARMOR },

@@ -50,6 +50,7 @@ namespace Settings
 			&fSettlerWearRateMult,
 			&fCompanionArmorWearRateMult,
 			&fSettlerArmorWearRateMult,
+			&fSuppressedWearRateMult,
 			&fDamageFloor,
 			&fWeaponPenaltyStart,
 			&fArmorFloor,

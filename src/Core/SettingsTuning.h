@@ -20,6 +20,11 @@ namespace Settings
 	// multiplied by, on top of either of those, see WeaponWear/Rate.cpp.
 	inline Live<float> fAutoWearRateMult{ "Balance", "fAutoWearRateMult", 1.0F };
 
+	// What the wear a weapon with a suppressor takes as it fires is
+	// multiplied by, from 0.5 to 2, on top of the others, see
+	// WeaponWear/Rate.cpp.
+	inline Live<float> fSuppressedWearRateMult{ "Balance", "fSuppressedWearRateMult", 1.0F };
+
 	// What the wear rate of the player's armor is multiplied by, see
 	// ArmorWear/Rate.cpp.
 	inline Live<float> fArmorWearRateMult{ "Balance", "fArmorWearRateMult", 1.0F };

@@ -55,7 +55,8 @@ namespace WeaponWear
 	// F4SE's task queue, holding no lock.
 	void PutAwayNow(RE::Actor& a_owner, RE::TESObjectWEAP& a_weapon);
 
-	// The a_source of a bash, which fAutoWearRateMult leaves alone.
+	// The a_source of a bash, which fAutoWearRateMult and
+	// fSuppressedWearRateMult leave alone.
 	inline constexpr const char* BASH = "bash";
 
 	// Whether NPC weapons wear at all, false at an fNpcWearRateMult of 0 or

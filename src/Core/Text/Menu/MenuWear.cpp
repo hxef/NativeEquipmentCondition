@@ -5,7 +5,8 @@
 // The names and help lines of the wear speeds, the first Balance numbers on
 // the MCM page, see MenuLine in Text.h. Each NPC row follows the player's,
 // the automatic weapon row follows both weapon rows, and the companion and
-// settler rows come last, their weapon rows before their armor rows.
+// settler rows follow, their weapon rows before their armor rows. The
+// suppressed weapon row comes last, as in NEC.ini.
 namespace Text
 {
 	namespace
@@ -20,6 +21,7 @@ namespace Text
 			{ &Settings::fSettlerWearRateMult, SETTLER_WEAR_RATE_NAME, SETTLER_WEAR_RATE_HELP },
 			{ &Settings::fCompanionArmorWearRateMult, COMPANION_ARMOR_WEAR_RATE_NAME, COMPANION_ARMOR_WEAR_RATE_HELP },
 			{ &Settings::fSettlerArmorWearRateMult, SETTLER_ARMOR_WEAR_RATE_NAME, SETTLER_ARMOR_WEAR_RATE_HELP },
+			{ &Settings::fSuppressedWearRateMult, SUPPRESSED_WEAR_RATE_NAME, SUPPRESSED_WEAR_RATE_HELP },
 		};
 	}
 

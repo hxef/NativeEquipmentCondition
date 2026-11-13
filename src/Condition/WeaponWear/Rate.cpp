@@ -47,6 +47,11 @@ namespace WeaponWear
 		// The most fAutoWearRateMult counts for, as the MCM slider allows.
 		constexpr float MAX_AUTO_MULT = 10.0F;
 
+		// The least and most fSuppressedWearRateMult counts for, as the MCM
+		// slider allows.
+		constexpr float MIN_SUPPRESSED_MULT = 0.5F;
+		constexpr float MAX_SUPPRESSED_MULT = 2.0F;
+
 		// -------------------------------------------------------------------
 		// What a weapon deals
 		// -------------------------------------------------------------------
@@ -67,6 +72,17 @@ namespace WeaponWear
 		bool IsAutomatic(const RE::TESObjectWEAP::InstanceData& a_instance)
 		{
 			return a_instance.flags.any(RE::WEAPON_FLAGS::kAutomatic);
+		}
+
+		// Whether this copy carries a suppressor, mods included. Never asked
+		// while the slider sits at 1, where it changes nothing.
+		bool Suppressed(const RE::TESObjectWEAP& a_weapon, const RE::TESObjectWEAP::InstanceData& a_instance)
+		{
+			if (SuppressedMult() == 1.0F) {
+				return false;
+			}
+			const auto* keyword = SuppressorKeyword();
+			return keyword && a_weapon.HasKeyword(keyword, &a_instance);
 		}
 
 		// How many times a second an automatic weapon fires with these stats,
@@ -266,6 +282,16 @@ namespace WeaponWear
 		return std::min(std::max(0.0F, Settings::fAutoWearRateMult.GetValue()), MAX_AUTO_MULT);
 	}
 
+	float SuppressedMult()
+	{
+		return std::min(std::max(MIN_SUPPRESSED_MULT, Settings::fSuppressedWearRateMult.GetValue()), MAX_SUPPRESSED_MULT);
+	}
+
+	const RE::BGSKeyword* SuppressorKeyword()
+	{
+		return RE::TESForm::GetFormByEditorID<RE::BGSKeyword>("HasSilencer");
+	}
+
 	float Rate(const RE::TESObjectWEAP& a_weapon, const RE::TESObjectWEAP::InstanceData& a_instance,
 		const RE::ExtraDataList* a_extra, bool a_theirs, bool a_bash)
 	{
@@ -296,6 +322,12 @@ namespace WeaponWear
 		const auto automatic = !a_bash && IsAutomatic(a_instance);
 		const auto autoMult = automatic ? AutoMult() : 1.0F;
 
+		// A suppressor wears a gun faster or slower by
+		// fSuppressedWearRateMult, told by HasSilencer on the copy, the keyword
+		// every vanilla suppressor adds and Mister Sandman reads. A bash wears
+		// as any weapon's does.
+		const auto suppressed = !a_bash && Suppressed(a_weapon, a_instance) ? SuppressedMult() : 1.0F;
+
 		// Harder hitting wears faster, better built wears slower. A pipe gun is
 		// steel and hits for little, a plasma rifle is nuclear material and
 		// hits hard, and both land near the middle. A pipe rifle rechambered to
@@ -307,12 +339,15 @@ namespace WeaponWear
 		// as it fires. An NPC's weapon takes fNpcWearRateMult instead.
 		const auto mult = std::max(0.0F, (a_theirs ? Settings::fNpcWearRateMult : Settings::fWearRateMult).GetValue());
 		const auto wear = RATE_AT_REFERENCE * mult *
-		                  (damage / reference) * (Materials::ReferenceQuality(Condition::Kind::kWeapon) / quality) * pace * autoMult;
+		                  (damage / reference) * (Materials::ReferenceQuality(Condition::Kind::kWeapon) / quality) * pace * autoMult * suppressed;
 
 		// An NPC's line ends with the multiplier it used.
 		auto tail = TraceLog::IsOpen() && pace < 1.0F ? std::format(", cut x{:.4f} for firing {:.2f} a second", pace, rate) : std::string{};
 		if (TraceLog::IsOpen() && autoMult != 1.0F) {
 			tail += std::format(", automatic x{:.2f}", autoMult);
+		}
+		if (TraceLog::IsOpen() && suppressed != 1.0F) {
+			tail += std::format(", suppressor x{:.2f}", suppressed);
 		}
 		if (TraceLog::IsOpen() && OwnReference(kind)) {
 			tail += std::format(", against {:.0f} for its damage type", reference);

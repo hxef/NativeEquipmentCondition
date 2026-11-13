@@ -367,9 +367,9 @@ namespace VendorRepair
 		}
 
 		// How far this trader goes with this kind, above the question, since
-		// the buttons stop at the limit and nothing else on the screen says
-		// why, and the same trader may repair another kind further.
-		const auto over = Text::RepairUpTo(ceiling, selection.trade);
+		// the buttons stop at the limit. Left out while the sign shows it, and
+		// said where the sign is switched off or has no room.
+		const auto over = Sign::Shown(menu) ? std::string{} : Text::RepairUpTo(ceiling, selection.trade);
 		TraceLog::Line("menu", "{:s} asks how far to repair {:s} at {:d}%, a stack of {:d}, worth {:d}, under \"{:s}\", offering {:s}",
 			Trader(menu), selection.Name(), selection.percent, selection.count, selection.worth, over, spelled);
 

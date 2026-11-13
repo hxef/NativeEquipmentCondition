@@ -52,6 +52,10 @@ namespace VendorRepair::Sign
 	// opening or closing, since the next screen can reuse the movie.
 	void Forget(RE::BarterMenu* a_menu);
 
+	// Whether the block or the line is on the barter screen now, so the
+	// repair question leaves out what the sign already says.
+	[[nodiscard]] bool Shown(RE::BarterMenu* a_menu);
+
 	// Whether the row over the trader's list on a_movie changed since Place
 	// last tried the line there, so the refresh must run again. A movie can
 	// change that row without moving the highlight, when a tab's title grows

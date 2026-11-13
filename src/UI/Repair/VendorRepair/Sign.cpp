@@ -389,6 +389,17 @@ namespace VendorRepair::Sign
 		g_placed.reset();
 	}
 
+	bool Shown(RE::BarterMenu* a_menu)
+	{
+		if (!a_menu) {
+			return false;
+		}
+		return std::ranges::any_of(std::array{ SIGN_MEMBER, LINE_MEMBER }, [&](std::string_view a_member) {
+			const auto clip = Flash::Member(a_menu->menuObj, a_member);
+			return clip.IsDisplayObject() && Flash::Member(clip, "parent"sv).IsDisplayObject();
+		});
+	}
+
 	bool TitleRowChanged(const Scaleform::GFx::Movie* a_movie)
 	{
 		// Asked each frame, so Find stays quiet in the trace.

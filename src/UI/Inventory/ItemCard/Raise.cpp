@@ -53,12 +53,12 @@ namespace ItemCard
 			std::uint32_t        index;    // the child vanilla's card draws CND as
 			double               percent;  // the number the row prints
 			bool                 fridge;   // the row gets the fridge icon
-			std::optional<float> rate;     // the item's wear rate, see WearRate.cpp
+			std::optional<float> wearRate; // the item's wear rate, see WearRate.cpp
 		};
 
 		// The rate a CND entry carries, which only a card outside the Pip-Boy
 		// keeps.
-		std::optional<float> RateOf(const Value& a_entry)
+		std::optional<float> WearRateIn(const Value& a_entry)
 		{
 			const auto rate = Flash::Member(a_entry, WEAR_RATE_MARK);
 			return Flash::IsAnyNumber(rate) ? std::optional{ static_cast<float>(Flash::AsNumber(rate)) } : std::nullopt;
@@ -81,7 +81,7 @@ namespace ItemCard
 					continue;
 				}
 				if (HasText(entry, CND_TEXT)) {
-					return Entry{ plainRows, Flash::Number(entry, "value"sv), Flash::Bool(entry, FRIDGE_MARK), RateOf(entry) };
+					return Entry{ plainRows, Flash::Number(entry, "value"sv), Flash::Bool(entry, FRIDGE_MARK), WearRateIn(entry) };
 				}
 				plainRows++;
 			}
@@ -172,7 +172,7 @@ namespace ItemCard
 			// The rate goes in before the fridge icon, which sits left of the
 			// whole text. Read at every render, so the switch needs no new card.
 			if (Settings::bCardWearRate.GetValue()) {
-				const auto rate = a_place.movie == PIPBOY_MOVIE ? Pipboy::SelectedWearRate(a_movie) : entry->rate;
+				const auto rate = a_place.movie == PIPBOY_MOVIE ? Pipboy::SelectedWearRate(a_movie) : entry->wearRate;
 				WriteWearRate(a_movie, a_place.movie, row->clip, rate);
 			}
 			MarkFridge(a_movie, a_place.movie, row->clip, entry->fridge);

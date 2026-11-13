@@ -55,6 +55,8 @@ namespace Mcm
 			{ &Settings::fFireRateFloor, FollowUp::kCards },
 			{ &Settings::fAccuracyFloor, FollowUp::kCards },
 			{ &Settings::fRangeFloor, FollowUp::kCards },
+			{ &Settings::fAutoWearRateMult, FollowUp::kCards },
+			{ &Settings::fSuppressedWearRateMult, FollowUp::kCards },
 		};
 
 		// Said once for each id, since the page asks again every time it is

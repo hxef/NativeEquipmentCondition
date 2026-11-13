@@ -256,6 +256,12 @@ namespace Settings
 		return it != std::end(EVERY_SWITCH) ? *it : nullptr;
 	}
 
+	Live<bool>* SwitchByKey(std::string_view a_key)
+	{
+		const auto it = std::ranges::find_if(EVERY_SWITCH, [&](const Live<bool>* a_switch) { return a_switch->key == a_key; });
+		return it != std::end(EVERY_SWITCH) ? *it : nullptr;
+	}
+
 	// -------------------------------------------------------------------
 	// The Settings line
 	// -------------------------------------------------------------------

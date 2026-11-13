@@ -54,17 +54,6 @@ namespace Mcm
 		// The block notes
 		// -------------------------------------------------------------------
 
-		// One of the feature switches by its key, bSpawnCondition.
-		Settings::Live<bool>* SwitchFor(std::string_view a_key)
-		{
-			for (auto* on : Settings::Switches()) {
-				if (on->key == a_key) {
-					return on;
-				}
-			}
-			return nullptr;
-		}
-
 		// The setting a block is named after, by its key: a switch, or a
 		// number with nothing above it.
 		const SettingLink* LeadFor(std::string_view a_key)
@@ -156,7 +145,7 @@ namespace Mcm
 				std::ranges::copy(cause.pieces, std::back_inserter(named));
 			}
 		};
-		const auto* on = SwitchFor(a_lead.setting->key);
+		const auto* on = Settings::SwitchByKey(a_lead.setting->key);
 		const auto  yield = on ? CallPatch::YieldOf(*on) : std::nullopt;
 		if (yield) {
 			add(*yield);
@@ -251,7 +240,7 @@ namespace Mcm
 			return JamStartShows();
 		}
 		if (a_id.ends_with(FREE)) {
-			const auto* on = SwitchFor(a_id.substr(0, a_id.size() - FREE.size()));
+			const auto* on = Settings::SwitchByKey(a_id.substr(0, a_id.size() - FREE.size()));
 			return on ? std::optional{ !CallPatch::IsYielded(*on) } : std::nullopt;
 		}
 		if (!a_id.ends_with(SHOWN)) {

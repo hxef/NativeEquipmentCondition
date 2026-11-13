@@ -24,17 +24,6 @@ namespace VendorRepair
 		// The levels are 10 apart. See Repair.h.
 		constexpr std::uint32_t STEP = 10;
 
-		// The rows iTraderFullStock may ask for a full repair, as the MCM slider
-		// allows.
-		constexpr std::int32_t FEWEST_FULL_ROWS = 10;
-		constexpr std::int32_t MOST_FULL_ROWS = 30;
-
-		// How many more rows weapons need than armor and clothing.
-		constexpr std::size_t GUN_EXTRA_ROWS = 2;
-
-		// The most iTraderLeeway counts for, as the MCM slider allows.
-		constexpr std::int32_t MOST_LEEWAY = 20;
-
 		// The row under the highlight and which of the 2 sides it is in.
 		std::int32_t g_row = -1;
 		bool         g_inContainer = false;

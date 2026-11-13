@@ -79,7 +79,18 @@ namespace VendorRepair
 	// rounded down to a level the question can offer.
 	inline constexpr std::uint32_t MIN_CEILING = 30;
 
-	// iTraderLeeway, see Settings.h, kept to the range the MCM slider allows.
+	// The rows iTraderFullStock may ask for a full repair, as the MCM slider
+	// allows.
+	inline constexpr std::int32_t FEWEST_FULL_ROWS = 10;
+	inline constexpr std::int32_t MOST_FULL_ROWS = 30;
+
+	// How many more rows weapons need than armor and clothing.
+	inline constexpr std::size_t GUN_EXTRA_ROWS = 2;
+
+	// The most iTraderLeeway counts for, as the MCM slider allows.
+	inline constexpr std::int32_t MOST_LEEWAY = 20;
+
+	// iTraderLeeway, see Settings.h, kept to 0 to MOST_LEEWAY.
 	[[nodiscard]] std::size_t Leeway();
 
 	// How many rows of a_trade it takes to repair that kind to full, from

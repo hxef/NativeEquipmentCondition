@@ -2,6 +2,7 @@
 
 #include "Condition/ArmorWear/ArmorWear.h"
 #include "Condition/WeaponWear/WeaponWear.h"
+#include "Core/IniText.h"
 #include "Core/TraceLog.h"
 #include "Gameplay/FoodSpoil/FoodSpoil.h"
 #include "UI/Flash.h"
@@ -27,13 +28,13 @@ namespace ItemCard
 		// -------------------------------------------------------------------
 
 		// What NEC writes after the percent in the number's own field.
-		constexpr std::string_view RATE_START = " (x";
+		constexpr std::string_view WEAR_RATE_START = " (x";
 
 		// The rate as the row prints it, (x1.3): 1 decimal, 2 below 0.05 and a
 		// whole number from 100 up, x0 for an item that never wears and x0.01
 		// at the least for one that does. The point is "." in every language,
 		// as the card prints its other numbers, and nothing is translated.
-		std::string RateText(float a_rate)
+		std::string WearRateText(float a_rate)
 		{
 			if (!(a_rate > 0.0F)) {
 				return "(x0)";
@@ -48,6 +49,13 @@ namespace ItemCard
 				return std::format("(x{:.1f})", a_rate);
 			}
 			return std::format("(x{:.0f})", a_rate);
+		}
+
+		// The rate in the cell beside the number, which is narrower: a whole
+		// number from 10 up, (x18) for 17.6, else as WearRateText writes it.
+		std::string CellWearRateText(float a_rate)
+		{
+			return a_rate < 9.95F ? WearRateText(a_rate) : std::format("(x{:.0f})", a_rate);
 		}
 
 		// The movie's name for the trace, PipboyMenu for PipboyMenu.swf.
@@ -177,18 +185,38 @@ namespace ItemCard
 			return std::nullopt;
 		}
 
-		// Form B: a_rate in a_cell, the empty field right of the number, in
-		// the number's colour. False when it would not fit or would shrink,
-		// with the cell left empty.
-		bool WriteInCell(Scaleform::GFx::Movie& a_movie, Value& a_field, Value& a_cell, const std::string& a_rate)
+		// Form B: a_rate in a_cell, the empty field right of the number, at
+		// the number's size and in its colour, aligned as the cell is. An
+		// empty field's getTextFormat holds no font and no size, so the
+		// format is the number's. False when it would not fit or would
+		// shrink, with the cell left empty and a_why saying so in words.
+		bool WriteInCell(Scaleform::GFx::Movie& a_movie, Value& a_field, Value& a_cell, const std::string& a_rate, std::string& a_why)
 		{
-			const auto format = FormatOf(a_cell);
-			const auto natural = format ? NaturalSize(a_movie, *format, a_rate) : std::nullopt;
+			auto format = FormatOf(a_field);
+			if (!format) {
+				a_why = "gets no text format, as the number has none";
+				return false;
+			}
+			if (const auto align = Flash::Member(Flash::Member(a_cell, "defaultTextFormat"sv), "align"sv); align.IsString()) {
+				Flash::Set(*format, "align"sv, align);
+			}
+			const auto natural = NaturalSize(a_movie, *format, a_rate);
+			if (!natural) {
+				a_why = std::format("gets no size for \"{:s}\" from the movie", a_rate);
+				return false;
+			}
 			const auto width = Flash::Number(a_cell, "width"sv);
-			if (!natural || (natural->width + 2.0 * Flash::FIELD_MARGIN) * Flash::Number(a_cell, "scaleX"sv, 1.0) > width) {
+			const auto scale = Flash::Number(a_cell, "scaleX"sv, 1.0);
+			const auto need = (natural->width + 2.0 * Flash::FIELD_MARGIN) * scale;
+			if (need > width) {
+				a_why = std::format("is {:.1f} wide, and \"{:s}\" needs {:.1f}", width, a_rate, need);
 				return false;
 			}
 			if (!WriteShown(a_cell, *format, a_rate, natural->height, width)) {
+				const auto nan = std::numeric_limits<double>::quiet_NaN();
+				a_why = std::format("is {:.1f} wide, and \"{:s}\" needs {:.1f} at {:.1f} high, but it drew {:.1f} wide at {:.1f} high", width,
+					a_rate, need, natural->height, (Flash::Number(a_cell, "textWidth"sv, nan) + 2.0 * Flash::FIELD_MARGIN) * scale,
+					Flash::Number(a_cell, "textHeight"sv, nan));
 				Flash::Set(a_cell, "text"sv, Value(""));
 				return false;
 			}
@@ -242,9 +270,9 @@ namespace ItemCard
 			return;
 		}
 
-		const auto  rate = RateText(*a_rate);
+		const auto  rate = WearRateText(*a_rate);
 		std::string printed{ shown.GetString() };
-		if (const auto at = printed.find(RATE_START); at != std::string::npos) {
+		if (const auto at = printed.find(WEAR_RATE_START); at != std::string::npos) {
 			if (std::string_view{ printed }.substr(at + 1) == rate) {
 				return;
 			}
@@ -253,10 +281,12 @@ namespace ItemCard
 		}
 
 		// A cell beside that shows something of its own, a difference to the
-		// item compared, leaves no room for the rate.
+		// item compared, leaves no room for the rate. A cell of spaces shows
+		// nothing and is left as it is, as on DEF_UI's workbench card.
 		auto       cell = Roles::Card::CellBeside(a_row);
-		const auto beside = cell.IsDisplayObject() ? Flash::String(cell, "text"sv) : std::string{};
-		if (beside == rate) {
+		const auto beside = cell.IsDisplayObject() ? std::string{ IniText::Trimmed(Flash::String(cell, "text"sv)) } : std::string{};
+		const auto cellWearRate = CellWearRateText(*a_rate);
+		if (beside == cellWearRate) {
 			return;
 		}
 		const auto movie = MovieName(a_movieFile);
@@ -273,9 +303,13 @@ namespace ItemCard
 			TraceLog::First("menu", "{:s} CND row reads \"{:s}\", {:.0f} wider to the left", movie, text, *wider);
 			return;
 		}
-		if (cell.IsDisplayObject() && WriteInCell(a_movie, field, cell, rate)) {
-			TraceLog::First("menu", "{:s} CND row reads \"{:s}\" with \"{:s}\" in the cell beside it", movie, printed, rate);
-			return;
+		if (cell.IsDisplayObject()) {
+			std::string why;
+			if (WriteInCell(a_movie, field, cell, cellWearRate, why)) {
+				TraceLog::First("menu", "{:s} CND row reads \"{:s}\" with \"{:s}\" in the cell beside it", movie, printed, cellWearRate);
+				return;
+			}
+			TraceLog::First("menu", "{:s} CND row's cell beside the number {:s}", movie, why);
 		}
 		if (!beside.empty()) {
 			Flash::Set(cell, "text"sv, Value(""));

@@ -263,6 +263,10 @@ namespace Settings
 	// NEC does not know.
 	[[nodiscard]] Live<bool>* SwitchById(std::string_view a_id);
 
+	// The switch a_key names without its section, such as bCardWearRate, any
+	// of the 23, or nullptr.
+	[[nodiscard]] Live<bool>* SwitchByKey(std::string_view a_key);
+
 	// The number a_id names, a float or a whole number as T asks, or nullptr
 	// for an id NEC does not know or a number of the other kind.
 	template <class T>

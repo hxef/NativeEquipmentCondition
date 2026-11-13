@@ -2,6 +2,7 @@
 
 #include "Core/Plugin.h"
 
+#include <cstddef>
 #include <cstdint>
 #include <string>
 #include <unordered_map>
@@ -62,6 +63,16 @@ namespace FoodSpoil
 
 	// Forgets every kind, so no food spoils until LoadKinds runs.
 	void UnloadKinds();
+
+	// How many foods keep fRawFoodDays, raw food and crops, and how many keep
+	// fCookedFoodDays, as LoadKinds sorted them. 0 each until it runs. Safe
+	// from any thread.
+	struct DayCounts
+	{
+		std::size_t raw = 0;
+		std::size_t cooked = 0;
+	};
+	[[nodiscard]] DayCounts CountsByDays();
 
 	// a_form's kind, kNever for anything that is not food. Safe from any
 	// thread, see Core/Snapshot.h.

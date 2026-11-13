@@ -2,6 +2,8 @@
 
 #include "Core/Plugin.h"
 
+#include <cstdint>
+
 // How fast a weapon wears, against the ordinary weapon of its damage type in
 // the load order.
 // Private to this folder.
@@ -27,12 +29,37 @@ namespace WeaponWear
 	// plugin loaded has it.
 	const RE::BGSKeyword* SuppressorKeyword();
 
+	// A copy's own share of the wear, value, with what it is worked out from.
+	// 1 for an ordinary weapon of its damage type at the reference make, 2
+	// for one that wears twice as fast. fWearRateMult, fNpcWearRateMult and
+	// what one event scales are left out, so Rate multiplies the value by
+	// them and the item card shows it as it is.
+	struct Share
+	{
+		float         damage;
+		float         blast;      // the part of the damage the round's explosion deals
+		float         reference;  // what the ordinary weapon of its damage type hits for
+		float         quality;
+		float         pace;       // below 1 for an automatic faster than the ordinary one
+		float         fireRate;   // shots a second, 0 for a weapon that is not automatic
+		float         autoMult;
+		float         suppressor;
+		float         value;
+		std::uint32_t kind;       // the damage type it deals most of, 0 for ballistic
+	};
+
+	// The share of the copy whose instance data is a_instance and whose list
+	// is a_extra. a_bash for a bash, which fAutoWearRateMult and
+	// fSuppressedWearRateMult leave alone.
+	Share ShareOf(const RE::TESObjectWEAP& a_weapon, const RE::TESObjectWEAP::InstanceData& a_instance,
+		const RE::ExtraDataList* a_extra, bool a_bash);
+
 	// How much health one shot or swing costs, from the damage this copy deals,
 	// what it is built of and, for an automatic, how fast it fires. The weapon
 	// and its extra data say what it is built from, the instance data what the
 	// copy in hand does. a_theirs for an NPC's copy, at fNpcWearRateMult with
 	// the line in the NPC log. a_bash for a bash, which fAutoWearRateMult and
-	// fSuppressedWearRateMult leave alone.
+	// fSuppressedWearRateMult leave alone. It is ShareOf's value at that rate.
 	float Rate(const RE::TESObjectWEAP& a_weapon, const RE::TESObjectWEAP::InstanceData& a_instance,
 		const RE::ExtraDataList* a_extra, bool a_theirs, bool a_bash);
 }

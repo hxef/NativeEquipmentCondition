@@ -80,6 +80,23 @@ namespace ItemCard
 	// so only a movie that names one gets it. a_movieFile is the movie's.
 	void MarkFridge(Scaleform::GFx::Movie& a_movie, std::string_view a_movieFile, Scaleform::GFx::Value& a_row, bool a_fridge);
 
+	// What a CND entry carries in the card's data beside its number: the
+	// item's wear rate, which the card itself never reads. The Pip-Boy's
+	// card keeps no member of NEC's own, so Pipboy keeps its rate instead.
+	inline constexpr std::string_view WEAR_RATE_MARK = "necWearRate";
+
+	// How fast a_stack of a_item wears or spoils against an ordinary item of
+	// its kind in this load order, in WearRate.cpp: the wear code's own
+	// share, 1 for an ordinary one, 0 for one that never wears. Nothing for
+	// an item with no CND row.
+	[[nodiscard]] std::optional<float> WearRateOf(const RE::BGSInventoryItem& a_item, const RE::BGSInventoryItem::Stack* a_stack);
+
+	// Writes a_rate beside the number on a_row, the CND row, in WearRate.cpp:
+	// in the number's own field, grown left over the label's free room, else
+	// in the empty field beside it, else nowhere, so it never draws shrunk.
+	// Nothing for a row whose item has no rate. a_movieFile is the movie's.
+	void WriteWearRate(Scaleform::GFx::Movie& a_movie, std::string_view a_movieFile, Scaleform::GFx::Value& a_row, std::optional<float> a_rate);
+
 	// While FireRate slows worn weapons, patches the fire rate calls of the
 	// cards and of the 2 lists that weigh fire rates. Patches the sort's note
 	// of each stack's condition while fire rate or accuracy needs it, see

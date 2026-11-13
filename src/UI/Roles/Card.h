@@ -50,4 +50,19 @@ namespace Roles::Card
 	// The field a row prints its number in, or a value that is not a display
 	// object when the row has none.
 	[[nodiscard]] Value NumberField(Value& a_row);
+
+	// The field a row prints its label in, the same way.
+	[[nodiscard]] Value LabelField(Value& a_row);
+
+	// Whether a_row shows anything across a_left to a_right, in its own
+	// units, but its label, its number and its background. A text field
+	// that prints nothing draws nothing, and the background is a child that
+	// reaches from the label's left edge to the number's right edge. True
+	// when the row cannot be measured.
+	[[nodiscard]] bool DrawsAcross(Value& a_row, double a_left, double a_right);
+
+	// The nearest shown text field right of a row's number field, the next
+	// cell of a card that draws its rows as cells, or a value that is not a
+	// display object when there is none.
+	[[nodiscard]] Value CellBeside(Value& a_row);
 }

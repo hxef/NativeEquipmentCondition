@@ -104,6 +104,7 @@ namespace Settings
 			&bHudCondition,
 			&bPowerArmorBar,
 			&bQuickContainer,
+			&bCardWearRate,
 			&bConfirmScroll,
 			&bInspectPrice,
 			&bFoodSpoils,
@@ -122,6 +123,7 @@ namespace Settings
 		// in [Features], so ReportLine says it before the list.
 		Live<bool>* const AFTER_VENDOR_REPAIR[]{ &bTraderSign, &bSpareRepair, &bRepairBoxColumns, &bRepairBoxGains };
 		Live<bool>* const AFTER_HUD_CONDITION[]{ &bPowerArmorBar };
+		Live<bool>* const AFTER_QUICK_CONTAINER[]{ &bCardWearRate };
 		Live<bool>* const AFTER_FOOD_SPOILS[]{ &bFridgeIcon };
 		Live<bool>* const AFTER_HUD_BAR[]{ &bHudBarHidesWithCounter, &bHudBarStandsAlone, &bHudBarShowsWord };
 		Live<bool>* const AFTER_POWER_ARMOR_BAR[]{ &bPowerArmorBarShowsWord, &bPickupBar };
@@ -146,6 +148,9 @@ namespace Settings
 			}
 			if (&a_setting == &bHudCondition) {
 				return AFTER_HUD_CONDITION;
+			}
+			if (&a_setting == &bQuickContainer) {
+				return AFTER_QUICK_CONTAINER;
 			}
 			if (&a_setting == &bFoodSpoils) {
 				return AFTER_FOOD_SPOILS;

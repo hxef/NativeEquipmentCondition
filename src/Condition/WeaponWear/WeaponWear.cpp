@@ -216,6 +216,12 @@ namespace WeaponWear
 		return Rate(a_weapon, instance, a_extra, a_theirs, false);
 	}
 
+	float WearShare(const RE::TESObjectWEAP& a_weapon, const RE::ExtraDataList* a_extra)
+	{
+		const auto& instance = Condition::InstanceDataOf<RE::TESObjectWEAP::InstanceData>(a_extra, a_weapon.weaponData);
+		return ShareOf(a_weapon, instance, a_extra, false).value;
+	}
+
 	void PutAwayNow(RE::Actor& a_owner, RE::TESObjectWEAP& a_weapon)
 	{
 		auto* equipment = RE::ActorEquipManager::GetSingleton();

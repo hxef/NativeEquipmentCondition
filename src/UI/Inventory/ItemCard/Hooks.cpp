@@ -135,6 +135,9 @@ namespace ItemCard
 			if (InFridge(a_item, stack)) {
 				entry.SetMember(FRIDGE_MARK, Value(true));
 			}
+			if (const auto rate = WearRateOf(a_item, stack)) {
+				entry.SetMember(WEAR_RATE_MARK, Value(static_cast<double>(*rate)));
+			}
 			MoveLastToFront(entries);
 		}
 
@@ -185,11 +188,13 @@ namespace ItemCard
 			}
 
 			// The item's own entry, which the Pip-Boy numbers as it builds it.
-			// Pipboy::MarkBroken keeps the number of a worn out item or of
-			// spoiled food, which reads 0, to fade its name. It runs either
-			// way, since a repaired item needs its number forgotten.
+			// Pipboy::MarkEntry keeps the number of a worn out item or of
+			// spoiled food, which reads 0, to fade its name, and the wear rate
+			// its card shows, since no member of NEC's own reaches the card. It
+			// runs either way, since a repaired item needs its number
+			// forgotten.
 			const auto spent = Condition::WearsOut(*a_item->object) ? a_stack && a_stack->extra && a_stack->extra->IsItemBroken() : *percent == 0.0;
-			Pipboy::MarkBroken(*a_data, a_stack, spent);
+			Pipboy::MarkEntry(*a_data, a_stack, spent, WearRateOf(*a_item, a_stack));
 
 			// The call above created this array from scratch, so its order is
 			// still free to change.

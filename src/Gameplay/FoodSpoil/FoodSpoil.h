@@ -126,6 +126,13 @@ namespace FoodSpoil
 	// never spoils and anything that is not food.
 	[[nodiscard]] std::optional<float> DaysFor(const RE::TESForm& a_form);
 
+	// How fast a_food spoils against the ordinary food of this load order,
+	// for its card: 1 for food that keeps as many days as most foods do, 2
+	// for food that spoils in half the days. Read from the sliders as they
+	// stand, the fridge left out. Nothing for food that never spoils and
+	// anything that is not food.
+	[[nodiscard]] std::optional<float> SpoilShare(const RE::TESBoundObject& a_food);
+
 	// The same as FreshnessOf, read at the fridge speed when a_fridge, with no
 	// screen asked, so a trade does not show the trader's food fresh. Under
 	// the lock that keeps a_extra.

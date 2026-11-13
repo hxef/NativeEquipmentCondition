@@ -6,10 +6,26 @@
 // order. Private to this folder.
 namespace ArmorWear
 {
+	// A copy's own share of the wear, value, with what it is worked out from.
+	// 1 for a piece of the reference make, 2 for one that wears twice as
+	// fast. fArmorWearRateMult, fNpcArmorWearRateMult and the blow are left
+	// out, so Rate multiplies the value by them and the item card shows it
+	// as it is.
+	struct Share
+	{
+		float quality;
+		float lasts;  // the copy's Health against a piece with none, see Health.h
+		float value;
+	};
+
+	// The share of the copy whose list is a_extra.
+	Share ShareOf(const RE::TESObjectARMO& a_armor, const RE::ExtraDataList* a_extra);
+
 	// How much health one hit of a_damage costs this copy, given what it is
 	// built from, which the piece and its extra data say. a_theirs for an
 	// NPC's piece, at fNpcArmorWearRateMult with the line in the NPC log.
-	// Armor mods that change the copy's Health change it, see Health.h.
+	// Armor mods that change the copy's Health change it, see Health.h. It is
+	// ShareOf's value at that rate, for that hit.
 	float Rate(const RE::TESObjectARMO& a_armor, const RE::ExtraDataList* a_extra, float a_damage, bool a_theirs);
 
 	// How many blows of the ordinary weapon take a piece of ordinary make from

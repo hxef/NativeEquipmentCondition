@@ -192,6 +192,10 @@ namespace Settings
 	// Condition meters on the rows of the quick container.
 	inline Live<bool> bQuickContainer{ "Features", "bQuickContainer", true };
 
+	// The wear rate beside the condition on the CND row of item cards, read
+	// at every render of a card, see UI/Inventory/ItemCard/WearRate.cpp.
+	inline Live<bool> bCardWearRate{ "Features", "bCardWearRate", true };
+
 	// A workbench's confirmation box shows more of a long list and scrolls it,
 	// see ConfirmScroll.h.
 	inline Live<bool> bConfirmScroll{ "Features", "bConfirmScroll", true };
@@ -255,7 +259,7 @@ namespace Settings
 	// id can arrive as bspawncondition:features.
 	[[nodiscard]] bool IsIdOf(const Named& a_setting, std::string_view a_id);
 
-	// The switch a_id names, any of the 22 in NEC.ini, or nullptr for an id
+	// The switch a_id names, any of the 23 in NEC.ini, or nullptr for an id
 	// NEC does not know.
 	[[nodiscard]] Live<bool>* SwitchById(std::string_view a_id);
 

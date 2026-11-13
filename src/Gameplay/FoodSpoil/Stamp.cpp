@@ -31,6 +31,21 @@ namespace FoodSpoil
 			return std::clamp(days, FEWEST_DAYS, MOST_DAYS);
 		}
 
+		// The days the ordinary food of this load order keeps: those of the
+		// days slider more foods keep, the higher of the 2 on a tie, as the
+		// median weapon takes the higher of its 2 middle ones. Raw food and
+		// crops outnumber cooked food in vanilla.
+		float OrdinaryDays()
+		{
+			const auto counts = CountsByDays();
+			const auto raw = DaysOf(Kind::kRaw);
+			const auto cooked = DaysOf(Kind::kCooked);
+			if (counts.raw == counts.cooked) {
+				return std::max(raw, cooked);
+			}
+			return counts.raw > counts.cooked ? raw : cooked;
+		}
+
 		// The lowest starting freshness, so a roll never reads as spoiled.
 		constexpr float LEAST_START = 0.01F;
 
@@ -213,6 +228,12 @@ namespace FoodSpoil
 	{
 		const auto kind = KindOf(a_form);
 		return kind == Kind::kNever ? std::nullopt : std::optional{ DaysOf(kind) };
+	}
+
+	std::optional<float> SpoilShare(const RE::TESBoundObject& a_food)
+	{
+		const auto kind = KindOf(a_food);
+		return kind == Kind::kNever ? std::nullopt : std::optional{ OrdinaryDays() / DaysOf(kind) };
 	}
 
 	std::optional<float> StackFreshness(const RE::TESBoundObject& a_object, RE::ExtraDataList* a_extra, bool a_fridge)

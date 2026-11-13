@@ -255,7 +255,7 @@ src/
         Draw.h/.cpp                  how one meter looks
         FridgeIcon.h/.cpp            the icon beside a fridge's name
     Inventory/
-      Pipboy.h/.cpp          a worn out item's or spoiled food's name faded in the Pip-Boy
+      Pipboy.h/.cpp          a worn out item's or spoiled food's name faded in the Pip-Boy, and each entry's wear rate
       PaperDoll.h/.cpp       a CND bar over each region of the apparel tab's paper doll
       ItemCard/
         ItemCard.h/.cpp      the feature: its install and the movies
@@ -266,6 +266,7 @@ src/
         Aim.cpp              the accuracy and range a card prints, and the sort by accuracy
         Raise.cpp            moving the row up past Damage
         FridgeIcon.cpp       the icon on the CND row of food in a fridge
+        WearRate.cpp         the wear rate beside the condition on the CND row
         Effects.cpp          what spoiled food gives, on its card, the HP bar and STAT Effects
     Repair/
       SelectedItem.h/.cpp    the item highlighted in a menu's list

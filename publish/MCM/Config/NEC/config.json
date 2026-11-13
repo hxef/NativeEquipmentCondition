@@ -377,6 +377,17 @@
         { "id": "bQuickContainer:Features", "type": "switcher", "groupCondition": 19,
           "text": "NEC|bQuickContainer", "textFromFormName": true,
           "help": "NEC|bQuickContainer.help", "helpFromFormName": true,
+          "valueOptions": { "sourceType": "ModSettingBool" } },
+        { "id": "bCardWearRate:Free", "type": "hiddenSwitcher", "groupControl": 21,
+          "valueOptions": { "sourceType": "ModSettingBool" } },
+        { "id": "bCardWearRate:Note", "type": "hiddenSwitcher", "groupControl": 22,
+          "valueOptions": { "sourceType": "ModSettingBool" } },
+        { "type": "text", "html": true, "noTint": true, "groupCondition": 22,
+          "text": "NEC|bCardWearRate.note", "textFromFormName": true,
+          "help": "NEC|parts.help", "helpFromFormName": true },
+        { "id": "bCardWearRate:Features", "type": "switcher", "groupCondition": 21,
+          "text": "NEC|bCardWearRate", "textFromFormName": true,
+          "help": "NEC|bCardWearRate.help", "helpFromFormName": true,
           "valueOptions": { "sourceType": "ModSettingBool" } }
       ]
     },

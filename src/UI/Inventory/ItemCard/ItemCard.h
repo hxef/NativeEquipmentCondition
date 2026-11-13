@@ -28,10 +28,15 @@
 // as eating it heals and boosts, and its rads with the ones it adds. The same
 // patches show it on the Pip-Boy's HP bar and STAT Effects list after eating.
 //
+// The CND row also shows how fast the item wears or spoils, as 87% (x1.3),
+// x1.0 for an ordinary item of its kind in the load order. The number is the
+// wear code's own share, which it multiplies by its rate and its sliders.
+//
 // Hooks.cpp is the CND row, Rate.cpp the fire rate and the sort's note,
 // Aim.cpp accuracy and range, Raise.cpp moves the row past Damage,
-// FridgeIcon.cpp marks food in a fridge on it, Effects.cpp shows what spoiled
-// food gives, and Cards.h is what they share.
+// FridgeIcon.cpp marks food in a fridge on it, WearRate.cpp writes the wear
+// rate on it, Effects.cpp shows what spoiled food gives, and Cards.h is what
+// they share.
 namespace ItemCard
 {
 	// Patches the calls that fill item cards.

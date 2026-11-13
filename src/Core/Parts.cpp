@@ -117,6 +117,9 @@ namespace
 	// rows, and the one on a food's card on the container screen's CND row.
 	constexpr Piece FRIDGE_ICON_SIDE[]{ kLootMeters, kCndContainers };
 
+	// The wear rate sits on the CND row of every card that has one.
+	constexpr Piece CARD_CND[]{ kCndContainers, kCndWorkbench, kCndCooking, kCndPipboy };
+
 	constexpr SettingLink SETTINGS[]{
 		{ &Settings::bSpawnCondition, nullptr, WORN_LOOT, WORN_LOOT_SIDE, WORN_LOOT_EXCEPTIONS },
 		{ &Settings::bVendorRepair, nullptr, TRADER_REPAIRS, TRADER_REPAIRS_SIDE },
@@ -132,6 +135,7 @@ namespace
 		// rows below do, so it sits in bHudCondition's block.
 		{ &Settings::bPowerArmorBar, &Settings::bHudCondition, HUD_BARS },
 		{ &Settings::bQuickContainer, nullptr, LOOT_METERS },
+		{ &Settings::bCardWearRate, nullptr, CARD_CND },
 		{ &Settings::bConfirmScroll, nullptr, CONFIRM_SCROLL },
 		{ &Settings::bInspectPrice, nullptr, INSPECT_PRICE },
 		{ &Settings::bFoodSpoils, nullptr, FOOD, FOOD_SIDE },

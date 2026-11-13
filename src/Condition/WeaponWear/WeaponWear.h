@@ -50,6 +50,13 @@ namespace WeaponWear
 	// included. Read it under the inventory lock that keeps a_extra.
 	float PerUse(const RE::TESObjectWEAP& a_weapon, const RE::ExtraDataList* a_extra, bool a_theirs);
 
+	// The copy's own share of the wear, as its item card shows it: 1 for an
+	// ordinary weapon of its damage type in this load order, 2 for one that
+	// wears twice as fast. PerUse is this times the rate and the wear rate
+	// slider. No trace line. Read it under the inventory lock that keeps
+	// a_extra.
+	float WearShare(const RE::TESObjectWEAP& a_weapon, const RE::ExtraDataList* a_extra);
+
 	// Takes a_weapon, worn to 0, out of a_owner's hands, with the break
 	// message for the player, as the shot that breaks it does. Call it from
 	// F4SE's task queue, holding no lock.

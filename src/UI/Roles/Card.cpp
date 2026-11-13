@@ -73,7 +73,8 @@ namespace Roles::Card
 			});
 		}
 
-		// Whether a row prints a_label beside a_number, 91 or 91%.
+		// Whether a row prints a_label beside a_number, 91, 91% or 91% (x1.3)
+		// once NEC wrote its wear rate there.
 		[[nodiscard]] bool Prints(Value& a_row, std::string_view a_label, const std::string& a_number)
 		{
 			const auto label = Printed(a_row, "Label_tf"sv);
@@ -81,7 +82,33 @@ namespace Roles::Card
 				return false;
 			}
 			const auto value = Printed(a_row, "Value_tf"sv);
-			return value && (*value == a_number || *value == a_number + "%");
+			return value && (*value == a_number || *value == a_number + "%" || value->starts_with(a_number + "% (x"));
+		}
+
+		// -------------------------------------------------------------------
+		// A row's other children
+		// -------------------------------------------------------------------
+
+		// A cell's left edge may touch the number's right edge.
+		constexpr double TOUCH = 1.0;
+
+		// Whether a child of a row is one of the 2 fields every entry declares.
+		[[nodiscard]] bool IsOwnField(const Value& a_child)
+		{
+			const auto name = Flash::String(a_child, "name"sv);
+			return name == "Label_tf"sv || name == "Value_tf"sv;
+		}
+
+		// Whether a child is a text field, by the text it holds.
+		[[nodiscard]] bool IsTextField(const Value& a_child)
+		{
+			return Flash::Member(a_child, "text"sv).IsString();
+		}
+
+		[[nodiscard]] bool PrintsNothing(const Value& a_child)
+		{
+			const auto text = Flash::Member(a_child, "text"sv);
+			return text.IsString() && Trimmed(text.GetString()).empty();
 		}
 	}
 
@@ -207,5 +234,63 @@ namespace Roles::Card
 	{
 		auto field = Flash::Member(a_row, "Value_tf"sv);
 		return field.IsDisplayObject() ? field : Value{};
+	}
+
+	Value LabelField(Value& a_row)
+	{
+		auto field = Flash::Member(a_row, "Label_tf"sv);
+		return field.IsDisplayObject() ? field : Value{};
+	}
+
+	// -------------------------------------------------------------------
+	// Room on the row
+	// -------------------------------------------------------------------
+
+	bool DrawsAcross(Value& a_row, double a_left, double a_right)
+	{
+		auto       label = LabelField(a_row);
+		auto       number = NumberField(a_row);
+		const auto labelBox = label.IsDisplayObject() ? BoundsIn(label, a_row) : std::nullopt;
+		const auto numberBox = number.IsDisplayObject() ? BoundsIn(number, a_row) : std::nullopt;
+		if (!labelBox || !numberBox) {
+			return true;
+		}
+		for (auto& child : Flash::Children(a_row)) {
+			if (IsOwnField(child) || Flash::Opacity(child) <= 0.0 || PrintsNothing(child)) {
+				continue;
+			}
+			// A child with no size draws nothing.
+			const auto box = BoundsIn(child, a_row);
+			if (!box) {
+				continue;
+			}
+			const auto background = box->left <= labelBox->left && box->right >= numberBox->right;
+			if (!background && box->right > a_left && box->left < a_right) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	Value CellBeside(Value& a_row)
+	{
+		auto       number = NumberField(a_row);
+		const auto numberBox = number.IsDisplayObject() ? BoundsIn(number, a_row) : std::nullopt;
+		if (!numberBox) {
+			return {};
+		}
+		Value  nearest;
+		double nearestLeft = 0.0;
+		for (auto& child : Flash::Children(a_row)) {
+			if (IsOwnField(child) || !IsTextField(child) || Flash::Opacity(child) <= 0.0) {
+				continue;
+			}
+			const auto box = BoundsIn(child, a_row);
+			if (box && box->left >= numberBox->right - TOUCH && (!nearest.IsDisplayObject() || box->left < nearestLeft)) {
+				nearest = child;
+				nearestLeft = box->left;
+			}
+		}
+		return nearest;
 	}
 }

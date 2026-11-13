@@ -6,6 +6,7 @@
 
 #include <algorithm>
 #include <array>
+#include <atomic>
 #include <cstddef>
 #include <cstdint>
 #include <format>
@@ -193,6 +194,10 @@ namespace FoodSpoil
 
 		Snapshot<Table> g_table;
 
+		// See CountsByDays. Numbers only, read from other threads.
+		std::atomic<std::size_t> g_rawFoods{ 0 };
+		std::atomic<std::size_t> g_cookedFoods{ 0 };
+
 		std::optional<Kind> Find(const RE::TESForm& a_form)
 		{
 			const auto table = g_table.Get();
@@ -214,18 +219,31 @@ namespace FoodSpoil
 		Report(kinds);
 		NoteFoods(kinds);
 
-		Table table;
+		Table       table;
+		std::size_t raw = 0;
+		std::size_t cooked = 0;
 		table.reserve(kinds.size());
 		for (const auto& [id, food] : kinds) {
 			table.emplace_back(id, food.kind);
+			raw += food.kind == Kind::kRaw || food.kind == Kind::kCrop ? 1 : 0;
+			cooked += food.kind == Kind::kCooked ? 1 : 0;
 		}
 		std::ranges::sort(table);
 		g_table.Publish(std::make_shared<const Table>(std::move(table)));
+		g_rawFoods.store(raw);
+		g_cookedFoods.store(cooked);
 	}
 
 	void UnloadKinds()
 	{
 		g_table.Publish(nullptr);
+		g_rawFoods.store(0);
+		g_cookedFoods.store(0);
+	}
+
+	DayCounts CountsByDays()
+	{
+		return { g_rawFoods.load(), g_cookedFoods.load() };
 	}
 
 	Kind KindOf(const RE::TESForm& a_form)

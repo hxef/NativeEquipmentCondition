@@ -4,11 +4,13 @@
 #include "UI/MenuMovies.h"
 #include "Core/TraceLog.h"
 
+#include <algorithm>
 #include <array>
 #include <cstdint>
 #include <limits>
 #include <map>
 #include <mutex>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <unordered_map>
@@ -37,39 +39,48 @@ namespace Pipboy
 		// No row at all, where the list puts the clips it is not using.
 		constexpr std::uint32_t NO_ROW = std::numeric_limits<std::uint32_t>::max();
 
-		// How many worn out items are worth remembering. The Pip-Boy numbers
-		// every value it makes and never reuses a number. A stack listed again
-		// gives up its old number, but a stack that is gone leaves its number
+		// How many entries are worth remembering, every item with a CND row
+		// in a large inventory several times over. The Pip-Boy numbers every
+		// value it makes and never reuses a number. A stack listed again gives
+		// up its old number, but a stack that is gone leaves its number
 		// behind. Past this the oldest numbers are dropped.
-		constexpr std::size_t MAX_REMEMBERED = 4096;
+		constexpr std::size_t MAX_REMEMBERED = 16384;
 
-		// The numbers of the items that have worn out, each with the address
-		// of the stack it was listed for (0 for none), and each worn out
-		// stack's current number. An address is only a key and is never read
-		// through. Written on the Pip-Boy's rebuild thread and read on the
-		// menu's, so all of it goes through the lock.
-		std::mutex                                        g_wornLock;
-		std::map<std::uint32_t, std::uintptr_t>           g_worn;
+		// What MarkEntry noted of one entry.
+		struct Mark
+		{
+			std::uintptr_t       stack;  // the address it was listed for, 0 for none
+			bool                 broken;
+			std::optional<float> rate;
+		};
+
+		// The marks by number, and each marked stack's current number. An
+		// address is only a key and is never read through. Written on the
+		// Pip-Boy's rebuild thread and read on the menu's, so all of it goes
+		// through the lock.
+		std::mutex                                        g_marksLock;
+		std::map<std::uint32_t, Mark>                     g_marks;
 		std::unordered_map<std::uintptr_t, std::uint32_t> g_listed;
 
 		[[nodiscard]] bool IsWorn(std::uint32_t a_node)
 		{
-			const std::scoped_lock lock{ g_wornLock };
-			return g_worn.contains(a_node);
+			const std::scoped_lock lock{ g_marksLock };
+			const auto             mark = g_marks.find(a_node);
+			return mark != g_marks.end() && mark->second.broken;
 		}
 
 		// Drops a number, and its stack's key when the key still points to it.
 		// The caller holds the lock.
 		void Forget(std::uint32_t a_node)
 		{
-			const auto worn = g_worn.find(a_node);
-			if (worn == g_worn.end()) {
+			const auto mark = g_marks.find(a_node);
+			if (mark == g_marks.end()) {
 				return;
 			}
-			if (const auto listed = g_listed.find(worn->second); listed != g_listed.end() && listed->second == a_node) {
+			if (const auto listed = g_listed.find(mark->second.stack); listed != g_listed.end() && listed->second == a_node) {
 				g_listed.erase(listed);
 			}
-			g_worn.erase(worn);
+			g_marks.erase(mark);
 		}
 
 		// A member as a whole number, whichever number type it is kept in, or
@@ -210,8 +221,8 @@ namespace Pipboy
 
 				std::size_t remembered = 0;
 				{
-					const std::scoped_lock lock{ g_wornLock };
-					remembered = g_worn.size();
+					const std::scoped_lock lock{ g_marksLock };
+					remembered = static_cast<std::size_t>(std::ranges::count_if(g_marks, [](const auto& a_mark) { return a_mark.second.broken; }));
 				}
 
 				std::uint32_t matched = 0;
@@ -246,9 +257,9 @@ namespace Pipboy
 		FrameListener g_frameListener;
 	}
 
-	void MarkBroken(const RE::PipboyObject& a_entry, const RE::BGSInventoryItem::Stack* a_stack, bool a_broken)
+	void MarkEntry(const RE::PipboyObject& a_entry, const RE::BGSInventoryItem::Stack* a_stack, bool a_broken, std::optional<float> a_rate)
 	{
-		const std::scoped_lock lock{ g_wornLock };
+		const std::scoped_lock lock{ g_marksLock };
 
 		// A listing first drops every old row of the item, so the number the
 		// stack had before is shown nowhere now.
@@ -258,20 +269,39 @@ namespace Pipboy
 		}
 		Forget(a_entry.m_id);
 
-		if (!a_broken) {
+		if (!a_broken && !a_rate) {
 			return;
 		}
 
-		g_worn.emplace(a_entry.m_id, stack);
+		g_marks.emplace(a_entry.m_id, Mark{ stack, a_broken, a_rate });
 		if (stack != 0) {
 			g_listed[stack] = a_entry.m_id;
 		}
 
 		// The numbers only grow, so the smallest belong to the oldest
 		// listings.
-		if (g_worn.size() > MAX_REMEMBERED) {
-			Forget(g_worn.begin()->first);
+		if (g_marks.size() > MAX_REMEMBERED) {
+			Forget(g_marks.begin()->first);
 		}
+	}
+
+	// The list's selectedEntry is the data of the row the card shows, so its
+	// nodeID is the entry MarkEntry noted. No inventory is read here.
+	std::optional<float> SelectedWearRate(Scaleform::GFx::Movie& a_movie)
+	{
+		Value list;
+		Value selected;
+		if (!a_movie.GetVariable(&list, LIST_PATH) || !list.IsDisplayObject() || !list.GetMember("selectedEntry", &selected) ||
+			!selected.IsObject()) {
+			return std::nullopt;
+		}
+		const auto node = Number(selected, "nodeID"sv, 0);
+		if (node == 0) {
+			return std::nullopt;
+		}
+		const std::scoped_lock lock{ g_marksLock };
+		const auto             mark = g_marks.find(node);
+		return mark != g_marks.end() ? mark->second.rate : std::nullopt;
 	}
 
 	void OnMovieLoaded(Scaleform::GFx::Movie& a_movie, std::string_view a_file)

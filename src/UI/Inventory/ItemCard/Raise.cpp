@@ -1,7 +1,9 @@
 #include "UI/Inventory/ItemCard/Cards.h"
 
+#include "Core/Settings.h"
 #include "Core/TraceLog.h"
 #include "UI/Flash.h"
+#include "UI/Inventory/Pipboy.h"
 #include "UI/Roles/Card.h"
 
 #include <array>
@@ -20,6 +22,9 @@ namespace ItemCard
 	{
 		using Roles::Card::Place;
 		using Scaleform::GFx::Value;
+
+		// The movie whose card keeps no member of NEC's own, see Pipboy.h.
+		constexpr std::string_view PIPBOY_MOVIE = "PipboyMenu.swf";
 
 		// -------------------------------------------------------------------
 		// The CND entry in the card's data
@@ -45,10 +50,19 @@ namespace ItemCard
 
 		struct Entry
 		{
-			std::uint32_t index;    // the child vanilla's card draws CND as
-			double        percent;  // the number the row prints
-			bool          fridge;   // the row gets the fridge icon
+			std::uint32_t        index;    // the child vanilla's card draws CND as
+			double               percent;  // the number the row prints
+			bool                 fridge;   // the row gets the fridge icon
+			std::optional<float> rate;     // the item's wear rate, see WearRate.cpp
 		};
+
+		// The rate a CND entry carries, which only a card outside the Pip-Boy
+		// keeps.
+		std::optional<float> RateOf(const Value& a_entry)
+		{
+			const auto rate = Flash::Member(a_entry, WEAR_RATE_MARK);
+			return Flash::IsAnyNumber(rate) ? std::optional{ static_cast<float>(Flash::AsNumber(rate)) } : std::nullopt;
+		}
 
 		// The card draws its plain rows from the last entry to the first, then
 		// the combined damage and resistance rows, then the description, so
@@ -67,7 +81,7 @@ namespace ItemCard
 					continue;
 				}
 				if (HasText(entry, CND_TEXT)) {
-					return Entry{ plainRows, Flash::Number(entry, "value"sv), Flash::Bool(entry, FRIDGE_MARK) };
+					return Entry{ plainRows, Flash::Number(entry, "value"sv), Flash::Bool(entry, FRIDGE_MARK), RateOf(entry) };
 				}
 				plainRows++;
 			}
@@ -153,6 +167,13 @@ namespace ItemCard
 			auto row = Roles::Card::ConditionRow(a_movie, a_card, entry->index, look.label, entry->percent, look.redrawn);
 			if (!row) {
 				return;
+			}
+
+			// The rate goes in before the fridge icon, which sits left of the
+			// whole text. Read at every render, so the switch needs no new card.
+			if (Settings::bCardWearRate.GetValue()) {
+				const auto rate = a_place.movie == PIPBOY_MOVIE ? Pipboy::SelectedWearRate(a_movie) : entry->rate;
+				WriteWearRate(a_movie, a_place.movie, row->clip, rate);
 			}
 			MarkFridge(a_movie, a_place.movie, row->clip, entry->fridge);
 			if (row->above.empty()) {

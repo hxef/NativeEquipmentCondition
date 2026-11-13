@@ -98,4 +98,11 @@ namespace ArmorWear
 	// rate sliders included. Read it under the inventory lock that keeps
 	// a_extra.
 	float PerHit(const RE::TESObjectARMO& a_armor, const RE::ExtraDataList* a_extra, bool a_theirs);
+
+	// The copy's own share of the wear, as its item card shows it: 1 for a
+	// piece of ordinary make, 2 for one that wears twice as fast, 0 for a
+	// piece that never wears. PerHit is this times the rate and the armor
+	// wear rate slider. No trace line. Read it under the inventory lock that
+	// keeps a_extra.
+	float WearShare(const RE::TESObjectARMO& a_armor, const RE::ExtraDataList* a_extra);
 }

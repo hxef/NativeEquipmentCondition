@@ -292,41 +292,42 @@ namespace WeaponWear
 		return RE::TESForm::GetFormByEditorID<RE::BGSKeyword>("HasSilencer");
 	}
 
-	float Rate(const RE::TESObjectWEAP& a_weapon, const RE::TESObjectWEAP::InstanceData& a_instance,
-		const RE::ExtraDataList* a_extra, bool a_theirs, bool a_bash)
+	Share ShareOf(const RE::TESObjectWEAP& a_weapon, const RE::TESObjectWEAP::InstanceData& a_instance,
+		const RE::ExtraDataList* a_extra, bool a_bash)
 	{
-		const auto damage = TotalDamage(a_weapon, a_instance);
-		const auto blast = ExplosionDamage(a_weapon, a_instance);
+		Share share{};
+		share.damage = TotalDamage(a_weapon, a_instance);
+		share.blast = ExplosionDamage(a_weapon, a_instance);
 
 		// Measured against the ordinary weapon of the damage type it deals
 		// most of, see MeasureReference.
-		const auto kind = KindOf(a_weapon, a_instance);
-		const auto reference = ReferenceFor(kind);
+		share.kind = KindOf(a_weapon, a_instance);
+		share.reference = ReferenceFor(share.kind);
 
 		// What the weapon is built from, see Materials.h. This and the
 		// references are read from the game as it is loaded.
-		const auto quality = Materials::Quality(a_weapon, a_extra);
+		share.quality = Materials::Quality(a_weapon, a_extra);
 
 		// An automatic that fires faster than the ordinary automatic wears
 		// less per use, as if it fired at the ordinary pace. A Minigun at 27.27
 		// a second against 9.09 wears 1/3 as much per shot. Its bashes are
 		// cut the same, since the Shredder's held bash lands about 19 blows a
 		// second in first person. Every slower weapon keeps its full wear.
-		const auto rate = AutoRate(a_weapon, a_instance);
+		share.fireRate = AutoRate(a_weapon, a_instance);
 		const auto ordinaryRate = g_referenceAutoRate.load();
-		const auto pace = ordinaryRate > 0.0F && rate > ordinaryRate ? ordinaryRate / rate : 1.0F;
+		share.pace = ordinaryRate > 0.0F && share.fireRate > ordinaryRate ? ordinaryRate / share.fireRate : 1.0F;
 
 		// fAutoWearRateMult on top for an automatic's shots and a motor
 		// blade's cuts, by this copy's flag, so a gun modded to fire
 		// automatic counts. A bash wears as any weapon's does.
 		const auto automatic = !a_bash && IsAutomatic(a_instance);
-		const auto autoMult = automatic ? AutoMult() : 1.0F;
+		share.autoMult = automatic ? AutoMult() : 1.0F;
 
 		// A suppressor wears a gun faster or slower by
 		// fSuppressedWearRateMult, told by HasSilencer on the copy, the keyword
 		// every vanilla suppressor adds and Mister Sandman reads. A bash wears
 		// as any weapon's does.
-		const auto suppressed = !a_bash && Suppressed(a_weapon, a_instance) ? SuppressedMult() : 1.0F;
+		share.suppressor = !a_bash && Suppressed(a_weapon, a_instance) ? SuppressedMult() : 1.0F;
 
 		// Harder hitting wears faster, better built wears slower. A pipe gun is
 		// steel and hits for little, a plasma rifle is nuclear material and
@@ -335,31 +336,40 @@ namespace WeaponWear
 		// are measured against the reference weapon, so how much damage a
 		// weapon can deal in its life depends on what it is built from, and
 		// damage per shot decides how fast that runs out.
+		share.value = (share.damage / share.reference) * (Materials::ReferenceQuality(Condition::Kind::kWeapon) / share.quality) *
+		              share.pace * share.autoMult * share.suppressor;
+		return share;
+	}
+
+	float Rate(const RE::TESObjectWEAP& a_weapon, const RE::TESObjectWEAP::InstanceData& a_instance,
+		const RE::ExtraDataList* a_extra, bool a_theirs, bool a_bash)
+	{
+		const auto share = ShareOf(a_weapon, a_instance, a_extra, a_bash);
+
 		// fWearRateMult stops at 0, since below it a gun would gain condition
 		// as it fires. An NPC's weapon takes fNpcWearRateMult instead.
 		const auto mult = std::max(0.0F, (a_theirs ? Settings::fNpcWearRateMult : Settings::fWearRateMult).GetValue());
-		const auto wear = RATE_AT_REFERENCE * mult *
-		                  (damage / reference) * (Materials::ReferenceQuality(Condition::Kind::kWeapon) / quality) * pace * autoMult * suppressed;
+		const auto wear = RATE_AT_REFERENCE * mult * share.value;
 
 		// An NPC's line ends with the multiplier it used.
-		auto tail = TraceLog::IsOpen() && pace < 1.0F ? std::format(", cut x{:.4f} for firing {:.2f} a second", pace, rate) : std::string{};
-		if (TraceLog::IsOpen() && autoMult != 1.0F) {
-			tail += std::format(", automatic x{:.2f}", autoMult);
+		auto tail = TraceLog::IsOpen() && share.pace < 1.0F ? std::format(", cut x{:.4f} for firing {:.2f} a second", share.pace, share.fireRate) : std::string{};
+		if (TraceLog::IsOpen() && share.autoMult != 1.0F) {
+			tail += std::format(", automatic x{:.2f}", share.autoMult);
 		}
-		if (TraceLog::IsOpen() && suppressed != 1.0F) {
-			tail += std::format(", suppressor x{:.2f}", suppressed);
+		if (TraceLog::IsOpen() && share.suppressor != 1.0F) {
+			tail += std::format(", suppressor x{:.2f}", share.suppressor);
 		}
-		if (TraceLog::IsOpen() && OwnReference(kind)) {
-			tail += std::format(", against {:.0f} for its damage type", reference);
+		if (TraceLog::IsOpen() && OwnReference(share.kind)) {
+			tail += std::format(", against {:.0f} for its damage type", share.reference);
 		}
 		if (a_theirs && TraceLog::IsOpen()) {
 			tail += std::format(", NPC rate x{:.2f}", mult);
 		}
-		if (blast > 0.0F) {
+		if (share.blast > 0.0F) {
 			TraceLog::For(a_theirs).Line("rate", "{:.0f} damage, {:.0f} of it the blast, at quality {:.1f} costs {:.6f} a shot{:s}",
-				damage, blast, quality, wear, tail);
+				share.damage, share.blast, share.quality, wear, tail);
 		} else {
-			TraceLog::For(a_theirs).Line("rate", "{:.0f} damage at quality {:.1f} costs {:.6f} a shot{:s}", damage, quality, wear, tail);
+			TraceLog::For(a_theirs).Line("rate", "{:.0f} damage at quality {:.1f} costs {:.6f} a shot{:s}", share.damage, share.quality, wear, tail);
 		}
 		return wear;
 	}

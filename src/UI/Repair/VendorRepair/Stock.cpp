@@ -24,8 +24,16 @@ namespace VendorRepair
 		// The levels are 10 apart. See Repair.h.
 		constexpr std::uint32_t STEP = 10;
 
-		// The 3 kinds in the order the trace log notes them.
-		constexpr Trade TRADES[]{ Trade::kWeapons, Trade::kArmor, Trade::kClothing };
+		// The rows iTraderFullStock may ask for a full repair, as the MCM slider
+		// allows.
+		constexpr std::int32_t FEWEST_FULL_ROWS = 10;
+		constexpr std::int32_t MOST_FULL_ROWS = 30;
+
+		// How many more rows weapons need than armor and clothing.
+		constexpr std::size_t GUN_EXTRA_ROWS = 2;
+
+		// The most iTraderLeeway counts for, as the MCM slider allows.
+		constexpr std::int32_t MOST_LEEWAY = 20;
 
 		// The row under the highlight and which of the 2 sides it is in.
 		std::int32_t g_row = -1;
@@ -118,7 +126,7 @@ namespace VendorRepair
 				if (!set) {
 					continue;
 				}
-				auto& level = trade == Trade::kWeapons ? a_ceilings.weapons : trade == Trade::kArmor ? a_ceilings.armor : a_ceilings.clothing;
+				auto& level = a_ceilings.Of(trade);
 				if (!set->level) {
 					notes += std::format(", {:s} measured by {:s} line {:d}", Named(trade), set->file, set->line);
 					continue;
@@ -133,6 +141,11 @@ namespace VendorRepair
 
 	std::uint32_t Ceilings::Of(Trade a_trade) const
 	{
+		return const_cast<Ceilings&>(*this).Of(a_trade);
+	}
+
+	std::uint32_t& Ceilings::Of(Trade a_trade)
+	{
 		switch (a_trade) {
 		case Trade::kArmor:
 			return armor;
@@ -146,7 +159,7 @@ namespace VendorRepair
 	std::string Repairs(const Ceilings& a_ceilings)
 	{
 		std::vector<std::string> each;
-		for (const auto trade : { Trade::kWeapons, Trade::kArmor, Trade::kClothing }) {
+		for (const auto trade : TRADES) {
 			const auto ceiling = a_ceilings.Of(trade);
 			if (ceiling > 0) {
 				each.push_back(std::format("{:s} to {:d}%", Named(trade), ceiling));

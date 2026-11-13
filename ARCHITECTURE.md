@@ -277,7 +277,7 @@ src/
       ConfirmScroll.h/.cpp   the box the bench puts up, grown and scrolled
       Columns/               the repair boxes' rows in columns: the cells measured, the rows fitted to the box's room and sent as html
       Workbench/             repairing at the weapon and armor benches
-      VendorRepair/          paying a trader to repair weapons, armor or clothing, their stock and the sign under their caps, above their list or left of it
+      VendorRepair/          paying a trader to repair weapons, armor or clothing, their stock, the trader list and the sign under their caps, above their list or left of it
 
   Papyrus/
     Papyrus.h                the script NEC that other mods call

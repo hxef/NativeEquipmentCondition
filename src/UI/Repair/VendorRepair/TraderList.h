@@ -17,17 +17,16 @@
 //   Fallout4.esm|1679CE = armor 90
 //
 // The kinds are weapons, armor and clothing, and how far is 30 to 100 in steps
-// of 10, none or measured. The ID names the trader as placed in the world,
-// their NPC record or the faction they trade under, and a line of the first
-// beats one of the second, which beats one of the third. measured is a level
-// like any other, so a trader as placed set to measured keeps what their stock
-// gives even when their faction has a line. NEC ships an example file there
-// that changes nothing.
+// of 10, none or measured. The ID is the trader's ref ID, their base ID or the
+// faction they trade under, and a line of the first beats one of the second,
+// which beats one of the third. measured is a level like any other, so a ref
+// ID set to measured keeps what the trader's stock gives even when their
+// faction has a line. NEC ships an example file there that changes nothing.
 //
-// Most traders as placed are not loaded when the list is read, since the game
-// loads them with their cell, so a line whose form is not loaded is taken for a
-// trader as placed, by its ID in the load order. A settler the game spawned
-// lasts 1 save, so a line names their NPC record or faction instead.
+// Most traders' refs are not loaded when the list is read, since the game
+// loads them with their cell, so a line whose form is not loaded is taken for
+// a trader's ref ID, by its ID in the load order. A settler the game spawned
+// lasts 1 save, so a line names their base ID or faction instead.
 namespace VendorRepair::TraderList
 {
 	// Reads every .ini file in the folder and says in NEC.log what each line
@@ -48,13 +47,13 @@ namespace VendorRepair::TraderList
 		std::size_t                  line = 0;
 	};
 
-	// The line that sets a_trade for a_trader: theirs as placed, else their NPC
-	// record's, else their vendor faction's, or nothing. Safe from any thread,
-	// see Core/Snapshot.h.
+	// The line that sets a_trade for a_trader: their ref ID's, else their base
+	// ID's, else their vendor faction's, or nothing. Safe from any thread, see
+	// Core/Snapshot.h.
 	[[nodiscard]] std::optional<Set> Find(const RE::Actor& a_trader, Text::Trade a_trade);
 
-	// The IDs a line names a_trader by, for the trace log, as
-	// "Fallout4.esm|002CB9 as placed, Fallout4.esm|002CB7 as NPC,
-	// Fallout4.esm|004AC7 as faction".
+	// The IDs a line names a_trader by, for the trace log, as "ref ID
+	// Fallout4.esm|002CB9, base ID Fallout4.esm|002CB7, faction
+	// Fallout4.esm|004AC7".
 	[[nodiscard]] std::string Ids(const RE::Actor& a_trader);
 }

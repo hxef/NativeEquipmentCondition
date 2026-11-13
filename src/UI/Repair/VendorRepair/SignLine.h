@@ -19,10 +19,10 @@ namespace VendorRepair::Sign
 	// A form of the line, in the order Place tries them.
 	struct Form
 	{
-		std::string_view said;    // where the trace says the sign shows above the list
-		std::string_view beside;  // and left of the frame
-		std::string      html;    // what the field shows
-		Flash::Box       own;     // the field's box with it, in its own units
+		std::string_view said;      // where the trace says the sign shows above the list
+		std::string_view saidLeft;  // and left of the frame
+		std::string      html;      // what the field shows
+		Flash::Box       own;       // the field's box with it, in its own units
 	};
 
 	struct Line

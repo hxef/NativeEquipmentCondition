@@ -3,6 +3,8 @@
 * Each weapon now wears against an ordinary weapon of its own damage type, so a mod that changes only ballistic damage no longer makes energy weapons wear slower. In vanilla this moves wear by 4% or less.
 * A new MCM slider, Suppressed weapon wear speed (fSuppressedWearRateMult, 1), makes weapons with a suppressor wear faster or slower as they fire, yours and NPCs', from 0.5 to 2.
 * At a trader, the repair box no longer says how far they repair while the sign on the barter screen shows it.
+* The trader list's lines in NEC.log and NEC.ui.trace.log name traders by ref ID, base ID and faction, as the list files do.
+* Where a mod renames caps, the trader's repair lines read correctly in Russian and Polish, and a word that differs from caps only in its capitals no longer counts as a rename.
 
 1.9.2
 * On the barter screen, a sign under the trader's caps shows how far they repair weapons, armor and clothing, or says No repairs. The new MCM switch Trader repair sign (bTraderSign, on) turns it off.

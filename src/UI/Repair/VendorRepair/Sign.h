@@ -60,7 +60,8 @@ namespace VendorRepair::Sign
 	// last tried the line there, so the refresh must run again. A movie can
 	// change that row without moving the highlight, when a tab's title grows
 	// or a part shows there. Asked each frame: a few reads while the line
-	// shows or waits for room, 1 more per part of the side while the place
-	// left of the frame is in play, and false at once while the block shows.
+	// shows or waits for room, 3 more reads per part of the side while the
+	// place left of the frame is in play, and false at once while the block
+	// shows.
 	[[nodiscard]] bool TitleRowChanged(const Scaleform::GFx::Movie* a_movie);
 }

@@ -34,9 +34,9 @@ namespace Roles::TraderSide
 		// a clip by its parts 1 level down, anything else by its bounds, and
 		// the bar's bounds. A child of the side hidden or faded to 0 counts
 		// as nothing, a clip whose parts are all hidden and an empty text
-		// field neither. Parts that cover the
-		// bracket, its background and frame lines, and NEC's own are left
-		// out, so a box that meets none of these is free.
+		// field neither. Parts that cover the bracket, its background and
+		// frame lines, and NEC's own are left out, so a box that meets none
+		// of these is free.
 		std::vector<Box> taken;
 		double           unit = 0.0;  // the side's units per stage px
 

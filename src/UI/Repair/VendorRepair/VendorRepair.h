@@ -25,8 +25,10 @@
 // Restock.h works out what a trader restocks with, Stock.h reads the item under
 // the highlight and what the trader deals in, Quote.h what the work costs,
 // Button.h the button, Retry.h the wait for a bar under a UI replacer and
-// the watch over it, Payment.h the paying, Upkeep.h the trader's own stock
-// and TraderList.h the levels a player sets by hand.
+// the watch over it, Payment.h the paying, Upkeep.h the trader's own stock,
+// TraderList.h the levels a player sets by hand, and Sign.h the sign that
+// shows how far the trader repairs, with SignBlock.h and SignLine.h its 2
+// forms.
 namespace VendorRepair
 {
 	// Patches the barter menu's 2 function tables, as a menu and as an input
@@ -45,7 +47,8 @@ namespace VendorRepair
 
 	// How far a_trader repairs a_object's kind, a whole percent, 0 for a kind
 	// they do not deal in or an actor with no shop. Worked out from what they
-	// restock with at every call, as the barter screen does at its opening.
+	// restock with at every call, as the barter screen does at its opening,
+	// or as a line of the trader list sets it, see TraderList.h.
 	[[nodiscard]] std::uint32_t LevelFor(RE::Actor& a_trader, const RE::TESBoundObject& a_object);
 
 	// What a copy of a_item at a_stack is worth as a sound price, without the

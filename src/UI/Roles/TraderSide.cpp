@@ -200,7 +200,7 @@ namespace Roles::TraderSide
 		for (auto& child : Flash::Children(parent)) {
 			// The side holds itself, and taken counts it already.
 			Value holds;
-			if (!drawn(child) || (child.Invoke("contains", &holds, &side, 1) && holds.IsBoolean() && holds.GetBoolean())) {
+			if (!drawn(child) || (child.IsDisplayObject() && child.Invoke("contains", &holds, &side, 1) && holds.IsBoolean() && holds.GetBoolean())) {
 				continue;
 			}
 			if (IsText(child) || !(Flash::Number(child, "numChildren"sv) > 0.0)) {

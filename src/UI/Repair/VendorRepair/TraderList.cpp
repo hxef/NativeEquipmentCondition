@@ -39,6 +39,9 @@ namespace VendorRepair::TraderList
 
 		constexpr std::size_t TIERS = 3;
 
+		// What the logs call each tier.
+		constexpr std::string_view TIER_NAMES[TIERS]{ "ref ID", "base ID", "faction" };
+
 		// A form the game made, which lasts 1 save.
 		[[nodiscard]] bool Made(RE::TESFormID a_id)
 		{
@@ -76,12 +79,13 @@ namespace VendorRepair::TraderList
 			return std::nullopt;
 		}
 
-		// "Fallout4.esm|002CB7 as NPC", or "FF001A2B as placed in this save
-		// only" for a form the game made.
-		std::string Role(RE::TESFormID a_id, std::string_view a_role)
+		// "base ID Fallout4.esm|002CB7", or "ref ID FF001A2B (this save only)"
+		// for a form the game made.
+		std::string Role(Tier a_tier, RE::TESFormID a_id)
 		{
+			const auto label = TIER_NAMES[std::to_underlying(a_tier)];
 			const auto spelled = Spelled(a_id);
-			return spelled ? std::format("{:s} as {:s}", *spelled, a_role) : std::format("{:08X} as {:s} in this save only", a_id, a_role);
+			return spelled ? std::format("{:s} {:s}", label, *spelled) : std::format("{:s} {:08X} (this save only)", label, a_id);
 		}
 
 		// The NPC record a_trader was placed from: the one a templated NPC
@@ -120,10 +124,8 @@ namespace VendorRepair::TraderList
 			.folder = "Traders",
 			.unread = "measures every trader",
 			.word = "kind level",
-			.madeHint = "Name the trader's NPC record or faction, as NEC.ui.trace.log shows them.",
+			.madeHint = "Name the trader's base ID or faction, as NEC.ui.trace.log shows them.",
 		};
-
-		constexpr Text::Trade TRADES[]{ Text::Trade::kWeapons, Text::Trade::kArmor, Text::Trade::kClothing };
 
 		// 1 tier's lines by form ID, each kind set at most once.
 		using Lines = std::unordered_map<RE::TESFormID, std::array<std::optional<Set>, std::size(TRADES)>>;
@@ -133,7 +135,7 @@ namespace VendorRepair::TraderList
 		// tier, for its summary.
 		struct Reading
 		{
-			Table                            table;
+			Table                          table;
 			std::array<std::size_t, TIERS> mine{};
 		};
 
@@ -176,9 +178,7 @@ namespace VendorRepair::TraderList
 		// "the faction [001679CE] sets armor to 90%", for the debug line.
 		std::string Sets(Tier a_tier, std::string_view a_who, Text::Trade a_trade, const std::optional<std::uint32_t>& a_level)
 		{
-			const auto who = a_tier == Tier::kPlaced ? std::format("{:s} as placed", a_who) :
-			                 a_tier == Tier::kNpc    ? std::format("the NPC record {:s}", a_who) :
-			                                           std::format("the faction {:s}", a_who);
+			const auto who = std::format("the {:s} {:s}", TIER_NAMES[std::to_underlying(a_tier)], a_who);
 			if (!a_level) {
 				return std::format("{:s} leaves {:s} measured", who, Named(a_trade));
 			}
@@ -203,7 +203,7 @@ namespace VendorRepair::TraderList
 				return;
 			}
 			if (a_unloaded) {
-				REX::INFO("{:s} line {:d}: {:s} is not loaded as the game starts, so NEC takes it for a trader placed in the world.", a_file,
+				REX::INFO("{:s} line {:d}: {:s} is not loaded as the game starts, so NEC takes it for a trader's ref ID.", a_file,
 					a_line, a_who);
 			}
 			REX::DEBUG("{:s} line {:d}: {:s}.", a_file, a_line, Sets(a_tier, a_who, trade, set.level));
@@ -220,24 +220,22 @@ namespace VendorRepair::TraderList
 			                   form.Is(RE::ENUM_FORM_ID::kFACT) ? std::optional{ Tier::kFaction } :
 			                                                      std::nullopt;
 			if (!tier) {
-				a_faults.Add(std::format("{:s} line {:d}: {:s} is not a trader, an NPC record or a faction, so NEC skips it.", a_line.file,
+				a_faults.Add(std::format("{:s} line {:d}: {:s} is not a trader's ref ID, base ID or faction, so NEC skips it.", a_line.file,
 					a_line.number, NameOf(form)));
 				return;
 			}
 			Keep(a_reading, *tier, form.formID, NameOf(form), false, a_line.word, a_line.file, a_line.number, a_faults);
 		}
 
-		// "Traders/MyTraders.ini sets 5 repair levels: 2 for traders as
-		// placed, 1 for an NPC record and 2 for factions."
+		// "Traders/MyTraders.ini sets 5 repair levels: 2 by ref ID, 1 by base
+		// ID and 2 by faction."
 		void Report(std::string_view a_file, const std::array<std::size_t, TIERS>& a_counts)
 		{
-			constexpr std::string_view ONE[]{ "a trader as placed", "an NPC record", "a faction" };
-			constexpr std::string_view MANY[]{ "traders as placed", "NPC records", "factions" };
-			std::vector<std::string>   parts;
-			std::size_t                total = 0;
+			std::vector<std::string> parts;
+			std::size_t              total = 0;
 			for (std::size_t i = 0; i < TIERS; i++) {
 				if (a_counts[i] > 0) {
-					parts.push_back(std::format("{:d} for {:s}", a_counts[i], a_counts[i] == 1 ? ONE[i] : MANY[i]));
+					parts.push_back(std::format("{:d} by {:s}", a_counts[i], TIER_NAMES[i]));
 					total += a_counts[i];
 				}
 			}
@@ -303,7 +301,7 @@ namespace VendorRepair::TraderList
 		const auto who = WhoIs(a_trader);
 		const auto npc = who[std::to_underlying(Tier::kNpc)];
 		const auto faction = who[std::to_underlying(Tier::kFaction)];
-		return std::format("{:s}, {:s}, {:s}", Role(a_trader.formID, "placed"), npc ? Role(npc, "NPC") : "an NPC made in this save only",
-			faction ? Role(faction, "faction") : "no faction");
+		return std::format("{:s}, {:s}, {:s}", Role(Tier::kPlaced, a_trader.formID), npc ? Role(Tier::kNpc, npc) : "no base ID outside this save",
+			faction ? Role(Tier::kFaction, faction) : "no faction");
 	}
 }

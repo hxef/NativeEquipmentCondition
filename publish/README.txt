@@ -291,11 +291,11 @@ The ID can be the trader's ref ID, their base ID or the form ID of the faction
 they trade under, which covers a whole caravan or every store of a kind. The ref
 ID beats the base ID, which beats the faction. The fastest way to get a ref ID
 is to click the trader in the console. To get all 3, turn on "Bug report logs"
-and trade with them. NEC.ui.trace.log then lists them in this form, the ref ID
-as placed and the base ID as NPC. A ref ID that starts with FF belongs to an NPC
-the game created during play, such as a spawned settler. NEC skips such a line,
-because that ID is stored in the save (in another save, or after that NPC is
-removed, it can point to a different NPC). Use their base ID or faction instead.
+and trade with them. NEC.ui.trace.log then lists all 3 in this form. A ref ID
+that starts with FF belongs to an NPC the game created during play, such as a
+spawned settler. NEC skips such a line, because that ID is stored in the save
+(in another save, or after that NPC is removed, it can point to a different
+NPC). Use their base ID or faction instead.
 
 NEC.log lists what each file sets and any line it skips. NEC ships
 Traders\NEC_Example.ini, an example that changes nothing as it is.

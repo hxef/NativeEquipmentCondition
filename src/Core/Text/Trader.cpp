@@ -66,12 +66,16 @@ namespace Text
 		}
 	}
 
+	// -------------------------------------------------------------------
+	// The word for caps
+	// -------------------------------------------------------------------
+
 	// A text field the screen never shows is given "$CAPS", which the movie
 	// translates as it does the barter screen's own labels, so the word is
 	// whatever the game's translations hold. A key the translations lack
 	// stays "$CAPS". Only a word that differs from the language file's
-	// CURRENCY_VANILLA counts as renamed, so with vanilla's word every line
-	// reads as before.
+	// CURRENCY_VANILLA in more than its capitals counts as renamed, so with
+	// vanilla's word every line reads as before.
 	void ReadCurrency(Scaleform::GFx::Movie& a_movie)
 	{
 		g_currency.clear();
@@ -84,10 +88,13 @@ namespace Text
 		}
 		const std::string word = text.GetString();
 		std::wstring live;
-		if (word.empty() || word.starts_with('$') || word == Pick(CURRENCY_VANILLA) || !REX::UTF8_TO_UTF16(word, live)) {
+		if (word.empty() || word.starts_with('$') || !REX::UTF8_TO_UTF16(word, live)) {
 			return;
 		}
 		auto cased = Cased(live, REX::W32::LCMAP_LOWERCASE);
+		if (std::wstring vanilla; REX::UTF8_TO_UTF16(Pick(CURRENCY_VANILLA), vanilla) && Cased(vanilla, REX::W32::LCMAP_LOWERCASE) == cased) {
+			return;
+		}
 		if (!cased.empty() && Capitalized()) {
 			cased.replace(0, 1, Cased(std::wstring_view(cased.data(), 1), REX::W32::LCMAP_UPPERCASE));
 		}
@@ -102,6 +109,10 @@ namespace Text
 	{
 		g_currency.clear();
 	}
+
+	// -------------------------------------------------------------------
+	// The lines
+	// -------------------------------------------------------------------
 
 	std::string RepairCaps(std::uint32_t a_caps)
 	{

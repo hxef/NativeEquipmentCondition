@@ -31,8 +31,6 @@ namespace VendorRepair::Sign
 		constexpr double SHARE = 0.6;
 		constexpr double LEAST = 15.0;
 
-		constexpr Trade TRADES[]{ Trade::kWeapons, Trade::kArmor, Trade::kClothing };
-
 		// The sign's parts as htmlText: the title, then "Weapons 100%" per
 		// kind with the number in the card's bold, or "No repairs" alone.
 		[[nodiscard]] std::vector<std::string> Parts(const Ceilings& a_ceilings)
@@ -107,10 +105,10 @@ namespace VendorRepair::Sign
 		}
 
 		const auto parts = Parts(a_ceilings);
-		const auto measured = [&](std::string_view a_said, std::string_view a_beside, std::size_t a_break) -> std::optional<Form> {
+		const auto measured = [&](std::string_view a_said, std::string_view a_saidLeft, std::size_t a_break) -> std::optional<Form> {
 			auto       html = Html(parts, a_break, size);
 			const auto box = Flash::Set(line.field, "htmlText"sv, Value(html.c_str())) ? Roles::BoundsIn(line.field, line.field) : std::nullopt;
-			return box ? std::optional{ Form{ a_said, a_beside, std::move(html), *box } } : std::nullopt;
+			return box ? std::optional{ Form{ a_said, a_saidLeft, std::move(html), *box } } : std::nullopt;
 		};
 		const auto wide = [](const Form& a_form) { return a_form.own.right - a_form.own.left; };
 

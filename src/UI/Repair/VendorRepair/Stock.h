@@ -71,23 +71,15 @@ namespace VendorRepair
 	// ArmorWear::IsClothing tells a piece of clothing from a piece of armor.
 	using Text::Trade;
 
+	// The 3 kinds in the order the logs and the sign name them.
+	inline constexpr Trade TRADES[]{ Trade::kWeapons, Trade::kArmor, Trade::kClothing };
+
 	// The scale: the poorest trader of a kind repairs it to MIN_CEILING and one
 	// with FullRows of it repairs it to full, in a straight line between,
 	// rounded down to a level the question can offer.
 	inline constexpr std::uint32_t MIN_CEILING = 30;
 
-	// The rows iTraderFullStock may ask for a full repair, as the MCM slider
-	// allows.
-	inline constexpr std::int32_t FEWEST_FULL_ROWS = 10;
-	inline constexpr std::int32_t MOST_FULL_ROWS = 30;
-
-	// How many more rows weapons need than armor and clothing.
-	inline constexpr std::size_t GUN_EXTRA_ROWS = 2;
-
-	// The most iTraderLeeway counts for, as the MCM slider allows.
-	inline constexpr std::int32_t MOST_LEEWAY = 20;
-
-	// iTraderLeeway, see Settings.h, kept to 0 to MOST_LEEWAY.
+	// iTraderLeeway, see Settings.h, kept to the range the MCM slider allows.
 	[[nodiscard]] std::size_t Leeway();
 
 	// How many rows of a_trade it takes to repair that kind to full, from
@@ -110,7 +102,8 @@ namespace VendorRepair
 		std::uint32_t armor{ 0 };
 		std::uint32_t clothing{ 0 };
 
-		[[nodiscard]] std::uint32_t Of(Trade a_trade) const;
+		[[nodiscard]] std::uint32_t  Of(Trade a_trade) const;
+		[[nodiscard]] std::uint32_t& Of(Trade a_trade);
 	};
 
 	// What the log says a trader repairs, weapons to 90%, armor to 80% and

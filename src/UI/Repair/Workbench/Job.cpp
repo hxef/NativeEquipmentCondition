@@ -17,6 +17,7 @@
 #include "UI/Repair/Workbench/Label.h"
 #include "UI/Repair/Workbench/Missing.h"
 #include "UI/Repair/Workbench/SpareBox.h"
+#include "UI/Repair/Workbench/Supplies.h"
 #include "UI/Repair/Workbench/Workbench.h"
 
 #include <algorithm>
@@ -132,12 +133,18 @@ namespace Workbench
 		// Every rank of the perk pricing the item says on its page that such
 		// items need fewer components, so the line above the question names the
 		// perk and the share it takes off. PriceOf applies it to the price.
-		// Left off where no rank is held.
+		// Left off where no rank is held, and for a repair that takes only
+		// its supplies, which the perk takes nothing off, see Supplies.h.
 		const auto& standing = a_priced.standing;
 		const auto off = CraftingPerks::Discount(standing.rank, standing.ranks);
-		const auto over = standing.perk && off > 0 ?
+		const auto onlySupplies = !Supplies::TakesComponents(a_selection.percent, a_selection.kind);
+		const auto over = standing.perk && off > 0 && !onlySupplies ?
 		                      Text::RepairDiscount(standing.Name(), standing.rank, off) :
 		                      std::string{};
+		if (standing.perk && off > 0 && onlySupplies) {
+			TraceLog::Line("menu", "Workbench left the perk line off for {:s}, at {:d}% its repair takes only supplies",
+				a_selection.Name(), a_selection.percent);
+		}
 
 		// Each level's row ends with what the item's card gains there.
 		const auto     gains = Gains::Read(a_selection, a_offered);
@@ -192,7 +199,7 @@ namespace Workbench
 			return;
 		}
 
-		const auto bill = CostOf(a_priced, selection.percent, a_level);
+		const auto bill = BillOf(a_priced, selection, selection.percent, a_level);
 
 		TraceLog::Line("menu", "Workbench reads {:s} as built from {:s}",
 			selection.Name(), Spell(a_priced.built));
@@ -215,6 +222,11 @@ namespace Workbench
 		if (TraceLog::IsOpen()) {
 			TraceLog::Line("menu", "Workbench read that off the parts on {:s}: {:s}",
 				selection.Name(), Vote(selection));
+		}
+
+		if (Supplies::Count() > 0) {
+			TraceLog::Line("menu", "Workbench adds the supplies {:s} to the repair of {:s}, the components only below {:d}%",
+				Spell(Supplies::Of(selection.kind)), selection.Name(), Supplies::From());
 		}
 
 		auto& job = InHand();

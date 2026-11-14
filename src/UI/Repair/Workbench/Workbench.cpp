@@ -3,6 +3,7 @@
 #include "Condition/CraftingPerks/CraftingPerks.h"
 #include "Condition/Repair.h"
 #include "Core/CallPatch/CallPatch.h"
+#include "Core/Settings.h"
 #include "Core/Text/Text.h"
 #include "Core/TraceLog.h"
 #include "UI/MenuMovies.h"
@@ -14,7 +15,10 @@
 #include "UI/Repair/Workbench/Job.h"
 #include "UI/Repair/Workbench/Label.h"
 #include "UI/Repair/Workbench/Lists.h"
+#include "UI/Repair/Workbench/Lock.h"
+#include "UI/Repair/Workbench/SpareBox.h"
 #include "UI/Repair/Workbench/Spares.h"
+#include "UI/Repair/Workbench/Supplies.h"
 
 #include <cstdint>
 #include <format>
@@ -102,10 +106,11 @@ namespace Workbench
 
 		// The button, and the only way into a repair. A barely worn item is
 		// repaired on the spot. One the bench has nothing to rebuild from is
-		// sent to a trader, see Cost.h. One with a single level worth offering
-		// goes straight to the confirmation, through the task queue like the
-		// prompt, unless the player carries a spare for it, see Spares.h,
-		// which only the question offers.
+		// sent to a trader, see Cost.h, and one the repair lock holds back is
+		// turned away or shown its spares, see Lock.h. One with a single
+		// level worth offering goes straight to the confirmation, through the
+		// task queue like the prompt, unless the player carries a spare for
+		// it, see Spares.h, which only the question offers.
 		void RepairSelectedItemHk(RE::ExamineMenu* a_menu)
 		{
 			if (!Repairs()) {
@@ -131,6 +136,31 @@ namespace Workbench
 				RE::UIUtils::PlayMenuSound(RepairPrompt::REFUSED_SOUND);
 				TraceLog::Line("menu", "Workbench has nothing to rebuild {:s} from, so it sent the player to a trader",
 					selection.Name());
+				return;
+			}
+
+			// The repair lock, see Lock.h, turns the press away before any box
+			// opens, so nothing is spent. A spare still repairs, so its box
+			// opens at once with the lock's line over it. Else the corner says
+			// which rank would repair it and what else still can.
+			if (const auto mode = LockNow(); mode != LockMode::kOff) {
+				const auto& standing = priced.standing;
+				TraceLog::Line("menu", "Workbench reads {:s} as asking {:s} {:d} by {:s}, the player {:d} of {:d} ranks in",
+					selection.Name(), standing.Name(), LockAsks(priced, mode), LockWord(mode), standing.rank, standing.ranks);
+			}
+			if (const auto held = HeldBack(selection, priced)) {
+				TraceLog::Line("menu", "Workbench holds back {:s} at {:d}%, which repairs from {:d}% with {:d} ranks short, {:s} {:d} would repair it now",
+					selection.Name(), selection.percent, held->from, held->lacking, priced.standing.Name(), held->need);
+				if (CarriesSpare(selection)) {
+					TraceLog::Line("menu", "Workbench opened the spares of {:s}, the repair lock holds it back", selection.Name());
+					AskWhichSpare(*selection.object, selection.extra, priced);
+					return;
+				}
+				const auto said = Text::RepairLocked(priced.standing.Name(), held->need, selection.percent,
+					Settings::bSpareRepair.GetValue(), Settings::bVendorRepair.GetValue());
+				RE::SendHUDMessage::ShowHUDMessage(said.c_str(), nullptr, true, true);
+				RE::UIUtils::PlayMenuSound(RepairPrompt::REFUSED_SOUND);
+				TraceLog::Line("menu", "Workbench said the repair lock holds {:s} back, with no spare", selection.Name());
 				return;
 			}
 
@@ -328,6 +358,15 @@ namespace Workbench
 			Repair::Debt(0, Scaled(WRECK_MULTIPLE)), Repair::Ladder(Scaled(WRECK_MULTIPLE)));
 		REX::INFO("The whole of a crafting perk brings that {:.2f} down to {:.2f}",
 			Scaled(WRECK_MULTIPLE), Scaled(CraftingPerks::SKILLED_MULTIPLE));
+		Supplies::Say();
+		SayLock();
+	}
+
+	void Load()
+	{
+		if (Repairs()) {
+			Supplies::SayMissing();
+		}
 	}
 
 	bool Repairs()

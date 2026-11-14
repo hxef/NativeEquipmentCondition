@@ -4,6 +4,7 @@
 #include "Condition/CraftingPerks/CraftingPerks.h"
 #include "Condition/Equipped.h"
 #include "Condition/Repair.h"
+#include "Core/Settings.h"
 #include "Core/Text/Text.h"
 #include "Core/TraceLog.h"
 #include "UI/Repair/Columns/Columns.h"
@@ -12,6 +13,7 @@
 #include "UI/Repair/Restore.h"
 #include "UI/Repair/Workbench/Box.h"
 #include "UI/Repair/Workbench/Job.h"
+#include "UI/Repair/Workbench/Lock.h"
 #include "UI/Repair/Workbench/Spares.h"
 
 #include <algorithm>
@@ -282,14 +284,27 @@ namespace Workbench
 		const auto  scrapper = CraftingPerks::Scrapper();
 		const auto  byPrice = std::ranges::count_if(spares, [](const Spare& a_spare) { return a_spare.unpriced < a_spare.gain; });
 		const auto  byScrapper = std::ranges::count_if(spares, [](const Spare& a_spare) { return a_spare.unranked < a_spare.gain; });
-		std::string over;
+		std::string perks;
 		if (byPrice > 0 && byScrapper > 0) {
-			over = Text::SparePerks(pricing.Name(), pricing.rank, scrapper.Name(), scrapper.rank);
+			perks = Text::SparePerks(pricing.Name(), pricing.rank, scrapper.Name(), scrapper.rank);
 		} else if (byPrice > 0) {
-			over = Text::SparePerk(pricing.Name(), pricing.rank);
+			perks = Text::SparePerk(pricing.Name(), pricing.rank);
 		} else if (byScrapper > 0) {
-			over = Text::SparePerk(scrapper.Name(), scrapper.rank);
+			perks = Text::SparePerk(scrapper.Name(), scrapper.rank);
 		}
+
+		// While the repair lock holds the item back, its line comes first,
+		// naming the rank the bench asks for. It is asked again each time the
+		// box opens, so it is gone once a spare lifts the item clear. The box
+		// of spares is open already, so only the trader is left to name.
+		std::string over;
+		if (const auto held = HeldBack(*item, a_priced)) {
+			over = Text::RepairLocked(pricing.Name(), held->need, item->percent, false, Settings::bVendorRepair.GetValue());
+		}
+		if (!over.empty() && !perks.empty()) {
+			over += '\n';
+		}
+		over += perks;
 		std::string credit{ "nobody" };
 		if (scrapper.rank > 0) {
 			credit = byScrapper > 0 ? std::format("{:s} {:d}, which raises {:d} of them", scrapper.Name(), scrapper.rank, byScrapper) :

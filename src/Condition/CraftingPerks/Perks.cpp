@@ -1,9 +1,11 @@
 #include "Condition/CraftingPerks/Perks.h"
 
 #include "Condition/CraftingPerks/Description.h"
+#include "Condition/CraftingPerks/Ladder.h"
 #include "Condition/CraftingPerks/Recipes.h"
 
 #include <algorithm>
+#include <cstdint>
 
 namespace CraftingPerks
 {
@@ -129,6 +131,19 @@ namespace CraftingPerks
 			remember(perk);
 		}
 		remember(perks->armor);
+
+		// Every rank of those perks, the only ones that price a repair, see
+		// LaddersOf. Filled here and not with the perk page lines, so a change
+		// to the lines never changes a price.
+		for (const auto* first : saying) {
+			const auto*   walk = first;
+			std::uint32_t at = 0;
+			do {
+				at++;
+				perks->pricing.insert(walk);
+				walk = walk->nextPerk;
+			} while (walk && walk != first && at < LADDER_LIMIT);
+		}
 		TellRanks(*perks, saying);
 		TellScrapper(*perks);
 		return perks;

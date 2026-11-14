@@ -39,6 +39,7 @@ namespace Settings
 		const Number NUMBERS[]{
 			&iUnscrappableSpares,
 			&iRepairBoxRow,
+			&iRepairLock,
 			&iLootShift,
 			&iLootSurpriseOdds,
 			&fWearRateMult,
@@ -65,7 +66,12 @@ namespace Settings
 			&fBenchCostMult,
 			&fSpareWorthMult,
 			&iFreeMendAbove,
+			&iRepairSupplies,
+			&iSuppliesOnlyFrom,
 			&fModLockStart,
+			&iLock1RankShort,
+			&iLock2RanksShort,
+			&iLock3RanksShort,
 			&fTraderPriceMult,
 			&iTraderLeeway,
 			&iTraderFullStock,
@@ -132,7 +138,7 @@ namespace Settings
 
 		// The numbers under [Features], which the Settings line puts after the
 		// switch NEC.ini has them after.
-		Live<std::int32_t>* const AFTER_SPARE_REPAIR[]{ &iUnscrappableSpares, &iRepairBoxRow };
+		Live<std::int32_t>* const AFTER_SPARE_REPAIR[]{ &iUnscrappableSpares, &iRepairBoxRow, &iRepairLock };
 
 		[[nodiscard]] std::span<Live<std::int32_t>* const> NumbersAfter(const Named& a_setting)
 		{

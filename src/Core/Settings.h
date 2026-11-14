@@ -166,6 +166,10 @@ namespace Settings
 	// lowest. Any other number reads as 2, the default.
 	inline Live<std::int32_t> iRepairBoxRow{ "Features", "iRepairBoxRow", 2 };
 
+	// The repair lock, see Workbench/Lock.h: 0 off, 1 every item asks the last
+	// rank of its perk, 2 the rank its mods ask. Any other number reads as 2.
+	inline Live<std::int32_t> iRepairLock{ "Features", "iRepairLock", 2 };
+
 	// The rows of the repair boxes at a workbench and at a trader in columns,
 	// see Repair/Columns/Columns.h. When off, each row is 1 centred line, as
 	// vanilla draws its boxes. No feature's row: it rides on Workbench repairs
@@ -251,7 +255,7 @@ namespace Settings
 	// whole number where the setting only takes whole steps.
 	using Number = std::variant<Live<float>*, Live<std::int32_t>*>;
 
-	// The 8 switches under [Features] and the 52 numbers under [Features],
+	// The 8 switches under [Features] and the 58 numbers under [Features],
 	// [Loot], [Balance] and [HUD], in NEC.ini's order, for Report and the MCM
 	// page.
 	[[nodiscard]] std::span<Live<bool>* const> Switches();

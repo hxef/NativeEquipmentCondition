@@ -7,6 +7,7 @@
 #include "Condition/CraftingPerks/Recipes.h"
 #include "Core/Snapshot.h"
 
+#include <algorithm>
 #include <cmath>
 #include <cstdint>
 #include <format>
@@ -22,13 +23,13 @@ namespace CraftingPerks
 		Snapshot<Perks> g_perks;
 
 		// Where the player stands on the perk a_recipe names, by the perks of
-		// a_perks. Read off the recipe's conditions at each call, so a recipe
-		// changed after the last measure counts at once.
+		// a_perks that can price a repair. Read off the recipe's conditions at
+		// each call, so a recipe changed after the last measure counts at once.
 		Standing OfRecipe(const Perks& a_perks, const RE::BGSConstructibleObject& a_recipe)
 		{
 			Standing                        out;
 			std::vector<const RE::BGSPerk*> ladders;
-			LaddersOf(a_recipe, a_perks.all, ladders);
+			LaddersOf(a_recipe, a_perks.pricing, ladders);
 
 			// A part can need 2 perks, a recon scope Gun Nut for the mount and
 			// Science for the glass, and about 130 recipes do. The one the
@@ -218,6 +219,15 @@ namespace CraftingPerks
 				most = said.count;
 				best = multiple;
 				heft = weight;
+			}
+		}
+
+		// The rank the item asks for is the highest any of its parts' recipes
+		// names of the winner, a 2 perk recipe that voted for the other perk
+		// included.
+		for (const auto& line : a_bill) {
+			if (out.perk && line.recipe) {
+				out.asked = std::max(out.asked, RankAsked(*line.recipe, out.perk));
 			}
 		}
 

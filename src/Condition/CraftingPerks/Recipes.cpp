@@ -30,6 +30,21 @@ namespace CraftingPerks
 		}
 	}
 
+	std::uint32_t RankAsked(const RE::BGSConstructibleObject& a_recipe, const RE::BGSPerk* a_first)
+	{
+		std::uint32_t asked = 0;
+		if (!a_first) {
+			return asked;
+		}
+		for (const auto* item = a_recipe.conditions.head; item; item = item->next) {
+			const auto& call = item->data.functionData;
+			if (call.function.get() == RE::SCRIPT_OUTPUT::kScript_HasPerk) {
+				asked = std::max(asked, RankOf(a_first, static_cast<const RE::TESForm*>(call.param[0])));
+			}
+		}
+		return asked;
+	}
+
 	const RE::BGSKeyword* PointOf(std::uint16_t a_index)
 	{
 		return RE::BGSKeyword::GetTypedKeywordByIndex(RE::KeywordType::kAttachPoint, a_index);

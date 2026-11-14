@@ -26,4 +26,9 @@ namespace CraftingPerks
 	// record and the lower ones stay, so the rank is the last one in the ring
 	// they have.
 	[[nodiscard]] std::uint32_t RankHeld(const RE::BGSPerk* a_first);
+
+	// Which rank a_rank is on the ring that starts at a_first, 1 for the first,
+	// or 0 when it is none of them. Only compares records, so a_rank can be any
+	// form a condition holds, and it is never read.
+	[[nodiscard]] std::uint32_t RankOf(const RE::BGSPerk* a_first, const RE::TESForm* a_rank);
 }

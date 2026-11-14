@@ -159,6 +159,12 @@ namespace Text
 	// from, see Workbench/Cost.h.
 	[[nodiscard]] std::string BenchCannotRepair();
 
+	// "Repairing this item from 10% needs Gun Nut 4. A spare or a trader can
+	// still restore it.", when the repair lock holds REPAIR back, see
+	// Workbench/Lock.h. The 2nd sentence names a spare, a trader or both, as
+	// a_spare and a_trader say, and is left out with neither.
+	[[nodiscard]] std::string RepairLocked(std::string_view a_perk, std::uint32_t a_rank, std::uint32_t a_percent, bool a_spare, bool a_trader);
+
 	// "This item can't be modified.", said at the bench for an item no mod
 	// fits, once a repair brings it to full and whenever its mod slots are
 	// asked for. See Workbench/Display.h.

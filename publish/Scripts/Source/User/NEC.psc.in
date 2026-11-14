@@ -202,7 +202,7 @@ Struct Cost
     int count
 EndStruct
 
-; The components the bench would take from the player to bring akItem to aiToPercent, empty for a free mend, None when the bench would not repair it.
+; The components the bench would take from the player to bring akItem to aiToPercent, its supplies among them, empty for a free mend, None when the bench would not repair it, as when the repair lock holds it back.
 Cost[] Function GetRepairCost(ObjectReference akItem, int aiToPercent) global native
 
 ; The components akItem scraps into at the bench at its condition, with the player's perks.

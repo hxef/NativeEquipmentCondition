@@ -120,6 +120,14 @@ REPAIR AT THE WORKBENCH
   an item's components sets the discount, and each rank's description says how
   much. The perks count too when a skill mod like Classic NV Skill System
   grants them from your skills.
+* Every repair also takes supplies, oil and cloth for a weapon, adhesive and
+  cloth for armor and clothing. From 80% up that is all it takes. MEND, a
+  spare and a trader take none, and "Repair supplies" at 0 turns them off.
+* Below 80%, the repair lock asks for the crafting perk rank the gear's mods
+  need. Gear whose mods ask Gun Nut 3 repairs from 25% with Gun Nut 2, from
+  50% with Gun Nut 1 and only from 80% with no rank. Gear on standard parts
+  repairs at any rank, and a spare or a trader repairs anything. "Lock
+  repairs" turns it off or asks every item for the last rank.
 * A repair earns the same XP as crafting a mod from those components.
 * With "Workbench repair cost" at 0, every repair is free and done on the
   spot, broken gear included.

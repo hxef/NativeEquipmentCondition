@@ -5,8 +5,8 @@
 // The help lines of the switches on the MCM page, the names and help of the
 // plain apparel, 2 CND bar, spare repair, repair columns, repair gains, trader
 // sign, card wear rate, power armor CND, fridge icon and bug report logs
-// switches, and of the unscrappable spares and repair box steppers, see
-// MenuLine in Text.h.
+// switches, and of the unscrappable spares, repair box and repair lock
+// steppers, see MenuLine in Text.h.
 namespace Text
 {
 	namespace
@@ -19,6 +19,7 @@ namespace Text
 			{ &Settings::bSpareRepair, SPARE_REPAIR_NAME, SPARE_REPAIR_HELP },
 			{ &Settings::iUnscrappableSpares, UNSCRAPPABLE_SPARES_NAME, UNSCRAPPABLE_SPARES_HELP },
 			{ &Settings::iRepairBoxRow, REPAIR_BOX_ROW_NAME, REPAIR_BOX_ROW_HELP },
+			{ &Settings::iRepairLock, REPAIR_LOCK_NAME, REPAIR_LOCK_HELP },
 			{ &Settings::bRepairBoxColumns, REPAIR_COLUMNS_NAME, REPAIR_COLUMNS_HELP },
 			{ &Settings::bRepairBoxGains, REPAIR_GAINS_NAME, REPAIR_GAINS_HELP },
 			{ &Settings::bLoadingTips, {}, LOADING_TIPS_HELP },

@@ -18,7 +18,8 @@
 // it costs less, along the curve in Repair.h. What is owed is a whole number of
 // units from the bill, rounded once on the whole bill: rounding each component
 // on its own would take a whole last 10 away on a gun built from many small
-// amounts.
+// amounts. On top, every paid repair takes supplies, see Supplies.h, and
+// BillOf puts the 2 together.
 namespace Workbench
 {
 	// What repairing an item from 0 costs, as a multiple of everything it is
@@ -66,12 +67,24 @@ namespace Workbench
 	// the bench mends instead, see FreeRepairs in Bench.h.
 	[[nodiscard]] std::vector<Materials::Part> CostOf(const Priced& a_priced, std::uint32_t a_from, std::uint32_t a_to);
 
+	// What one repair takes from the player, the bill every box lists: the
+	// supplies of the item's kind, see Supplies.h, plus CostOf for the part of
+	// the way below Supplies::From(). With the supplies at 0 it is CostOf
+	// itself. A 10mm Pistol from 85% to 100% takes 1 Oil and 1 Cloth, and from
+	// 40% to 100% those plus CostOf from 40% to 80%. Where the load order has
+	// none of the supplies, it falls back to CostOf, so a paid repair is never
+	// free.
+	[[nodiscard]] std::vector<Materials::Part> BillOf(const Priced& a_priced, const Selection& a_selection,
+		std::uint32_t a_from, std::uint32_t a_to);
+
 	// The condition levels above the one the item already has.
 	[[nodiscard]] std::vector<std::uint32_t> Above(const Selection& a_selection);
 
 	// The levels worth offering: the ones above the current condition, minus
-	// any costing exactly what the next level up costs. A board is 2 wood in
-	// all, so every level from 60 up costs the same 1 unit.
+	// any costing exactly what the next level up costs, by BillOf. A board is
+	// 2 wood in all, so every level from 60 up costs the same 1 unit. Every
+	// level from Supplies::From() up costs the same too, since the components
+	// stop there and only the supplies go on.
 	[[nodiscard]] std::vector<std::uint32_t> Offered(const Selection& a_selection, const Priced& a_priced);
 
 	// What the trace file calls a bill of components.

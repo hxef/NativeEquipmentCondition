@@ -90,6 +90,12 @@ namespace CraftingPerks
 		std::uint32_t rank{ 0 };
 		std::uint32_t ranks{ 0 };
 
+		// The highest rank of the perk the recipes behind the item's parts
+		// ask for, 0 where none asks one or the perk came from the kind. A
+		// Combat Rifle with the Powerful Automatic Receiver asks Gun Nut 4.
+		// The repair lock reads it, see Workbench/Lock.h.
+		std::uint32_t asked{ 0 };
+
 		// True where the perk came from the item's kind and not from its
 		// parts.
 		bool fromKind{ false };
@@ -115,8 +121,9 @@ namespace CraftingPerks
 		std::span<const Materials::Line> a_bill);
 
 	// Where the player stands on the perk a recipe names in its condition. None
-	// for a recipe naming no perk. Where it names 2, which many weapon mods do,
-	// the one the player has taken furthest counts.
+	// for a recipe naming no perk that prices a repair, a perk with a line on
+	// its perk page. Where it names 2, which many weapon mods do, the one the
+	// player has taken furthest counts.
 	[[nodiscard]] Standing OfRecipe(const RE::BGSConstructibleObject& a_recipe);
 
 	// Where the player stands on Scrapper, whose ranks raise what a spare

@@ -6,9 +6,12 @@
 #include "Core/Pieces.h"
 #include "Core/Settings.h"
 
+#include <algorithm>
+#include <array>
 #include <cstddef>
 #include <cstdint>
 #include <functional>
+#include <iterator>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -22,8 +25,34 @@ namespace Mcm
 	// config.json's modName, which MCM also puts on every entry of NEC's pages.
 	inline constexpr std::string_view MOD = "NEC"sv;
 
-	// The hidden switch MCM asks whether the Jams below row shows.
-	inline constexpr std::string_view JAMS = "fJamChance:Jams"sv;
+	// A hidden switch that hides rows while a number is at its off value, as a
+	// switch that is off hides the rows under it. The number has config.json's
+	// refreshMenu, so the rows hide and come back as it moves. rows are the
+	// settings of the rows it hides, which their block's note leaves out too.
+	struct Hide
+	{
+		std::string_view                      id;
+		bool                                  (*shows)();
+		std::array<const Settings::Named*, 3> rows;
+	};
+
+	// Jams below shows while the jam chance is above 0, the 3 rank rows while
+	// Lock repairs is not Off, and Supplies only from while Repair supplies is
+	// above 0. An iRepairLock of 3 or -1 locks as By its mods does, so only 0
+	// hides the rank rows.
+	inline constexpr Hide HIDES[]{
+		{ "fJamChance:Jams"sv, [] { return Settings::fJamChance.GetValue() > 0.0F; }, { &Settings::fJamStart } },
+		{ "iRepairLock:Lock"sv, [] { return Settings::iRepairLock.GetValue() != 0; },
+			{ &Settings::iLock1RankShort, &Settings::iLock2RanksShort, &Settings::iLock3RanksShort } },
+		{ "iRepairSupplies:Supplies"sv, [] { return Settings::iRepairSupplies.GetValue() > 0; }, { &Settings::iSuppliesOnlyFrom } },
+	};
+
+	// The hide a_id names, or nullptr.
+	[[nodiscard]] constexpr const Hide* HideOf(std::string_view a_id)
+	{
+		const auto it = std::ranges::find(HIDES, a_id, &Hide::id);
+		return it != std::end(HIDES) ? &*it : nullptr;
+	}
 
 	// NEC's answers on root.mcm, in Bridge.cpp, each for a call that is NEC's.
 	// a_id is a value's id, bSpawnCondition:Features or the hidden
@@ -37,10 +66,10 @@ namespace Mcm
 	void SetFloat(const Params& a_params, std::string_view a_id);
 	void GetFullName(const Params& a_params, std::string_view a_id);
 
-	// What the hidden switches of the page's grey rows and of the Jams below
-	// row say, and what those grey rows read, in Notes.cpp. a_id is
-	// parts:Note, bSpawnCondition:Free, bSpawnCondition:Note,
-	// fDamageFloor:Note or fJamChance:Jams for Shows, and parts.note,
+	// What the hidden switches of the page's grey rows and of HIDES say, and
+	// what those grey rows read, in Notes.cpp. a_id is parts:Note,
+	// bSpawnCondition:Free, bSpawnCondition:Note, fDamageFloor:Note or an id
+	// of HIDES such as fJamChance:Jams for Shows, and parts.note,
 	// bSpawnCondition.note, fDamageFloor.note or parts.help for Note. Nothing
 	// for any other id.
 	[[nodiscard]] std::optional<bool>        Shows(std::string_view a_id);
@@ -125,6 +154,6 @@ namespace Mcm
 
 	// Puts MCM's left list highlight back on the open page of NEC's when the
 	// mouse left it on another page name, in Layout.cpp. Called as MCM asks
-	// for JAMS.
-	void KeepOpenPage(Scaleform::GFx::Movie* a_movie);
+	// for a_id, an id of HIDES.
+	void KeepOpenPage(Scaleform::GFx::Movie* a_movie, std::string_view a_id);
 }

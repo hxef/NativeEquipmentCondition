@@ -33,6 +33,7 @@ namespace Text
 			{ "Jams", JAMS_TITLE },
 			{ "Loot", LOOT_TITLE },
 			{ "BenchRepairs", BENCH_REPAIRS_TITLE },
+			{ "Maintenance", MAINTENANCE_TITLE },
 			{ "SpareRepairs", SPARE_REPAIRS_TITLE },
 			{ "VendorRepairs", VENDOR_REPAIRS_TITLE },
 			{ "HudBar", HUD_BAR_TITLE },

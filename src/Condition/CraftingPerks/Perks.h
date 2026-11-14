@@ -55,8 +55,8 @@ namespace CraftingPerks
 
 	struct Perks
 	{
-		// Every perk in the load order, so a recipe's HasPerk conditions are
-		// read at the press, see LaddersOf.
+		// Every perk in the load order, so the measure reads a recipe's HasPerk
+		// conditions, see LaddersOf. A press reads them through pricing.
 		std::unordered_set<const RE::TESForm*> all;
 		// The perk behind most weapon mods of each kind, for weapons whose
 		// parts name none. Indexed by the engine's weapon type byte, hand to
@@ -70,6 +70,11 @@ namespace CraftingPerks
 		// Every rank of every perk that can price a repair, 15 in vanilla, so
 		// a plain loop is fast enough.
 		std::vector<Told> told;
+		// Every rank of the perks Load picks, looked up by record and filled
+		// apart from told. Only these price a repair, so a combat perk a
+		// recipe names beside Gun Nut, as some Handmade Rifle receivers
+		// name Commando, never does.
+		std::unordered_set<const RE::TESForm*> pricing;
 		// Every rank of Scrapper from the first, whose page tells what it adds
 		// to a spare repair, see TellScrapper.
 		std::vector<const RE::BGSPerk*> scrapper;

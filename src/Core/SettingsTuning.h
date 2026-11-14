@@ -103,9 +103,24 @@ namespace Settings
 	// whole percent, see Workbench/Bench.h.
 	inline Live<std::int32_t> iFreeMendAbove{ "Balance", "iFreeMendAbove", 95 };
 
+	// How many of each supply a paid workbench repair takes, 0 to 5, see
+	// Workbench/Supplies.h. 0 turns them off.
+	inline Live<std::int32_t> iRepairSupplies{ "Balance", "iRepairSupplies", 1 };
+
+	// The condition from which a workbench repair takes only its supplies, a
+	// whole percent, see Workbench/Supplies.h.
+	inline Live<std::int32_t> iSuppliesOnlyFrom{ "Balance", "iSuppliesOnlyFrom", 80 };
+
 	// The condition below which a workbench opens no mod slots, a share of
 	// full, see Workbench/Bench.h.
 	inline Live<float> fModLockStart{ "Balance", "fModLockStart", 1.0F };
+
+	// The condition a workbench repair that takes components can start from
+	// with 1, 2, and 3 or more ranks short of what iRepairLock asks, a whole
+	// percent, see Workbench/Lock.h.
+	inline Live<std::int32_t> iLock1RankShort{ "Balance", "iLock1RankShort", 25 };
+	inline Live<std::int32_t> iLock2RanksShort{ "Balance", "iLock2RanksShort", 50 };
+	inline Live<std::int32_t> iLock3RanksShort{ "Balance", "iLock3RanksShort", 100 };
 
 	// What a trader asks for a repair, against the mod as tuned, see
 	// VendorRepair/Quote.h.

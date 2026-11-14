@@ -23,6 +23,12 @@ namespace CraftingPerks
 		const std::unordered_set<const RE::TESForm*>& a_perks,
 		std::vector<const RE::BGSPerk*>&              a_out);
 
+	// The highest rank of the perk whose first rank is a_first that a_recipe's
+	// HasPerk conditions name, 0 for none. Gun Nut 2 on a suppressor's recipe
+	// reads 2. Every vanilla recipe asks HasPerk == 1, and one comparing
+	// another way still counts as asking that rank.
+	[[nodiscard]] std::uint32_t RankAsked(const RE::BGSConstructibleObject& a_recipe, const RE::BGSPerk* a_first);
+
 	// The slot a mod goes in, or a weapon offers. Both hold it as an index into
 	// the engine's list of attach point keywords, so the number means the same
 	// on both sides. A weapon does not store its mod association keywords the

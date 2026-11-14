@@ -165,7 +165,7 @@ How many percent the player's crafting perk rank takes off a bench repair of akB
 EndStruct[/code]
 1 component of a bill and how many of it.
 [*][font=Courier New]Cost[] Function GetRepairCost(ObjectReference akItem, int aiToPercent)[/font]
-The components the bench would take from the player to bring akItem to aiToPercent, empty for a free mend, None when the bench would not repair it.
+The components the bench would take from the player to bring akItem to aiToPercent, its supplies among them, empty for a free mend, None when the bench would not repair it, as when the repair lock holds it back.
 [*][font=Courier New]Cost[] Function GetScrapYield(ObjectReference akItem)[/font]
 The components akItem scraps into at the bench at its condition, with the player's perks.
 [*][font=Courier New]int Function GetSpareGain(ObjectReference akItem, ObjectReference akSpare)[/font]

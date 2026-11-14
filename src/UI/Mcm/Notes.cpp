@@ -19,23 +19,24 @@
 #include <vector>
 
 // The page's grey rows: the note of each block, and the list at the top in
-// TopList.cpp.
+// TopList.cpp. Also the rows a number hides, see HIDES in Bridge.h.
 // config.json gives every block lead a hidden switch: a feature switch 2,
 // <key>:Free for its row and <key>:Note for its note, a number 1, <key>:Note,
 // and the list 1, parts:Note. These numbers run on across NEC's pages, with
 // 1 for the HUD bar sliders, see HudBar.cpp, and 1 for the Jams below row,
-// fJamChance:Jams, which hides that row while the jam chance is 0, as a
-// switch that is off hides the rows under it. MCM counts 30 for each page on
-// its own, so a feature switch whose rows hide while it is off takes a
-// number its page leaves free, which other pages use too. Each note is worked
-// out from SettingLinks and CallPatch's losses, so a setting needs no code of
-// its own here. A piece left to a mod is named once: in the note of a block
-// that works through it, else in the list at the top. MCM asks once a pause
-// menu visit, after NEC's recheck as the menu opens, and the jam chance's
-// slider has config.json's refreshMenu, so MCM reads every value again after
-// it moves and the Jams below row hides and comes back at once, on the page
-// that is open, see KeepOpenPage in Layout.cpp. NEC.log keeps every line
-// the page leaves out.
+// fJamChance:Jams. MCM counts 30 for each page on its own, so a feature
+// switch whose rows hide while it is off takes a number its page leaves free,
+// which other pages use too. So do the other hides. On the Repairs page,
+// where 14, 15, 16, 18 and 19 are taken, iRepairLock:Lock takes 20 for the
+// lock's rank rows and iRepairSupplies:Supplies 21 for Supplies only from.
+// Each note is worked out from SettingLinks and CallPatch's losses, so a
+// setting needs no code of its own here. A piece left to a mod is named once:
+// in the note of a block that works through it, else in the list at the top.
+// MCM asks once a pause menu visit, after NEC's recheck as the menu opens,
+// and the number of each hide has config.json's refreshMenu, so MCM reads
+// every value again after it moves and its rows hide and come back at once,
+// on the page that is open, see KeepOpenPage in Layout.cpp. NEC.log keeps
+// every line the page leaves out.
 namespace Mcm
 {
 	namespace
@@ -78,17 +79,12 @@ namespace Mcm
 			return members;
 		}
 
-		// Whether the Jams below row shows: only while guns can jam by the
-		// chance.
-		bool JamStartShows()
-		{
-			return Settings::fJamChance.GetValue() > 0.0F;
-		}
-
 		// A row the page hides, whose setting its block's note leaves out.
 		bool Hidden(const Settings::Named& a_setting)
 		{
-			return HudBarHidden(a_setting) || (&a_setting == &Settings::fJamStart && !JamStartShows());
+			return HudBarHidden(a_setting) || std::ranges::any_of(HIDES, [&](const Hide& a_hide) {
+				return std::ranges::find(a_hide.rows, &a_setting) != a_hide.rows.end() && !a_hide.shows();
+			});
 		}
 
 		// What the line of a_cause names, as Text::PartLines words it: its
@@ -236,8 +232,8 @@ namespace Mcm
 	// same functions.
 	std::optional<bool> Shows(std::string_view a_id)
 	{
-		if (a_id == JAMS) {
-			return JamStartShows();
+		if (const auto* hide = HideOf(a_id)) {
+			return hide->shows();
 		}
 		if (a_id.ends_with(FREE)) {
 			const auto* on = Settings::SwitchByKey(a_id.substr(0, a_id.size() - FREE.size()));

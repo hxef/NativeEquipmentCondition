@@ -29,15 +29,21 @@
 //
 // Bench.h holds the basics, Cost.h what a repair costs, Job.h the repair from
 // the question to the finished item, Box.h its confirmation and what yes takes,
-// Missing.h what a repair the bench cannot pay for shows, Label.h the button's
-// word and the mods heading, Display.h how a worn item is shown and kept out of
-// the slots, Lists.h the hooks on the lists that do it, and Spares.h and
-// SpareBox.h the repair with a spare, another of the same weapon or armor,
-// with any mods, taken apart.
+// Missing.h what a repair the bench cannot pay for shows, Supplies.h the oil,
+// adhesive and cloth every repair takes, Lock.h the crafting perk ranks a
+// repair that takes components needs, Label.h the button's word and the mods
+// heading, Display.h how a worn item is shown and kept out of the slots,
+// Lists.h the hooks on the lists that do it, and Spares.h and SpareBox.h the
+// repair with a spare, another of the same weapon or armor, with any mods,
+// taken apart.
 namespace Workbench
 {
 	// Patches the workbench menu's function table, each place by itself.
 	void Install();
+
+	// Says in NEC.log which repair supply the load order lacks, see
+	// Supplies.h.
+	void Load();
 
 	// Forgets what the last bench listed and the word its button read, and
 	// adds the listener that fades the equipped items and keeps that word to
@@ -62,14 +68,17 @@ namespace Workbench
 	// to full.
 	// iFreeMendAbove kept between 0 and 100, see Settings.h, so at 100 nothing
 	// is free and at 0 everything but a broken item is.
+	// A paid repair from iSuppliesOnlyFrom up takes only oil or adhesive and
+	// cloth, see Supplies.h, so by default an item from 80% to 95% costs those.
 	[[nodiscard]] std::uint32_t FreeAbove();
 
 	// The components the bench would take from the player to bring a copy of
 	// a_object, whose list is a_extra, from a_from to a_to, whole percents, as
-	// its confirmation lists them. Empty for a repair it mends for nothing,
-	// nothing for one it would not make. Priced on the scrap lists as last
-	// read, see Materials::ReadScrapLists. Run it holding no inventory lock,
-	// with a_extra kept alive by the caller.
+	// its confirmation lists them, supplies first. Empty for a repair it mends
+	// for nothing, nothing for one it would not make, such as one the repair
+	// lock holds back. Priced on the scrap lists as last read, see
+	// Materials::ReadScrapLists. Run it holding no inventory lock, with
+	// a_extra kept alive by the caller.
 	[[nodiscard]] std::optional<std::vector<Materials::Part>> BillFor(RE::TESBoundObject& a_object, const RE::ExtraDataList* a_extra,
 		std::uint32_t a_from, std::uint32_t a_to);
 

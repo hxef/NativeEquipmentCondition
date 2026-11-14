@@ -17,9 +17,9 @@
 // while one of NEC's pages shows, NEC puts the list in None mode, and back in
 // Multi-Line once another page shows. Only a name would wrap differently, and
 // no name on NEC's pages is wider than 1 line. On NEC's pages it also writes
-// the HUD bar sliders' live ends, see HudBar.cpp. And while MCM asks whether
-// the Jams below row shows, NEC keeps MCM's left list on the open page, see
-// KeepOpenPage.
+// the HUD bar sliders' live ends, see HudBar.cpp. And while MCM asks for a
+// hide of HIDES in Bridge.h, such as whether the Jams below row shows, NEC
+// keeps MCM's left list on the open page, see KeepOpenPage.
 //
 // MCM's menu is a child of _root.Menu_mc, its list is configPanel_mc's
 // configList_mc, and the list holds the shown page's entries in entryList.
@@ -151,16 +151,18 @@ namespace Mcm
 		}
 	}
 
-	// MCM refreshes the page after a slider with refreshMenu moved
+	// MCM refreshes the page after a row with refreshMenu changed
 	// (RefreshMCM_internal) and takes the page's row filter from the left
 	// list's highlight, not from the open page. The left list moves its
 	// highlight on every mouse over, so a hand that crossed Armor on its way to
 	// the jam chance slider gave Weapons Armor's filter, and Jams below hid.
-	// MCM asks for fJamChance:Jams in that refresh before it reads the filter,
-	// so here the highlight goes back on the open page, as MCM itself does when
-	// the right shoulder button moves into the settings list. Only on NEC's
-	// pages, and not while MCM builds its pages, when the highlight is below 0.
-	void KeepOpenPage(Scaleform::GFx::Movie* a_movie)
+	// In that refresh MCM reads every value of every page, each hide of HIDES
+	// among them, before it reads the filter, so here the highlight goes back
+	// on the open page, as MCM itself does when the right shoulder button moves
+	// into the settings list. The first hide asked puts it back and the others
+	// find it there. Only on NEC's pages, and not while MCM builds its pages,
+	// when the highlight is below 0.
+	void KeepOpenPage(Scaleform::GFx::Movie* a_movie, std::string_view a_id)
 	{
 		Value menus;
 		if (!a_movie || !a_movie->GetVariable(&menus, "_root.Menu_mc") || !menus.IsObject()) {
@@ -178,6 +180,6 @@ namespace Mcm
 		const auto ours = open.IsObject() && Flash::String(open, "modName"sv) == MOD;
 		const auto back = lit >= 0.0 && lit != page && ours && Flash::Set(left, "selectedIndex"sv, Value(page));
 		TraceLog::Line("menu", "MCM asks for {:s} with the left list's highlight on {:g} ({:s}) and the open page {:g} ({:s}), put back {:s}",
-			JAMS, lit, PageName(PageAt(pages, lit)), page, PageName(open), back ? "yes" : "no");
+			a_id, lit, PageName(PageAt(pages, lit)), page, PageName(open), back ? "yes" : "no");
 	}
 }

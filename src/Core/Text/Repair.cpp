@@ -110,6 +110,16 @@ namespace Text
 		return Pick(BENCH_CANNOT_REPAIR);
 	}
 
+	std::string RepairLocked(std::string_view a_perk, std::uint32_t a_rank, std::uint32_t a_percent, bool a_spare, bool a_trader)
+	{
+		const auto needs = Say(REPAIR_LOCKED, a_perk, a_rank, a_percent);
+		if (!a_spare && !a_trader) {
+			return needs;
+		}
+		const auto* way = a_spare && a_trader ? Pick(REPAIR_LOCKED_BOTH) : Pick(a_spare ? REPAIR_LOCKED_SPARE : REPAIR_LOCKED_TRADER);
+		return Say(SENTENCES, needs, way);
+	}
+
 	std::string CannotModify()
 	{
 		return Pick(CANNOT_MODIFY);

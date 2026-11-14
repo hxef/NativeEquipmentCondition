@@ -89,4 +89,22 @@ namespace CraftingPerks
 		} while (walk && walk != a_first && at < LADDER_LIMIT);
 		return held;
 	}
+
+	std::uint32_t RankOf(const RE::BGSPerk* a_first, const RE::TESForm* a_rank)
+	{
+		if (!a_first || !a_rank) {
+			return 0;
+		}
+
+		std::uint32_t at = 0;
+		const auto*   walk = a_first;
+		do {
+			at++;
+			if (walk == a_rank) {
+				return at;
+			}
+			walk = walk->nextPerk;
+		} while (walk && walk != a_first && at < LADDER_LIMIT);
+		return 0;
+	}
 }

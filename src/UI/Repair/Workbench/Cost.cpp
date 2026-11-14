@@ -3,6 +3,8 @@
 #include "Condition/Repair.h"
 #include "Core/Settings.h"
 #include "Core/TraceLog.h"
+#include "UI/Repair/Workbench/Lock.h"
+#include "UI/Repair/Workbench/Supplies.h"
 
 #include <algorithm>
 #include <format>
@@ -115,6 +117,25 @@ namespace Workbench
 		return out;
 	}
 
+	std::vector<Materials::Part> BillOf(const Priced& a_priced, const Selection& a_selection,
+		std::uint32_t a_from, std::uint32_t a_to)
+	{
+		if (a_priced.order.empty() || a_to <= a_from) {
+			return {};
+		}
+		// A repair at fBenchCostMult 0 stays free, supplies and all. With no
+		// supplies to take, off or missing from the load order, the whole way
+		// is paid in components, as Supplies::TakesComponents tells the lock.
+		if (FreeRepairs() || Supplies::Of(a_selection.kind).empty()) {
+			return CostOf(a_priced, a_from, a_to);
+		}
+
+		const auto from = Supplies::From();
+		const auto components = a_from < from ? CostOf(a_priced, a_from, std::min(a_to, from))
+		                                      : std::vector<Materials::Part>{};
+		return Supplies::Add(components, a_selection.kind);
+	}
+
 	std::optional<std::vector<Materials::Part>> BillFor(RE::TESBoundObject& a_object, const RE::ExtraDataList* a_extra,
 		std::uint32_t a_from, std::uint32_t a_to)
 	{
@@ -130,11 +151,13 @@ namespace Workbench
 		if (selection.Trifling()) {
 			return std::vector<Materials::Part>{};
 		}
+		// Nothing for an item the bench cannot rebuild, or one the repair lock
+		// holds back, as the press turns both away.
 		const auto priced = PriceAsLastRead(selection);
-		if (priced.units == 0) {
+		if (priced.units == 0 || HeldBack(selection, priced)) {
 			return std::nullopt;
 		}
-		return CostOf(priced, a_from, std::min(a_to, Repair::FULL));
+		return BillOf(priced, selection, a_from, std::min(a_to, Repair::FULL));
 	}
 
 	std::vector<std::uint32_t> Above(const Selection& a_selection)
@@ -146,7 +169,7 @@ namespace Workbench
 	{
 		std::vector<Repair::Step<std::vector<Materials::Part>>> steps;
 		for (const auto level : Above(a_selection)) {
-			steps.push_back({ level, CostOf(a_priced, a_selection.percent, level) });
+			steps.push_back({ level, BillOf(a_priced, a_selection, a_selection.percent, level) });
 		}
 
 		std::vector<std::uint32_t> out;

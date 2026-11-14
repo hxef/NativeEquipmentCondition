@@ -50,17 +50,18 @@ namespace ItemCard
 
 		struct Entry
 		{
-			std::uint32_t        index;    // the child vanilla's card draws CND as
-			double               percent;  // the number the row prints
-			bool                 fridge;   // the row gets the fridge icon
-			std::optional<float> wearRate; // the item's wear rate, see WearRate.cpp
+			std::uint32_t        index;             // the child vanilla's card draws CND as
+			double               percent;           // the number the row prints
+			bool                 fridge;            // the row gets the fridge icon
+			std::optional<float> wearRate;          // the item's wear rate, see WearRate.cpp
+			std::optional<float> wearRateCompared;  // the rate of the item a workbench compares its copy with
 		};
 
-		// The rate a CND entry carries, which only a card outside the Pip-Boy
-		// keeps.
-		std::optional<float> WearRateIn(const Value& a_entry)
+		// A rate a CND entry carries under a_mark, which only a card outside
+		// the Pip-Boy keeps.
+		std::optional<float> WearRateIn(const Value& a_entry, std::string_view a_mark)
 		{
-			const auto rate = Flash::Member(a_entry, WEAR_RATE_MARK);
+			const auto rate = Flash::Member(a_entry, a_mark);
 			return Flash::IsAnyNumber(rate) ? std::optional{ static_cast<float>(Flash::AsNumber(rate)) } : std::nullopt;
 		}
 
@@ -81,7 +82,8 @@ namespace ItemCard
 					continue;
 				}
 				if (HasText(entry, CND_TEXT)) {
-					return Entry{ plainRows, Flash::Number(entry, "value"sv), Flash::Bool(entry, FRIDGE_MARK), WearRateIn(entry) };
+					return Entry{ plainRows, Flash::Number(entry, "value"sv), Flash::Bool(entry, FRIDGE_MARK), WearRateIn(entry, WEAR_RATE_MARK),
+						WearRateIn(entry, WEAR_RATE_COMPARED_MARK) };
 				}
 				plainRows++;
 			}
@@ -172,8 +174,9 @@ namespace ItemCard
 			// The rate goes in before the fridge icon, which sits left of the
 			// whole text. Read at every render, so the switch needs no new card.
 			if (Settings::bCardWearRate.GetValue()) {
-				const auto rate = a_place.movie == PIPBOY_MOVIE ? Pipboy::SelectedWearRate(a_movie) : entry->wearRate;
-				WriteWearRate(a_movie, a_place.movie, row->clip, rate);
+				const auto pipboy = a_place.movie == PIPBOY_MOVIE;
+				const auto rate = pipboy ? Pipboy::SelectedWearRate(a_movie) : entry->wearRate;
+				WriteWearRate(a_movie, a_place.movie, row->clip, rate, pipboy ? std::nullopt : entry->wearRateCompared);
 			}
 			MarkFridge(a_movie, a_place.movie, row->clip, entry->fridge);
 			if (row->above.empty()) {
@@ -305,6 +308,7 @@ namespace ItemCard
 			const std::scoped_lock lock{ g_lock };
 			g_seen.erase(place);
 		}
+		ForgetWearRate();
 
 		Value stage;
 		if (!a_movie.GetVariable(&stage, "_root.stage") || !stage.IsObject()) {

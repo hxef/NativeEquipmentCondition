@@ -269,6 +269,7 @@ src/
         FridgeIcon.cpp       the icon on the CND row of food in a fridge
         WearRate.cpp         the wear rate beside the condition on the CND row
         Effects.cpp          what spoiled food gives, on its card, the HP bar and STAT Effects
+        PowerArmor.cpp       a power armor piece's Health shown as CND, by its switch
     Repair/
       SelectedItem.h/.cpp    the item highlighted in a menu's list
       Restore.h/.cpp         writing a repair onto one copy of an item

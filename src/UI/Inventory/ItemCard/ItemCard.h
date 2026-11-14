@@ -32,11 +32,16 @@
 // x1.0 for an ordinary item of its kind in the load order. The number is the
 // wear code's own share, which it multiplies by its rate and its sliders.
 //
+// Power armor gets no CND row, since the game wears and repairs it itself and
+// its card shows a Health row instead, such as 25/50. While its switch is on,
+// that row reads CND and the piece's condition in percent, at the top as on
+// other armor.
+//
 // Hooks.cpp is the CND row, Rate.cpp the fire rate and the sort's note,
 // Aim.cpp accuracy and range, Raise.cpp moves the row past Damage,
 // FridgeIcon.cpp marks food in a fridge on it, WearRate.cpp writes the wear
-// rate on it, Effects.cpp shows what spoiled food gives, and Cards.h is what
-// they share.
+// rate on it, Effects.cpp shows what spoiled food gives, PowerArmor.cpp shows
+// a power armor piece's Health as CND, and Cards.h is what they share.
 namespace ItemCard
 {
 	// Patches the calls that fill item cards.

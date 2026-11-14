@@ -388,6 +388,17 @@
         { "id": "bCardWearRate:Features", "type": "switcher", "groupCondition": 21,
           "text": "NEC|bCardWearRate", "textFromFormName": true,
           "help": "NEC|bCardWearRate.help", "helpFromFormName": true,
+          "valueOptions": { "sourceType": "ModSettingBool" } },
+        { "id": "bPowerArmorCardCnd:Free", "type": "hiddenSwitcher", "groupControl": 23,
+          "valueOptions": { "sourceType": "ModSettingBool" } },
+        { "id": "bPowerArmorCardCnd:Note", "type": "hiddenSwitcher", "groupControl": 24,
+          "valueOptions": { "sourceType": "ModSettingBool" } },
+        { "type": "text", "html": true, "noTint": true, "groupCondition": 24,
+          "text": "NEC|bPowerArmorCardCnd.note", "textFromFormName": true,
+          "help": "NEC|parts.help", "helpFromFormName": true },
+        { "id": "bPowerArmorCardCnd:Features", "type": "switcher", "groupCondition": 23,
+          "text": "NEC|bPowerArmorCardCnd", "textFromFormName": true,
+          "help": "NEC|bPowerArmorCardCnd.help", "helpFromFormName": true,
           "valueOptions": { "sourceType": "ModSettingBool" } }
       ]
     },

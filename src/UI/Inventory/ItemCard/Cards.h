@@ -85,6 +85,10 @@ namespace ItemCard
 	// card keeps no member of NEC's own, so Pipboy keeps its rate instead.
 	inline constexpr std::string_view WEAR_RATE_MARK = "necWearRate";
 
+	// What a workbench's CND entry carries beside WEAR_RATE_MARK while a mod
+	// is tried on: the wear rate of the item itself, without the mod.
+	inline constexpr std::string_view WEAR_RATE_COMPARED_MARK = "necWearRateCompared";
+
 	// How fast a_stack of a_item wears or spoils against an ordinary item of
 	// its kind in this load order, in WearRate.cpp: the wear code's own
 	// share, 1 for an ordinary one, 0 for one that never wears. Nothing for
@@ -95,7 +99,36 @@ namespace ItemCard
 	// in the number's own field, grown left over the label's free room, else
 	// in the empty field beside it, else nowhere, so it never draws shrunk.
 	// Nothing for a row whose item has no rate. a_movieFile is the movie's.
-	void WriteWearRate(Scaleform::GFx::Movie& a_movie, std::string_view a_movieFile, Scaleform::GFx::Value& a_row, std::optional<float> a_rate);
+	// a_compared is the rate of the item a workbench compares its copy with,
+	// which adds + after the rate when the printed rate is higher, - when
+	// lower, and nothing when the 2 print the same.
+	void WriteWearRate(Scaleform::GFx::Movie& a_movie, std::string_view a_movieFile, Scaleform::GFx::Value& a_row, std::optional<float> a_rate,
+		std::optional<float> a_compared);
+
+	// Drops what WriteWearRate remembers of the last row it measured, for
+	// WatchCard when a card's movie loads.
+	void ForgetWearRate();
+
+	// The entries of a card the game's builder filled, into a_out: a_target
+	// itself when a menu refreshes its card, else the ItemCardInfoList member
+	// of the list entry a menu builds. False when it holds neither.
+	bool CardEntries(Scaleform::GFx::Value& a_target, Scaleform::GFx::Value& a_out);
+
+	// Moves the entry at a_from in a_entries to a_to, an earlier place, and
+	// the entries from a_to on 1 place back. Nothing for any other pair.
+	void MoveEntry(Scaleform::GFx::Value& a_entries, std::uint32_t a_from, std::uint32_t a_to);
+
+	// While its switch is on, turns the Health row vanilla gives a power
+	// armor piece, such as 25/50, into CND and the piece's condition in
+	// percent, moved to the top where CND sits on other armor. a_site names
+	// the call for the trace. In PowerArmor.cpp, this one for every card but
+	// the Pip-Boy's.
+	void ShowPowerArmorCnd(Scaleform::GFx::Value& a_target, const RE::BGSInventoryItem& a_item, const RE::BGSInventoryItem::Stack* a_stack,
+		std::string_view a_site);
+
+	// The same for a_data, the Pip-Boy's card, in PowerArmor.cpp.
+	void ShowPowerArmorCnd(RE::PipboyObject& a_data, const RE::BGSInventoryItem& a_item, const RE::BGSInventoryItem::Stack* a_stack,
+		std::string_view a_site);
 
 	// While FireRate slows worn weapons, patches the fire rate calls of the
 	// cards and of the 2 lists that weigh fire rates. Patches the sort's note

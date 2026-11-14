@@ -57,6 +57,7 @@ namespace Mcm
 			{ &Settings::fRangeFloor, FollowUp::kCards },
 			{ &Settings::fAutoWearRateMult, FollowUp::kCards },
 			{ &Settings::fSuppressedWearRateMult, FollowUp::kCards },
+			{ &Settings::bPowerArmorCardCnd, FollowUp::kCards },
 		};
 
 		// Said once for each id, since the page asks again every time it is

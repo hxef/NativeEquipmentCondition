@@ -196,6 +196,10 @@ namespace Settings
 	// at every render of a card, see UI/Inventory/ItemCard/WearRate.cpp.
 	inline Live<bool> bCardWearRate{ "Features", "bCardWearRate", true };
 
+	// A power armor piece's Health on its item card shown as CND in percent,
+	// display only, see UI/Inventory/ItemCard/PowerArmor.cpp.
+	inline Live<bool> bPowerArmorCardCnd{ "Features", "bPowerArmorCardCnd", false };
+
 	// A workbench's confirmation box shows more of a long list and scrolls it,
 	// see ConfirmScroll.h.
 	inline Live<bool> bConfirmScroll{ "Features", "bConfirmScroll", true };
@@ -259,12 +263,12 @@ namespace Settings
 	// id can arrive as bspawncondition:features.
 	[[nodiscard]] bool IsIdOf(const Named& a_setting, std::string_view a_id);
 
-	// The switch a_id names, any of the 23 in NEC.ini, or nullptr for an id
+	// The switch a_id names, any switch in NEC.ini, or nullptr for an id
 	// NEC does not know.
 	[[nodiscard]] Live<bool>* SwitchById(std::string_view a_id);
 
 	// The switch a_key names without its section, such as bCardWearRate, any
-	// of the 23, or nullptr.
+	// of them, or nullptr.
 	[[nodiscard]] Live<bool>* SwitchByKey(std::string_view a_key);
 
 	// The number a_id names, a float or a whole number as T asks, or nullptr

@@ -73,19 +73,7 @@ namespace Condition
 			return std::nullopt;
 		}
 
-		// Below 0, not at it. -1 is a stack with no health extra data, which
-		// counts as new. 0 is broken and shows as 0%.
-		auto health = HealthOf(a_extra);
-		if (health < 0.0F) {
-			health = 1.0F;
-		}
-
-		// The bench and the traders decide from this number whether an item is
-		// worn. Rounding alone would show a gun fired a few times as 100, with
-		// no repair on offer and its mod slots open, so any wear reads 99 at
-		// most.
-		const auto percent = WholePercent(health);
-		return health < MAX_HEALTH ? std::min(percent, 99.0) : percent;
+		return ShownPercent(HealthOf(a_extra));
 	}
 
 	double WholePercent(float a_health)
@@ -94,6 +82,22 @@ namespace Condition
 		// reads 1 at least and only a broken item reads 0.
 		const auto percent = std::round(std::clamp(a_health, 0.0F, 1.0F) * 100.0);
 		return a_health > MIN_HEALTH ? std::max(percent, 1.0) : percent;
+	}
+
+	double ShownPercent(float a_health)
+	{
+		// Below 0, not at it. INVALID_HEALTH, -1, is a stack with no health
+		// extra data, which counts as new. 0 is broken and shows as 0%.
+		if (a_health < 0.0F) {
+			return 100.0;
+		}
+
+		// The bench and the traders decide from this number whether an item is
+		// worn. Rounding alone would show a gun fired a few times as 100, with
+		// no repair on offer and its mod slots open, so any wear reads 99 at
+		// most.
+		const auto percent = WholePercent(a_health);
+		return a_health < MAX_HEALTH ? std::min(percent, 99.0) : percent;
 	}
 
 	float Start(Kind a_kind)

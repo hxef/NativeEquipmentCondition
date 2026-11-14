@@ -10,6 +10,7 @@
 #include <cstdint>
 #include <format>
 #include <optional>
+#include <string_view>
 
 namespace ItemCard
 {
@@ -29,6 +30,11 @@ namespace ItemCard
 			{ AE{ 2223053, 0x281 }, OG{ 579386, 0x240 }, "examine card" },
 			{ AE{ 2222904, 0x0E9 }, OG{ 1053915, 0x0E9 }, "cooking card" },
 		};
+
+		// The examine card's place in HELPER_SITES, whose order sets it: the
+		// workbench and inspect, see ExamineMenu::UpdateItemCard.
+		constexpr std::size_t EXAMINE_SITE = 1;
+		static_assert(std::string_view{ HELPER_SITES[EXAMINE_SITE].what } == "examine card"sv);
 
 		// The calls to PipboyInventoryData::PopulateItemCardInfo, the same job
 		// for the Pip-Boy. The first, in InitializeItem, is a tail call whose
@@ -53,19 +59,9 @@ namespace ItemCard
 		// on 1 place back.
 		void MoveLastTo(Value& a_entries, std::uint32_t a_index)
 		{
-			const auto size = a_entries.GetArraySize();
-			if (size < 2 || a_index >= size - 1) {
-				return;
+			if (const auto size = a_entries.GetArraySize(); size > 0) {
+				MoveEntry(a_entries, size - 1, a_index);
 			}
-
-			Value last;
-			a_entries.GetElement(size - 1, &last);
-			for (auto i = size - 1; i > a_index; i--) {
-				Value previous;
-				a_entries.GetElement(i - 1, &previous);
-				a_entries.SetElement(i, previous);
-			}
-			a_entries.SetElement(a_index, last);
 		}
 
 		// Moves the entry just appended to the front. The card turns entries
@@ -103,6 +99,9 @@ namespace ItemCard
 			g_helperLinks[I](a_target, a_item, a_stackID, a_compareItems, a_compareArmorWeightAndValue);
 			t_building = nullptr;
 			t_foodCard = nullptr;
+			if (live) {
+				ShowPowerArmorCnd(a_target, a_item, stack, HELPER_SITES[I].what);
+			}
 
 			const auto percent = live ? RowPercent(a_item, stack) : std::nullopt;
 			const auto rads = RadsRow(food);
@@ -111,9 +110,7 @@ namespace ItemCard
 			}
 
 			Value entries;
-			if (a_target.IsArray()) {
-				entries = a_target;
-			} else if (!a_target.GetMember("ItemCardInfoList"sv, &entries) || !entries.IsArray()) {
+			if (!CardEntries(a_target, entries)) {
 				return;
 			}
 
@@ -137,6 +134,21 @@ namespace ItemCard
 			}
 			if (const auto rate = WearRateOf(a_item, stack)) {
 				entry.SetMember(WEAR_RATE_MARK, Value(static_cast<double>(*rate)));
+
+				// At a workbench a_item is the bench's own copy, with the mod
+				// the player highlights. The 1 item it is compared with is the
+				// item itself while a mod is tried on, else the copy again. So
+				// an entry that is not the copy but has its base form gives the
+				// rate without the mod, which signs the change, see
+				// WriteWearRate.
+				if constexpr (I == EXAMINE_SITE) {
+					const auto* compared = a_compareItems.size() == 1 ? a_compareItems[0].first : nullptr;
+					if (compared && compared != &a_item && compared->object == a_item.object) {
+						if (const auto own = WearRateOf(*compared, compared->GetStackByID(a_compareItems[0].second))) {
+							entry.SetMember(WEAR_RATE_COMPARED_MARK, Value(static_cast<double>(*own)));
+						}
+					}
+				}
 			}
 			MoveLastToFront(entries);
 		}
@@ -160,24 +172,28 @@ namespace ItemCard
 		// Stands in for PipboyInventoryData::PopulateItemCardInfo. The Pip-Boy
 		// keeps its cards as a tree of values of its own, copied into Scaleform
 		// objects when a page shows a card, so the row is built from those.
-		// a_link is the calling site's.
+		// a_site is the calling site's place in PIPBOY_SITES.
 		//
 		// Both sites build the same card, so while either is left to another
 		// mod NEC leaves the card as the game builds it: no CND row, the fire
 		// rate, accuracy and range of an unworn gun and no faded name. With 1
 		// site the row would come and go.
 		void PopulatePipboy(RE::PipboyInventoryData* a_this, const RE::BGSInventoryItem* a_item,
-			const RE::BGSInventoryItem::Stack* a_stack, RE::PipboyObject* a_data, const CallPatch::Link<Pipboy_t>& a_link)
+			const RE::BGSInventoryItem::Stack* a_stack, RE::PipboyObject* a_data, std::size_t a_site)
 		{
+			const auto&    link = g_pipboyLinks[a_site];
 			const Building building{ Condition::HealthOf(a_stack), nullptr };
-			const auto     live = g_pipboy.Runs(a_link);
+			const auto     live = g_pipboy.Runs(link);
 			auto           food = live && a_item ? FoodCardOf(*a_item, a_stack) : FoodCard{};
 
 			t_building = live ? &building : nullptr;
 			t_foodCard = live ? &food : nullptr;
-			a_link(a_this, a_item, a_stack, a_data);
+			link(a_this, a_item, a_stack, a_data);
 			t_building = nullptr;
 			t_foodCard = nullptr;
+			if (live && a_item && a_data) {
+				ShowPowerArmorCnd(*a_data, *a_item, a_stack, PIPBOY_SITES[a_site].what);
+			}
 
 			if (const auto rads = a_data ? RadsRow(food) : std::nullopt) {
 				AddRadsRow(*a_this, *a_data, *rads);
@@ -225,7 +241,7 @@ namespace ItemCard
 		void PipboyNewEntryHk(RE::PipboyInventoryData* a_this, const RE::BGSInventoryItem* a_item,
 			const RE::BGSInventoryItem::Stack* a_stack, RE::PipboyObject* a_data)
 		{
-			PopulatePipboy(a_this, a_item, a_stack, a_data, g_pipboyLinks[0]);
+			PopulatePipboy(a_this, a_item, a_stack, a_data, 0);
 
 			if (!TraceLog::IsOpen() || !a_item || !a_item->object || !a_stack) {
 				return;
@@ -246,8 +262,31 @@ namespace ItemCard
 		void PipboyPopulateHk(RE::PipboyInventoryData* a_this, const RE::BGSInventoryItem* a_item,
 			const RE::BGSInventoryItem::Stack* a_stack, RE::PipboyObject* a_data)
 		{
-			PopulatePipboy(a_this, a_item, a_stack, a_data, g_pipboyLinks[1]);
+			PopulatePipboy(a_this, a_item, a_stack, a_data, 1);
 		}
+	}
+
+	bool CardEntries(Value& a_target, Value& a_out)
+	{
+		if (a_target.IsArray()) {
+			a_out = a_target;
+			return true;
+		}
+		return a_target.GetMember("ItemCardInfoList"sv, &a_out) && a_out.IsArray();
+	}
+
+	void MoveEntry(Value& a_entries, std::uint32_t a_from, std::uint32_t a_to)
+	{
+		Value moved;
+		if (a_to >= a_from || a_from >= a_entries.GetArraySize() || !a_entries.GetElement(a_from, &moved)) {
+			return;
+		}
+		for (auto i = a_from; i > a_to; i--) {
+			Value previous;
+			a_entries.GetElement(i - 1, &previous);
+			a_entries.SetElement(i, previous);
+		}
+		a_entries.SetElement(a_to, moved);
 	}
 
 	bool PipboyCards()

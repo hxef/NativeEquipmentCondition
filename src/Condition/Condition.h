@@ -112,6 +112,13 @@ namespace Condition
 	// nearly broken item reads 1 on all of them.
 	double WholePercent(float a_health);
 
+	// The number the CND row of gear prints for a_health: WholePercent, and 99 at
+	// most while the item has any wear, so only an item at full reads 100.
+	// a_health as HealthOf reads it, so INVALID_HEALTH, no health extra data,
+	// reads 100. Percent gives it for gear that wears, and a power armor
+	// piece's card shows it too, see UI/Inventory/ItemCard/PowerArmor.cpp.
+	double ShownPercent(float a_health);
+
 	// Where wear starts to cost an item of a_kind, fWeaponPenaltyStart or
 	// fArmorPenaltyStart, kept between 0 and 1. A value that is not a number
 	// counts as 1.

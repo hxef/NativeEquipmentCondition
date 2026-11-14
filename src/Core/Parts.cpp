@@ -119,6 +119,9 @@ namespace
 
 	// The wear rate sits on the CND row of every card that has one.
 	constexpr Piece CARD_CND[]{ kCndContainers, kCndWorkbench, kCndCooking, kCndPipboy };
+	// A power armor piece's CND shows on the cards it has: containers and
+	// trading, the workbench and the power armor station, and the Pip-Boy.
+	constexpr Piece POWER_ARMOR_CND[]{ kCndContainers, kCndWorkbench, kCndPipboy };
 
 	constexpr SettingLink SETTINGS[]{
 		{ &Settings::bSpawnCondition, nullptr, WORN_LOOT, WORN_LOOT_SIDE, WORN_LOOT_EXCEPTIONS },
@@ -136,6 +139,7 @@ namespace
 		{ &Settings::bPowerArmorBar, &Settings::bHudCondition, HUD_BARS },
 		{ &Settings::bQuickContainer, nullptr, LOOT_METERS },
 		{ &Settings::bCardWearRate, nullptr, CARD_CND },
+		{ &Settings::bPowerArmorCardCnd, nullptr, POWER_ARMOR_CND },
 		{ &Settings::bConfirmScroll, nullptr, CONFIRM_SCROLL },
 		{ &Settings::bInspectPrice, nullptr, INSPECT_PRICE },
 		{ &Settings::bFoodSpoils, nullptr, FOOD, FOOD_SIDE },

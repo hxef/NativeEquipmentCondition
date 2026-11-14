@@ -150,8 +150,12 @@ namespace Equipped
 		}
 	}
 
-	float WeaponHealth(RE::Actor* a_actor, const RE::TESForm* a_weapon, const RE::EnchantmentItem* a_effect)
+	float WeaponHealth(RE::Actor* a_actor, const RE::TESForm* a_weapon, const RE::EnchantmentItem* a_effect,
+		std::optional<WearList::Set>* a_floor)
 	{
+		if (a_floor) {
+			a_floor->reset();
+		}
 		auto* inv = a_actor ? a_actor->inventoryList : nullptr;
 		if (!inv) {
 			return Condition::INVALID_HEALTH;
@@ -169,12 +173,19 @@ namespace Equipped
 				return a_item.object && a_item.object->IsWeapon() && Condition::WearsOut(*a_item.object) &&
 					   (!a_weapon || static_cast<const RE::TESForm*>(a_item.object) == a_weapon);
 			},
-			[&found, a_effect](RE::BGSInventoryItem& a_item, RE::BGSInventoryItem::Stack& a_stack) {
+			[&found, a_effect, a_floor](RE::BGSInventoryItem& a_item, RE::BGSInventoryItem::Stack& a_stack) {
 				// WearsOut has already made sure this is a weapon.
-				if (a_stack.IsEquipped() &&
-					(!a_effect || Casts(static_cast<const RE::TESObjectWEAP&>(*a_item.object), a_stack, *a_effect))) {
+				const auto& weapon = static_cast<const RE::TESObjectWEAP&>(*a_item.object);
+				if (a_stack.IsEquipped() && (!a_effect || Casts(weapon, a_stack, *a_effect))) {
 					const auto health = Condition::HealthOf(&a_stack);
 					found = health < 0.0F ? Condition::MAX_HEALTH : health;
+					// Read off this copy, so its mods and the keywords they
+					// add count.
+					if (a_floor && WearList::Any()) {
+						const auto* extra = a_stack.extra.get();
+						const auto& data = Condition::InstanceDataOf<RE::TESObjectWEAP::InstanceData>(extra, weapon.weaponData);
+						*a_floor = WearList::Of(weapon, &data, extra).damage;
+					}
 					return false;  // Stop iteration.
 				}
 				return true;  // Continue searching...

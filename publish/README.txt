@@ -309,6 +309,26 @@ NPC). Use their base ID or faction instead.
 NEC.log lists what each file sets and any line it skips. NEC ships
 Traders\NEC_Example.ini, an example that changes nothing as it is.
 
+WEAR LIST
+To set how fast a weapon wears or how much damage it keeps when worn, add a
+line to a file in Data\F4SE\Plugins\NEC\Wear. A line names a weapon, a weapon
+mod or a keyword, such as WeaponTypeMelee1H for every one handed melee weapon
+or WeaponTypeLaser for every laser weapon.
+
+  ; Wear\MyWeapons.ini
+  Fallout4.esm|08E736 = damage 0.3            ; Baseball Bat
+  Fallout4.esm|148338 = wear 1.2              ; a 10mm receiver
+  Fallout4.esm|092A86 = wear 0.8 damage 0.9   ; WeaponTypeBallistic keyword
+
+wear is how fast it wears, from 0 to 10, where 1 is normal. damage is how much
+of its damage it keeps at 0 condition, from 0 to 1, as Damage at 0 condition
+sets it for every other weapon. Both come from the weapon's own line, else
+from a line for 1 of its keywords. A mod's line multiplies the wear, up to 10
+in all, and its damage beats a keyword's. The first line read counts.
+
+NEC.log lists what each file sets and any line it skips. NEC ships
+Wear\NEC_Example.ini, an example that changes nothing as it is.
+
 REQUIREMENTS
 * Fallout 4 1.11.240 (AE) or 1.10.163 (OG)
 * Fallout 4 Script Extender (F4SE), version 0.7.9 on AE or 0.6.23 on OG

@@ -95,9 +95,9 @@ target("NEC")
 
     -- NEC.ini and NEC_Papyrus_API.txt ship beside the DLL, the language files
     -- in NEC/Translations beside them, the vanilla fridge list in NEC/Fridge,
-    -- an example file in NEC/Exclude, NEC/Food, NEC/Fridge and NEC/Traders,
-    -- and the MCM page's config.json in the folder MCM reads, all kept in
-    -- publish with the rest of what the archive carries.
+    -- an example file in NEC/Exclude, NEC/Food, NEC/Fridge, NEC/Traders and
+    -- NEC/Wear, and the MCM page's config.json in the folder MCM reads, all
+    -- kept in publish with the rest of what the archive carries.
     -- NEC_custom.ini is the player's own, and NEC writes a key there only when
     -- the MCM page changes it.
     add_installfiles("publish/NEC.ini", { prefixdir = "F4SE/Plugins" })
@@ -107,6 +107,7 @@ target("NEC")
     add_installfiles("publish/Food/*.ini", { prefixdir = "F4SE/Plugins/NEC/Food" })
     add_installfiles("publish/Fridge/*.ini", { prefixdir = "F4SE/Plugins/NEC/Fridge" })
     add_installfiles("publish/Traders/*.ini", { prefixdir = "F4SE/Plugins/NEC/Traders" })
+    add_installfiles("publish/Wear/*.ini", { prefixdir = "F4SE/Plugins/NEC/Wear" })
     add_installfiles("publish/MCM/Config/NEC/config.json", { prefixdir = "MCM/Config/NEC" })
 
     -- Records what the DLL was built from for xmake release, see
@@ -132,7 +133,7 @@ target("NEC")
             { path.join(publish, "NEC_Papyrus_API.txt"), plugins },
             { path.join(publish, "MCM", "Config", "NEC", "config.json"), mcm },
         }
-        for _, folder in ipairs({ "Translations", "Exclude", "Food", "Fridge", "Traders" }) do
+        for _, folder in ipairs({ "Translations", "Exclude", "Food", "Fridge", "Traders", "Wear" }) do
             for _, file in ipairs(os.files(path.join(publish, folder, "*.ini"))) do
                 table.insert(files, { file, path.join(plugins, "NEC", folder) })
             end
@@ -158,7 +159,7 @@ target("NEC")
 -- last build. The archive holds F4SE/Plugins with NEC.dll, NEC.pdb, NEC.ini and
 -- NEC_Papyrus_API.txt, F4SE/Plugins/NEC/Translations with the 12 language files,
 -- F4SE/Plugins/NEC/Fridge with the vanilla fridge list, an example file in
--- F4SE/Plugins/NEC/Exclude, NEC/Food, NEC/Fridge and NEC/Traders,
+-- F4SE/Plugins/NEC/Exclude, NEC/Food, NEC/Fridge, NEC/Traders and NEC/Wear,
 -- MCM/Config/NEC with the MCM page's config.json, Scripts with NEC.pex,
 -- Scripts/Source/User with NEC.psc, and README.txt at the root, so Mod
 -- Organizer 2 installs it as it is. The PDB lets a player's crash log name the
@@ -310,7 +311,7 @@ task("release")
         os.cp(path.join(os.projectdir(), "publish", "NEC_Papyrus_API.txt"), plugins)
         os.mkdir(path.join(plugins, "NEC", "Translations"))
         os.cp(path.join(os.projectdir(), "publish", "Translations", "*.ini"), path.join(plugins, "NEC", "Translations"))
-        for _, folder in ipairs({ "Exclude", "Food", "Fridge", "Traders" }) do
+        for _, folder in ipairs({ "Exclude", "Food", "Fridge", "Traders", "Wear" }) do
             os.mkdir(path.join(plugins, "NEC", folder))
             os.cp(path.join(os.projectdir(), "publish", folder, "*.ini"), path.join(plugins, "NEC", folder))
         end

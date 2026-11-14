@@ -4,6 +4,7 @@
 #include "Condition/Materials/Materials.h"
 #include "Condition/WeaponWear/DamageKinds.h"
 #include "Condition/WeaponWear/Sources.h"
+#include "Condition/WearList/WearList.h"
 #include "Core/Settings.h"
 #include "Core/TraceLog.h"
 
@@ -329,6 +330,10 @@ namespace WeaponWear
 		// as any weapon's does.
 		share.suppressor = !a_bash && Suppressed(a_weapon, a_instance) ? SuppressedMult() : 1.0F;
 
+		// A line in NEC/Wear for the weapon, a mod on it or its keyword, 1
+		// with none. It is about the weapon, so its bashes take it too.
+		share.line = WearList::Of(a_weapon, &a_instance, a_extra).wear;
+
 		// Harder hitting wears faster, better built wears slower. A pipe gun is
 		// steel and hits for little, a plasma rifle is nuclear material and
 		// hits hard, and both land near the middle. A pipe rifle rechambered to
@@ -337,7 +342,7 @@ namespace WeaponWear
 		// weapon can deal in its life depends on what it is built from, and
 		// damage per shot decides how fast that runs out.
 		share.value = (share.damage / share.reference) * (Materials::ReferenceQuality(Condition::Kind::kWeapon) / share.quality) *
-		              share.pace * share.autoMult * share.suppressor;
+		              share.pace * share.autoMult * share.suppressor * share.line;
 		return share;
 	}
 
@@ -358,6 +363,9 @@ namespace WeaponWear
 		}
 		if (TraceLog::IsOpen() && share.suppressor != 1.0F) {
 			tail += std::format(", suppressor x{:.2f}", share.suppressor);
+		}
+		if (TraceLog::IsOpen()) {
+			tail += WearList::Of(a_weapon, &a_instance, a_extra).WearTail();
 		}
 		if (TraceLog::IsOpen() && OwnReference(share.kind)) {
 			tail += std::format(", against {:.0f} for its damage type", share.reference);

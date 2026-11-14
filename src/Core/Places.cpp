@@ -64,9 +64,13 @@ namespace
 		{ "card mod effects", { kCardDmgModEffects } },
 		{ "card effects", { kCardDmgOwnEffects } },
 		{ "card blast", { kCardDmgBlast } },
-		// Only weapons on a list in NEC/Exclude read this place, so losing it
-		// turns no piece off.
+		// Only weapons on a list in NEC/Exclude and damage lines in NEC/Wear
+		// read this place, so losing it turns no piece off.
 		{ "stack damage", {} },
+		// Only a weapon mod's line in NEC/Wear reads these 2, so losing them
+		// turns no piece off.
+		{ "card stack", {} },
+		{ "stack list", {} },
 		// ArmorRating
 		{ "damage resist", { kArmorDr } },
 		{ "one piece rating", { kArmorBestMark } },

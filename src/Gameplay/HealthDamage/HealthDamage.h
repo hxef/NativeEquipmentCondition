@@ -39,7 +39,8 @@ namespace HealthDamage
 	[[nodiscard]] std::vector<std::pair<std::uint32_t, float>> CardDamage(const RE::BGSInventoryItem& a_item,
 		const RE::BGSInventoryItem::Stack* a_stack, float a_health);
 
-	// The share of its damage a weapon at a_health keeps, the line every hook
-	// above applies, see Curve.h.
+	// The share of its damage a weapon at a_health keeps by the slider's line,
+	// which every hook above applies to a weapon with no damage line in
+	// NEC/Wear, see Curve.h.
 	[[nodiscard]] float DamageShare(float a_health);
 }

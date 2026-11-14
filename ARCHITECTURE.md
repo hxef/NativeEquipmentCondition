@@ -101,6 +101,10 @@ src/
     Crew.h/.cpp              the share of the NPC rates the player's companions' and settlers' gear wears at
     Equipped.h/.cpp          what an actor holds and has on, and writing to the copy in use
     Excluded.h/.cpp          the weapons and armor a patch's file in NEC/Exclude tells NEC to leave alone
+    WearList/
+      WearList.h/.cpp        the wear and damage a file in NEC/Wear sets by weapon, weapon mod or keyword
+      Table.h                what the files set, for this folder
+      Pick.cpp               the lines that count for 1 copy of a weapon
     UniqueID.h/.cpp          the number that names 1 stack inside a container to a script
     Materials/
       Materials.h/.cpp       what an item is built from, the mod recipe index and the ordinary make
@@ -173,7 +177,7 @@ src/
       HealthDamage.h/.cpp    the feature and its install
       Hooks.h                what the folder's files share
       Curve.h                the damage line
-      Trace.h/.cpp           telling a repeated reading from a new one
+      Trace.h/.cpp           telling a repeated reading from a new one, and the wear list line a damage floor comes from
       Combat.cpp             the blow: physical damage, damage types
       Effect.cpp             the object effects a blow or a shot casts
       Blast.cpp              an explosion: its damage and its object effect

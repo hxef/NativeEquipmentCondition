@@ -49,22 +49,23 @@ namespace HealthDamage
 				return g_hitEffect(a_caster, a_power, a_targets, a_source, a_noHitArt, a_hostileOnly);
 			}
 
-			const auto health = Equipped::WeaponHealth(actor, a_source, effect);
-			const auto mult = DamageMult(health);
+			Floor      floor;
+			const auto health = Equipped::WeaponHealth(actor, a_source, effect, &floor);
+			const auto mult = DamageMult(health, floor);
 
 			// Every pellet of one shell casts the same effect again, so a line
 			// is written only when the health changes.
 			if (actor == RE::PlayerCharacter::GetSingleton()) {
 				static std::atomic<std::uint64_t> lastPlayer{ 0 };
 				if (!Repeats(lastPlayer, { health, mult }, effect->formID)) {
-					TraceLog::Line("effect", "{:s} [{:08X}]  health {:.6f}  x {:.4f}",
-						RE::TESFullName::GetFullName(*effect), effect->formID, health, mult);
+					TraceLog::Line("effect", "{:s} [{:08X}]  health {:.6f}  x {:.4f}{:s}",
+						RE::TESFullName::GetFullName(*effect), effect->formID, health, mult, FloorTail{ floor });
 				}
 			} else if (mult != 1.0F) {
 				static std::atomic<std::uint64_t> lastNpc{ 0 };
 				if (!Repeats(lastNpc, { health, mult }, NpcScope(*actor))) {
-					TraceLog::Npc::Line("effect", "{:s}  {:s} [{:08X}]  health {:.6f}  x {:.4f}", TraceLog::Who{ actor },
-						RE::TESFullName::GetFullName(*effect), effect->formID, health, mult);
+					TraceLog::Npc::Line("effect", "{:s}  {:s} [{:08X}]  health {:.6f}  x {:.4f}{:s}", TraceLog::Who{ actor },
+						RE::TESFullName::GetFullName(*effect), effect->formID, health, mult, FloorTail{ floor });
 				}
 			}
 

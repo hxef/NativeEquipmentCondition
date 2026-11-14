@@ -113,12 +113,14 @@ namespace HealthDamage
 			return a_hit.weapon.object ? a_hit.aggressor.get() : nullptr;
 		}
 
-		// What the condition of the weapon behind a blow leaves of the damage.
-		// Only the weapon the hit names counts, so a grenade, a mine or a shot
-		// fired before a weapon swap finds no health and keeps full damage.
-		float AttackerMult(const RE::HitData& a_hit, RE::Actor& a_attacker)
+		// What the condition of the weapon behind a blow leaves of the damage,
+		// with the floor that copy keeps in a_floor. Only the weapon the hit
+		// names counts, so a grenade, a mine or a shot fired before a weapon
+		// swap finds no health and keeps full damage.
+		float AttackerMult(const RE::HitData& a_hit, RE::Actor& a_attacker, Floor& a_floor)
 		{
-			return DamageMult(Equipped::WeaponHealth(&a_attacker, a_hit.weapon.object));
+			const auto health = Equipped::WeaponHealth(&a_attacker, a_hit.weapon.object, nullptr, &a_floor);
+			return DamageMult(health, a_floor);
 		}
 
 		// -------------------------------------------------------------------
@@ -129,7 +131,7 @@ namespace HealthDamage
 		// changed is written, since claws, turrets and everything without a
 		// condition hit as ever, several times a second.
 		template <std::size_t I>
-		void TraceNpc(const RE::TESForm* a_source, float a_health, float a_base, float a_mult)
+		void TraceNpc(const RE::TESForm* a_source, float a_health, float a_base, float a_mult, const Floor& a_floor)
 		{
 			if (!a_source || a_mult == 1.0F) {
 				return;
@@ -145,8 +147,8 @@ namespace HealthDamage
 				return;
 			}
 
-			TraceLog::Npc::Line("damage", "{:s}  {:s}  health {:.6f}  {:.2f} x {:.4f} = {:.2f}  (call {:d})",
-				CALC_SITES[I].what, TraceLog::Who{ a_source }, a_health, a_base, a_mult, a_base * a_mult, seen);
+			TraceLog::Npc::Line("damage", "{:s}  {:s}  health {:.6f}  {:.2f} x {:.4f} = {:.2f}  (call {:d}){:s}",
+				CALC_SITES[I].what, TraceLog::Who{ a_source }, a_health, a_base, a_mult, a_base * a_mult, seen, FloorTail{ a_floor });
 		}
 
 		// Once per attack for every actor in the game. The player's blows go in
@@ -154,13 +156,13 @@ namespace HealthDamage
 		// left out, see Repeats in Trace.h, and the count on the line shows a
 		// dropped call as a jump.
 		template <std::size_t I>
-		void Trace(const RE::TESForm* a_source, float a_health, float a_base, float a_mult)
+		void Trace(const RE::TESForm* a_source, float a_health, float a_base, float a_mult, const Floor& a_floor = {})
 		{
 			// The display site is the Pip-Boy working out a card, with no
 			// attacker.
 			const auto card = std::string_view{ CALC_SITES[I].what } == "display";
 			if (!card && a_source != static_cast<const RE::TESForm*>(RE::PlayerCharacter::GetSingleton())) {
-				TraceNpc<I>(a_source, a_health, a_base, a_mult);
+				TraceNpc<I>(a_source, a_health, a_base, a_mult, a_floor);
 				return;
 			}
 
@@ -183,8 +185,8 @@ namespace HealthDamage
 				return;
 			}
 
-			TraceLog::Line(card ? "card"sv : "damage"sv, "{:s}  health {:.6f}  {:.2f} x {:.4f} = {:.2f}  (call {:d})",
-				CALC_SITES[I].what, a_health, a_base, a_mult, a_base * a_mult, seen);
+			TraceLog::Line(card ? "card"sv : "damage"sv, "{:s}  health {:.6f}  {:.2f} x {:.4f} = {:.2f}  (call {:d}){:s}",
+				CALC_SITES[I].what, a_health, a_base, a_mult, a_base * a_mult, seen, FloorTail{ a_floor });
 		}
 
 		// -------------------------------------------------------------------
@@ -204,6 +206,9 @@ namespace HealthDamage
 		// blows it skips at the vanilla damage, never the floor.
 		thread_local std::array<bool, std::size(HEALTH_SITES)> t_health{};
 
+		// The floor of the weapon the health hook read, for the same blow.
+		thread_local std::array<Floor, std::size(HEALTH_SITES)> t_floor{};
+
 		// One hook per call site. Each instantiation of a template is a
 		// separate function with its own statics, so each site keeps its own
 		// trace state and knows its index.
@@ -212,17 +217,21 @@ namespace HealthDamage
 			const RE::TESAmmo* a_ammo, float a_condition, float a_rangeMult)
 		{
 			const auto base = g_calcLinks[I](a_source, a_data, a_ammo, a_condition, a_rangeMult);
+			Floor      floor;
 			if constexpr (I >= FIRST_ATTACK_SITE) {
 				const auto attack = I - FIRST_ATTACK_SITE;
 				// Runs marks the proof for this site either way, so a shared
 				// pair comes back. The blow is scaled only when its health
 				// hook ran, see t_health.
 				const auto live = g_attacks[attack].Runs(g_calcLinks[I]);
+				floor = std::exchange(t_floor[attack], Floor{});
 				if (!std::exchange(t_health[attack], false) || !live) {
 					return base;
 				}
 			} else if (!g_calcLinks[I].Live()) {
 				return base;
+			} else {
+				floor = DisplayFloor();
 			}
 
 			// The player's health comes from EquippedHealthHk, which reads the
@@ -231,9 +240,9 @@ namespace HealthDamage
 			// through DisplayHealth, see Hooks.h.
 			const auto health = I == DISPLAY_SITE ? DisplayHealth(a_condition) : a_condition;
 			const auto thrown = a_data && (a_data->type == RE::WEAPON_TYPE::kGrenade || a_data->type == RE::WEAPON_TYPE::kMine);
-			const auto mult = thrown ? 1.0F : DamageMult(health);
+			const auto mult = thrown ? 1.0F : DamageMult(health, floor);
 
-			Trace<I>(a_source, health, base, mult);
+			Trace<I>(a_source, health, base, mult, thrown ? Floor{} : floor);
 			return base * mult;
 		}
 
@@ -267,19 +276,20 @@ namespace HealthDamage
 			}
 
 			const auto attacker = AttackerOf(*a_hit);
-			const auto mult = attacker ? AttackerMult(*a_hit, *attacker) : 1.0F;
+			Floor      floor;
+			const auto mult = attacker ? AttackerMult(*a_hit, *attacker, floor) : 1.0F;
 
 			// The same log line as the damage hook, to the same 2 logs.
 			if (attacker.get() == RE::PlayerCharacter::GetSingleton()) {
 				static std::atomic<std::uint64_t> lastPlayer{ 0 };
 				if (!Repeats(lastPlayer, { mult })) {
-					TraceLog::Line("types", "{:s}  x {:.4f}", TYPE_SITES[I].what, mult);
+					TraceLog::Line("types", "{:s}  x {:.4f}{:s}", TYPE_SITES[I].what, mult, FloorTail{ floor });
 				}
 			} else if (attacker && mult != 1.0F) {
 				static std::atomic<std::uint64_t> lastNpc{ 0 };
 				if (!Repeats(lastNpc, { mult }, NpcScope(*attacker))) {
-					TraceLog::Npc::Line("types", "{:s}  {:s}  x {:.4f}", TYPE_SITES[I].what,
-						TraceLog::Who{ attacker.get() }, mult);
+					TraceLog::Npc::Line("types", "{:s}  {:s}  x {:.4f}{:s}", TYPE_SITES[I].what,
+						TraceLog::Who{ attacker.get() }, mult, FloorTail{ floor });
 				}
 			}
 
@@ -314,7 +324,7 @@ namespace HealthDamage
 
 			// Every actor's condition reaches combat, see WeaponEvents.h for how
 			// it wears. 0 is a real health, so -1 means there is none.
-			const auto ours = Equipped::WeaponHealth(a_actor);
+			const auto ours = Equipped::WeaponHealth(a_actor, nullptr, nullptr, &t_floor[P]);
 			const auto mine = ours >= 0.0F;
 			const auto listed = !mine && Equipped::HoldsListed(a_actor);
 

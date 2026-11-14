@@ -6,6 +6,7 @@
 #include "Condition/Materials/Materials.h"
 #include "Condition/Provenance/Provenance.h"
 #include "Condition/WeaponWear/WeaponWear.h"
+#include "Condition/WearList/WearList.h"
 #include "Core/Settings.h"
 #include "Gameplay/Aim/Aim.h"
 #include "Gameplay/ArmorEvents.h"
@@ -77,6 +78,9 @@ namespace
 		// row below asks which items wear, so it comes before them, and after
 		// ArmorMods, which its NEC.log reason for a listed piece rests on.
 		{ .name = "Excluded", .Load = Excluded::Load, .Unload = Excluded::Unload },
+		// The wear and damage a file in NEC/Wear sets by weapon, weapon mod or
+		// keyword. After Excluded, whose list its NEC.log reason rests on.
+		{ .name = "WearList", .Load = WearList::Load, .Unload = WearList::Unload },
 		// What a weapon or a piece of armor is built from, read off the recipes
 		// in the load order.
 		{ .name = "Materials", .Load = Materials::Load, .Unload = Materials::Unload },

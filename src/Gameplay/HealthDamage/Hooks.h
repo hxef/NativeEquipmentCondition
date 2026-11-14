@@ -2,6 +2,8 @@
 
 #include "Core/Plugin.h"
 
+#include "Gameplay/HealthDamage/Curve.h"
+
 // What the files of this feature share. Private to this folder.
 namespace HealthDamage
 {
@@ -25,4 +27,8 @@ namespace HealthDamage
 	// NEC/Exclude. The card's blast hook reads the same health once, on the
 	// thread drawing the card.
 	float DisplayHealth(float a_condition);
+
+	// In Card.cpp: the floor of the copy the card or the item list asks the
+	// display site about, or nothing for the slider's, see Curve.h.
+	Floor DisplayFloor();
 }

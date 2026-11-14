@@ -55,9 +55,16 @@ namespace ItemCard
 		}
 
 		// The rate in the cell beside the number, which is narrower: a whole
-		// number from 10 up, (x18) for 17.6, else as WearRateText writes it.
+		// number from 10 up, (x18) for 17.6, (x.01) for 0.01, else as
+		// WearRateText writes it.
 		std::string CellWearRateText(float a_rate)
 		{
+			// Below 0.05 the 0 before the point goes, since the narrowest cell,
+			// 46 wide at Roboto Condensed 18 in one replacer, holds (x.01) at 39
+			// and not (x0.01) at 47.5.
+			if (a_rate > 0.0F && a_rate < 0.05F) {
+				return "(x" + WearRateText(a_rate).substr(3);  // (x0.01) to (x.01)
+			}
 			return a_rate < 9.95F ? WearRateText(a_rate) : std::format("(x{:.0f})", a_rate);
 		}
 
@@ -99,11 +106,14 @@ namespace ItemCard
 			return { std::format("{:s} {:s}", text, sign), std::format("{:s} {:s}", bare, sign), text };
 		}
 
-		// Whether a cell's a_text is a rate NEC wrote, (x1.3) or x1.3 +, and
-		// not a difference the movie prints itself, such as +8.5.
+		// Whether a cell's a_text is a rate NEC wrote, (x1.3), x1.3 + or
+		// x.01 +, and not a difference the movie prints itself, such as +8.5.
 		bool IsWearRateText(std::string_view a_text)
 		{
-			return a_text.starts_with("(x"sv) || (a_text.size() > 1 && a_text[0] == 'x' && std::isdigit(static_cast<unsigned char>(a_text[1])));
+			if (a_text.starts_with("(x"sv)) {
+				return true;
+			}
+			return a_text.size() > 1 && a_text[0] == 'x' && (a_text[1] == '.' || std::isdigit(static_cast<unsigned char>(a_text[1])));
 		}
 
 		// The movie's name for the trace, PipboyMenu for PipboyMenu.swf.

@@ -2,9 +2,13 @@
 
 #include "Core/Plugin.h"
 
+#include "Gameplay/HealthDamage/Curve.h"
+
 #include <atomic>
 #include <cstdint>
+#include <format>
 #include <initializer_list>
+#include <string_view>
 
 // Saying so in the trace logs. Private to this folder.
 namespace HealthDamage
@@ -23,4 +27,23 @@ namespace HealthDamage
 	// the block keeps 1 line per shot and still collapses a shotgun's
 	// pellets into one. The form ID keeps 2 NPCs with the same gun apart.
 	std::uint64_t NpcScope(const RE::TESForm& a_who);
+
+	// The end of a damage line for a copy whose file in NEC/Wear sets its
+	// floor, "  keeps 0.50 at 0 by Wear/A_First.ini line 6", and nothing for
+	// any other. Worded as the line is written, so a closed log builds no
+	// text on a hit.
+	struct FloorTail
+	{
+		Floor floor;
+	};
 }
+
+// Lets a FloorTail stand in a format string as {:s}.
+template <>
+struct std::formatter<HealthDamage::FloorTail> : std::formatter<std::string_view>
+{
+	auto format(const HealthDamage::FloorTail& a_tail, std::format_context& a_context) const
+	{
+		return std::formatter<std::string_view>::format(WearList::DamageTail(a_tail.floor), a_context);
+	}
+};

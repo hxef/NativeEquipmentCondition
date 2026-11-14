@@ -44,6 +44,7 @@ namespace WeaponWear
 		float         fireRate;   // shots a second, 0 for a weapon that is not automatic
 		float         autoMult;
 		float         suppressor;
+		float         line;       // what a line in NEC/Wear multiplies it by, 1 for none
 		float         value;
 		std::uint32_t kind;       // the damage type it deals most of, 0 for ballistic
 	};

@@ -56,12 +56,36 @@ namespace HealthDamage
 		// GetWeaponDisplayDamage has 4 callers on both games. Beside the card,
 		// this is the one that passes the health a stack carries. It works out
 		// 1 stack's damage for the item lists, such as the workbench's. The
-		// other 2 pass full health, which scales nothing.
+		// other 2 pass full health, which scales nothing. LIST_STACK_SITE sits
+		// in that function too.
 		constexpr CallSite STACK_DAMAGE_SITE{ AE{ 2222649, 0x13E }, OG{ 307737, 0x12F }, "stack damage" };
+
+		// The 2 calls to ExtraDataList::GetHealthPerc right before the card
+		// health call and the stack damage call, each on the extra data list
+		// of the stack whose damage follows. That list holds the stack's mods,
+		// so a weapon mod's line in NEC/Wear can count. A missing stack skips
+		// the call and passes full health.
+		//
+		// The first is in FillDamageTypeInfo, and every caller passes its own
+		// stack through it: the card's item, the compare item, the item list
+		// entries and CardDamage. The second is in the stack damage site's
+		// function, whose 3 callers are player menus. So a listed mod's floor
+		// also reaches the damage sort of the HUD loot list and the workbench
+		// lists, and the best in class icon of the container and barter lists,
+		// as the card shows it.
+		constexpr CallSite CARD_STACK_SITE{ AE{ RE::ID::PipboyInventoryUtils::FillDamageTypeInfo.ae(), 0x0A7 }, OG{ RE::ID::PipboyInventoryUtils::FillDamageTypeInfo.og(), 0x0A6 }, "card stack" };
+		constexpr CallSite LIST_STACK_SITE{ AE{ 2222649, 0x0FE }, OG{ 307737, 0x0EF }, "stack list" };
 
 		// -------------------------------------------------------------------
 		// The item card hooks
 		// -------------------------------------------------------------------
+
+		// A health and the floor of the copy it belongs to, see Curve.h.
+		struct Worn
+		{
+			float health = Condition::INVALID_HEALTH;
+			Floor floor;
+		};
 
 		// The condition of the item whose card is being built, handed from the
 		// first Pip-Boy hook to the second. The second stands at 3 places
@@ -69,12 +93,12 @@ namespace HealthDamage
 		// and the first always runs before them, so a thread local carries it.
 		// The types hook takes it once, so a card whose health call another
 		// DLL skipped never takes the condition of the card before it.
-		thread_local float t_cardHealth = Condition::INVALID_HEALTH;
+		thread_local Worn t_cardHealth;
 
 		// What the types hook took, for the same card's object effects. The
 		// health hook clears it, so a card whose types call was skipped leaves
 		// its effects at full too.
-		thread_local float t_cardEffects = Condition::INVALID_HEALTH;
+		thread_local Worn t_cardEffects;
 
 		// Whether the call to GetWeaponDisplayDamage that the card health hook
 		// or the stack damage hook hands on is for a weapon on a list in
@@ -82,11 +106,22 @@ namespace HealthDamage
 		// player and the instance data, never which weapon it is.
 		thread_local bool t_listed = false;
 
+		// The floor of the copy that call is about, for the display site,
+		// set and put back the same way.
+		thread_local Floor t_displayFloor;
+
 		// The health the display site scaled the card by, for the blast hook
 		// a few instructions later in the same call. Read once, so a card
 		// whose display hook did not run shows the vanilla explosion
 		// damage, never the last card's.
-		thread_local float t_displayHealth = Condition::INVALID_HEALTH;
+		thread_local Worn t_displayHealth;
+
+		// The list each stack site read, for the damage hook of the same
+		// stack 1 call later. Each pair has its own, which its damage hook
+		// takes once and checks against the call's instance data, see
+		// LineFloorOf.
+		thread_local const RE::ExtraDataList* t_cardStack = nullptr;
+		thread_local const RE::ExtraDataList* t_listStack = nullptr;
 
 		// The health CardDamage asks the card about, in place of the one the
 		// stack carries, and nothing while the card is the game's own.
@@ -107,6 +142,45 @@ namespace HealthDamage
 		CallPatch::Link<CardBlast_t>                 g_cardBlastLink;
 		CallPatch::Link<CardHealth_t>                g_stackDamageLink;
 
+		// ExtraDataList::GetHealthPerc: the list in, its health out.
+		using StackHealth_t = float (*)(RE::ExtraDataList*);
+		CallPatch::Link<StackHealth_t> g_cardStackLink;
+		CallPatch::Link<StackHealth_t> g_listStackLink;
+
+		// The 2 stack hooks note the list and hand the vanilla health on.
+		float CardStackHk(RE::ExtraDataList* a_extra)
+		{
+			const auto health = g_cardStackLink(a_extra);
+			t_cardStack = g_cardStackLink.Live() ? a_extra : nullptr;
+			return health;
+		}
+
+		float ListStackHk(RE::ExtraDataList* a_extra)
+		{
+			const auto health = g_listStackLink(a_extra);
+			t_listStack = g_listStackLink.Live() ? a_extra : nullptr;
+			return health;
+		}
+
+		// The floor a file in NEC/Wear sets for the copy a_weapon is, with
+		// the mods on a_stack, the list its stack site read. That list counts
+		// only when it holds a_weapon's instance data, so a list of another
+		// stack never lends its mods, and the weapon's own line and its
+		// keywords' still count. For a stack with no instance data the card
+		// passes the weapon's own, which matches, and the item lists pass
+		// none, which does not, so in a list such a stack loses its mod lines.
+		Floor LineFloorOf(const RE::BGSObjectInstanceT<RE::TESObjectWEAP>& a_weapon, const RE::ExtraDataList* a_stack)
+		{
+			// An ammo stack reaches the stack damage hook with no weapon.
+			const auto* weapon = a_weapon.object ? a_weapon.object->As<RE::TESObjectWEAP>() : nullptr;
+			if (!weapon || !WearList::Any()) {
+				return {};
+			}
+			const auto* data = static_cast<const RE::TESObjectWEAP::InstanceData*>(a_weapon.instanceData.get());
+			const auto  mine = a_stack && &Condition::InstanceDataOf<RE::TESObjectWEAP::InstanceData>(a_stack, weapon->weaponData) == data;
+			return WearList::Of(*weapon, data, mine ? a_stack : nullptr).damage;
+		}
+
 		// Records the condition of the item, or -1 while the pair does not
 		// run and for a weapon on a list in NEC/Exclude. The physical damage
 		// is already scaled, since this call reaches CalcWeaponDamage through
@@ -114,26 +188,52 @@ namespace HealthDamage
 		// health, which vanilla scales nothing by below full, so its base
 		// number stays vanilla. A health CardDamage asks about stands in for
 		// the stack's, and the vanilla call hands it on to the display site.
+		// The item's floor goes with its condition to every hook of the card.
 		float CardHealthHk(const RE::BGSObjectInstanceT<RE::TESObjectWEAP>& a_weapon, const RE::TESAmmo* a_ammo, float a_health)
 		{
-			const auto health = t_askedHealth.value_or(a_health);
-			const auto listed = a_weapon.object && Excluded::Has(*a_weapon.object);
-			t_cardEffects = Condition::INVALID_HEALTH;
-			t_cardHealth = g_card.Runs(g_cardHealthLink) && !listed ? health : Condition::INVALID_HEALTH;
+			const auto* stack = std::exchange(t_cardStack, nullptr);
+			const auto  health = t_askedHealth.value_or(a_health);
+			const auto  listed = a_weapon.object && Excluded::Has(*a_weapon.object);
+			const auto  floor = listed ? Floor{} : LineFloorOf(a_weapon, stack);
+			t_cardEffects = {};
+			t_cardHealth = g_card.Runs(g_cardHealthLink) && !listed ? Worn{ health, floor } : Worn{};
+
+			// Once per change, since the Pip-Boy builds a card for every item.
+			// The compare item and each item list entry pass here too, and
+			// nothing cheap tells the card's own item apart, so a list with 2
+			// weapons with a damage line in NEC/Wear writes 1 line an entry
+			// each time it is built. The tag "card" is in TraceLog::QUIET, so
+			// the line shows only while a developer takes the tag out.
+			if (floor) {
+				static std::atomic<std::uint64_t> last{ 0 };
+				if (!Repeats(last, { floor->value, static_cast<float>(floor->file), static_cast<float>(floor->line) }, a_weapon.object->formID)) {
+					TraceLog::Line("card", "{:s}{:s}", TraceLog::Who{ a_weapon.object }, FloorTail{ floor });
+				}
+			}
+
 			const auto was = std::exchange(t_listed, listed);
+			const auto wasFloor = std::exchange(t_displayFloor, floor);
 			const auto damage = g_cardHealthLink(a_weapon, a_ammo, health);
 			t_listed = was;
+			t_displayFloor = wasFloor;
 			return damage;
 		}
 
 		// Marks a stack of a weapon on a list in NEC/Exclude, so its damage
-		// and blast stay vanilla whatever health it carries.
+		// and blast stay vanilla whatever health it carries, and hands the
+		// display site the floor of any other.
 		float StackDamageHk(const RE::BGSObjectInstanceT<RE::TESObjectWEAP>& a_weapon, const RE::TESAmmo* a_ammo, float a_health)
 		{
-			const auto listed = a_weapon.object && g_stackDamageLink.Live() && Excluded::Has(*a_weapon.object);
-			const auto was = std::exchange(t_listed, listed);
-			const auto damage = g_stackDamageLink(a_weapon, a_ammo, a_health);
+			// Taken first, so an ammo stack clears it too.
+			const auto* stack = std::exchange(t_listStack, nullptr);
+			const auto  live = g_stackDamageLink.Live();
+			const auto  listed = a_weapon.object && live && Excluded::Has(*a_weapon.object);
+			const auto  floor = live && !listed ? LineFloorOf(a_weapon, stack) : Floor{};
+			const auto  was = std::exchange(t_listed, listed);
+			const auto  wasFloor = std::exchange(t_displayFloor, floor);
+			const auto  damage = g_stackDamageLink(a_weapon, a_ammo, a_health);
 			t_listed = was;
+			t_displayFloor = wasFloor;
 			return damage;
 		}
 
@@ -152,18 +252,18 @@ namespace HealthDamage
 			void* a_unused, float* a_out)
 		{
 			g_cardTypeLinks[I](a_entryPoint, a_perkOwner, a_instance, a_unused, a_out);
-			auto health = Condition::INVALID_HEALTH;
+			Worn worn;
 			auto live = false;
 			if constexpr (I == 0) {
-				health = std::exchange(t_cardHealth, Condition::INVALID_HEALTH);
+				worn = std::exchange(t_cardHealth, Worn{});
 				live = g_card.Runs(g_cardTypeLinks[0]);
-				t_cardEffects = live ? health : Condition::INVALID_HEALTH;
+				t_cardEffects = live ? worn : Worn{};
 			} else {
-				health = t_cardEffects;
+				worn = t_cardEffects;
 				live = g_card.Intact() && g_cardTypeLinks[I].Live();
 			}
 			if (a_out && live) {
-				*a_out *= DamageMult(health);
+				*a_out *= DamageMult(worn.health, worn.floor);
 			}
 		}
 
@@ -174,7 +274,7 @@ namespace HealthDamage
 		void CardBlastHk(RE::BGSEntryPoint::ENTRY_POINT a_entryPoint, RE::Actor* a_perkOwner, const void* a_instance, float* a_out)
 		{
 			// Read first, so a weapon with no blast clears the note too.
-			const auto health = std::exchange(t_displayHealth, Condition::INVALID_HEALTH);
+			const auto [health, floor] = std::exchange(t_displayHealth, Worn{});
 			g_cardBlastLink(a_entryPoint, a_perkOwner, a_instance, a_out);
 			if (!a_out || !(*a_out > 0.0F) || !g_cardBlastLink.Live()) {
 				return;
@@ -182,12 +282,12 @@ namespace HealthDamage
 
 			// 0 is what every weapon that fires nothing explosive reports, so
 			// the guard keeps the whole inventory out of the log.
-			const auto mult = DamageMult(health);
+			const auto mult = DamageMult(health, floor);
 
 			static std::atomic<std::uint64_t> last{ 0 };
 			if (!Repeats(last, { health, *a_out, mult })) {
-				TraceLog::Line("card", "blast  health {:.6f}  {:.2f} x {:.4f} = {:.2f}",
-					health, *a_out, mult, *a_out * mult);
+				TraceLog::Line("card", "blast  health {:.6f}  {:.2f} x {:.4f} = {:.2f}{:s}",
+					health, *a_out, mult, *a_out * mult, FloorTail{ floor });
 			}
 
 			*a_out *= mult;
@@ -196,8 +296,13 @@ namespace HealthDamage
 
 	float DisplayHealth(float a_condition)
 	{
-		t_displayHealth = t_listed ? Condition::INVALID_HEALTH : a_condition;
-		return t_displayHealth;
+		t_displayHealth = t_listed ? Worn{} : Worn{ a_condition, t_displayFloor };
+		return t_displayHealth.health;
+	}
+
+	Floor DisplayFloor()
+	{
+		return t_displayFloor;
 	}
 
 	std::vector<std::pair<std::uint32_t, float>> CardDamage(const RE::BGSInventoryItem& a_item,
@@ -239,6 +344,15 @@ namespace HealthDamage
 			const auto effectHooks = CallPatch::PerSite<std::size(CARD_EFFECT_SITES)>([]<std::size_t I>() { return &CardTypesHk<1 + I>; });
 			CallPatch::PatchAll(CARD_EFFECT_SITES, RE::ID::BGSEntryPoint::HandleEntryPoint, effectHooks, std::span{ g_cardTypeLinks }.subspan(1),
 				"The item card prints object effects at the condition the item is in", Part::kCardDamage);
+
+			// The card health hook reads the list this site notes, so it goes
+			// in only once the pair has. Without it a weapon mod's line in
+			// NEC/Wear never counts on the card.
+			if (!CallPatch::PatchCall(CARD_STACK_SITE, RE::ID::ExtraDataList::GetHealthPerc, reinterpret_cast<std::uintptr_t>(&CardStackHk), g_cardStackLink, Part::kCardDamage)) {
+				REX::WARN("The item card reads wear list lines by weapon and keyword only.");
+			} else {
+				REX::INFO("The item card reads each weapon's own wear list line.");
+			}
 		}
 
 		// Installed on its own, since it is in a different function and reads a
@@ -250,7 +364,11 @@ namespace HealthDamage
 		}
 
 		// Without it a listed weapon's stack in an item list counts by a
-		// health it carries, and every other number works.
-		CallPatch::PatchCall(STACK_DAMAGE_SITE, RE::ID::CombatFormulas::GetWeaponDisplayDamage, reinterpret_cast<std::uintptr_t>(&StackDamageHk), g_stackDamageLink);
+		// health it carries, no wear list line reaches the lists, and every
+		// other number works. The list site after it hands it the stack's
+		// mods, so it goes in only once this one has.
+		if (CallPatch::PatchCall(STACK_DAMAGE_SITE, RE::ID::CombatFormulas::GetWeaponDisplayDamage, reinterpret_cast<std::uintptr_t>(&StackDamageHk), g_stackDamageLink)) {
+			CallPatch::PatchCall(LIST_STACK_SITE, RE::ID::ExtraDataList::GetHealthPerc, reinterpret_cast<std::uintptr_t>(&ListStackHk), g_listStackLink);
+		}
 	}
 }

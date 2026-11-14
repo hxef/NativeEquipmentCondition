@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Condition/Condition.h"
+#include "Condition/WearList/WearList.h"
 #include "Core/Plugin.h"
 
 #include <cstdint>
@@ -56,9 +57,11 @@ namespace Equipped
 	// grenade, a mine or a shot fired before a weapon swap does not take the
 	// condition of whatever is in hand when it lands. a_effect limits it to the
 	// copy that casts that object effect, since the cast that applies a shot's
-	// effect to the target names no weapon.
+	// effect to the target names no weapon. a_floor, when given, gets the
+	// share of damage a file in NEC/Wear says that copy keeps at 0
+	// condition, or nothing, read in the same walk, see WearList.h.
 	float WeaponHealth(RE::Actor* a_actor, const RE::TESForm* a_weapon = nullptr,
-		const RE::EnchantmentItem* a_effect = nullptr);
+		const RE::EnchantmentItem* a_effect = nullptr, std::optional<WearList::Set>* a_floor = nullptr);
 
 	// WeaponHealth for a caller outside the engine's own code path, a task on
 	// F4SE's queue or an NPC's shot or hit. Nothing while the inventory is

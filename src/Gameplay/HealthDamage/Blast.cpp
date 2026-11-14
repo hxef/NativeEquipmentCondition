@@ -57,11 +57,13 @@ namespace HealthDamage
 
 		std::array<CallPatch::Link<BlastDamage_t>, NUM_BLAST_SITES> g_blastLinks;
 
-		// Who set a blast off, and how worn the weapon it came out of is.
+		// Who set a blast off, how worn the weapon it came out of is, and the
+		// floor that copy keeps.
 		struct Blast
 		{
 			RE::NiPointer<RE::Actor> actor;
 			float                    health{ Condition::INVALID_HEALTH };
+			Floor                    floor;
 		};
 
 		// The player or any NPC, the rule EquippedHealthHk in Combat.cpp
@@ -78,8 +80,9 @@ namespace HealthDamage
 				return {};
 			}
 
-			const auto health = Equipped::WeaponHealth(actor.get(), weapon);
-			return { std::move(actor), health };
+			Floor      floor;
+			const auto health = Equipped::WeaponHealth(actor.get(), weapon, nullptr, &floor);
+			return { std::move(actor), health, floor };
 		}
 
 		// -------------------------------------------------------------------
@@ -106,21 +109,22 @@ namespace HealthDamage
 				return base;
 			}
 			const auto health = blast.health;
-			const auto mult = DamageMult(health);
+			const auto mult = DamageMult(health, blast.floor);
 
 			// One blast asks once for itself and once per target, with the same
 			// answer every time.
 			if (blast.actor.get() == RE::PlayerCharacter::GetSingleton()) {
 				static std::atomic<std::uint64_t> lastPlayer{ 0 };
 				if (!Repeats(lastPlayer, { health, base, mult })) {
-					TraceLog::Line("blast", "{:s}  health {:.6f}  {:.2f} x {:.4f} = {:.2f}",
-						BLAST_SITES[I].what, health, base, mult, base * mult);
+					TraceLog::Line("blast", "{:s}  health {:.6f}  {:.2f} x {:.4f} = {:.2f}{:s}",
+						BLAST_SITES[I].what, health, base, mult, base * mult, FloorTail{ blast.floor });
 				}
 			} else if (mult != 1.0F) {
 				static std::atomic<std::uint64_t> lastNpc{ 0 };
 				if (!Repeats(lastNpc, { health, base, mult }, NpcScope(*blast.actor))) {
-					TraceLog::Npc::Line("blast", "{:s}  {:s}  health {:.6f}  {:.2f} x {:.4f} = {:.2f}",
-						BLAST_SITES[I].what, TraceLog::Who{ blast.actor.get() }, health, base, mult, base * mult);
+					TraceLog::Npc::Line("blast", "{:s}  {:s}  health {:.6f}  {:.2f} x {:.4f} = {:.2f}{:s}",
+						BLAST_SITES[I].what, TraceLog::Who{ blast.actor.get() }, health, base, mult, base * mult,
+						FloorTail{ blast.floor });
 				}
 			}
 
@@ -172,21 +176,21 @@ namespace HealthDamage
 				return g_blastEffectLink(a_caster, a_power, a_targets, a_source, a_noHitArt, a_hostileOnly);
 			}
 
-			const auto mult = DamageMult(blast.health);
+			const auto mult = DamageMult(blast.health, blast.floor);
 
 			// A blast casts its effect once for every target it hit.
 			if (blast.actor.get() == RE::PlayerCharacter::GetSingleton()) {
 				static std::atomic<std::uint64_t> lastPlayer{ 0 };
 				if (!Repeats(lastPlayer, { blast.health, mult }, effect->formID)) {
-					TraceLog::Line("blast", "effect {:s} [{:08X}]  health {:.6f}  x {:.4f}",
-						RE::TESFullName::GetFullName(*effect), effect->formID, blast.health, mult);
+					TraceLog::Line("blast", "effect {:s} [{:08X}]  health {:.6f}  x {:.4f}{:s}",
+						RE::TESFullName::GetFullName(*effect), effect->formID, blast.health, mult, FloorTail{ blast.floor });
 				}
 			} else if (mult != 1.0F) {
 				static std::atomic<std::uint64_t> lastNpc{ 0 };
 				if (!Repeats(lastNpc, { blast.health, mult }, NpcScope(*blast.actor))) {
-					TraceLog::Npc::Line("blast", "effect  {:s}  {:s} [{:08X}]  health {:.6f}  x {:.4f}",
+					TraceLog::Npc::Line("blast", "effect  {:s}  {:s} [{:08X}]  health {:.6f}  x {:.4f}{:s}",
 						TraceLog::Who{ blast.actor.get() }, RE::TESFullName::GetFullName(*effect), effect->formID,
-						blast.health, mult);
+						blast.health, mult, FloorTail{ blast.floor });
 				}
 			}
 

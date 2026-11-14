@@ -23,16 +23,20 @@ namespace SpawnCondition
 	// and has none yet. Returns what it aimed at, so the copies SplitOff
 	// takes out roll the same way, or nothing when the stack was left
 	// alone. Every weapon and piece of armor is logged to the trace log
-	// either way.
-	std::optional<Aim> Roll(RE::BGSInventoryList* a_list, RE::TESBoundObject* a_object, RE::BGSInventoryItem::Stack* a_stack);
+	// either way. a_cell is the cell a world item lies in, whose area
+	// stands in when no list ranked for its kind handed it out.
+	std::optional<Aim> Roll(RE::BGSInventoryList* a_list, RE::TESBoundObject* a_object, RE::BGSInventoryItem::Stack* a_stack,
+		const RE::TESObjectCELL* a_cell = nullptr);
 
 	// Roll for a_count copies on their way in as 1 stack, before the stack
 	// is built, with a_extra the list it will hold. a_private says nothing
 	// else holds them, as Private does for a stack. a_looked says a_extra is
 	// a world item's own list that the player only looked at, with a_list
-	// standing in for the holder, so no script hears of the roll.
+	// standing in for the holder, so no script hears of the roll. a_cell is
+	// the cell a world item lies in, whose area stands in when no list
+	// ranked for its kind handed it out.
 	std::optional<Aim> Roll(RE::BGSInventoryList* a_list, RE::TESBoundObject* a_object, RE::ExtraDataList* a_extra, std::uint32_t a_count,
-		bool a_private, bool a_looked = false);
+		bool a_private, bool a_looked = false, const RE::TESObjectCELL* a_cell = nullptr);
 
 	// Gives every item in a stack that arrived several at once a
 	// condition of its own. Roll gave the whole stack one condition between

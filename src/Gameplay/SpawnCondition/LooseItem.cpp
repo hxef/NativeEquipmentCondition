@@ -28,10 +28,12 @@ namespace SpawnCondition
 	// when the copy still needs its mods or its form asks for 1 at a time.
 	// The first copy rolls, and the world item takes the same roll, so every
 	// later copy, a rebuild of the screen and the item bought all read it.
-	// The trade that buys it puts the mark back, see NoteBought. A piece
-	// that gives nothing is sold new. Lock order: the barter copy's
-	// inventory, held by the caller, then the change record, then the world
-	// item's extra data.
+	// It rolls by its shop's area, the cell the world item lies in, as any
+	// item lying around does. The trade that buys it puts the mark back, see
+	// NoteBought. A piece that gives nothing is sold new. Lock order: the
+	// barter copy's inventory, held by the caller, then the change record,
+	// then the world item's extra data. The area only tries the cell's lock
+	// and never waits, see Provenance/Area.cpp.
 	bool LooseItem(RE::BGSInventoryList* a_list, RE::TESBoundObject* a_object, RE::BGSInventoryItem::Stack* a_stack)
 	{
 		if (!a_object || !a_stack || !a_stack->extra || !Gear(*a_object)) {
@@ -74,13 +76,16 @@ namespace SpawnCondition
 				name, id, count, Condition::MAX_HEALTH);
 			return true;
 		}
-		Roll(a_list, a_object, a_stack);
+		const auto* cell = world->GetParentCell();
+		Roll(a_list, a_object, a_stack, cell);
 		const auto rolled = copy.GetHealthPerc();
 		if (rolled >= 0.0F && !Condition::IsUnrolled(rolled)) {
 			worldExtra->SetHealthPerc(rolled);
 		}
-		Report(true, "a trader's loose item", "{:<30s} [{:08X}] x{:<3d} starts at {:.4f}, a trader's loose item, and so does the one in the world",
-			name, id, count, rolled);
+		// The cell goes at the end, so the line still starts as before.
+		const auto lying = cell ? std::format(", lying in {:s} [{:08X}]", NameOf(*cell, "unnamed cell"), cell->formID) : std::string{};
+		Report(true, "a trader's loose item", "{:<30s} [{:08X}] x{:<3d} starts at {:.4f}, a trader's loose item, and so does the one in the world{:s}",
+			name, id, count, rolled, lying);
 		return true;
 	}
 }

@@ -89,8 +89,9 @@ LOOT WITH A HISTORY
 * The condition is a roll, weighted by where the item came from and who
   carried it. A raider's pipe gun has seen better days, while a well equipped
   faction like the Brotherhood or the Gunners keeps its gear in better shape.
-  Gear lying around lands at around 45 to 70%, while most quest rewards arrive
-  new, and so does everything companions and other essential NPCs start with.
+  Gear lying around lands at around 35 to 80%, depending on how well stocked
+  its area is, while most quest rewards arrive new, and so does everything
+  companions and other essential NPCs start with.
 * Legendary gear you find in chests or buy from traders arrives new.
   Legendaries dropped by enemies still turn up worn.
 * About 1 item in 100 ignores all that: a raider can drop a pristine rifle,

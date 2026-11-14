@@ -31,13 +31,14 @@
 //
 // Only the outermost list is recorded, so a gun from a list everybody shares
 // counts as nothing in particular. Nothing is recorded for a console additem, a
-// quest reward, a vendor restock or a gun on a table, and there the owner is
-// the only half. Values are read from records, not copies, so mods are not
-// counted. A half that cannot be measured counts as the middle.
+// quest reward or a vendor restock, and there the owner is the only half. A gun
+// on a table has no list either, so the place it lies in stands in, see
+// Area.h. Values are read from records, not copies, so mods are not counted. A
+// half that cannot be measured counts as the middle.
 //
-// Supply.cpp is the supply half, Care.cpp the care half, Rank.h where a
-// measurement ranks against the rest, and Supply.h and Care.h what each half
-// shares with Provenance.cpp.
+// Supply.cpp is the supply half, Care.cpp the care half, Area.cpp where a
+// place sits, Rank.h where a measurement ranks against the rest, and Supply.h,
+// Care.h and Area.h what each shares with Provenance.cpp.
 namespace Provenance
 {
 	// Reads every leveled list and outfit in the load order and ranks each
@@ -69,7 +70,8 @@ namespace Provenance
 		float care{ UNMEASURED };
 
 		// Where the 2 halves were read from, for the trace log. Empty when the
-		// half beside it is UNMEASURED. The list is an ID and not a form, since
+		// half beside it is UNMEASURED. pipeline is the list's form ID, or the
+		// cell's when its area stood in. The list is an ID and not a form, since
 		// the ID is what the engine stamped and all the log prints, and looking
 		// the form up would take a locked table lookup on a loader thread for
 		// every spawn.
@@ -92,8 +94,9 @@ namespace Provenance
 	[[nodiscard]] float HighestCentre();
 
 	// Both halves for one stack on its way into one inventory, by its extra
-	// data list, a_kind saying which scale the supply half reads. Before Load
+	// data list, a_kind saying which scale the supply half reads. a_cell is
+	// the cell a world item lies in, nullptr for anything else. Before Load
 	// has run both come back UNMEASURED, and with a list whose owner is not a
 	// character the care half does.
-	[[nodiscard]] Origin Of(const RE::BGSInventoryList& a_list, const RE::ExtraDataList* a_extra, Condition::Kind a_kind);
+	[[nodiscard]] Origin Of(const RE::BGSInventoryList& a_list, const RE::ExtraDataList* a_extra, Condition::Kind a_kind, const RE::TESObjectCELL* a_cell = nullptr);
 }

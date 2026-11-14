@@ -16,8 +16,8 @@ namespace SpawnCondition
 	{
 		std::string text;
 
-		// The list by form ID, since a leveled list carries no name and the
-		// ID finds it in the editor.
+		// The list by form ID, or the cell's when its area stood in, since a
+		// leveled list carries no name and the ID finds it in the editor.
 		if (a_origin.supply == Provenance::UNMEASURED) {
 			text = "supply unknown";
 		} else {

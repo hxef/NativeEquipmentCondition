@@ -133,6 +133,7 @@ src/
       Provenance.h/.cpp      where an item came from and who carries it
       Supply.h/.cpp          walking the leveled lists, where each one sits
       Care.h/.cpp            what a character is issued, where they sit
+      Area.h/.cpp            where a place sits, from what its containers and characters start with
       Rank.h                 where a measurement sits against the rest
 
   Gameplay/

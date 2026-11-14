@@ -13,14 +13,18 @@
 namespace SpawnCondition
 {
 	// What a handover in progress on this thread moves: the item, who gets it,
-	// the container it leaves and whether it comes straight from the world.
-	// Lives only for that one call to TESObjectREFR::AddInventoryItem.
+	// the container it leaves and whether it comes straight from the world,
+	// and from which cell. Lives only for that one call to
+	// TESObjectREFR::AddInventoryItem.
 	struct Handing
 	{
 		const RE::TESBoundObject* object{ nullptr };
 		const RE::TESObjectREFR*  receiver{ nullptr };
 		const RE::TESObjectREFR*  source{ nullptr };
 		bool                      fromWorld{ false };
+		// The cell a world item lay in before the engine moved it, read
+		// before the original call.
+		const RE::TESObjectCELL*  cell{ nullptr };
 	};
 
 	// The handover moving a_object into a_list, or nothing. AddInventoryItem

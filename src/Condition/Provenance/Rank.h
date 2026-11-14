@@ -65,4 +65,18 @@ namespace Provenance
 		}
 		return positions;
 	}
+
+	// Where 1 measurement sits on a sorted ladder of measurements, the answer
+	// PositionsOf gives, for something the measure never saw.
+	inline float PositionOn(const std::vector<float>& a_ladder, float a_measure)
+	{
+		if (a_ladder.size() < 2) {
+			return UNKNOWN_HALF;
+		}
+
+		const auto first = std::lower_bound(a_ladder.begin(), a_ladder.end(), a_measure) - a_ladder.begin();
+		const auto after = std::upper_bound(a_ladder.begin(), a_ladder.end(), a_measure) - a_ladder.begin();
+		const auto middle = (static_cast<float>(first) + static_cast<float>(after - 1)) * 0.5F;
+		return std::clamp(middle / static_cast<float>(a_ladder.size() - 1), 0.0F, 1.0F);
+	}
 }

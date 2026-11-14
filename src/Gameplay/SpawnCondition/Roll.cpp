@@ -44,7 +44,7 @@ namespace SpawnCondition
 	}
 
 	std::optional<Aim> Roll(RE::BGSInventoryList* a_list, RE::TESBoundObject* a_object, RE::ExtraDataList* a_extra, std::uint32_t a_count,
-		bool a_private, bool a_looked)
+		bool a_private, bool a_looked, const RE::TESObjectCELL* a_cell)
 	{
 		if (!a_object) {
 			return std::nullopt;
@@ -172,7 +172,7 @@ namespace SpawnCondition
 		// Where this item came from and who is about to hold it. An owner
 		// that is not a character, a footlocker for one, leaves the care
 		// half unmeasured.
-		const auto origin = a_list && !stock ? Provenance::Of(*a_list, a_extra, Condition::KindOf(*a_object)) :
+		const auto origin = a_list && !stock ? Provenance::Of(*a_list, a_extra, Condition::KindOf(*a_object), a_cell) :
 		                                       Provenance::Origin{};
 
 		const Aim  aim{ origin.Centre(), stock };
@@ -200,9 +200,10 @@ namespace SpawnCondition
 		return aim;
 	}
 
-	std::optional<Aim> Roll(RE::BGSInventoryList* a_list, RE::TESBoundObject* a_object, RE::BGSInventoryItem::Stack* a_stack)
+	std::optional<Aim> Roll(RE::BGSInventoryList* a_list, RE::TESBoundObject* a_object, RE::BGSInventoryItem::Stack* a_stack,
+		const RE::TESObjectCELL* a_cell)
 	{
-		return a_stack ? Roll(a_list, a_object, a_stack->extra.get(), a_stack->count, Private(*a_stack)) : std::nullopt;
+		return a_stack ? Roll(a_list, a_object, a_stack->extra.get(), a_stack->count, Private(*a_stack), false, a_cell) : std::nullopt;
 	}
 
 	// -------------------------------------------------------------------

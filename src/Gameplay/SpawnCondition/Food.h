@@ -13,9 +13,10 @@ namespace SpawnCondition
 {
 	// Rolls a_object's starting freshness in the band its gear rolls in in
 	// a_list, and says where, a_how. a_listed gives the roll a food line of
-	// its own in the trace.
+	// its own in the trace. a_cell is the cell found food lies in, whose
+	// area stands in when no list ranked for weapons handed it out.
 	float RollIn(const RE::BGSInventoryList& a_list, const RE::TESBoundObject& a_object, const RE::ExtraDataList* a_extra,
-		std::uint32_t a_count, std::string_view a_how, bool a_listed);
+		std::uint32_t a_count, std::string_view a_how, bool a_listed, const RE::TESObjectCELL* a_cell = nullptr);
 
 	// For a_count of a_object born into a_list holding a_extra, in a
 	// container's fill when a_fill: rolls the food's starting freshness, or

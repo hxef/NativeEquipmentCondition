@@ -1,11 +1,13 @@
 #include "Condition/Provenance/Provenance.h"
 
+#include "Condition/Provenance/Area.h"
 #include "Condition/Provenance/Care.h"
 #include "Condition/Provenance/Rank.h"
 #include "Condition/Provenance/Supply.h"
 #include "Core/Snapshot.h"
 
 #include <cmath>
+#include <cstddef>
 #include <format>
 #include <memory>
 #include <string>
@@ -30,23 +32,26 @@ namespace Provenance
 		constexpr float CARE_FLOOR = 0.55F;
 		constexpr float CARE_CEILING = 1.00F;
 
-		// Both halves of 1 measure. The spawn hook is live from the moment the
-		// plugin loads and several threads build inventories at once, so every
-		// reader takes the ranking whole, see Core/Snapshot.h, and with none
-		// rolls the item at the plain middle.
+		// Both halves of 1 measure, and the areas measured from the supply
+		// half. The spawn hook is live from the moment the plugin loads and
+		// several threads build inventories at once, so every reader takes the
+		// ranking whole, see Core/Snapshot.h, and with none rolls the item at
+		// the plain middle.
 		struct Ranking
 		{
 			Supply supply;
 			Care   care;
+			Areas  areas;
 		};
 		Snapshot<Ranking> g_ranking;
 
-		// The care half reads back the armor the supply half measured for each
-		// leveled list, so the supply half goes first.
-		std::shared_ptr<Ranking> Measure(const Ranking* a_last, SupplyCount& a_supply, CareCount& a_care)
+		// The care half and the areas read back what the supply half measured
+		// for each leveled list, so the supply half goes first.
+		std::shared_ptr<Ranking> Measure(const Ranking* a_last, SupplyCount& a_supply, CareCount& a_care, std::size_t& a_areas)
 		{
 			auto ranking = std::make_shared<Ranking>();
 			a_supply = MeasureSupply(ranking->supply);
+			a_areas = MeasureAreas(ranking->supply, ranking->areas);
 			a_care = MeasureCare(ranking->supply, a_last ? &a_last->care : nullptr, ranking->care);
 			return ranking;
 		}
@@ -88,10 +93,12 @@ namespace Provenance
 
 		SupplyCount supply{};
 		CareCount   care{};
-		g_ranking.Publish(Measure(nullptr, supply, care));
+		std::size_t areas = 0;
+		g_ranking.Publish(Measure(nullptr, supply, care, areas));
 
 		REX::INFO("Ranked {:d} leveled lists that hand out weapons, {:d} that hand out armor, and what {:d} characters are issued. Of those, {:d} are issued armor and ranked against each other, {:d} are issued none, and {:d} spawn in power armor.",
 			supply.ranked, supply.armorRanked, care.ranked, care.kits, care.issuedNothing, care.armored);
+		REX::INFO("Ranked {:d} containers and characters by the weapons they start with. Loot lying around rolls by where its area falls among them.", areas);
 
 		// Loud on purpose. A leveled list in this load order points round in a
 		// circle or nests absurdly deep, and whatever draws from it has lost
@@ -103,7 +110,7 @@ namespace Provenance
 		}
 	}
 
-	Origin Of(const RE::BGSInventoryList& a_list, const RE::ExtraDataList* a_extra, Condition::Kind a_kind)
+	Origin Of(const RE::BGSInventoryList& a_list, const RE::ExtraDataList* a_extra, Condition::Kind a_kind, const RE::TESObjectCELL* a_cell)
 	{
 		Origin origin;
 
@@ -122,6 +129,15 @@ namespace Provenance
 					origin.supply = *supply;
 					origin.pipeline = came->levItem;
 				}
+			}
+		}
+
+		// A ranked stamped list always wins, and the area stands in only when
+		// no list ranked for this kind handed the item out.
+		if (origin.supply == UNMEASURED && a_cell) {
+			if (const auto area = AreaOf(ranking->supply, ranking->areas, *a_cell)) {
+				origin.supply = *area;
+				origin.pipeline = a_cell->formID;
 			}
 		}
 
@@ -151,7 +167,8 @@ namespace Provenance
 		}
 		SupplyCount supply{};
 		CareCount   care{};
-		auto        now = Measure(was.get(), supply, care);
+		std::size_t areas = 0;
+		auto        now = Measure(was.get(), supply, care, areas);
 
 		// What went into the ranks and not the ranks, since 1 list or
 		// character that moves shifts the place of every one ranked between.

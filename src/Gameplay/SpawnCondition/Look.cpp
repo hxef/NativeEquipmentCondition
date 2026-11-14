@@ -23,7 +23,8 @@ namespace SpawnCondition
 	}
 
 	// The player's own list stands in for the holder, so the roll is the one
-	// a pickup would give. The change is recorded first, as LooseItem does,
+	// a pickup would give, and the place it lies in stands in when no ranked
+	// list handed it out. The change is recorded first, as LooseItem does,
 	// so the roll written to the world item is saved. A reference's count is
 	// not read, so its trace line says x1 and several copies share 1 roll.
 	bool RollOnLook(RE::TESObjectREFR& a_ref)
@@ -47,7 +48,7 @@ namespace SpawnCondition
 			OpenBlock(nullptr);
 			Report(true, "first look", "{:<30s} [{:08X}] first look at it in the world, rolled for the player", NameOf(*base, "unnamed item"),
 				base->formID);
-			Roll(list, base, extra, 1, true, true);
+			Roll(list, base, extra, 1, true, true, a_ref.GetParentCell());
 			return true;
 		}
 
@@ -55,7 +56,7 @@ namespace SpawnCondition
 		if (!FoodSpoil::Spoils(*base) || !FoodSpoil::Unrolled(*extra) || !a_ref.AddChange(RE::CHANGE_TYPES::kObjectExtraItemData)) {
 			return false;
 		}
-		FoodSpoil::SetStart(*extra, RollIn(*list, *base, extra, 1, "the player looked at it in the world", true));
+		FoodSpoil::SetStart(*extra, RollIn(*list, *base, extra, 1, "the player looked at it in the world", true, a_ref.GetParentCell()));
 		return true;
 	}
 }

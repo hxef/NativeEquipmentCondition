@@ -72,21 +72,6 @@ namespace Provenance
 			return armor;
 		}
 
-		// Where 1 armor total ranks among the characters the last measure
-		// ranked, the same answer PositionsOf gives, for someone it never saw.
-		float PositionIn(const Care& a_care, float a_armor)
-		{
-			const auto& ladder = a_care.ladder;
-			if (ladder.size() < 2) {
-				return UNKNOWN_HALF;
-			}
-
-			const auto first = std::lower_bound(ladder.begin(), ladder.end(), a_armor) - ladder.begin();
-			const auto after = std::upper_bound(ladder.begin(), ladder.end(), a_armor) - ladder.begin();
-			const auto middle = (static_cast<float>(first) + static_cast<float>(after - 1)) * 0.5F;
-			return std::clamp(middle / static_cast<float>(ladder.size() - 1), 0.0F, 1.0F);
-		}
-
 		// The outfit a character is measured by: the record's own, or for a
 		// character whose outfit a script changed in this game, as
 		// Actor.SetOutfit and the console's setoutfit do, the one the measure
@@ -183,7 +168,7 @@ namespace Provenance
 		} else if (InPowerArmor(a_npc)) {
 			care = 1.0F;
 		} else if (const auto armor = ArmorIssued(a_supply, a_npc, a_npc.defOutfit)) {
-			care = *armor > 0.0F ? PositionIn(a_care, OnARung(*armor)) : 0.0F;
+			care = *armor > 0.0F ? PositionOn(a_care.ladder, OnARung(*armor)) : 0.0F;
 		}
 
 		// A unique or protected character gets a boost, since someone the game

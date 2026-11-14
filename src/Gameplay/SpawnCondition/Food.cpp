@@ -79,11 +79,11 @@ namespace SpawnCondition
 	// -------------------------------------------------------------------
 
 	float RollIn(const RE::BGSInventoryList& a_list, const RE::TESBoundObject& a_object, const RE::ExtraDataList* a_extra,
-		std::uint32_t a_count, std::string_view a_how, bool a_listed)
+		std::uint32_t a_count, std::string_view a_how, bool a_listed, const RE::TESObjectCELL* a_cell)
 	{
 		// Food has no scale of its own, so its list counts by its weapons,
 		// which only a list mixing food and weapons has.
-		const auto origin = Provenance::Of(a_list, a_extra, Condition::Kind::kWeapon);
+		const auto origin = Provenance::Of(a_list, a_extra, Condition::Kind::kWeapon, a_cell);
 		const Aim  aim{ origin.Centre(), std::nullopt };
 		const auto rolled = RollHealth(aim);
 		if (TraceLog::IsOpen()) {
@@ -153,7 +153,7 @@ namespace SpawnCondition
 		}
 		if (FoodSpoil::Unrolled(*extra)) {
 			const auto* how = handing->fromWorld ? "its first holder took it from the world" : "its first holder took it from a container";
-			FoodSpoil::SetStart(*extra, RollIn(*a_list, *a_object, extra, a_stack->count, how, Listed(a_list)));
+			FoodSpoil::SetStart(*extra, RollIn(*a_list, *a_object, extra, a_stack->count, how, Listed(a_list), handing->cell));
 		}
 	}
 

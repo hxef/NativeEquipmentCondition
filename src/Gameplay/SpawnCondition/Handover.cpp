@@ -146,7 +146,7 @@ namespace SpawnCondition
 			const auto*    handed = a_extra.get();
 			const auto*    source = fromWorld ? nullptr : a_oldContainer;
 			{
-				const Handing handing{ a_object, a_receiver, source, fromWorld };
+				const Handing handing{ a_object, a_receiver, source, fromWorld, fromWorld && a_worldRef ? a_worldRef->GetParentCell() : nullptr };
 				const Scoped  mark{ t_handing, marks ? &handing : t_handing };
 				const Scoped  from{ t_source, source && g_handoverLinks[I].Live() ? &handing : t_source };
 				g_handoverLinks[I](a_receiver, a_object, std::move(a_extra), a_count, a_oldContainer, a_filter, a_worldRef);
@@ -254,7 +254,7 @@ namespace SpawnCondition
 		const auto unrolled = Condition::IsUnrolled(before);
 		if (unrolled && a_handing.fromWorld) {
 			Report(listed, "first owner of a world item", "{:<30s} [{:08X}] x{:<3d} first owner of a world item", name, id, count);
-			return Roll(a_list, a_object, a_stack);
+			return Roll(a_list, a_object, a_stack, a_handing.cell);
 		}
 
 		// Old loot, or a marked item that left the world while Worn loot was

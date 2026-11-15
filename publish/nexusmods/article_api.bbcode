@@ -164,7 +164,7 @@ The first percent from which a workbench repair takes only its supplies and no c
 [*][font=Courier New]int Function GetModdingFrom()[/font]
 The first percent from which the workbench lets you modify an item. 100 means only at full condition.
 [*][font=Courier New]int Function GetRepairDiscount(Form akBase)[/font]
-How many percent the player's crafting perk rank takes off a workbench repair of akBase, 0 to 50, 0 for gear NEC gives no condition. A base form is priced as the plain item, and a reference as that very copy with its mods.
+How many percent the player's crafting perk rank takes off a workbench repair of akBase, 0 to GetSettingInt("iPerkComponentDiscount:Balance"), 50 by default, 0 for gear NEC gives no condition. A base form is priced as the plain item, and a reference as that very copy with its mods.
 [*][font=Courier New]int Function GetItemRepairDiscount(ObjectReference akItem)[/font]
 The same for 1 copy wherever it is, in the world or in an inventory, its mods included. Takes a handle from GetItems.
 [*][code]Struct Cost
@@ -177,7 +177,7 @@ The components the bench would take from the player to bring akItem to aiToPerce
 [*][font=Courier New]Cost[] Function GetScrapYield(ObjectReference akItem)[/font]
 The components akItem scraps into at the bench at its condition, with the player's perks, None for an item NEC gives no condition.
 [*][font=Courier New]int Function GetSpareGain(ObjectReference akItem, ObjectReference akSpare)[/font]
-The condition points the player's spare akSpare restores to the player's akItem, -1 when it is no spare for it.
+The condition points the player's spare akSpare restores to the player's akItem, -1 when it is no spare for it, or while GetSettingBool("bLockSpares:Features") is true and the repair lock holds akItem back.
 [*][font=Courier New]int Function GetTraderRepairLevel(Actor akTrader, Form akBase)[/font]
 How far akTrader repairs akBase's kind of gear, a percent, 0 for gear NEC gives no condition or a trader who repairs nothing.
 [*][font=Courier New]int Function GetTraderRepairPrice(Actor akTrader, ObjectReference akItem, int aiToPercent)[/font]

@@ -16,13 +16,13 @@
 // Armorer, see CraftingPerks.h. By its mods it asks the highest rank the
 // recipes of its parts name, so a 10mm Pistol on standard parts asks none and
 // one with a Suppressor asks Gun Nut 2. Every item asks the perk's last rank.
-// Each rank the player lacks raises the condition a repair can start from: 1
-// rank short from iLock1RankShort, 25 by default, 2 short from
-// iLock2RanksShort, 50, and 3 or more from iLock3RanksShort, 100, where no
-// such repair is left. A press below that is turned away, all levels or none,
-// since a vanilla box greys no single row. A spare, a trader and MEND repair
-// whatever the lock says. Nothing is saved, so the lock reads its settings at
-// every press.
+// Each rank the player lacks of what the item asks raises the condition a
+// repair can start from by an equal share of iPerkLock, 100 by default, so on
+// a perk of 4 ranks 1 short starts from 25 and 3 short from 75, and a mod's
+// perk of 10 ranks takes 10 a rank. A press below that is turned away, all
+// levels or none, since a vanilla box greys no single row. A trader and MEND
+// repair whatever the lock says, and a spare too unless bLockSpares holds it
+// back. Nothing is saved, so the lock reads its settings at every press.
 namespace Workbench
 {
 	// What iRepairLock asks of every item, see Settings.h.
@@ -46,7 +46,8 @@ namespace Workbench
 	[[nodiscard]] std::uint32_t LockAsks(const Priced& a_priced, LockMode a_mode);
 
 	// Why the lock turns a repair away, for the trace and the bench's words.
-	struct Held
+	// Not named Held, since Spares.h's function Held would hide it.
+	struct LockHold
 	{
 		// The condition the item needs at its rank short.
 		std::uint32_t from{ 0 };
@@ -64,7 +65,7 @@ namespace Workbench
 	// for nothing, for one that takes only its supplies, see Supplies.h, for
 	// an item no perk prices, and for a player with the rank or the
 	// condition.
-	[[nodiscard]] std::optional<Held> HeldBack(const Selection& a_selection, const Priced& a_priced);
+	[[nodiscard]] std::optional<LockHold> HeldBack(const Selection& a_selection, const Priced& a_priced);
 
 	// Writes the lock's line in NEC.log, as the settings stand at the start.
 	void SayLock();

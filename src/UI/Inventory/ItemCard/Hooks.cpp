@@ -2,6 +2,7 @@
 
 #include "Condition/Condition.h"
 #include "Core/CallPatch/CallPatch.h"
+#include "Core/Settings.h"
 #include "Core/TraceLog/TraceLog.h"
 #include "UI/Inventory/Pipboy.h"
 
@@ -11,6 +12,7 @@
 #include <format>
 #include <optional>
 #include <string_view>
+#include <utility>
 
 namespace ItemCard
 {
@@ -35,6 +37,11 @@ namespace ItemCard
 		// workbench and inspect, see ExamineMenu::UpdateItemCard.
 		constexpr std::size_t EXAMINE_SITE = 1;
 		static_assert(std::string_view{ HELPER_SITES[EXAMINE_SITE].what } == "examine card"sv);
+
+		// What a mark beside CND means at the workbench. true is vanilla's meaning,
+		// as on Weight: 1 to 3 + when the mod makes the item wear slower, - when
+		// faster. false turns the marks round: + when it wears faster.
+		constexpr bool MARKS_SAY_BETTER = true;
 
 		// The calls to PipboyInventoryData::PopulateItemCardInfo, the same job
 		// for the Pip-Boy. The first, in InitializeItem, is a tail call whose
@@ -124,31 +131,49 @@ namespace ItemCard
 				return;
 			}
 
+			// At a workbench a_item is the bench's own copy, with the mod the
+			// player highlights. The 1 item it is compared with is the item
+			// itself while a mod is tried on, else the copy again. So an entry
+			// that is not the copy but has its base form gives the rate
+			// without the mod, own.
+			const auto           rate = WearRateOf(a_item, stack);
+			std::optional<float> own;
+			if constexpr (I == EXAMINE_SITE) {
+				const auto* compared = a_compareItems.size() == 1 ? a_compareItems[0].first : nullptr;
+				if (rate && compared && compared != &a_item && compared->object == a_item.object) {
+					own = WearRateOf(*compared, compared->GetStackByID(a_compareItems[0].second));
+				}
+			}
+			// The rate is drawn only while its switch is on, see Raise.cpp, so
+			// with it off no change is fed.
+			const auto change = rate && own && Settings::bCardWearRate.GetValue() ? WearRateChange(*own, *rate) : 0.0F;
+
 			// The engine's own entry builder, so the row carries every field
 			// the card reads. showAsPercent prints 91 as 91%.
 			Value entry;
-			RE::InventoryUserUIUtils::AddItemCardInfoEntry(entries, entry, CND_TEXT, Value(*percent));
+			if (change != 0.0F) {
+				// As vanilla adds Weight: the change is the item's own printed
+				// rate less the copy's, so less wear counts as better, and
+				// vanilla rates the 2 rates by its own steps into 1 to 3 marks
+				// right of the row.
+				const auto [total, compare] = MARKS_SAY_BETTER ? std::pair{ *own, *rate } : std::pair{ *rate, *own };
+				RE::InventoryUserUIUtils::AddItemCardInfoEntry(entries, entry, CND_TEXT, Value(*percent), change, total, compare);
+				// As vanilla's Weight: a change of 0.1 draws a mark, not only 1.
+				entry.SetMember("precision"sv, Value(std::uint32_t{ 1 }));
+			} else {
+				RE::InventoryUserUIUtils::AddItemCardInfoEntry(entries, entry, CND_TEXT, Value(*percent));
+			}
 			entry.SetMember("showAsPercent"sv, Value(true));
 			if (InFridge(a_item, stack)) {
 				entry.SetMember(FRIDGE_MARK, Value(true));
 			}
-			if (const auto rate = WearRateOf(a_item, stack)) {
+			if (rate) {
 				entry.SetMember(WEAR_RATE_MARK, Value(static_cast<double>(*rate)));
-
-				// At a workbench a_item is the bench's own copy, with the mod
-				// the player highlights. The 1 item it is compared with is the
-				// item itself while a mod is tried on, else the copy again. So
-				// an entry that is not the copy but has its base form gives the
-				// rate without the mod, which signs the change, see
-				// WriteWearRate.
-				if constexpr (I == EXAMINE_SITE) {
-					const auto* compared = a_compareItems.size() == 1 ? a_compareItems[0].first : nullptr;
-					if (compared && compared != &a_item && compared->object == a_item.object) {
-						if (const auto own = WearRateOf(*compared, compared->GetStackByID(a_compareItems[0].second))) {
-							entry.SetMember(WEAR_RATE_COMPARED_MARK, Value(static_cast<double>(*own)));
-						}
-					}
-				}
+			}
+			// The rate without the mod, which signs the change in the cell
+			// beside the number, see WriteWearRate.
+			if (own) {
+				entry.SetMember(WEAR_RATE_COMPARED_MARK, Value(static_cast<double>(*own)));
 			}
 			MoveLastToFront(entries);
 		}

@@ -9,7 +9,9 @@
 #include "UI/Inventory/ItemCard/WearRateForms.h"
 #include "UI/Roles/Card.h"
 
+#include <algorithm>
 #include <cctype>
+#include <charconv>
 #include <cmath>
 #include <format>
 #include <mutex>
@@ -66,6 +68,16 @@ namespace ItemCard
 			return a_rate < 9.95F ? WearRateText(a_rate) : std::format("(x{:.0f})", a_rate);
 		}
 
+		// The number a_text holds, as WearRateText prints it: (x1.2) gives 1.2,
+		// (x0.01) 0.01 and (x0) 0.
+		float PrintedRate(const std::string& a_text)
+		{
+			const auto number = std::string_view{ a_text }.substr(2, a_text.size() - 3);  // (x1.2) to 1.2
+			float      rate = 0.0F;
+			std::from_chars(number.data(), number.data() + number.size(), rate);
+			return rate;
+		}
+
 		// The sign after a rate printed as a_text: + when the item would wear
 		// faster than the item compared, printed as a_comparedText, - when
 		// slower, and nothing when both print the same.
@@ -77,25 +89,14 @@ namespace ItemCard
 			return a_rate > a_compared ? "+"sv : "-"sv;
 		}
 
-		// The texts the number's field may show after the percent for a_rate,
-		// best first: with the sign, then without, so a field too narrow for
-		// the sign still shows the rate.
-		std::vector<std::string> FieldTries(float a_rate, std::optional<float> a_compared)
-		{
-			auto       text = WearRateText(a_rate);
-			const auto sign = a_compared ? Sign(text, WearRateText(*a_compared), a_rate, *a_compared) : ""sv;
-			if (sign.empty()) {
-				return { text };
-			}
-			return { std::format("{:s} {:s}", text, sign), text };
-		}
-
-		// The same for the cell beside the number, which also tries each text
-		// without its brackets, x1.3 + and x262. One replacer's cell holds a
-		// text 46 wide, too little for (x1.3) + at size 18 and for (x262) at
-		// the Pip-Boy's 21. So the brackets go before the sign does, and only
-		// where the text has no room with them. A rate of 1000 or more still
-		// has no room at 21.
+		// The texts the cell beside the number may show for a_rate, best
+		// first, each also without its brackets, x1.3 + and x262. One
+		// replacer's cell holds a text 46 wide, too little for (x1.3) + at
+		// size 18 and for (x262) at the Pip-Boy's 21. So the brackets go
+		// before the sign does, and only where the text has no room with
+		// them. A rate of 1000 or more still has no room at 21. a_compared
+		// signs the rate, so it is given only while a mod changes the
+		// printed rate.
 		std::vector<std::string> CellTries(float a_rate, std::optional<float> a_compared)
 		{
 			auto       text = CellWearRateText(a_rate);
@@ -117,6 +118,34 @@ namespace ItemCard
 			return a_text.size() > 1 && a_text[0] == 'x' && (a_text[1] == '.' || std::isdigit(static_cast<unsigned char>(a_text[1])));
 		}
 
+		// a_text, a change the movie printed with its sign, (-0.1) or +0.2,
+		// with that sign set to a_sign, + or -: (-0.1) and + give (+0.1).
+		// Nothing for any other text, marks such as - - or a rate, and for a
+		// change that already shows a_sign, so a second render never turns
+		// it back. Spaces round the change stay where they are.
+		std::optional<std::string> TurnedChange(std::string_view a_text, char a_sign)
+		{
+			const auto shown = IniText::Trimmed(a_text);
+			const auto bracketed = shown.size() > 1 && shown.front() == '(' && shown.back() == ')';
+			const auto change = bracketed ? shown.substr(1, shown.size() - 2) : shown;
+			if (change.size() < 2 || (change[0] != '+' && change[0] != '-') || change[0] == a_sign) {
+				return std::nullopt;
+			}
+			// After the sign: digits, then at most a point and more digits.
+			const auto digits = [](std::string_view a_digits) {
+				return !a_digits.empty() && std::ranges::all_of(a_digits, [](char a_char) { return std::isdigit(static_cast<unsigned char>(a_char)) != 0; });
+			};
+			const auto number = change.substr(1);
+			const auto point = number.find('.');
+			const auto isNumber = point == std::string_view::npos ? digits(number) : (digits(number.substr(0, point)) && digits(number.substr(point + 1)));
+			if (!isNumber) {
+				return std::nullopt;
+			}
+			std::string turned{ a_text };
+			turned[static_cast<std::size_t>(change.data() - a_text.data())] = a_sign;
+			return turned;
+		}
+
 		// The movie's name for the trace, PipboyMenu for PipboyMenu.swf.
 		std::string_view MovieName(std::string_view a_file)
 		{
@@ -128,11 +157,11 @@ namespace ItemCard
 		// What the last write left
 		// -------------------------------------------------------------------
 
-		// A CND row as a render finds it, for the best try it should show.
+		// A CND row as a render finds it, for the rate it should show.
 		struct RowState
 		{
 			const Scaleform::GFx::Movie* movie = nullptr;  // only compared, never read
-			std::string                  best;             // the field's first try, the rate with its sign
+			std::string                  rate;             // the rate the field should show, (x1.3)
 			std::string                  number;           // the number field's text
 			std::string                  beside;           // the cell's text, trimmed
 			double                       room = 0.0;       // the cell's width, the room WriteInCell measures
@@ -142,9 +171,9 @@ namespace ItemCard
 			bool operator==(const RowState&) const = default;
 		};
 
-		RowState StateOf(const Scaleform::GFx::Movie& a_movie, const Value& a_field, const Value& a_cell, const std::string& a_best)
+		RowState StateOf(const Scaleform::GFx::Movie& a_movie, const Value& a_field, const Value& a_cell, const std::string& a_rate)
 		{
-			return { &a_movie, a_best, Flash::String(a_field, "text"sv),
+			return { &a_movie, a_rate, Flash::String(a_field, "text"sv),
 				a_cell.IsDisplayObject() ? std::string{ IniText::Trimmed(Flash::String(a_cell, "text"sv)) } : std::string{},
 				Flash::Number(a_cell, "width"sv), Flash::Number(a_field, "x"sv), Flash::Number(a_field, "width"sv) };
 		}
@@ -186,14 +215,30 @@ namespace ItemCard
 		return rate && std::isfinite(*rate) ? rate : std::nullopt;
 	}
 
+	// DEF_UI and FallUI cut a change after 1 decimal, so -0.1 goes as -0.105,
+	// which they print as -0.1 however the float rounds it. 2 printed rates
+	// 0.1 apart can differ by a hair less in a float, 0.09999, which would
+	// print as 0.0 and draw no vanilla mark. A change under 0.1 (rates under
+	// x0.05) draws no vanilla mark at precision 1, so it is not fed.
+	// 1.0628 and 1.1532 give -0.105, 1.0628 and 0.8622 give 0.205, and 5.6793
+	// and 5.7007 (both x5.7) give 0.
+	float WearRateChange(float a_own, float a_rate)
+	{
+		const auto change = PrintedRate(WearRateText(a_own)) - PrintedRate(WearRateText(a_rate));
+		if (std::abs(change) < 0.095F) {
+			return 0.0F;
+		}
+		return change + std::copysign(0.005F, change);
+	}
+
 	// -------------------------------------------------------------------
 	// Writing it
 	// -------------------------------------------------------------------
 
-	// A render after a write finds the best try it wrote, the rate with its
-	// sign, and leaves it. A later try, a shorter form of the rate or no rate
-	// at all, is left only while the row reads as the last write left it for
-	// the same best try: the same card, the same number, the same cell text
+	// A render after a write finds the rate it wrote in the field and leaves
+	// it. The rate in the cell, or no rate at all, is left only while the row
+	// reads as the last write left it for the same rate: the same card, the
+	// same number, the same cell text
 	// and width, and the field at the same place and width. So a row with
 	// no room is measured again when its number, its cell or its box
 	// changes, or its movie loads again. A change elsewhere on the row alone,
@@ -213,14 +258,36 @@ namespace ItemCard
 			return;
 		}
 
-		const auto  tries = FieldTries(*a_rate, a_compared);
+		const auto  rate = WearRateText(*a_rate);
 		std::string printed{ shown.GetString() };
 		const auto  at = printed.find(WEAR_RATE_START);
-		if (at != std::string::npos && std::string_view{ printed }.substr(at + 1) == tries.front()) {
+
+		// While a mod changes the printed rate, the hook fed the CND entry
+		// this change, by the same test on the same 2 rates. A movie that
+		// prints it beside the number shows its sign as fed, - for a rate
+		// that rose, since it turns only Weight's. The rate's way is the other.
+		const auto change = a_compared ? WearRateChange(*a_compared, *a_rate) : 0.0F;
+		const auto changed = change != 0.0F;
+		const auto rateWay = change < 0.0F ? '+' : '-';
+		const auto movie = MovieName(a_movieFile);
+		// Signs a change the movie printed in a_cell the rate's way. It runs
+		// at every render while the rate stays in the field too, since the
+		// movie may print its change again with the sign as fed.
+		const auto turnChange = [&](Value& a_cell) {
+			if (const auto turned = TurnedChange(Flash::String(a_cell, "text"sv), rateWay); turned && WriteKeepingLook(a_cell, *turned)) {
+				TraceLog::First("menu", "{:s} CND row's change beside the number reads \"{:s}\"", movie, IniText::Trimmed(*turned));
+			}
+		};
+
+		if (at != std::string::npos && std::string_view{ printed }.substr(at + 1) == rate) {
+			if (changed) {
+				auto cell = Roles::Card::CellBeside(a_row);
+				turnChange(cell);
+			}
 			return;
 		}
 		auto cell = Roles::Card::CellBeside(a_row);
-		const auto now = StateOf(a_movie, field, cell, tries.front());
+		const auto now = StateOf(a_movie, field, cell, rate);
 		{
 			const std::scoped_lock lock{ g_lastLock };
 			if (now == g_last) {
@@ -229,69 +296,63 @@ namespace ItemCard
 		}
 		const auto remember = [&] {
 			const std::scoped_lock lock{ g_lastLock };
-			g_last = StateOf(a_movie, field, cell, tries.front());
+			g_last = StateOf(a_movie, field, cell, rate);
 		};
 
-		// The field's old rate, and its sign with it, is cut off before the
-		// new one goes in.
+		// The field's old rate is cut off before the new one goes in.
 		if (at != std::string::npos) {
 			printed.resize(at);
 			Flash::Set(field, "text"sv, Value(printed.c_str()));
 		}
 
 		// A cell beside that shows something of its own, a difference to the
-		// item compared, leaves no room for the rate. A cell of spaces shows
+		// item compared, leaves no room for the rate, but for the change the
+		// hook fed, which the rate may write over. A cell of spaces shows
 		// nothing and is left as it is, as on one replacer's workbench card.
 		const auto& beside = now.beside;
-		const auto cellTries = CellTries(*a_rate, a_compared);
+		const auto cellTries = CellTries(*a_rate, changed ? a_compared : std::nullopt);
 		if (beside == cellTries.front()) {
 			return;
 		}
-		const auto movie = MovieName(a_movieFile);
-		if (!beside.empty() && !IsWearRateText(beside)) {
-			TraceLog::First("menu", "{:s} CND row has no room for \"{:s}\" and reads \"{:s}\"", movie, tries.front(), printed);
+		if (!beside.empty() && !IsWearRateText(beside) && !changed) {
+			TraceLog::First("menu", "{:s} CND row has no room for \"{:s}\" and reads \"{:s}\"", movie, rate, printed);
 			return;
 		}
-
-		// Only the rate with its sign, which only a workbench shows, may be
-		// drawn smaller. The plain rate keeps its natural size.
-		for (std::size_t i = 0; i < tries.size(); i++) {
-			const auto text = printed + " " + tries[i];
-			if (const auto fit = WriteInField(a_movie, a_row, field, printed, text, i == 0 && tries.size() > 1)) {
-				if (!beside.empty()) {
-					Flash::Set(cell, "text"sv, Value(""));
-				}
-				// A shrunk text names its size, and a rate that shows without
-				// its sign names the sign's try.
-				if (fit->size < 1.0) {
-					TraceLog::First("menu", "{:s} CND row reads \"{:s}\" at {:.0f}% of its size, {:.0f} wider to the left", movie, text,
-						fit->size * 100.0, fit->wider);
-				} else if (i == 0) {
-					TraceLog::First("menu", "{:s} CND row reads \"{:s}\", {:.0f} wider to the left", movie, text, fit->wider);
-				} else {
-					TraceLog::First("menu", "{:s} CND row has no room for \"{:s}\" and reads \"{:s}\"", movie, tries.front(), text);
-				}
-				remember();
+		// Once the rate has its place, or none: a rate of an earlier write
+		// goes from the cell, and a change the movie printed there is signed
+		// the rate's way.
+		const auto tidyCell = [&] {
+			if (IsWearRateText(beside)) {
+				Flash::Set(cell, "text"sv, Value(""));
 				return;
 			}
+			if (changed) {
+				turnChange(cell);
+			}
+		};
+
+		if (const auto text = printed + " " + rate; const auto wider = WriteInField(a_movie, a_row, field, printed, text)) {
+			tidyCell();
+			TraceLog::First("menu", "{:s} CND row reads \"{:s}\", {:.0f} wider to the left", movie, text, *wider);
+			remember();
+			return;
 		}
 		if (cell.IsDisplayObject()) {
 			// Only the last try's reason is traced, the rate with no sign and
 			// no brackets, as it says why the row shows no rate at all.
+			const auto  keepColour = changed && !beside.empty();
 			std::string why;
-			for (const auto& rate : cellTries) {
-				if (WriteInCell(a_movie, field, cell, rate, why)) {
-					TraceLog::First("menu", "{:s} CND row reads \"{:s}\" with \"{:s}\" in the cell beside it", movie, printed, rate);
+			for (const auto& tried : cellTries) {
+				if (WriteInCell(a_movie, field, cell, tried, keepColour, why)) {
+					TraceLog::First("menu", "{:s} CND row reads \"{:s}\" with \"{:s}\" in the cell beside it", movie, printed, tried);
 					remember();
 					return;
 				}
 			}
 			TraceLog::First("menu", "{:s} CND row's cell beside the number {:s}", movie, why);
 		}
-		if (!beside.empty()) {
-			Flash::Set(cell, "text"sv, Value(""));
-		}
+		tidyCell();
 		remember();
-		TraceLog::First("menu", "{:s} CND row has no room for \"{:s}\" and reads \"{:s}\"", movie, tries.front(), printed);
+		TraceLog::First("menu", "{:s} CND row has no room for \"{:s}\" and reads \"{:s}\"", movie, rate, printed);
 	}
 }

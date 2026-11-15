@@ -296,11 +296,13 @@ namespace Workbench
 
 		// While the repair lock holds the item back, its line comes first,
 		// naming the rank the bench asks for. It is asked again each time the
-		// box opens, so it is gone once a spare lifts the item clear. The box
-		// of spares is open already, so only the trader is left to name.
+		// box opens, so it is gone once a spare lifts the item clear. The line
+		// names no trader, since the spares below restore the item right here.
+		// NAME_TRADER true adds the trader's sentence while traders repair.
+		constexpr bool NAME_TRADER = false;
 		std::string over;
 		if (const auto held = HeldBack(*item, a_priced)) {
-			over = Text::RepairLocked(pricing.Name(), held->need, item->percent, false, Settings::bVendorRepair.GetValue());
+			over = Text::RepairLocked(pricing.Name(), held->need, item->percent, false, NAME_TRADER && Settings::bVendorRepair.GetValue());
 		}
 		if (!over.empty() && !perks.empty()) {
 			over += '\n';

@@ -170,6 +170,11 @@ namespace Settings
 	// rank of its perk, 2 the rank its mods ask. Any other number reads as 2.
 	inline Live<std::int32_t> iRepairLock{ "Features", "iRepairLock", 2 };
 
+	// Whether the repair lock holds a spare repair back too, see
+	// Workbench/Lock.h. Off by default, so a spare repairs whatever the lock
+	// says.
+	inline Live<bool> bLockSpares{ "Features", "bLockSpares", false };
+
 	// The rows of the repair boxes at a workbench and at a trader in columns,
 	// see Repair/Columns/Columns.h. When off, each row is 1 centred line, as
 	// vanilla draws its boxes. No feature's row: it rides on Workbench repairs

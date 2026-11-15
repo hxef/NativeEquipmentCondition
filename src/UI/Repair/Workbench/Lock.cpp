@@ -5,31 +5,30 @@
 #include "UI/Repair/Workbench/Supplies.h"
 
 #include <algorithm>
-#include <array>
 
 namespace Workbench
 {
 	namespace
 	{
-		// The sliders by ranks short, 1, 2, and 3 or more. 4 ranks short or
-		// more read the 3rd, as 3 do.
-		constexpr std::array<Settings::Live<std::int32_t>*, 3> SHORT_SLIDERS{ &Settings::iLock1RankShort,
-			&Settings::iLock2RanksShort, &Settings::iLock3RanksShort };
-
-		// The condition a repair that takes components can start from with
-		// a_short ranks short: 0 at none, else the highest of the sliders up
-		// to a_short's, 3 at most, each kept between 0 and 100. So more ranks
-		// short never start lower than fewer, whatever the sliders say.
-		std::uint32_t LockFrom(std::uint32_t a_short)
+		// iPerkLock kept between 0 and 100: where a repair starts from with
+		// every rank of the perk short.
+		std::uint32_t PerkLock()
 		{
 			constexpr auto full = static_cast<std::int32_t>(Repair::FULL);
-			const auto     count = std::min<std::size_t>(a_short, SHORT_SLIDERS.size());
+			return static_cast<std::uint32_t>(std::clamp(Settings::iPerkLock.GetValue(), 0, full));
+		}
 
-			std::uint32_t from = 0;
-			for (std::size_t at = 0; at < count; at++) {
-				from = std::max(from, static_cast<std::uint32_t>(std::clamp(SHORT_SLIDERS[at]->GetValue(), 0, full)));
+		// The condition a repair that takes components can start from with
+		// a_short of a_ranks ranks short: an equal share of PerkLock for each,
+		// rounded half up to a whole percent as CraftingPerks::Discount rounds,
+		// 0 at none. So more ranks short never start lower than fewer.
+		std::uint32_t LockFrom(std::uint32_t a_short, std::uint32_t a_ranks)
+		{
+			const auto lacking = std::min(a_short, a_ranks);
+			if (lacking == 0) {
+				return 0;
 			}
-			return from;
+			return (PerkLock() * lacking * 2 + a_ranks) / (2 * a_ranks);
 		}
 	}
 
@@ -74,7 +73,7 @@ namespace Workbench
 		}
 	}
 
-	std::optional<Held> HeldBack(const Selection& a_selection, const Priced& a_priced)
+	std::optional<LockHold> HeldBack(const Selection& a_selection, const Priced& a_priced)
 	{
 		const auto& standing = a_priced.standing;
 		const auto  mode = LockNow();
@@ -89,10 +88,10 @@ namespace Workbench
 			return std::nullopt;
 		}
 
-		Held out;
+		LockHold out;
 		out.asked = asked;
 		out.lacking = asked - held;
-		out.from = LockFrom(out.lacking);
+		out.from = LockFrom(out.lacking, standing.ranks);
 		if (a_selection.percent >= out.from) {
 			return std::nullopt;
 		}
@@ -101,7 +100,7 @@ namespace Workbench
 		// always does, since it leaves nothing short.
 		out.need = asked;
 		for (auto rank = held + 1; rank < asked; rank++) {
-			if (LockFrom(asked - rank) <= a_selection.percent) {
+			if (LockFrom(asked - rank, standing.ranks) <= a_selection.percent) {
 				out.need = rank;
 				break;
 			}
@@ -120,8 +119,8 @@ namespace Workbench
 			REX::INFO("Workbench repairs need no crafting perk rank, since iRepairLock is 0.");
 			return;
 		}
-		REX::INFO("Workbench repairs that take components need {:s}: 1 rank short they start from {:d}%, 2 from {:d}%, 3 or more from {:d}%.",
+		REX::INFO("Workbench repairs that take components need {:s}. With every rank of the perk short a repair starts from {:d}%, and each rank short is an equal share of that.",
 			mode == LockMode::kEveryItem ? "the last rank of each item's crafting perk" : "the crafting perk rank each item's mods ask for",
-			LockFrom(1), LockFrom(2), LockFrom(3));
+			PerkLock());
 	}
 }

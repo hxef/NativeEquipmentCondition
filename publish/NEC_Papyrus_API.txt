@@ -286,8 +286,9 @@ int Function GetModdingFrom()
 
 int Function GetRepairDiscount(Form akBase)
     How many percent the player's crafting perk rank takes off a workbench repair of akBase, 0 to
-    50, 0 for gear NEC gives no condition. A base form is priced as the plain item, and a reference
-    as that very copy with its mods.
+    GetSettingInt("iPerkComponentDiscount:Balance"), 50 by default, 0 for gear NEC gives no
+    condition. A base form is priced as the plain item, and a reference as that very copy with its
+    mods.
 
 int Function GetItemRepairDiscount(ObjectReference akItem)
     The same for 1 copy wherever it is, in the world or in an inventory, its mods included. Takes a
@@ -310,7 +311,8 @@ Cost[] Function GetScrapYield(ObjectReference akItem)
 
 int Function GetSpareGain(ObjectReference akItem, ObjectReference akSpare)
     The condition points the player's spare akSpare restores to the player's akItem, -1 when it is
-    no spare for it.
+    no spare for it, or while GetSettingBool("bLockSpares:Features") is true and the repair lock
+    holds akItem back.
 
 int Function GetTraderRepairLevel(Actor akTrader, Form akBase)
     How far akTrader repairs akBase's kind of gear, a percent, 0 for gear NEC gives no condition or

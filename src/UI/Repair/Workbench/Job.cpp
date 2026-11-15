@@ -133,7 +133,8 @@ namespace Workbench
 		// Every rank of the perk pricing the item says on its page that such
 		// items need fewer components, so the line above the question names the
 		// perk and the share it takes off. PriceOf applies it to the price.
-		// Left off where no rank is held, and for a repair that takes only
+		// Left off where it takes nothing off, with no rank held or
+		// iPerkComponentDiscount at 0, and for a repair that takes only
 		// its supplies, which the perk takes nothing off, see Supplies.h.
 		const auto& standing = a_priced.standing;
 		const auto off = CraftingPerks::Discount(standing.rank, standing.ranks);

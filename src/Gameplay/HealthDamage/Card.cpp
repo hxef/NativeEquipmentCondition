@@ -363,12 +363,17 @@ namespace HealthDamage
 			REX::INFO("The item card prints the blast at the condition the weapon is in.");
 		}
 
-		// Without it a listed weapon's stack in an item list counts by a
-		// health it carries, no wear list line reaches the lists, and every
-		// other number works. The list site after it hands it the stack's
-		// mods, so it goes in only once this one has.
-		if (CallPatch::PatchCall(STACK_DAMAGE_SITE, RE::ID::CombatFormulas::GetWeaponDisplayDamage, reinterpret_cast<std::uintptr_t>(&StackDamageHk), g_stackDamageLink)) {
-			CallPatch::PatchCall(LIST_STACK_SITE, RE::ID::ExtraDataList::GetHealthPerc, reinterpret_cast<std::uintptr_t>(&ListStackHk), g_listStackLink);
+		// Only the HUD's list of a container's items uses these 2, to sort
+		// weapons by damage, see STACK_DAMAGE_SITE. Without the first a listed
+		// weapon's stack there counts by a health it carries and reads no wear
+		// list line, and every other number works. The second hands the first
+		// the stack's mods, so it goes in only once the first has.
+		if (!CallPatch::PatchCall(STACK_DAMAGE_SITE, RE::ID::CombatFormulas::GetWeaponDisplayDamage, reinterpret_cast<std::uintptr_t>(&StackDamageHk), g_stackDamageLink)) {
+			REX::WARN("The HUD's list of a container's items sorts a weapon on a list in NEC/Exclude by its worn damage and reads no wear list line.");
+		} else if (!CallPatch::PatchCall(LIST_STACK_SITE, RE::ID::ExtraDataList::GetHealthPerc, reinterpret_cast<std::uintptr_t>(&ListStackHk), g_listStackLink)) {
+			REX::WARN("The HUD's list of a container's items reads wear list lines by weapon and keyword only.");
+		} else {
+			REX::INFO("The HUD's list of a container's items sorts weapons by their worn damage and wear list lines.");
 		}
 	}
 }

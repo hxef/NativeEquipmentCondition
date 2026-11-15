@@ -95,6 +95,10 @@ namespace Settings
 	// Workbench/Cost.h.
 	inline Live<float> fBenchCostMult{ "Balance", "fBenchCostMult", 1.0F };
 
+	// What the last rank of a crafting perk takes off a workbench repair's
+	// components, a whole percent, 0 to 90, see CraftingPerks.h.
+	inline Live<std::int32_t> iPerkComponentDiscount{ "Balance", "iPerkComponentDiscount", 50 };
+
 	// What a spare is worth, against what vanilla scrapping gives it at 0.5,
 	// see Workbench/Spares.h. Counts as 0.5 to 2.
 	inline Live<float> fSpareWorthMult{ "Balance", "fSpareWorthMult", 1.0F };
@@ -116,11 +120,9 @@ namespace Settings
 	inline Live<std::int32_t> iModdingFrom{ "Balance", "iModdingFrom", 100 };
 
 	// The condition a workbench repair that takes components can start from
-	// with 1, 2, and 3 or more ranks short of what iRepairLock asks, a whole
-	// percent, see Workbench/Lock.h.
-	inline Live<std::int32_t> iLock1RankShort{ "Balance", "iLock1RankShort", 25 };
-	inline Live<std::int32_t> iLock2RanksShort{ "Balance", "iLock2RanksShort", 50 };
-	inline Live<std::int32_t> iLock3RanksShort{ "Balance", "iLock3RanksShort", 100 };
+	// with every rank of its crafting perk short, a whole percent, see
+	// Workbench/Lock.h. Each rank short is an equal share of it.
+	inline Live<std::int32_t> iPerkLock{ "Balance", "iPerkLock", 100 };
 
 	// What a trader asks for a repair, against the mod as tuned, see
 	// VendorRepair/Quote.h.

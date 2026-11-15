@@ -11,10 +11,11 @@
 // which rank of it the player has. Gun Nut unlocks ballistic mods, Science
 // energy, Blacksmith melee, Armorer armor, and a load order may add more.
 // Someone who can build a better receiver can also fix a worn gun for less, so
-// a repair falls from 2 times the item's components down to 1 as the player
-// takes more ranks, and every rank's description gets a line saying how much it
-// takes off: 13% a rank on a 4 rank perk, 17% on a 3 rank one, 50% at the top
-// rank of either.
+// a repair falls from 2 times the item's components as the player takes more
+// ranks. The top rank takes off iPerkComponentDiscount, half by default, and
+// each rank an equal share of it. Every rank's description gets a line saying
+// how much it takes off: at 50, 13% 25% 38% 50% on a 4 rank perk and 17% 33%
+// 50% on a 3 rank one.
 //
 // One repair is priced by one perk, chosen by counting components. A bill has
 // one line per component per recipe, and every recipe names the perk that
@@ -73,11 +74,11 @@ namespace CraftingPerks
 	// back.
 	inline constexpr float UNSKILLED_MULTIPLE = 2.0F;
 
-	// What the same repair costs at the perk's top rank. The multiple falls in
-	// equal steps across the ranks, so each of 4 ranks takes a quarter of the
-	// difference. At the top a broken item still costs 1 copy of its
-	// components, which keeps scrapping worth doing.
-	inline constexpr float SKILLED_MULTIPLE = 1.0F;
+	// What the same repair costs at the perk's top rank: UNSKILLED_MULTIPLE
+	// less iPerkComponentDiscount, so 1 copy of its components at 50, the
+	// default, 0.2 at 90 and 2 at 0. The multiple falls in equal steps across
+	// the ranks, so each of 4 ranks takes a quarter of the difference.
+	[[nodiscard]] float SkilledMultiple();
 
 	// Which perk covers one item and where the player stands on it.
 	struct Standing
@@ -123,7 +124,7 @@ namespace CraftingPerks
 	// Where the player stands on the perk a recipe names in its condition. None
 	// for a recipe naming no perk that prices a repair, a perk with a line on
 	// its perk page. Where it names 2, which many weapon mods do, the one the
-	// player has taken furthest counts.
+	// player has taken furthest by the share of its ranks counts.
 	[[nodiscard]] Standing OfRecipe(const RE::BGSConstructibleObject& a_recipe);
 
 	// Where the player stands on Scrapper, whose ranks raise what a spare
@@ -134,7 +135,9 @@ namespace CraftingPerks
 	// multiples. No perk at all costs the full multiple.
 	[[nodiscard]] float Multiple(const Standing& a_standing);
 
-	// What one rank takes off a repair, in whole percent, for its description:
-	// 13 a rank on a 4 rank perk, 17 on a 3 rank one, 50 at the top of either.
+	// What a_rank of a_ranks takes off a repair, in whole percent, for its
+	// description: an equal share of iPerkComponentDiscount a rank, rounded
+	// half up. At 50, 13 25 38 50 on a 4 rank perk and 17 33 50 on a 3 rank
+	// one. 0 with no ranks.
 	[[nodiscard]] std::uint32_t Discount(std::uint32_t a_rank, std::uint32_t a_ranks);
 }

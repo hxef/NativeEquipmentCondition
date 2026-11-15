@@ -35,24 +35,25 @@ namespace Mcm
 	{
 		std::string_view                      id;
 		bool                                  (*shows)();
-		std::array<const Settings::Named*, 7> rows;
+		std::array<const Settings::Named*, 8> rows;
 	};
 
-	// Jams start at shows while the jam chance is above 0, the 3 rank rows
-	// while Lock repairs is not Off, and Supplies only from while Maintenance
-	// supplies is above 0. An iRepairLock of 3 or -1 locks as By its mods does,
-	// so only 0 hides the rank rows. The 7 rows that tune paid repairs show
-	// while Workbench repair cost is above 0, since at 0 every repair is a
-	// free MEND, see FreeRepairs in UI/Repair/Workbench/Bench.h. The
-	// Maintenance header hides with them, as no row is left under it.
+	// Jams start at shows while the jam chance is above 0, Perk lock and Lock
+	// spares too while Lock repairs is not Off, and Supplies only from while
+	// Servicing supplies is above 0. An iRepairLock of 3 or -1 locks as By
+	// its mods does, so only 0 hides them. The 8 rows that tune paid repairs
+	// show while Workbench repair cost is above 0, since at 0 every repair is
+	// a free MEND and no repair box opens, see FreeRepairs in
+	// UI/Repair/Workbench/Bench.h. The Maintenance header hides with them, as
+	// no row is left under it. Lock spares too also hides while Spare repair
+	// is off, by its config.json row.
 	inline constexpr Hide HIDES[]{
 		{ "fJamChance:Jams"sv, [] { return Settings::fJamChance.GetValue() > 0.0F; }, { &Settings::fJamStart } },
-		{ "iRepairLock:Lock"sv, [] { return Settings::iRepairLock.GetValue() != 0; },
-			{ &Settings::iLock1RankShort, &Settings::iLock2RanksShort, &Settings::iLock3RanksShort } },
+		{ "iRepairLock:Lock"sv, [] { return Settings::iRepairLock.GetValue() != 0; }, { &Settings::iPerkLock, &Settings::bLockSpares } },
 		{ "iRepairSupplies:Supplies"sv, [] { return Settings::iRepairSupplies.GetValue() > 0; }, { &Settings::iSuppliesOnlyFrom } },
 		{ "fBenchCostMult:Paid"sv, [] { return Settings::fBenchCostMult.GetValue() > 0.0F; },
 			{ &Settings::iFreeMendFrom, &Settings::iRepairSupplies, &Settings::iSuppliesOnlyFrom, &Settings::iRepairLock,
-				&Settings::iLock1RankShort, &Settings::iLock2RanksShort, &Settings::iLock3RanksShort } },
+				&Settings::iPerkLock, &Settings::iPerkComponentDiscount, &Settings::bLockSpares, &Settings::iRepairBoxRow } },
 	};
 
 	// The hide a_id names, or nullptr.

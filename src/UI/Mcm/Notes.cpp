@@ -27,9 +27,9 @@
 // fJamChance:Jams. MCM counts 30 for each page on its own, so a feature
 // switch whose rows hide while it is off takes a number its page leaves free,
 // which other pages use too. So do the other hides. On the Repairs page,
-// where 14, 15, 16, 18 and 19 are taken, iRepairLock:Lock takes 20 for the
-// lock's rank rows, iRepairSupplies:Supplies 21 for Supplies only from and
-// fBenchCostMult:Paid 22 for the 7 rows of paid repairs.
+// where 14, 15, 16, 18 and 19 are taken, iRepairLock:Lock takes 20 for Perk
+// lock and Lock spares too, iRepairSupplies:Supplies 21 for Supplies only from
+// and fBenchCostMult:Paid 22 for the 8 rows of paid repairs.
 // Each note is worked out from SettingLinks and CallPatch's losses, so a
 // setting needs no code of its own here. A piece left to a mod is named once:
 // in the note of a block that works through it, else in the list at the top.

@@ -155,13 +155,13 @@ namespace Text
 	// "Weapons", a kind's name on the sign, which prints the level beside it.
 	[[nodiscard]] std::string SignKind(Trade a_trade);
 
-	// "This item can't be repaired at a workbench. A trader can still restore
+	// "This item can't be repaired at a workbench. Visit a trader to restore
 	// it.", said when REPAIR is pressed on an item the bench has nothing to
 	// rebuild from, see Workbench/Cost.h. a_trader adds the 2nd sentence.
 	[[nodiscard]] std::string BenchCannotRepair(bool a_trader);
 
-	// "Repairing this item from 10% needs Gun Nut 4. A spare or a trader can
-	// still restore it.", when the repair lock holds REPAIR back, see
+	// "Repairing this item from 10% needs Gun Nut 4. Find a spare or visit a
+	// trader to restore it.", when the repair lock holds REPAIR back, see
 	// Workbench/Lock.h. The 2nd sentence names a spare, a trader or both, as
 	// a_spare and a_trader say, and is left out with neither.
 	[[nodiscard]] std::string RepairLocked(std::string_view a_perk, std::uint32_t a_rank, std::uint32_t a_percent, bool a_spare, bool a_trader);

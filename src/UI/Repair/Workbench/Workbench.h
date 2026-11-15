@@ -98,8 +98,8 @@ namespace Workbench
 	// The condition points the player's spare on the stack with a_spare
 	// restores to the player's copy of a_object on the stack with a_item, as
 	// the box listing the spares works it out, or nothing when it is no spare
-	// for it. Run it holding no inventory lock, with both lists kept alive by
-	// the caller.
+	// for it or while bLockSpares lets the repair lock hold it back. Run it
+	// holding no inventory lock, with both lists kept alive by the caller.
 	[[nodiscard]] std::optional<std::uint32_t> SpareGain(const RE::TESBoundObject& a_object, const RE::ExtraDataList* a_item,
 		const RE::ExtraDataList* a_spare);
 

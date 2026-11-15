@@ -95,13 +95,19 @@ namespace ItemCard
 	// an item with no CND row.
 	[[nodiscard]] std::optional<float> WearRateOf(const RE::BGSInventoryItem& a_item, const RE::BGSInventoryItem::Stack* a_stack);
 
+	// The change a workbench feeds the CND entry, in WearRate.cpp: a_own, the
+	// item's printed rate, less a_rate, its copy's, or 0 under 0.1 apart.
+	[[nodiscard]] float WearRateChange(float a_own, float a_rate);
+
 	// Writes a_rate beside the number on a_row, the CND row, in WearRate.cpp:
 	// in the number's own field, grown left over the label's free room, else
 	// in the empty field beside it, else nowhere, so it never draws shrunk.
 	// Nothing for a row whose item has no rate. a_movieFile is the movie's.
-	// a_compared is the rate of the item a workbench compares its copy with,
-	// which adds + after the rate when the printed rate is higher, - when
-	// lower, and nothing when the 2 print the same.
+	// a_compared is the rate of the item a workbench compares its copy with.
+	// While a mod changes the printed rate, it signs the rate in the cell
+	// beside the number, and a change the movie prints beside the number is
+	// kept with its sign turned to the way the rate moves. The rate in the
+	// number's field never carries a sign.
 	void WriteWearRate(Scaleform::GFx::Movie& a_movie, std::string_view a_movieFile, Scaleform::GFx::Value& a_row, std::optional<float> a_rate,
 		std::optional<float> a_compared);
 

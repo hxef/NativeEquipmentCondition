@@ -39,12 +39,13 @@ namespace CraftingPerks
 		[[nodiscard]] bool operator==(const Gates&) const = default;
 	};
 
-	// 1 rank's own description, what it takes off a repair, and what its
+	// 1 rank's own description, the perk's rank count, from which the hook
+	// works out what the rank takes off a repair at each draw, and what its
 	// mods go on. perk and rank name it in the trace.
 	struct Told
 	{
 		const RE::TESDescription* description{ nullptr };
-		std::uint32_t             percent{ 0 };
+		std::uint32_t             ranks{ 0 };
 		const RE::BGSPerk*        perk{ nullptr };
 		std::uint32_t             rank{ 0 };
 		bool                      weapons{ false };

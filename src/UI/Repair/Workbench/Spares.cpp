@@ -7,6 +7,7 @@
 #include "Core/Settings.h"
 #include "Core/Text/Text.h"
 #include "Core/TraceLog/TraceLog.h"
+#include "UI/Repair/Workbench/Lock.h"
 
 #include <algorithm>
 #include <cmath>
@@ -307,6 +308,11 @@ namespace Workbench
 		// lock is let go, so the name comes from the form.
 		item->item = nullptr;
 		const auto priced = PriceAsLastRead(*item);
+		// The press opens no box of spares then, see Workbench.cpp. HeldBack
+		// reads nothing of the entry let go above.
+		if (Settings::bLockSpares.GetValue() && HeldBack(*item, priced)) {
+			return std::nullopt;
+		}
 		const auto spare = priced.units > 0 ? SpareOn(*item, priced, a_spare) : std::nullopt;
 		return spare ? std::optional{ spare->gain } : std::nullopt;
 	}

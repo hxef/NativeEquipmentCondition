@@ -5,10 +5,10 @@
 #include "Condition/CraftingPerks/Ladder.h"
 #include "Condition/CraftingPerks/Perks.h"
 #include "Condition/CraftingPerks/Recipes.h"
+#include "Core/Settings.h"
 #include "Core/Snapshot.h"
 
 #include <algorithm>
-#include <cmath>
 #include <cstdint>
 #include <format>
 #include <string>
@@ -22,6 +22,18 @@ namespace CraftingPerks
 		// read, see Perks.h.
 		Snapshot<Perks> g_perks;
 
+		// The most iPerkComponentDiscount counts for. Never 100: a multiple of
+		// 0 would make a paid repair that takes no components, a path the
+		// bench's press never meets.
+		constexpr std::int32_t MOST_DISCOUNT = 90;
+
+		// iPerkComponentDiscount kept between 0 and MOST_DISCOUNT: what the
+		// top rank takes off, in whole percent.
+		std::uint32_t TopDiscount()
+		{
+			return static_cast<std::uint32_t>(std::clamp(Settings::iPerkComponentDiscount.GetValue(), 0, MOST_DISCOUNT));
+		}
+
 		// Where the player stands on the perk a_recipe names, by the perks of
 		// a_perks that can price a repair. Read off the recipe's conditions at
 		// each call, so a recipe changed after the last measure counts at once.
@@ -33,19 +45,21 @@ namespace CraftingPerks
 
 			// A part can need 2 perks, a recon scope Gun Nut for the mount and
 			// Science for the glass, and about 130 recipes do. The one the
-			// player has taken furthest counts, judged by what it does to the
-			// price and not by rank number. 2 that come out equal cost the
-			// same, so there is no tie break.
-			auto best = UNSKILLED_MULTIPLE;
+			// player has taken furthest counts, judged by the share of its
+			// ranks held and not by rank number. That is the cheaper one while
+			// the discount is above 0, and the pick holds at 0, where every
+			// rank costs the same. 2 equal shares cost the same, so there is no
+			// tie break.
+			auto best = 0.0F;
 			for (const auto* ladder : ladders) {
 				Standing standing;
 				standing.perk = ladder;
 				standing.ranks = Ranks(ladder);
 				standing.rank = RankHeld(ladder);
 
-				const auto multiple = Multiple(standing);
-				if (!out.perk || multiple < best) {
-					best = multiple;
+				const auto share = standing.Share();
+				if (!out.perk || share > best) {
+					best = share;
 					out = standing;
 				}
 			}
@@ -119,22 +133,24 @@ namespace CraftingPerks
 		return out;
 	}
 
+	float SkilledMultiple()
+	{
+		return UNSKILLED_MULTIPLE * (1.0F - static_cast<float>(TopDiscount()) / 100.0F);
+	}
+
 	float Multiple(const Standing& a_standing)
 	{
-		return UNSKILLED_MULTIPLE - (UNSKILLED_MULTIPLE - SKILLED_MULTIPLE) * a_standing.Share();
+		return UNSKILLED_MULTIPLE - (UNSKILLED_MULTIPLE - SkilledMultiple()) * a_standing.Share();
 	}
 
 	std::uint32_t Discount(std::uint32_t a_rank, std::uint32_t a_ranks)
 	{
+		// In whole numbers, so an exact half such as 12.5 always reads 13.
 		if (a_ranks == 0) {
 			return 0;
 		}
-
-		Standing standing;
-		standing.rank = a_rank;
-		standing.ranks = a_ranks;
-		const auto saved = (UNSKILLED_MULTIPLE - Multiple(standing)) / UNSKILLED_MULTIPLE;
-		return static_cast<std::uint32_t>(std::lround(saved * 100.0F));
+		const auto held = std::min(a_rank, a_ranks);
+		return (TopDiscount() * held * 2 + a_ranks) / (2 * a_ranks);
 	}
 
 	std::string Standing::Name() const
@@ -198,26 +214,28 @@ namespace CraftingPerks
 			}
 		}
 
-		// The most units wins. A tie goes to whichever costs the player less,
-		// then to the perk that unlocks more of the load order.
+		// The most units wins. A tie goes to the perk the player has taken
+		// furthest by the share of its ranks, which costs less while the
+		// discount is above 0, then to the perk that unlocks more of the load
+		// order.
 		std::uint32_t most = 0;
 		std::uint32_t heft = 0;
-		auto          best = UNSKILLED_MULTIPLE;
+		auto          best = 0.0F;
 		for (const auto& said : tally) {
 			Standing standing;
 			standing.perk = said.perk;
 			standing.ranks = Ranks(said.perk);
 			standing.rank = RankHeld(said.perk);
 
-			const auto multiple = Multiple(standing);
+			const auto share = standing.Share();
 			const auto weight = Weight(*perks, said.perk);
 			const bool better = !out.perk || said.count > most ||
-			                    (said.count == most && multiple < best) ||
-			                    (said.count == most && multiple == best && weight > heft);
+			                    (said.count == most && share > best) ||
+			                    (said.count == most && share == best && weight > heft);
 			if (better) {
 				out = standing;
 				most = said.count;
-				best = multiple;
+				best = share;
 				heft = weight;
 			}
 		}

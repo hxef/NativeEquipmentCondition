@@ -65,14 +65,13 @@ namespace Settings
 			&fJamChance,
 			&fJamStart,
 			&fBenchCostMult,
+			&iPerkComponentDiscount,
 			&fSpareWorthMult,
 			&iFreeMendFrom,
 			&iRepairSupplies,
 			&iSuppliesOnlyFrom,
 			&iModdingFrom,
-			&iLock1RankShort,
-			&iLock2RanksShort,
-			&iLock3RanksShort,
+			&iPerkLock,
 			&fTraderPriceMult,
 			&iTraderLeeway,
 			&iTraderFullStock,
@@ -105,6 +104,7 @@ namespace Settings
 			&bVendorRepair,
 			&bTraderSign,
 			&bSpareRepair,
+			&bLockSpares,
 			&bRepairBoxColumns,
 			&bRepairBoxGains,
 			&bLoadingTips,
@@ -129,7 +129,7 @@ namespace Settings
 		// The switches SWITCHES leaves out, each after the setting NEC.ini has
 		// it after, for the Settings line. bPlainApparelNeverWears comes first
 		// in [Features], so ReportLine says it before the list.
-		Live<bool>* const AFTER_VENDOR_REPAIR[]{ &bTraderSign, &bSpareRepair, &bRepairBoxColumns, &bRepairBoxGains };
+		Live<bool>* const AFTER_VENDOR_REPAIR[]{ &bTraderSign, &bSpareRepair, &bLockSpares, &bRepairBoxColumns, &bRepairBoxGains };
 		Live<bool>* const AFTER_HUD_CONDITION[]{ &bPowerArmorBar };
 		Live<bool>* const AFTER_QUICK_CONTAINER[]{ &bCardWearRate, &bPowerArmorCardCnd };
 		Live<bool>* const AFTER_FOOD_SPOILS[]{ &bFridgeIcon };

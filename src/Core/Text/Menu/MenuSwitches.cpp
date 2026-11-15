@@ -20,6 +20,7 @@ namespace Text
 			{ &Settings::iUnscrappableSpares, UNSCRAPPABLE_SPARES_NAME, UNSCRAPPABLE_SPARES_HELP },
 			{ &Settings::iRepairBoxRow, REPAIR_BOX_ROW_NAME, REPAIR_BOX_ROW_HELP },
 			{ &Settings::iRepairLock, REPAIR_LOCK_NAME, REPAIR_LOCK_HELP },
+			{ &Settings::bLockSpares, LOCK_SPARES_NAME, LOCK_SPARES_HELP },
 			{ &Settings::bRepairBoxColumns, REPAIR_COLUMNS_NAME, REPAIR_COLUMNS_HELP },
 			{ &Settings::bRepairBoxGains, REPAIR_GAINS_NAME, REPAIR_GAINS_HELP },
 			{ &Settings::bLoadingTips, {}, LOADING_TIPS_HELP },

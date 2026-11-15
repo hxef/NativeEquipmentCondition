@@ -143,9 +143,10 @@ namespace Workbench
 			}
 
 			// The repair lock, see Lock.h, turns the press away before any box
-			// opens, so nothing is spent. A spare still repairs, so its box
-			// opens at once with the lock's line over it. Else the corner says
-			// which rank would repair it and what else still can.
+			// opens, so nothing is spent. While bLockSpares is off a spare
+			// still repairs, so its box opens at once with the lock's line over
+			// it. Else the corner says which rank would repair it and what else
+			// still can.
 			if (const auto mode = LockNow(); mode != LockMode::kOff) {
 				const auto& standing = priced.standing;
 				TraceLog::Line("menu", "Workbench reads {:s} as asking {:s} {:d} by {:s}, the player {:d} of {:d} ranks in",
@@ -154,16 +155,18 @@ namespace Workbench
 			if (const auto held = HeldBack(selection, priced)) {
 				TraceLog::Line("menu", "Workbench holds back {:s} at {:d}%, which repairs from {:d}% with {:d} ranks short, {:s} {:d} would repair it now",
 					selection.Name(), selection.percent, held->from, held->lacking, priced.standing.Name(), held->need);
-				if (CarriesSpare(selection)) {
+				const bool sparesFree = !Settings::bLockSpares.GetValue();
+				if (sparesFree && CarriesSpare(selection)) {
 					TraceLog::Line("menu", "Workbench opened the spares of {:s}, the repair lock holds it back", selection.Name());
 					AskWhichSpare(*selection.object, selection.extra, priced);
 					return;
 				}
 				const auto said = Text::RepairLocked(priced.standing.Name(), held->need, selection.percent,
-					Settings::bSpareRepair.GetValue(), Settings::bVendorRepair.GetValue());
+					Settings::bSpareRepair.GetValue() && sparesFree, Settings::bVendorRepair.GetValue());
 				RE::SendHUDMessage::ShowHUDMessage(said.c_str(), nullptr, true, true);
 				RE::UIUtils::PlayMenuSound(RepairPrompt::REFUSED_SOUND);
-				TraceLog::Line("menu", "Workbench said the repair lock holds {:s} back, with no spare", selection.Name());
+				TraceLog::Line("menu", "Workbench said the repair lock holds {:s} back, {:s}", selection.Name(),
+					Settings::bSpareRepair.GetValue() && !sparesFree ? "spares too, since bLockSpares is on" : "with no spare");
 				return;
 			}
 
@@ -360,7 +363,7 @@ namespace Workbench
 		REX::INFO("Before any crafting perk, an item at nothing owes {:.2f} of what it is built from, and at each level {:s}",
 			Repair::Debt(0, Scaled(WRECK_MULTIPLE)), Repair::Ladder(Scaled(WRECK_MULTIPLE)));
 		REX::INFO("The whole of a crafting perk brings that {:.2f} down to {:.2f}",
-			Scaled(WRECK_MULTIPLE), Scaled(CraftingPerks::SKILLED_MULTIPLE));
+			Scaled(WRECK_MULTIPLE), Scaled(CraftingPerks::SkilledMultiple()));
 		Supplies::Say();
 		SayLock();
 	}

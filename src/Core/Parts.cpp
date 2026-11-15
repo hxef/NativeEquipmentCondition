@@ -103,9 +103,9 @@ namespace
 	// With another mod on the bench lists the lock still refuses BUILD, but
 	// no row fades and the mod slots stay open.
 	constexpr Piece MOD_LOCK_SIDE[]{ kBenchItemList, kBenchModLists };
-	// Spare repair rides on the bench's REPAIR press, and the perk pages
-	// tell of what Scrapper adds to a spare.
-	constexpr Piece SPARE_SIDE[]{ kPerksChart, kPerksPipboy };
+	// The perk pages tell of what Scrapper adds to a spare and of the Perk
+	// component discount.
+	constexpr Piece PERK_PAGES[]{ kPerksChart, kPerksPipboy };
 	// The bite, the station rows and the Fertilizer row each go off alone,
 	// and food still spoils. The 2 days and the fridge speed set only how fast
 	// it spoils.
@@ -131,10 +131,12 @@ namespace
 		{ &Settings::bSpawnCondition, nullptr, WORN_LOOT, WORN_LOOT_SIDE, WORN_LOOT_EXCEPTIONS },
 		{ &Settings::bVendorRepair, nullptr, TRADER_REPAIRS, TRADER_REPAIRS_SIDE },
 		{ &Settings::bTraderSign, &Settings::bVendorRepair, TRADER_REPAIRS },
-		{ &Settings::bSpareRepair, &Settings::fBenchCostMult, BENCH, SPARE_SIDE },
+		// Spare repair rides on the bench's REPAIR press.
+		{ &Settings::bSpareRepair, &Settings::fBenchCostMult, BENCH, PERK_PAGES },
 		{ &Settings::iUnscrappableSpares, &Settings::fBenchCostMult, BENCH },
 		{ &Settings::iRepairBoxRow, &Settings::fBenchCostMult, BENCH },
 		{ &Settings::iRepairLock, &Settings::fBenchCostMult, BENCH },
+		{ &Settings::bLockSpares, &Settings::fBenchCostMult, BENCH },
 		{ &Settings::bRepairBoxColumns, &Settings::fBenchCostMult, REPAIR_BOXES },
 		{ &Settings::bRepairBoxGains, &Settings::fBenchCostMult, REPAIR_BOXES },
 		{ &Settings::bLoadingTips, nullptr, TIPS },
@@ -157,6 +159,12 @@ namespace
 		// blade's cuts wear through the hit event, so this row still sets
 		// those.
 		{ &Settings::fAutoWearRateMult, &Settings::fWearRateMult, {}, GUN_WEAR, {}, kMotorWear },
+		// A companion's and a settler's share rides on the NPC rate, see
+		// Condition/Crew.h, so their guns lose the fire call with it and
+		// their melee blows still wear. Armor wears through a hit event no
+		// mod can take, so the 4 armor sliders have no row.
+		{ &Settings::fCompanionWearRateMult, &Settings::fWearRateMult, {}, GUN_WEAR, {}, kMeleeWear },
+		{ &Settings::fSettlerWearRateMult, &Settings::fWearRateMult, {}, GUN_WEAR, {}, kMeleeWear },
 		// A suppressed gun's shots wear through the same fire call, the only
 		// wear this row sets.
 		{ &Settings::fSuppressedWearRateMult, &Settings::fWearRateMult, GUN_WEAR },
@@ -175,14 +183,13 @@ namespace
 		{ &Settings::fJamChance, nullptr, JAM, JAM_SIDE },
 		{ &Settings::fJamStart, &Settings::fJamChance, JAM, JAM_SIDE },
 		{ &Settings::fBenchCostMult, nullptr, BENCH, {}, BENCH_EXCEPTIONS },
+		{ &Settings::iPerkComponentDiscount, &Settings::fBenchCostMult, BENCH, PERK_PAGES },
 		{ &Settings::fSpareWorthMult, &Settings::fBenchCostMult, BENCH },
 		{ &Settings::iFreeMendFrom, &Settings::fBenchCostMult, BENCH },
 		{ &Settings::iRepairSupplies, &Settings::fBenchCostMult, BENCH },
 		{ &Settings::iSuppliesOnlyFrom, &Settings::fBenchCostMult, BENCH },
 		{ &Settings::iModdingFrom, &Settings::fBenchCostMult, BENCH, MOD_LOCK_SIDE },
-		{ &Settings::iLock1RankShort, &Settings::fBenchCostMult, BENCH },
-		{ &Settings::iLock2RanksShort, &Settings::fBenchCostMult, BENCH },
-		{ &Settings::iLock3RanksShort, &Settings::fBenchCostMult, BENCH },
+		{ &Settings::iPerkLock, &Settings::fBenchCostMult, BENCH },
 		{ &Settings::fTraderPriceMult, &Settings::bVendorRepair, TRADER_REPAIRS, TRADER_PRICE_SIDE },
 		{ &Settings::iTraderLeeway, &Settings::bVendorRepair, TRADER_REPAIRS, TRADER_STOCK_SIDE },
 		{ &Settings::iTraderFullStock, &Settings::bVendorRepair, TRADER_REPAIRS, TRADER_STOCK_SIDE },

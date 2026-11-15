@@ -129,8 +129,8 @@ REPAIR AT THE WORKBENCH
   "Servicing supplies" at 0 turns them off.
 * When a repair takes components, the repair lock asks for the crafting perk
   rank the gear's mods need. Gear whose mods ask Gun Nut 3 repairs from 25%
-  with Gun Nut 2, from 50% with Gun Nut 1 and only from 88% with no rank. Most
-  gear on standard parts repairs at any rank, and a spare or a trader repairs
+  with Gun Nut 2, from 50% with Gun Nut 1 and from 75% with no rank. Most gear
+  on standard parts repairs at any rank, and a spare or a trader repairs
   anything. "Lock repairs" turns it off or asks every item for the last rank.
 * A repair earns the same XP as crafting a mod from those components.
 * With "Workbench repair cost" at 0, every repair is free and done on the
@@ -162,8 +162,8 @@ SEE IT AT A GLANCE
 * CND on the item cards, with the worn damage, resistances, fire rate,
   accuracy and range.
 * Beside CND, how fast the item wears or spoils, x1.0 for an ordinary item of
-  its kind. While you try a mod at a workbench, a + or - after it shows that
-  the mod makes the item wear faster or slower.
+  its kind. While you try a mod at a workbench, marks beside it show that the
+  mod makes the item wear slower or faster, as on Weight.
 * CND bars on the HUD ammo counter, the power armor dash, the pickup prompt and
   the Pip-Boy apparel figure, and condition meters on the quick container rows
   and a food's freshness. Each HUD bar has its own switch, place and size in

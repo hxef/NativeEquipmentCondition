@@ -65,7 +65,9 @@ namespace CraftingPerks
 		// comes through. Joined with a space, never a line break: the level up
 		// chart keeps only the first 2 pieces split on newlines and would drop
 		// the whole sentence. One per site, and only while the bench repairs.
-		// Scrapper's line shows only while spare repair is on too.
+		// A rank's percent is worked out at each ask, so it follows
+		// iPerkComponentDiscount, and at 0 the rank says nothing. Scrapper's
+		// line shows only while spare repair is on too.
 		template <std::size_t I>
 		void DescriptionHk(RE::TESDescription* a_description, RE::BSString& a_out, const RE::TESForm* a_form)
 		{
@@ -74,14 +76,15 @@ namespace CraftingPerks
 			const auto  perks = g_links[I].Live() && bench ? Current() : nullptr;
 			const auto* ours = perks ? Ours(*perks, a_description) : nullptr;
 			const auto  scrapper = perks && Settings::bSpareRepair.GetValue() ? ScrapperRank(*perks, a_description) : 0U;
-			if (!ours && scrapper == 0) {
+			const auto  off = ours ? Discount(ours->rank, ours->ranks) : 0U;
+			if (off == 0 && scrapper == 0) {
 				return;
 			}
 
 			const auto* already = a_out.c_str();
 			std::string said = already ? already : "";
-			if (ours) {
-				Join(said, Text::PerkDiscount(ours->percent, ours->weapons, ours->armor));
+			if (off > 0) {
+				Join(said, Text::PerkDiscount(off, ours->weapons, ours->armor));
 			}
 			if (scrapper > 0) {
 				Join(said, Text::PerkScrapper());
@@ -102,9 +105,9 @@ namespace CraftingPerks
 						shown += c;
 					}
 				}
-				const auto* perk = ours ? ours->perk : perks->scrapper[scrapper - 1];
+				const auto* perk = off > 0 ? ours->perk : perks->scrapper[scrapper - 1];
 				TraceLog::Once("menu", "{:s} rank {:d} [{:08X}] reads \"{:s}\"",
-					perk ? RE::TESFullName::GetFullName(*perk) : "a perk"sv, ours ? ours->rank : scrapper,
+					perk ? RE::TESFullName::GetFullName(*perk) : "a perk"sv, off > 0 ? ours->rank : scrapper,
 					perk ? perk->formID : 0U, shown);
 			}
 		}
@@ -135,7 +138,7 @@ namespace CraftingPerks
 			std::uint32_t at = 0;
 			do {
 				at++;
-				a_perks.told.push_back({ static_cast<const RE::TESDescription*>(walk), Discount(at, ranks), walk, at, gates.weapons > 0, gates.armor > 0 });
+				a_perks.told.push_back({ static_cast<const RE::TESDescription*>(walk), ranks, walk, at, gates.weapons > 0, gates.armor > 0 });
 				walk = walk->nextPerk;
 			} while (walk && walk != first && at < LADDER_LIMIT);
 		}

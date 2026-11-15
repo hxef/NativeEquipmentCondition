@@ -32,9 +32,10 @@
 // Only the outermost list is recorded, so a gun from a list everybody shares
 // counts as nothing in particular. Nothing is recorded for a console additem, a
 // quest reward or a vendor restock, and there the owner is the only half. A gun
-// on a table has no list either, so the place it lies in stands in while
-// bLootByArea is on, see Area.h. Values are read from records, not copies, so
-// mods are not counted. A half that cannot be measured counts as the middle.
+// on a table has no list either, so the place it lies in stands in unless
+// fLootAreaEffect is off, see Area.h. Values are read from records, not
+// copies, so mods are not counted. A half that cannot be measured counts as
+// the middle.
 //
 // Supply.cpp is the supply half, Care.cpp the care half, Area.cpp where a
 // place sits, Rank.h where a measurement ranks against the rest, and Supply.h,
@@ -55,10 +56,11 @@ namespace Provenance
 	// last measure counted. Returns what moved, for main.cpp's line.
 	[[nodiscard]] std::vector<std::string> MeasureAgain();
 
-	// Builds the areas or drops them, as bLootByArea now says, and says so in
-	// NEC.log. The MCM page calls it as the switch turns. Both halves stay
-	// as they were measured.
-	void SwitchAreas();
+	// Builds the areas or drops them as fLootAreaEffect turns on or off, and
+	// says so in NEC.log. The MCM page calls it as the slider moves, and any
+	// other move changes nothing here. Dropped areas are freed at once. Both
+	// halves stay as they were measured.
+	void FollowAreaEffect();
 
 	// A half that could not be measured. Different from a measured 0, which is
 	// the poorest thing in the load order.

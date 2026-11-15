@@ -2,21 +2,26 @@
 
 #include "Core/Plugin.h"
 
-#include "Condition/Condition.h"
 #include "Condition/Materials/Materials.h"
+#include "UI/Repair/SelectedItem.h"
 
 #include <cstdint>
 #include <vector>
 
-// The supplies every paid workbench repair takes: oil and cloth for a weapon,
-// adhesive and cloth for armor and clothing, iRepairSupplies of each. Private
-// to this folder.
+// The supplies every paid workbench repair takes, iRepairSupplies of each, in
+// 3 sets: oil and cloth for a gun or a powered melee weapon, adhesive alone
+// for every other weapon, and adhesive and cloth for armor and clothing. A
+// melee weapon is powered when its copy carries the Automatic flag, such as
+// the Ripper, or when one of its mods is built from Circuitry or Nuclear
+// Material, such as a Heated Super Sledge. Private to this folder.
 //
-// From iSuppliesOnlyFrom up, 80 by default, a repair takes the supplies alone.
+// From iSuppliesOnlyFrom up, 88 by default, a repair takes the supplies alone.
 // Below it, it also takes the components for the stretch up to that
-// condition, see BillOf in Cost.h. So a 10mm Pistol at 85% costs 1 Oil and 1
-// Cloth, and at 40% the components from 40% to 80% on top. The crafting perks
-// take nothing off the supplies. MEND, a spare and a trader take none.
+// condition, see BillOf in Cost.h. So a 10mm Pistol at 90% costs 1 Oil and 1
+// Cloth, and at 40% the components from 40% to 88% on top. A Baseball Bat at
+// 90% costs 1 Adhesive, and a Combat Armor Chest Piece at 90% 1 Adhesive and
+// 1 Cloth. The crafting perks take nothing off the supplies. MEND, a spare and
+// a trader take none.
 //
 // The 3 components are Fallout4.esm's own, looked up at every bill, so a mod
 // that changes them is followed and nothing is kept between loads.
@@ -33,22 +38,26 @@ namespace Workbench::Supplies
 	// repair takes only its supplies.
 	[[nodiscard]] std::uint32_t From();
 
-	// Whether a repair of a_kind from a_percent takes components: always while
-	// the supplies are off or the load order has none of a_kind's, else only
-	// below From(). BillOf bills the same way. The repair lock holds back only
-	// such a repair, see Lock.h.
-	[[nodiscard]] bool TakesComponents(std::uint32_t a_percent, Condition::Kind a_kind);
+	// Whether the load order holds at least 1 of the 3 supplies, so at least
+	// 1 set has something for Of to take. Workbench::SuppliesAlone asks it.
+	[[nodiscard]] bool AnyHeld();
 
-	// The supplies of a_kind, Count() of each, the oil or the adhesive first
-	// and the cloth second. A supply the load order lacks is left out, and so
-	// is every supply while Count() is 0.
-	[[nodiscard]] std::vector<Materials::Part> Of(Condition::Kind a_kind);
+	// Whether a repair of a_item from its percent takes components: always
+	// while the supplies are off or the load order has none of a_item's, else
+	// only below From(). BillOf bills the same way. The repair lock holds back
+	// only such a repair, see Lock.h.
+	[[nodiscard]] bool TakesComponents(const SelectedItem::Item& a_item);
 
-	// a_bill with the supplies of a_kind added on top of it. The supplies come
+	// The supplies of a_item, Count() of each, the oil or the adhesive first
+	// and the cloth, where the set has it, second. A supply the load order
+	// lacks is left out, and so is every supply while Count() is 0.
+	[[nodiscard]] std::vector<Materials::Part> Of(const SelectedItem::Item& a_item);
+
+	// a_bill with the supplies of a_item added on top of it. The supplies come
 	// first, in the order of Of, then the rest of a_bill in its own order. A
 	// component a_bill already holds, such as the Oil of a receiver, is added
 	// to the supply's row, so the box lists it once.
-	[[nodiscard]] std::vector<Materials::Part> Add(const std::vector<Materials::Part>& a_bill, Condition::Kind a_kind);
+	[[nodiscard]] std::vector<Materials::Part> Add(const std::vector<Materials::Part>& a_bill, const SelectedItem::Item& a_item);
 
 	// Writes the supplies' line in NEC.log, as the settings stand at the
 	// start.

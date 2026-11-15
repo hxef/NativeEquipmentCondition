@@ -74,6 +74,27 @@ namespace Materials
 		return bill;
 	}
 
+	bool ModsAskFor(const RE::ExtraDataList* a_extra, std::span<const RE::BGSComponent* const> a_components)
+	{
+		const auto index = Current();
+		if (!index) {
+			return false;
+		}
+		bool asks = false;
+		ForEachModRecipe(*index, a_extra, [&index, &asks, a_components](const RE::BGSConstructibleObject& a_recipe) {
+			if (asks || !a_recipe.requiredItems) {
+				return;
+			}
+			// The same lines AddLines puts in the bill: a component, or a
+			// scrap item counted as one, with a count other than 0.
+			asks = std::ranges::any_of(*a_recipe.requiredItems, [&index, a_components](const auto& a_required) {
+				const auto* component = PricedBy(*index, a_required.first);
+				return component && a_required.second.i != 0 && std::ranges::find(a_components, component) != a_components.end();
+			});
+		});
+		return asks;
+	}
+
 	std::vector<const RE::BGSComponent*> Order(std::span<const Part> a_bill, std::uint32_t a_units)
 	{
 		// Where 1 unit of a component falls in the order. A component with a

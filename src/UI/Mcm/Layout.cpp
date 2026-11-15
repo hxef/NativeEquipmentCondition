@@ -18,8 +18,8 @@
 // Multi-Line once another page shows. Only a name would wrap differently, and
 // no name on NEC's pages is wider than 1 line. On NEC's pages it also writes
 // the HUD bar sliders' live ends, see HudBar.cpp. And while MCM asks for a
-// hide of HIDES in Bridge.h, such as whether the Jams below row shows, NEC
-// keeps MCM's left list on the open page, see KeepOpenPage.
+// hide of HIDES in Bridge.h, such as whether the Jams start at row shows,
+// NEC keeps MCM's left list on the open page, see KeepOpenPage.
 //
 // MCM's menu is a child of _root.Menu_mc, its list is configPanel_mc's
 // configList_mc, and the list holds the shown page's entries in entryList.
@@ -155,7 +155,7 @@ namespace Mcm
 	// (RefreshMCM_internal) and takes the page's row filter from the left
 	// list's highlight, not from the open page. The left list moves its
 	// highlight on every mouse over, so a hand that crossed Armor on its way to
-	// the jam chance slider gave Weapons Armor's filter, and Jams below hid.
+	// the jam chance slider gave Weapons Armor's filter, and Jams start at hid.
 	// In that refresh MCM reads every value of every page, each hide of HIDES
 	// among them, before it reads the filter, so here the highlight goes back
 	// on the open page, as MCM itself does when the right shoulder button moves

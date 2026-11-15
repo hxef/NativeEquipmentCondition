@@ -15,15 +15,15 @@
 // Repairing with a spare, another of the same weapon or armor the player
 // carries, with any mods, taken apart for the repair. Private to this folder.
 //
-// A spare is worth what its parts are worth, the parts it scraps into without
-// the halving, its condition and Scrapper counted, see Materials::Yield, times
-// fSpareWorthMult. At 0.5 that is exactly what scrapping it gives. That
-// worth buys condition at the item's own repair price, on the curve in
-// Repair.h before any rounding to whole parts, so no perk rank, better spare
-// or Scrapper rank ever lowers what a spare restores. The price is paid from
-// the spare's parts, the cheapest first, and the rest goes to the player,
-// never more than the spare holds at 1. With bSpareRepair off no box asks,
-// see CarriesSpare.
+// A spare is worth what its components are worth, the components it scraps
+// into without the halving, its condition and Scrapper counted, see
+// Materials::Yield, times fSpareWorthMult. At 0.5 that is exactly what
+// scrapping it gives. That worth buys condition at the item's own repair
+// price, on the curve in Repair.h before any rounding to whole components, so
+// no perk rank, better spare or Scrapper rank ever lowers what a spare
+// restores. The price is paid from the spare's components, the cheapest
+// first, and the rest goes to the player, never more than the spare holds
+// at 1. With bSpareRepair off no box asks, see CarriesSpare.
 // SpareBox.h asks which spare to use.
 namespace Workbench
 {
@@ -49,8 +49,8 @@ namespace Workbench
 		bool                         withItem{ false };
 		// What it is worth at fSpareWorthMult, which pays for the repair.
 		std::vector<Materials::Part> scrap;
-		// The parts it holds, its worth at 1, from which the leftover comes.
-		// The same as scrap at 1 and below.
+		// The components it holds, its worth at 1, from which the leftover
+		// comes. The same as scrap at 1 and below.
 		std::vector<Materials::Part> held;
 		std::uint32_t                worth{ 0 };
 		std::uint32_t                gain{ 0 };
@@ -83,18 +83,18 @@ namespace Workbench
 	// is now, or nothing once no such spare is left.
 	[[nodiscard]] std::optional<Spare> SpareOn(const Selection& a_item, const Priced& a_priced, const RE::ExtraDataList* a_extra);
 
-	// What a spare's repair takes from its parts, and what goes back.
+	// What a spare's repair takes from its components, and what goes back.
 	struct Payment
 	{
 		std::vector<Materials::Part> taken;
 		std::vector<Materials::Part> back;
 	};
 
-	// The price of a_spare's gain on a_item at a_priced, paid from its parts
-	// the cheapest first. A part is taken while at least half its worth is
-	// still owed, and 1 part at least whenever the spare has any, as every
-	// repair takes 1. What goes back is what the spare holds less what was
-	// taken.
+	// The price of a_spare's gain on a_item at a_priced, paid from its
+	// components the cheapest first. A component is taken while at least half
+	// its worth is still owed, and 1 component at least whenever the spare has
+	// any, as every repair takes 1. What goes back is what the spare holds
+	// less what was taken.
 	[[nodiscard]] Payment Pay(const Spare& a_spare, const Selection& a_item, const Priced& a_priced);
 
 	// The spare's first 4 columns in the box: its mark, its name, its own

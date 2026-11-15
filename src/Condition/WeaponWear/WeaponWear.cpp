@@ -82,7 +82,7 @@ namespace WeaponWear
 			REX::INFO("A weapon, yours or an NPC's, performs as new until it breaks, since fWeaponPenaltyStart is {:g}, and a broken one at its floors. Its price still falls from full.",
 				Settings::fWeaponPenaltyStart.GetValue());
 		} else if (start < 1.0F) {
-			REX::INFO("A weapon, yours or an NPC's, performs as new down to {:.2f} condition, by fWeaponPenaltyStart, and below it each penalty runs down to its floor at 0. Its price still falls from full.",
+			REX::INFO("A weapon, yours or an NPC's, performs as new down to {:.2f} condition, by fWeaponPenaltyStart, and from there each penalty runs down to its floor at 0. Its price still falls from full.",
 				start);
 		}
 	}

@@ -85,4 +85,10 @@ namespace Materials
 	// for a weapon whose recipes asked for no component. a_extra can be null.
 	void ForEachRecipe(const Index& a_index, const RE::TESBoundObject& a_object, const RE::ExtraDataList* a_extra,
 		const std::function<void(const RE::BGSConstructibleObject&)>& a_each);
+
+	// The middle step of ForEachRecipe alone: the recipe behind every enabled
+	// mod of the copy a_extra describes, the legendary effect left out.
+	// a_extra can be null.
+	void ForEachModRecipe(const Index& a_index, const RE::ExtraDataList* a_extra,
+		const std::function<void(const RE::BGSConstructibleObject&)>& a_each);
 }

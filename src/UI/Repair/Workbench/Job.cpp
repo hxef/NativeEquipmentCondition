@@ -137,7 +137,7 @@ namespace Workbench
 		// its supplies, which the perk takes nothing off, see Supplies.h.
 		const auto& standing = a_priced.standing;
 		const auto off = CraftingPerks::Discount(standing.rank, standing.ranks);
-		const auto onlySupplies = !Supplies::TakesComponents(a_selection.percent, a_selection.kind);
+		const auto onlySupplies = !Supplies::TakesComponents(a_selection);
 		const auto over = standing.perk && off > 0 && !onlySupplies ?
 		                      Text::RepairDiscount(standing.Name(), standing.rank, off) :
 		                      std::string{};
@@ -225,8 +225,8 @@ namespace Workbench
 		}
 
 		if (Supplies::Count() > 0) {
-			TraceLog::Line("menu", "Workbench adds the supplies {:s} to the repair of {:s}, the components only below {:d}%",
-				Spell(Supplies::Of(selection.kind)), selection.Name(), Supplies::From());
+			TraceLog::Line("menu", "Workbench adds the supplies {:s} to the repair of {:s}, the supplies alone from {:d}% up",
+				Spell(Supplies::Of(selection)), selection.Name(), Supplies::From());
 		}
 
 		auto& job = InHand();
@@ -378,8 +378,8 @@ namespace Workbench
 		if (FreeRepairs()) {
 			TraceLog::Line("menu", "Workbench mended {:s} for nothing, fBenchCostMult is 0", Selected(a_menu).Name());
 		} else {
-			TraceLog::Line("menu", "Workbench mended {:s} for nothing, it was above {:d}%",
-				Selected(a_menu).Name(), FreeAbove());
+			TraceLog::Line("menu", "Workbench mended {:s} for nothing, from {:d}% up",
+				Selected(a_menu).Name(), FreeFrom());
 		}
 		Finish(a_menu);
 	}

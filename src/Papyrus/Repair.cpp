@@ -42,12 +42,11 @@ namespace Papyrus
 			bool                                   player{ false };
 		};
 
-		// What a_item names, with its sound price for a_worth, or nothing for
+		// What a_held found, with its sound price for a_worth, or nothing for
 		// None, a gone item and gear NEC gives no condition.
-		std::optional<Copied> CopyOf(const Item& a_item, bool a_worth = false)
+		std::optional<Copied> Copy(Holding& a_held, bool a_worth)
 		{
-			Holding     held{ a_item };
-			const auto* found = held.found();
+			const auto* found = a_held.found();
 			if (!found || !Tracked(*found)) {
 				return std::nullopt;
 			}
@@ -62,6 +61,28 @@ namespace Papyrus
 				out.worth = VendorRepair::SoundWorth(*found->entry, found->stack);
 			}
 			return out;
+		}
+
+		std::optional<Copied> CopyOf(const Item& a_item, bool a_worth = false)
+		{
+			Holding held{ a_item };
+			return Copy(held, a_worth);
+		}
+
+		std::optional<Copied> CopyOf(RE::TESObjectREFR& a_ref)
+		{
+			Holding held{ a_ref };
+			return Copy(held, false);
+		}
+
+		// The player's discount on a workbench repair of a_base, by the perk
+		// that prices the copy whose list is a_extra, its mods included. Null
+		// a_extra prices the plain item. Run it holding no inventory lock, as
+		// the bench does.
+		std::int32_t DiscountOf(const RE::TESBoundObject& a_base, const RE::ExtraDataList* a_extra)
+		{
+			const auto standing = CraftingPerks::Of(a_base, a_extra, Materials::BillOfLines(a_base, a_extra));
+			return static_cast<std::int32_t>(CraftingPerks::Discount(standing.rank, standing.ranks));
 		}
 
 		// The item NEC gives a condition that a_form names, itself or a
@@ -122,20 +143,27 @@ namespace Papyrus
 	}
 
 	// -------------------------------------------------------------------
-	// The 8 functions
+	// The 10 functions
 	// -------------------------------------------------------------------
 
-	std::int32_t GetFreeMendAbove(std::monostate)
+	std::int32_t GetFreeMendFrom(std::monostate)
 	{
-		Log::Calling("GetFreeMendAbove");
-		TraceLog::Papyrus::Begin("CALL", "NEC.GetFreeMendAbove");
-		return Result(static_cast<std::int32_t>(Workbench::FreeAbove()));
+		Log::Calling("GetFreeMendFrom");
+		TraceLog::Papyrus::Begin("CALL", "NEC.GetFreeMendFrom");
+		return Result(static_cast<std::int32_t>(Workbench::FreeFrom()));
 	}
 
-	std::int32_t GetModLockBelow(std::monostate)
+	std::int32_t GetSuppliesOnlyFrom(std::monostate)
 	{
-		Log::Calling("GetModLockBelow");
-		TraceLog::Papyrus::Begin("CALL", "NEC.GetModLockBelow");
+		Log::Calling("GetSuppliesOnlyFrom");
+		TraceLog::Papyrus::Begin("CALL", "NEC.GetSuppliesOnlyFrom");
+		return Result(static_cast<std::int32_t>(Workbench::SuppliesOnlyFrom()));
+	}
+
+	std::int32_t GetModdingFrom(std::monostate)
+	{
+		Log::Calling("GetModdingFrom");
+		TraceLog::Papyrus::Begin("CALL", "NEC.GetModdingFrom");
 		return Result(static_cast<std::int32_t>(Workbench::ModifyFloor()));
 	}
 
@@ -143,13 +171,22 @@ namespace Papyrus
 	{
 		Log::Calling("GetRepairDiscount");
 		TraceLog::Papyrus::Begin("CALL", "NEC.GetRepairDiscount base={:s}", Hex(a_base));
-		const auto* base = TrackedBase(a_base);
-		if (!base) {
-			return Result(0);
+		// A reference counts its own mods, as the bench prices that copy
+		// (Workbench/Cost.cpp). A base form has none.
+		if (auto* ref = a_base ? a_base->As<RE::TESObjectREFR>() : nullptr) {
+			const auto item = CopyOf(*ref);
+			return Result(item ? DiscountOf(*item->base, item->extra.get()) : 0);
 		}
-		// The perk that prices the plain item, by its own recipes.
-		const auto standing = CraftingPerks::Of(*base, nullptr, Materials::BillOfLines(*base, nullptr));
-		return Result(static_cast<std::int32_t>(CraftingPerks::Discount(standing.rank, standing.ranks)));
+		const auto* base = TrackedBase(a_base);
+		return Result(base ? DiscountOf(*base, nullptr) : 0);
+	}
+
+	std::int32_t GetItemRepairDiscount(std::monostate, Item a_item)
+	{
+		Log::Calling("GetItemRepairDiscount");
+		TraceLog::Papyrus::Begin("CALL", "NEC.GetItemRepairDiscount item={:s}", Shown(a_item));
+		const auto item = CopyOf(a_item);
+		return Result(item ? DiscountOf(*item->base, item->extra.get()) : 0);
 	}
 
 	std::optional<std::vector<Cost>> GetRepairCost(std::monostate, Item a_item, std::int32_t a_toPercent)

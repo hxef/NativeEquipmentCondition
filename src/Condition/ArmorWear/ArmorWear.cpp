@@ -45,7 +45,7 @@ namespace ArmorWear
 			REX::INFO("A piece of armor, yours or an NPC's, protects as new until it breaks, since fArmorPenaltyStart is {:g}, and a broken one at fArmorFloor. Its price still falls from full.",
 				Settings::fArmorPenaltyStart.GetValue());
 		} else if (start < 1.0F) {
-			REX::INFO("A piece of armor, yours or an NPC's, protects as new down to {:.2f} condition, by fArmorPenaltyStart, and below it its protection runs down to fArmorFloor at 0. Its price still falls from full.",
+			REX::INFO("A piece of armor, yours or an NPC's, protects as new down to {:.2f} condition, by fArmorPenaltyStart, and from there its protection runs down to fArmorFloor at 0. Its price still falls from full.",
 				start);
 		}
 	}

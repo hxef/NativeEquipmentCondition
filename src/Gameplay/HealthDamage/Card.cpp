@@ -55,9 +55,9 @@ namespace HealthDamage
 
 		// GetWeaponDisplayDamage has 4 callers on both games. Beside the card,
 		// this is the one that passes the health a stack carries. It works out
-		// 1 stack's damage for the item lists, such as the workbench's. The
-		// other 2 pass full health, which scales nothing. LIST_STACK_SITE sits
-		// in that function too.
+		// 1 stack's damage, and the only weapon list that uses it is the HUD
+		// loot list's sort. The other 2 pass full health, which scales nothing.
+		// LIST_STACK_SITE sits in that function too.
 		constexpr CallSite STACK_DAMAGE_SITE{ AE{ 2222649, 0x13E }, OG{ 307737, 0x12F }, "stack damage" };
 
 		// The 2 calls to ExtraDataList::GetHealthPerc right before the card
@@ -69,10 +69,10 @@ namespace HealthDamage
 		// The first is in FillDamageTypeInfo, and every caller passes its own
 		// stack through it: the card's item, the compare item, the item list
 		// entries and CardDamage. The second is in the stack damage site's
-		// function, whose 3 callers are player menus. So a listed mod's floor
-		// also reaches the damage sort of the HUD loot list and the workbench
-		// lists, and the best in class icon of the container and barter lists,
-		// as the card shows it.
+		// function. Of its 3 callers, 1 ranks the HUD loot list of a container
+		// with fewer items than uQCInventorySortThreshold, 1 is never reached
+		// and 1 only sees the player's ammo. So a listed mod's floor also
+		// reaches that list's damage sort, as the card shows it.
 		constexpr CallSite CARD_STACK_SITE{ AE{ RE::ID::PipboyInventoryUtils::FillDamageTypeInfo.ae(), 0x0A7 }, OG{ RE::ID::PipboyInventoryUtils::FillDamageTypeInfo.og(), 0x0A6 }, "card stack" };
 		constexpr CallSite LIST_STACK_SITE{ AE{ 2222649, 0x0FE }, OG{ 307737, 0x0EF }, "stack list" };
 
@@ -124,7 +124,7 @@ namespace HealthDamage
 		thread_local const RE::ExtraDataList* t_listStack = nullptr;
 
 		// The health CardDamage asks the card about, in place of the one the
-		// stack carries, and nothing while the card is the game's own.
+		// stack carries, and nothing while the card stays vanilla.
 		thread_local std::optional<float> t_askedHealth;
 
 		// The 2 Pip-Boy hooks. The object effect sites read what they hand

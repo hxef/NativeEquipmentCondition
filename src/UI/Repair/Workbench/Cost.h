@@ -68,12 +68,11 @@ namespace Workbench
 	[[nodiscard]] std::vector<Materials::Part> CostOf(const Priced& a_priced, std::uint32_t a_from, std::uint32_t a_to);
 
 	// What one repair takes from the player, the bill every box lists: the
-	// supplies of the item's kind, see Supplies.h, plus CostOf for the part of
-	// the way below Supplies::From(). With the supplies at 0 it is CostOf
-	// itself. A 10mm Pistol from 85% to 100% takes 1 Oil and 1 Cloth, and from
-	// 40% to 100% those plus CostOf from 40% to 80%. Where the load order has
-	// none of the supplies, it falls back to CostOf, so a paid repair is never
-	// free.
+	// supplies of the item, see Supplies.h, plus CostOf for the part of the
+	// way below Supplies::From(). With the supplies at 0 it is CostOf itself.
+	// A 10mm Pistol from 90% to 100% takes 1 Oil and 1 Cloth, and from 40% to
+	// 100% those plus CostOf from 40% to 88%. Where the load order has none of
+	// the supplies, it falls back to CostOf, so a paid repair is never free.
 	[[nodiscard]] std::vector<Materials::Part> BillOf(const Priced& a_priced, const Selection& a_selection,
 		std::uint32_t a_from, std::uint32_t a_to);
 

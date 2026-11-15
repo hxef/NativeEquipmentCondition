@@ -8,6 +8,7 @@
 #include <algorithm>
 #include <chrono>
 #include <cmath>
+#include <cstddef>
 #include <span>
 #include <string_view>
 #include <utility>
@@ -224,7 +225,7 @@ namespace Provenance
 		}
 	}
 
-	std::size_t MeasureAreas(const Supply& a_supply, Areas& a_out)
+	void MeasureAreas(const Supply& a_supply, Areas& a_out)
 	{
 		auto& ladder = a_out.ladder;
 		for (const auto* container : g_dataHandler->GetFormArray<RE::TESObjectCONT>()) {
@@ -238,7 +239,6 @@ namespace Provenance
 			}
 		}
 		std::sort(ladder.begin(), ladder.end());
-		return ladder.size();
 	}
 
 	std::optional<float> AreaOf(const Supply& a_supply, const Areas& a_areas, const RE::TESObjectCELL& a_cell)
@@ -250,7 +250,7 @@ namespace Provenance
 			}
 		}
 
-		// No NEC lock is held while the game's memory is walked, so 2 threads
+		// No NEC lock is held while the engine's memory is walked, so 2 threads
 		// may measure the same cell at once.
 		const auto walk = WalkCell(a_supply, a_cell);
 
@@ -267,7 +267,7 @@ namespace Provenance
 		const auto [kept, added] = Keep(a_areas, a_cell.formID, rank);
 		if (added && TraceLog::IsOpen()) {
 			if (walk.tally.lists == 0) {
-				TraceLog::Line("area", "{:s} [{:08X}] has no leveled list of weapons in a container or character, so loot lying in it rolls at the ordinary middle",
+				TraceLog::Line("area", "{:s} [{:08X}] has no leveled list of weapons in a container or character, so loose loot there rolls at the ordinary middle",
 					NameOf(a_cell), a_cell.formID);
 			} else {
 				TraceLog::Line("area", "{:s} [{:08X}] ranks {:.2f}, from {:d} leveled {:s} in {:d} {:s} and {:d} {:s}, measured in {:.1f} ms",

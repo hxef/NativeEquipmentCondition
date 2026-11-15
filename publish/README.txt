@@ -20,12 +20,13 @@ actually does.
 DOES WHAT, EXACTLY?
 Your weapons and armor wear down as you use them, the way they did in
 Fallout 3 and New Vegas. Worn weapons and armor lose effectiveness and sell
-for less. Keep them in shape at a workbench with components or a spare of
-the same weapon or armor, or pay a trader in caps.
+for less. Keep them in shape at a workbench with a few supplies, plus
+components for deeper wear, or with a spare of the same weapon or armor, or
+pay a trader in caps.
 
 Worn gear can't be modded until it is repaired to full, so swapping in cheap
-mods can't cut the repair bill. The "Mod lock below" slider in MCM eases
-this or turns it off.
+mods can't cut the repair bill. The "Workbench modifications from" slider in
+MCM eases this or turns it off.
 
 Done natively, in one F4SE plugin: no ESP and no new assets besides an
 optional MCM page and a Papyrus API script for modders. It reads
@@ -45,7 +46,7 @@ Weapons:
 * A worn weapon fills the VATS critical meter slower, down to 50% of its rate
   at 0 condition, like in Fallout 3, where worn weapons landed fewer critical
   hits.
-* Your guns can jam once they drop below 50% condition. "Jams below" and
+* Your worn guns can jam, starting at 50% condition. "Jams start at" and
   "Jam chance at 0 condition" in MCM set where they start and how often.
 * Your weapon is unequipped automatically when it breaks, and can't be
   equipped again until it is repaired.
@@ -66,8 +67,7 @@ Armor and clothing:
   armor. With "Plain apparel never wears" switched on in MCM, it never wears
   and shows no CND.
 * Power armor wears and is repaired at the power armor station as it always
-  was, but a damaged piece now sells for less, and so does a drained fusion
-  core.
+  was, but a damaged piece sells for less, and so does a drained fusion core.
 
 All gear:
 * Price drops faster than condition, on the Fallout 3 and New Vegas curve: an
@@ -83,15 +83,16 @@ All gear:
 LOOT WITH A HISTORY
 * Weapons and armor turn up already worn. Each gets its condition the first
   time it lands in an inventory: an NPC's, a container's, a trader's stock, or
-  yours when you pick up one that was lying around. That happens only once, so
+  yours when you pick up one outside a container. That happens only once, so
   its condition is never rerolled, no matter who carries it or where it gets
   dropped.
 * The condition is a roll, weighted by where the item came from and who
   carried it. A raider's pipe gun has seen better days, while a well equipped
   faction like the Brotherhood or the Gunners keeps its gear in better shape.
-  Gear lying around lands at around 35 to 80%, depending on how well stocked
-  its area is, while most quest rewards arrive new, and so does everything
-  companions and other essential NPCs start with.
+  Gear outside containers, on shelves, tables and the ground, lands at around
+  35 to 80%, depending on how well stocked its area is.
+* Most quest rewards arrive new, and so does everything companions and other
+  essential NPCs start with.
 * Legendary gear you find in chests or buy from traders arrives new.
   Legendaries dropped by enemies still turn up worn.
 * About 1 item in 100 ignores all that: a raider can drop a pristine rifle,
@@ -100,7 +101,8 @@ LOOT WITH A HISTORY
 REPAIR AT THE WORKBENCH
 * At the weapon or armor workbench, select a worn item and a REPAIR button
   takes RENAME's place until it is back at full. Press it, choose how far to
-  repair it in steps of 10%, and pay in the components it is built from.
+  repair it in steps of 10%, and pay in supplies, plus the components it is
+  built from for deeper wear.
   Beside each step the box shows what it adds to the item's damage or
   resistances by type, and the box of spares does the same for each spare, in
   columns unless "Repair rows in columns" is off. Gear with no scrap recipe,
@@ -112,22 +114,24 @@ REPAIR AT THE WORKBENCH
   and the components left over go to your inventory. "Spare worth" sets how
   much condition a spare restores and Scrapper raises it, but you never get
   back more components than it holds.
-* Barely worn gear, above 95%, gets a MEND button instead, which fixes it on
-  the spot for free. The 95% is the "Free mend above" setting: 100 makes every
-  repair cost components, and 0 mends everything but broken gear for free.
+* Barely worn gear, from 95% up, gets a MEND button instead, which fixes it
+  on the spot for free. The 95% is the "Free mend from" setting. 100 turns
+  MEND off, and 0 mends everything for free.
 * Crafting perks like Gun Nut, Science!, Blacksmith and Armorer make repairs
   take fewer components, down to half at the top rank. The perk behind most of
   an item's components sets the discount, and each rank's description says how
   much. The perks count too when a skill mod like Classic NV Skill System
   grants them from your skills.
-* Every repair also takes supplies, oil and cloth for a weapon, adhesive and
-  cloth for armor and clothing. From 80% up that is all it takes. MEND, a
-  spare and a trader take none, and "Repair supplies" at 0 turns them off.
-* Below 80%, the repair lock asks for the crafting perk rank the gear's mods
-  need. Gear whose mods ask Gun Nut 3 repairs from 25% with Gun Nut 2, from
-  50% with Gun Nut 1 and only from 80% with no rank. Gear on standard parts
-  repairs at any rank, and a spare or a trader repairs anything. "Lock
-  repairs" turns it off or asks every item for the last rank.
+* Every repair also takes supplies (oil and cloth for a gun or a powered melee
+  weapon such as the Ripper or a Heated Super Sledge, adhesive for other melee
+  weapons, and adhesive and cloth for armor and clothing). From 88% up that is
+  all it takes. MEND, a spare and a trader take none, and
+  "Servicing supplies" at 0 turns them off.
+* When a repair takes components, the repair lock asks for the crafting perk
+  rank the gear's mods need. Gear whose mods ask Gun Nut 3 repairs from 25%
+  with Gun Nut 2, from 50% with Gun Nut 1 and only from 88% with no rank. Most
+  gear on standard parts repairs at any rank, and a spare or a trader repairs
+  anything. "Lock repairs" turns it off or asks every item for the last rank.
 * A repair earns the same XP as crafting a mod from those components.
 * With "Workbench repair cost" at 0, every repair is free and done on the
   spot, broken gear included.
@@ -136,8 +140,8 @@ REPAIR AT A TRADER
 * Out of spare components? Gun shops, armorers and clothiers repair their kind
   of gear for caps. Those caps stay in the trader's till, ready to buy the loot
   you haul in next.
-* On the barter screen, a sign under the trader's caps shows how far they repair
-  weapons, armor and clothing.
+* On the barter screen, a sign shows how far a trader repairs weapons, armor and
+  clothing.
 * To repair, select a worn item on your side and click REPAIR, or press C on the
   keyboard or the left bumper on a pad. Each step shows its price and what it
   adds to the item's damage or resistances.
@@ -157,6 +161,9 @@ REPAIR AT A TRADER
 SEE IT AT A GLANCE
 * CND on the item cards, with the worn damage, resistances, fire rate,
   accuracy and range.
+* Beside CND, how fast the item wears or spoils, x1.0 for an ordinary item of
+  its kind. While you try a mod at a workbench, a + or - after it shows that
+  the mod makes the item wear faster or slower.
 * CND bars on the HUD ammo counter, the power armor dash, the pickup prompt and
   the Pip-Boy apparel figure, and condition meters on the quick container rows
   and a food's freshness. Each HUD bar has its own switch, place and size in
@@ -320,11 +327,13 @@ or WeaponTypeLaser for every laser weapon.
   Fallout4.esm|148338 = wear 1.2              ; a 10mm receiver
   Fallout4.esm|092A86 = wear 0.8 damage 0.9   ; WeaponTypeBallistic keyword
 
-wear is how fast it wears, from 0 to 10, where 1 is normal. damage is how much
-of its damage it keeps at 0 condition, from 0 to 1, as Damage at 0 condition
-sets it for every other weapon. Both come from the weapon's own line, else
-from a line for 1 of its keywords. A mod's line multiplies the wear, up to 10
-in all, and its damage beats a keyword's. The first line read counts.
+A line holds wear, damage or both, each followed by its number. wear is how
+fast it wears, from 0 to 10, where 1 is normal. damage is the share of its
+full damage the weapon still does at 0 condition, from 0 to 1, so the
+Baseball Bat above hits for 30% when fully worn. "Damage at 0 condition" sets
+it for every other weapon. Both come from the weapon's own line, else from a
+line for 1 of its keywords. A mod's line multiplies the wear, up to 10 in
+all, and its damage beats a keyword's. The first line read counts.
 
 NEC.log lists what each file sets and any line it skips. NEC ships
 Wear\NEC_Example.ini, an example that changes nothing as it is.

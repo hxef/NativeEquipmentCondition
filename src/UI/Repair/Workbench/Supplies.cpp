@@ -1,11 +1,13 @@
 #include "UI/Repair/Workbench/Supplies.h"
 
+#include "Condition/Condition.h"
 #include "Condition/Repair.h"
 #include "Core/Settings.h"
 
 #include <algorithm>
 #include <array>
 #include <format>
+#include <span>
 #include <string>
 #include <string_view>
 
@@ -26,15 +28,68 @@ namespace Workbench::Supplies
 		constexpr Supply ADHESIVE{ "Adhesive", 0x01FAA5 };  // c_Adhesive
 		constexpr Supply CLOTH{ "Cloth", 0x1223C7 };        // c_Cloth
 
-		// The supplies of each kind, in the order a box lists them.
-		constexpr std::array<Supply, 2> WEAPON_SUPPLIES{ OIL, CLOTH };
+		// The components that mark a melee weapon's mod as powered, by their
+		// IDs in Fallout4.esm: a heating coil, a shock or stun pack, the
+		// rocket of a bat.
+		constexpr std::array<RE::TESFormID, 2> POWER_COMPONENTS{
+			0x01FA9B,  // c_Circuitry
+			0x01FAB3,  // c_NuclearMaterial
+		};
+
+		// The supplies of each set, in the order a box lists them. Oil
+		// keeps what fires, runs on a motor or a power source going,
+		// adhesive mends a plain blade, club or fist, and cloth is the rag
+		// for a gun's action and the patch for armor and clothing.
+		constexpr std::array<Supply, 2> MECHANICAL_SUPPLIES{ OIL, CLOTH };
+		constexpr std::array<Supply, 1> PLAIN_SUPPLIES{ ADHESIVE };
 		constexpr std::array<Supply, 2> ARMOR_SUPPLIES{ ADHESIVE, CLOTH };
 		constexpr std::array<Supply, 3> ALL_SUPPLIES{ OIL, ADHESIVE, CLOTH };
 
-		// The component as the load order holds it now, or nothing.
+		// The component of Fallout4.esm at a_id as the load order holds it
+		// now, or nothing.
+		[[nodiscard]] const RE::BGSComponent* ComponentOf(RE::TESFormID a_id)
+		{
+			return g_dataHandler ? g_dataHandler->LookupForm<RE::BGSComponent>(a_id, "Fallout4.esm") : nullptr;
+		}
+
 		[[nodiscard]] const RE::BGSComponent* ComponentOf(const Supply& a_supply)
 		{
-			return g_dataHandler ? g_dataHandler->LookupForm<RE::BGSComponent>(a_supply.id, "Fallout4.esm") : nullptr;
+			return ComponentOf(a_supply.id);
+		}
+
+		// A gun, or a melee weapon with a motor or a power source: a copy
+		// with the Automatic flag, such as the Ripper, or one with a mod
+		// built from Circuitry or Nuclear Material, such as a Heated Super
+		// Sledge or a baton with a shock mod. Read off the copy, so a weapon
+		// of another mod follows the same rule, and a plain Super Sledge or a
+		// Baseball Bat with large blades is neither.
+		[[nodiscard]] bool Mechanical(const SelectedItem::Item& a_item)
+		{
+			const auto* weapon = a_item.object ? a_item.object->As<RE::TESObjectWEAP>() : nullptr;
+			if (!weapon) {
+				return false;
+			}
+			if (weapon->IsGunWeapon() ||
+				Condition::InstanceDataOf(a_item.extra, weapon->weaponData).flags.any(RE::WEAPON_FLAGS::kAutomatic)) {
+				return true;
+			}
+			std::array<const RE::BGSComponent*, POWER_COMPONENTS.size()> power{};
+			std::ranges::transform(POWER_COMPONENTS, power.begin(), [](RE::TESFormID a_id) { return ComponentOf(a_id); });
+			return Materials::ModsAskFor(a_item.extra, power);
+		}
+
+		// The set a_item takes: oil and cloth for a mechanical weapon,
+		// adhesive alone for any other weapon, adhesive and cloth for armor
+		// and clothing.
+		[[nodiscard]] std::span<const Supply> SuppliesFor(const SelectedItem::Item& a_item)
+		{
+			if (a_item.Armor()) {
+				return ARMOR_SUPPLIES;
+			}
+			if (Mechanical(a_item)) {
+				return MECHANICAL_SUPPLIES;
+			}
+			return PLAIN_SUPPLIES;
 		}
 	}
 
@@ -53,23 +108,28 @@ namespace Workbench::Supplies
 		return static_cast<std::uint32_t>(std::clamp(Settings::iSuppliesOnlyFrom.GetValue(), 0, full));
 	}
 
-	bool TakesComponents(std::uint32_t a_percent, Condition::Kind a_kind)
+	bool AnyHeld()
 	{
-		return a_percent < From() || Of(a_kind).empty();
+		return std::ranges::any_of(ALL_SUPPLIES, [](const Supply& a_supply) { return ComponentOf(a_supply) != nullptr; });
+	}
+
+	bool TakesComponents(const SelectedItem::Item& a_item)
+	{
+		return a_item.percent < From() || Of(a_item).empty();
 	}
 
 	// -------------------------------------------------------------------
 	// The bill
 	// -------------------------------------------------------------------
 
-	std::vector<Materials::Part> Of(Condition::Kind a_kind)
+	std::vector<Materials::Part> Of(const SelectedItem::Item& a_item)
 	{
 		std::vector<Materials::Part> out;
 		const auto                   count = Count();
 		if (count == 0) {
 			return out;
 		}
-		for (const auto& supply : a_kind == Condition::Kind::kArmor ? ARMOR_SUPPLIES : WEAPON_SUPPLIES) {
+		for (const auto& supply : SuppliesFor(a_item)) {
 			if (const auto* component = ComponentOf(supply)) {
 				out.push_back({ component, count });
 			}
@@ -77,9 +137,9 @@ namespace Workbench::Supplies
 		return out;
 	}
 
-	std::vector<Materials::Part> Add(const std::vector<Materials::Part>& a_bill, Condition::Kind a_kind)
+	std::vector<Materials::Part> Add(const std::vector<Materials::Part>& a_bill, const SelectedItem::Item& a_item)
 	{
-		auto out = Of(a_kind);
+		auto out = Of(a_item);
 		for (const auto& part : a_bill) {
 			const auto same = std::ranges::find(out, part.component, &Materials::Part::component);
 			if (same != out.end()) {
@@ -103,7 +163,7 @@ namespace Workbench::Supplies
 			return;
 		}
 		const auto from = From();
-		REX::INFO("Workbench repairs take {0:d} Oil and {0:d} Cloth for a weapon and {0:d} Adhesive and {0:d} Cloth for armor, {1:s}.",
+		REX::INFO("Workbench repairs take {0:d} Oil and {0:d} Cloth for a gun, an automatic melee weapon or one with a mod built from Circuitry or Nuclear Material, {0:d} Adhesive for any other weapon, {0:d} Adhesive and {0:d} Cloth for armor, {1:s}.",
 			count, from < Repair::FULL ? std::format("and from {:d}% condition nothing else", from) : std::string{ "on top of the components, since iSuppliesOnlyFrom is 100" });
 	}
 

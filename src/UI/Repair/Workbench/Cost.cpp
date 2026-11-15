@@ -126,14 +126,14 @@ namespace Workbench
 		// A repair at fBenchCostMult 0 stays free, supplies and all. With no
 		// supplies to take, off or missing from the load order, the whole way
 		// is paid in components, as Supplies::TakesComponents tells the lock.
-		if (FreeRepairs() || Supplies::Of(a_selection.kind).empty()) {
+		if (FreeRepairs() || Supplies::Of(a_selection).empty()) {
 			return CostOf(a_priced, a_from, a_to);
 		}
 
 		const auto from = Supplies::From();
 		const auto components = a_from < from ? CostOf(a_priced, a_from, std::min(a_to, from))
 		                                      : std::vector<Materials::Part>{};
-		return Supplies::Add(components, a_selection.kind);
+		return Supplies::Add(components, a_selection);
 	}
 
 	std::optional<std::vector<Materials::Part>> BillFor(RE::TESBoundObject& a_object, const RE::ExtraDataList* a_extra,

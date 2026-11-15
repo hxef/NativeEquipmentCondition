@@ -11,8 +11,11 @@ namespace Text
 		return Pick(TIP_WEAR);
 	}
 
-	std::string BenchTip(std::uint32_t a_modifyFloor)
+	std::string BenchTip(std::uint32_t a_modifyFloor, bool a_supplies)
 	{
+		if (a_supplies) {
+			return Pick(a_modifyFloor >= FULL ? TIP_BENCH_SUPPLIES : TIP_BENCH_REPAIR_SUPPLIES);
+		}
 		return Pick(a_modifyFloor >= FULL ? TIP_BENCH : TIP_BENCH_REPAIR);
 	}
 

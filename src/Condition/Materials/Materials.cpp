@@ -206,6 +206,39 @@ namespace Materials
 		}
 	}
 
+	void ForEachModRecipe(const Index& a_index, const RE::ExtraDataList* a_extra,
+		const std::function<void(const RE::BGSConstructibleObject&)>& a_each)
+	{
+		// An item with no mods comes back from a save with no mod list, a dress
+		// for example, and GetIndexData reads the list without checking.
+		const auto* mods = a_extra ? a_extra->GetByType<RE::BGSObjectInstanceExtra>() : nullptr;
+		if (!mods || !mods->values) {
+			return;
+		}
+
+		// The legendary effect is left out. Vanilla builds it from no recipe,
+		// but a plugin such as AWKCR gives it one, which would put legendary
+		// components in a repair and in the wear rate. The game names only 1
+		// legendary mod an item, so on an item a plugin gives 2 or more, the
+		// rest still count. CommonLibF4 declares the lookup without const.
+		const auto* legendary = const_cast<RE::ExtraDataList*>(a_extra)->GetLegendaryMod();
+
+		for (const auto& entry : mods->GetIndexData()) {
+			if (entry.disabled) {
+				continue;
+			}
+
+			const auto* mod = RE::TESForm::GetFormByID<RE::BGSMod::Attachment::Mod>(entry.objectID);
+			if (mod && mod == legendary) {
+				continue;
+			}
+			const auto  found = mod ? a_index.mods.find(mod) : a_index.mods.end();
+			if (found != a_index.mods.end()) {
+				a_each(*found->second);
+			}
+		}
+	}
+
 	void ForEachRecipe(const Index& a_index, const RE::TESBoundObject& a_object, const RE::ExtraDataList* a_extra,
 		const std::function<void(const RE::BGSConstructibleObject&)>& a_each)
 	{
@@ -226,33 +259,7 @@ namespace Materials
 			each(*borrowed);
 		}
 
-		// An item with no mods comes back from a save with no mod list, a dress
-		// for example, and GetIndexData reads the list without checking.
-		const auto* mods = a_extra ? a_extra->GetByType<RE::BGSObjectInstanceExtra>() : nullptr;
-		if (mods && mods->values) {
-			// The legendary effect is left out. Vanilla builds it from no
-			// recipe, but a plugin such as AWKCR gives it one, which would put
-			// legendary parts in a repair and in the wear rate. The game names
-			// only 1 legendary mod an item, so on an item a plugin gives 2 or
-			// more, the rest still count. CommonLibF4 declares the lookup
-			// without const.
-			const auto* legendary = const_cast<RE::ExtraDataList*>(a_extra)->GetLegendaryMod();
-
-			for (const auto& entry : mods->GetIndexData()) {
-				if (entry.disabled) {
-					continue;
-				}
-
-				const auto* mod = RE::TESForm::GetFormByID<RE::BGSMod::Attachment::Mod>(entry.objectID);
-				if (mod && mod == legendary) {
-					continue;
-				}
-				const auto  found = mod ? a_index.mods.find(mod) : a_index.mods.end();
-				if (found != a_index.mods.end()) {
-					each(*found->second);
-				}
-			}
-		}
+		ForEachModRecipe(a_index, a_extra, each);
 
 		// A weapon borrows last, once its own recipe and its mods asked for
 		// nothing.

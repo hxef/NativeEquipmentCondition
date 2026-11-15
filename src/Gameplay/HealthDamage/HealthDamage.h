@@ -43,4 +43,10 @@ namespace HealthDamage
 	// which every hook above applies to a weapon with no damage line in
 	// NEC/Wear, see Curve.h.
 	[[nodiscard]] float DamageShare(float a_health);
+
+	// The same for 1 copy of a_weapon, whose stats are a_instance and whose
+	// list is a_extra, by its damage line in NEC/Wear where it has one, as
+	// the hooks above apply it. The caller keeps a_extra alive for the call.
+	[[nodiscard]] float DamageShare(const RE::TESObjectWEAP& a_weapon, const RE::TESObjectWEAP::InstanceData* a_instance,
+		const RE::ExtraDataList* a_extra, float a_health);
 }

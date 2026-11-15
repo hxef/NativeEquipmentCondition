@@ -10,14 +10,14 @@
 #include <vector>
 
 // Repairing a worn weapon or piece of armor at its workbench. An item below
-// the mod lock, full unless fModLockStart says less, cannot be modified: its
+// the mod lock, full unless iModdingFrom says less, cannot be modified: its
 // row is faded, it gets no mod slots, the heading over them goes, and asking
 // for them says why. Instead a REPAIR button on the bar asks how far to repair
 // the item, a level at a time, then puts the vanilla crafting confirmation
 // up with the components on it, or the power armor station's list of them where
 // the bench is short. Saying yes spends them and pays the experience crafting a
 // mod from them would. Slight wear is repaired on the spot for free, see
-// FreeAbove, since a lock at full would otherwise make one shot a trip to the
+// FreeFrom, since a lock at full would otherwise make one shot a trip to the
 // bench. An item the bench has nothing to rebuild from, see Cost.h, is sent to
 // a trader. A worn item the bench would leave out of its list, since no mod
 // fits it, is listed all the same and stays greyed, see Display.h.
@@ -55,22 +55,35 @@ namespace Workbench
 	// and the perk text ask it too, so they never outlive the repair.
 	[[nodiscard]] bool Repairs();
 
-	// The condition an item has to be at to be modified, a whole percent from
-	// fModLockStart. At the default of full a gun that has fired one shot is
-	// kept out of the mod slots until it is repaired, which stops a cheap mod
-	// swap before a repair. Below full the player has chosen to allow that.
+	// The condition an item has to be at to be modified: iModdingFrom kept
+	// between 0 and 100, compared with the percent its card shows. At the
+	// default of 100 a gun that has fired one shot reads 99% and is kept out
+	// of the mod slots until it is repaired, which stops a cheap mod swap
+	// before a repair. Below 100 the player has chosen to allow that, and at 0
+	// even broken gear can be modded.
 	[[nodiscard]] std::uint32_t ModifyFloor();
 
-	// Above this condition a repair is free and immediate, and the button reads
+	// From this condition a repair is free and immediate, and the button reads
 	// MEND. At the default floor of full, one shot closes the slots, and
 	// charging for that would make every shot cost components. It takes
 	// nothing off a real repair, since an item below it pays the whole way up
 	// to full.
-	// iFreeMendAbove kept between 0 and 100, see Settings.h, so at 100 nothing
-	// is free and at 0 everything but a broken item is.
-	// A paid repair from iSuppliesOnlyFrom up takes only oil or adhesive and
-	// cloth, see Supplies.h, so by default an item from 80% to 95% costs those.
-	[[nodiscard]] std::uint32_t FreeAbove();
+	// iFreeMendFrom kept between 0 and 100, see Settings.h, so at 100 nothing
+	// is free and at 0 everything is, broken gear included.
+	// A paid repair from iSuppliesOnlyFrom up takes only its supplies, see
+	// Supplies.h, so by default an item from 88% to 94% costs those.
+	[[nodiscard]] std::uint32_t FreeFrom();
+
+	// Whether any repair can take its supplies alone: while iRepairSupplies
+	// is above 0, repairs cost something, iSuppliesOnlyFrom comes before
+	// FreeFrom and the load order holds at least 1 supply. SuppliesOnlyFrom
+	// and the loading screen's bench tip ask it.
+	[[nodiscard]] bool SuppliesAlone();
+
+	// The condition from which every paid repair takes only its supplies, at
+	// any perk rank: iSuppliesOnlyFrom while SuppliesAlone, else FreeFrom,
+	// since then no repair does. 88 by default.
+	[[nodiscard]] std::uint32_t SuppliesOnlyFrom();
 
 	// The components the bench would take from the player to bring a copy of
 	// a_object, whose list is a_extra, from a_from to a_to, whole percents, as

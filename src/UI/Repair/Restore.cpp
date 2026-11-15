@@ -10,7 +10,7 @@ namespace Restore
 	namespace
 	{
 		// Puts a_health on the stack, all the power armor station's repair
-		// does. NEC's own copy of the game's SetHealthFunctor, so the write
+		// does. NEC's own copy of the engine's SetHealthFunctor, so the write
 		// Equipped::WriteStack hands it on to is a function of NEC's own.
 		class SetHealth final :
 			public RE::BGSInventoryItem::StackDataWriteFunctor

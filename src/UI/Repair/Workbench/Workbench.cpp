@@ -106,11 +106,12 @@ namespace Workbench
 
 		// The button, and the only way into a repair. A barely worn item is
 		// repaired on the spot. One the bench has nothing to rebuild from is
-		// sent to a trader, see Cost.h, and one the repair lock holds back is
-		// turned away or shown its spares, see Lock.h. One with a single
-		// level worth offering goes straight to the confirmation, through the
-		// task queue like the prompt, unless the player carries a spare for
-		// it, see Spares.h, which only the question offers.
+		// refused, with a trader named while trader repairs are on, see
+		// Cost.h, and one the repair lock holds back is turned away or shown
+		// its spares, see Lock.h. One with a single level worth offering goes
+		// straight to the confirmation, through the task queue like the
+		// prompt, unless the player carries a spare for it, see Spares.h,
+		// which only the question offers.
 		void RepairSelectedItemHk(RE::ExamineMenu* a_menu)
 		{
 			if (!Repairs()) {
@@ -131,11 +132,13 @@ namespace Workbench
 
 			const auto priced = PriceOf(selection);
 			if (priced.units == 0) {
-				const auto said = Text::BenchCannotRepair();
+				// Read once, so the HUD message and the trace agree on naming a trader.
+				const bool trader = Settings::bVendorRepair.GetValue();
+				const auto said = Text::BenchCannotRepair(trader);
 				RE::SendHUDMessage::ShowHUDMessage(said.c_str(), nullptr, true, true);
 				RE::UIUtils::PlayMenuSound(RepairPrompt::REFUSED_SOUND);
-				TraceLog::Line("menu", "Workbench has nothing to rebuild {:s} from, so it sent the player to a trader",
-					selection.Name());
+				TraceLog::Line("menu", "Workbench has nothing to rebuild {:s} from, so it {:s}", selection.Name(),
+					trader ? "sent the player to a trader" : "refused the repair and named no trader");
 				return;
 			}
 
@@ -339,15 +342,15 @@ namespace Workbench
 		}
 
 		// As the settings stand at the start. The Settings line gives every
-		// change from the MCM page. Any wear reads 99% at most, so 99 mends
-		// nothing for free either.
-		const auto mend = FreeRepairs()                  ? std::string{ "Every repair is put right on the spot for nothing, since fBenchCostMult is 0." } :
-		                  FreeAbove() + 1 < Repair::FULL ? std::format("Condition above {:d}% is put right on the spot for nothing.", FreeAbove()) :
-		                                                   std::string{ "Every repair costs components." };
+		// change from the MCM page. Any wear reads 99% at most, so only 100
+		// mends nothing for free.
+		const auto mend = FreeRepairs()             ? std::string{ "Every repair is put right on the spot for nothing, since fBenchCostMult is 0." } :
+		                  FreeFrom() < Repair::FULL ? std::format("Condition from {:d}% up is put right on the spot for nothing.", FreeFrom()) :
+		                                              std::string{ "MEND is off, since iFreeMendFrom is 100." };
 		if (const auto floor = ModifyFloor(); floor > 0) {
-			REX::INFO("The workbench modifies nothing below {:d}% condition. {:s}", floor, mend);
+			REX::INFO("The workbench modifies an item from {:d}% condition up. {:s}", floor, mend);
 		} else {
-			REX::INFO("The workbench modifies an item at any condition, since fModLockStart is 0. {:s}", mend);
+			REX::INFO("The workbench modifies an item at any condition, since iModdingFrom is 0. {:s}", mend);
 		}
 		std::string levels;
 		for (const auto level : Repair::LEVELS) {

@@ -15,7 +15,9 @@ the curves, and hear its events.
 Compile against NEC.psc, which NEC installs in Data\Scripts\Source\User: keep that folder among your
 import folders. Never ship a copy of NEC.pex or NEC.psc with your mod.
 
-GetVersion tells you which NEC.dll runs, GetScriptVersion which NEC.pex your game loaded.
+GetVersion tells you which NEC.dll runs, GetScriptVersion which NEC.pex your game loaded. A function
+newer than the NEC a player runs does not exist there, so check GetVersion first. The Nexus
+changelog names the version that added each function.
 
 NEC.papyrus.log, in Documents\My Games\Fallout4\F4SE\NEC, logs the errors in a script's calls to
 NEC.
@@ -49,9 +51,12 @@ rest.
 
 A pile lying in the world shares 1 condition between its copies, and a write changes all of them.
 
-A function that takes a Form, such as IsTracked or GetAccuracyShare, takes a base form or a
-reference, and a reference answers as its base form does. A handle from GetItems or
-GetEquippedWeapon may reach a Form argument as None, so pass NEC.GetBase(akItem) there instead.
+A function that takes a Form asks about a kind of item, and one that takes an ObjectReference asks
+about 1 copy, its mods included. A Form argument takes a base form or a reference, and a reference
+answers for that very copy. Only GetRepairDiscount reads its mods, since mods change no other Form
+function's answer. GetItems lists every stack of a reference's base form. A handle may reach a Form
+argument as None, so pass the handle to an ObjectReference function such as GetItemRepairDiscount,
+or NEC.GetBase(akItem) to a Form one.
 
 
 Units
@@ -130,7 +135,7 @@ float Function GetSettingFloat(string asId)
     does not know.
 
 int Function GetSettingInt(string asId)
-    A whole number setting by its MCM id, such as "iFreeMendAbove:Balance". 0 for an id NEC does not
+    A whole number setting by its MCM id, such as "iFreeMendFrom:Balance". 0 for an id NEC does not
     know.
 
 bool Function GetSettingBool(string asId)
@@ -152,13 +157,15 @@ ObjectReference Function GetWornItem(Actor akActor, int aiSlot)
     none.
 
 ObjectReference[] Function GetWornItems(Actor akActor)
-    1 handle per tracked piece akActor wears, an empty array for none or an actor in power armor.
+    1 handle per tracked piece akActor wears, an empty array for none or an actor in power armor,
+    None for a None actor.
 
 ObjectReference Function GetHolder(ObjectReference akItem)
     The container or actor holding akItem, None for an item lying in the world.
 
 Form Function GetBase(ObjectReference akItem)
-    The base form of akItem, its Weapon, Armor or Potion record.
+    The base form of akItem, such as its Weapon, Armor or Potion record, None for None or an item
+    that no longer exists.
 
 int Function GetCount(ObjectReference akItem)
     How many copies akItem's stack holds, 0 for None or an item that no longer exists.
@@ -192,15 +199,19 @@ bool Function SetCondition(ObjectReference akItem, float afPercent)
     Sets akItem's condition to afPercent, kept between 0 and 100. True once the item is at that
     condition.
 
-bool Function Damage(ObjectReference akItem, float afPercent)
-    Takes afPercent points off akItem's condition, down to 0 at most. True once written.
+bool Function Damage(ObjectReference akItem, float afPoints)
+    Takes afPoints condition points off akItem, down to 0 at most. True once written, and also when
+    nothing needs writing, such as for an item at 0 already. False for a negative afPoints.
 
-bool Function Repair(ObjectReference akItem, float afPercent)
-    Adds afPercent points to akItem's condition, up to 100 at most. True once written.
+bool Function Repair(ObjectReference akItem, float afPoints)
+    Adds afPoints condition points to akItem, up to 100 at most. True once written, and also when
+    nothing needs writing, such as for an item at 100 already. False for a negative afPoints.
 
 bool Function Wear(ObjectReference akItem, float afUses = 1.0)
     Wears akItem as afUses shots or swings would, armor as that many hits as hard as an ordinary
     weapon's, at NEC's rate. The rate is this item's for its holder, wear rate sliders included.
+    True once written, and also when nothing needs writing, such as for an item at 0 already or at a
+    wear rate of 0. False for a negative afUses.
 
 bool Function RollCondition(ObjectReference akItem)
     Rolls unrolled loot lying in the world as the player's pickup would. False when it already
@@ -212,24 +223,34 @@ Curves
 ------
 
 float Function GetDamageShare(float afPercent)
-    The share of its damage a weapon keeps at afPercent, from 0 to 1, from fDamageFloor at 0 to 1 at
-    fWeaponPenaltyStart times 100.
+    The share of its damage a weapon with no wear list line keeps at afPercent, from 0 to 1, from
+    fDamageFloor at 0 to 1 at fWeaponPenaltyStart times 100. GetWeaponDamageShare answers for 1
+    weapon.
+
+float Function GetWeaponDamageShare(ObjectReference akItem, float afPercent)
+    The share of its damage the weapon akItem keeps at afPercent, with its mods and its wear list
+    line, 1 for anything that is no weapon or that NEC gives no condition.
 
 float Function GetArmorShare(float afPercent)
     The share of its protection a piece of armor keeps at afPercent, from fArmorFloor at 0 to 1 at
     fArmorPenaltyStart times 100.
 
 float Function GetAccuracyShare(Form akWeapon, float afPercent)
-    The share of its accuracy the gun akWeapon keeps at afPercent, 1 for anything that is not a gun.
-    Mods do not change it.
+    The share of its accuracy the gun akWeapon keeps at afPercent, from fAccuracyFloor at 0 to 1 at
+    fWeaponPenaltyStart times 100. 1 for anything that is not a gun or that is on a list in
+    NEC/Exclude, and while NEC changes no accuracy, as with the Accuracy feature off. Mods do not
+    change it.
 
 float Function GetRangeShare(Form akWeapon, float afPercent)
-    The share of its range the gun akWeapon keeps at afPercent, 1 for anything that is not a gun.
-    Mods do not change it.
+    The share of its range the gun akWeapon keeps at afPercent, from fRangeFloor at 0 to 1 at
+    fWeaponPenaltyStart times 100. 1 for anything that is not a gun or that is on a list in
+    NEC/Exclude, and while NEC changes no range, as with the Range feature off. Mods do not change
+    it.
 
-float Function GetFireRateShare(ObjectReference akWeapon, float afPercent)
-    The share of its fire rate the automatic weapon akWeapon keeps at afPercent, with its mods, 1
-    for any other.
+float Function GetFireRateShare(ObjectReference akItem, float afPercent)
+    The share of its fire rate the automatic weapon akItem keeps at afPercent, with its mods, from
+    fFireRateFloor at 0 to 1 at fWeaponPenaltyStart times 100. 1 for any other weapon or one on a
+    list in NEC/Exclude, and while NEC changes no fire rate, as with the FireRate feature off.
 
 float Function GetCritShare(float afPercent)
     The share of its critical meter charge a weapon keeps at afPercent, from fCritMeterFloor at 0 to
@@ -239,8 +260,7 @@ float Function GetPriceShare(float afPercent)
     The share of its price an item keeps at afPercent, along fValueExponent.
 
 float Function GetJamChance(float afPercent)
-    The chance a magazine of a gun at afPercent jams, from 0 to 1, 0 at fJamStart times 100 and
-    above.
+    The chance a magazine of a gun at afPercent jams, from 0 to 1, 0 from fJamStart times 100 up.
 
 float Function GetWearPerUse(ObjectReference akItem)
     The condition points 1 Wear takes off akItem at its holder's wear speed, -1 for an untracked
@@ -250,15 +270,28 @@ float Function GetWearPerUse(ObjectReference akItem)
 Repair economics
 ----------------
 
-int Function GetFreeMendAbove()
-    The Free mend above setting: a repair of an item above this percent costs nothing at the bench.
+int Function GetFreeMendFrom()
+    The first percent from which the workbench mends an item for free. MEND puts it back to full at
+    no cost. 100 means MEND is off. While GetSettingFloat("fBenchCostMult:Balance") is 0, every
+    repair is a free MEND, whatever this answers.
 
-int Function GetModLockBelow()
-    The Mod lock below setting: the bench modifies no item below this percent.
+int Function GetSuppliesOnlyFrom()
+    The first percent from which a workbench repair takes only its supplies and no components, at
+    any perk rank. It is GetFreeMendFrom's number when no repair does, such as while
+    GetSettingInt("iRepairSupplies:Balance") is 0.
+
+int Function GetModdingFrom()
+    The first percent from which the workbench lets you modify an item. 100 means only at full
+    condition.
 
 int Function GetRepairDiscount(Form akBase)
-    How many percent the player's crafting perk rank takes off a bench repair of akBase with no
-    mods, 0 to 50.
+    How many percent the player's crafting perk rank takes off a workbench repair of akBase, 0 to
+    50, 0 for gear NEC gives no condition. A base form is priced as the plain item, and a reference
+    as that very copy with its mods.
+
+int Function GetItemRepairDiscount(ObjectReference akItem)
+    The same for 1 copy wherever it is, in the world or in an inventory, its mods included. Takes a
+    handle from GetItems.
 
 Struct Cost
     Component object
@@ -272,14 +305,16 @@ Cost[] Function GetRepairCost(ObjectReference akItem, int aiToPercent)
     lock holds it back.
 
 Cost[] Function GetScrapYield(ObjectReference akItem)
-    The components akItem scraps into at the bench at its condition, with the player's perks.
+    The components akItem scraps into at the bench at its condition, with the player's perks, None
+    for an item NEC gives no condition.
 
 int Function GetSpareGain(ObjectReference akItem, ObjectReference akSpare)
     The condition points the player's spare akSpare restores to the player's akItem, -1 when it is
     no spare for it.
 
 int Function GetTraderRepairLevel(Actor akTrader, Form akBase)
-    How far akTrader repairs akBase's kind of gear, a percent, 0 when they repair none of it.
+    How far akTrader repairs akBase's kind of gear, a percent, 0 for gear NEC gives no condition or
+    a trader who repairs nothing.
 
 int Function GetTraderRepairPrice(Actor akTrader, ObjectReference akItem, int aiToPercent)
     The caps akTrader asks to repair akItem to aiToPercent, -1 when they would not.
@@ -292,8 +327,8 @@ int Function GetFoodKind(Form akFood)
     akFood's kind: -1 not food, 0 never spoils, 1 raw, 2 crop, 3 cooked.
 
 float Function GetSpoilDays(Form akFood)
-    How many game days akFood stays fresh outside a fridge at the current settings, -1 for food that
-    never spoils.
+    How many game days akFood stays fresh outside a fridge at the current sliders, whatever the Food
+    spoils switch says, -1 for anything that never spoils.
 
 float Function GetFreshness(ObjectReference akItem)
     akItem's freshness, a percent, 0 once spoiled, -1 for food that never spoils or while food
@@ -321,8 +356,8 @@ Helpers
 -------
 
 Plain Papyrus on the functions above, for the jobs most mods write themselves. Import NEC, or call
-them as NEC.GetItemsBelow(...). Each takes 1 frame per item it touches, as the functions it calls
-do.
+them as NEC.GetItemsBelow(...). Each call they make to NEC takes about 1 frame, so a helper takes a
+few frames per item it touches.
 
 Function SayCondition(ObjectReference akItem)
     Shows "<name>: <condition>%" on screen, or "<name>: no condition" for an item NEC leaves alone.
@@ -350,12 +385,13 @@ float Function GetWornCondition(Actor akActor)
 int Function RepairAll(ObjectReference akHolder, float afTo = 100.0)
     Repairs every item of akHolder below afTo up to it. How many it repaired.
 
-int Function DamageAll(ObjectReference akHolder, float afPercent)
-    Takes afPercent off every item NEC tracks in akHolder. How many it damaged.
+int Function DamageAll(ObjectReference akHolder, float afPoints)
+    Takes afPoints condition points off every item NEC tracks in akHolder. How many items Damage
+    answered true for, an item at 0 already counted too.
 
 int Function WearWorn(Actor akActor, float afUses = 1.0)
-    Wears every piece akActor wears by afUses uses, along NEC's armor curve. How many pieces it
-    wore.
+    Calls Wear on every piece akActor wears with afUses. How many pieces Wear answered true for, a
+    piece it took nothing off counted too.
 
 int Function SpoilAll(ObjectReference akContainer)
     Spoils every food in akContainer that is not spoiled yet. How many it spoiled.
@@ -383,7 +419,7 @@ Events
 NEC sends its events through F4SE. Register once, in OnInit for example, and F4SE keeps the
 registration in its own save: RegisterForExternalEvent("NEC:Broke", "OnNECBroke"). F4SE calls your
 Function by name, so declare it with exactly these parameter types. akItem is a handle as GetItems
-gives, None when that stack no longer exists by then.
+gives, or the reference of an item lying in the world, None when the item no longer exists by then.
 
 Most events reach you within about 1 frame. One from a loot roll or a food arrival waits for NEC's
 next shot, hit, menu or call to any NEC function but GetScriptVersion. One whose holder's inventory
@@ -410,9 +446,9 @@ NEC:Jammed
 
 NEC:FoodSpoiled
     Function OnFoodSpoiled(ObjectReference akHolder, Form akFood, int aiCount)
-    aiCount pieces of akFood were turned spoiled, in anybody's inventory or container. NEC does this
-    as a menu shows the food or the food changes hands, so IsSpoiled can answer true before the
-    event comes.
+    aiCount pieces of akFood were turned spoiled, in anybody's inventory or container, or by a
+    script's Spoil, with akHolder None for food lying in the world. NEC turns food spoiled as a menu
+    shows it or it changes hands, so IsSpoiled can answer true before the event comes.
 
 
 Examples

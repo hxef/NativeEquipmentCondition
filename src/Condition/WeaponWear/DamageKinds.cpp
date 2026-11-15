@@ -23,7 +23,7 @@ namespace WeaponWear
 		}
 
 		// A damage type as the log names it, by what its resistance is called
-		// in the game's language.
+		// in the player's language.
 		std::string Phrase(std::uint32_t a_type)
 		{
 			const auto* type = RE::TESForm::GetFormByID<RE::BGSDamageType>(a_type);

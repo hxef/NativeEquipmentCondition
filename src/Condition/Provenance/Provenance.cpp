@@ -7,6 +7,7 @@
 #include "Core/Settings.h"
 #include "Core/Snapshot.h"
 
+#include <algorithm>
 #include <cmath>
 #include <format>
 #include <memory>
@@ -38,26 +39,45 @@ namespace Provenance
 		// half. The spawn hook is live from the moment the plugin loads and
 		// several threads build inventories at once, so every reader takes the
 		// ranking whole, see Core/Snapshot.h, and with none rolls the item at
-		// the plain middle. The 3 are shared, so a turn of bLootByArea swaps
-		// in a ranking with new areas or none and keeps both halves.
+		// the plain middle. The 3 are shared, so a move of fLootAreaEffect to
+		// or from off swaps in a ranking with new areas or none and keeps both
+		// halves.
 		struct Ranking
 		{
 			std::shared_ptr<const Supply> supply;
 			std::shared_ptr<const Care>   care;
-			std::shared_ptr<const Areas>  areas;  // nothing while bLootByArea is off
+			std::shared_ptr<const Areas>  areas;  // nothing while fLootAreaEffect is off
 		};
 		Snapshot<Ranking> g_ranking;
 
 		// Held from reading the last ranking to publishing the next, so a
-		// save load's measure and a turn of the switch on the MCM page never
+		// save load's measure and a move of the slider on the MCM page never
 		// build on the same ranking and drop the other's work.
 		std::mutex g_measuring;
 
-		// The areas measured against a_supply, or nothing while bLootByArea is
-		// off, so no ladder is built.
+		// fLootAreaEffect multiplies the built rule, 1 is the rule as built
+		// and 5 the most it counts.
+		constexpr float MOST_AREA_EFFECT = 5.0F;
+		constexpr float BUILT_AREA_EFFECT = 1.0F;
+
+		// The slider moves in steps of 0.1, so a value under 0.05 shows as 0
+		// and counts as off.
+		constexpr float LEAST_AREA_EFFECT = 0.05F;
+
+		// fLootAreaEffect as it counts, 0 to 5, and exactly 0 while it is off.
+		// A number that is no number counts as off too. The only test of off,
+		// so the areas, the roll and NEC.log agree.
+		float AreaEffect()
+		{
+			const auto effect = Settings::fLootAreaEffect.GetValue();
+			return effect >= LEAST_AREA_EFFECT ? std::min(effect, MOST_AREA_EFFECT) : 0.0F;
+		}
+
+		// The areas measured against a_supply, or nothing while
+		// fLootAreaEffect is off, so no ladder is built.
 		std::shared_ptr<const Areas> AreasOf(const Supply& a_supply)
 		{
-			if (!Settings::bLootByArea.GetValue()) {
+			if (AreaEffect() == 0.0F) {
 				return nullptr;
 			}
 			auto areas = std::make_shared<Areas>();
@@ -77,15 +97,16 @@ namespace Provenance
 			return std::make_shared<const Ranking>(Ranking{ std::move(supply), std::move(care), std::move(areas) });
 		}
 
-		// Where loot lying around rolls, for NEC.log at each load and each
-		// turn of the switch.
+		// Where loose loot rolls, for NEC.log at each load and each time the
+		// slider turns it on or off.
 		void SayAreas(const Ranking& a_ranking)
 		{
 			if (a_ranking.areas) {
-				REX::INFO("Ranked {:d} containers and characters by the weapons they start with. Loot lying around rolls by where its area falls among them.",
+				REX::INFO("Ranked {:d} containers and characters by the weapons they start with. Loose loot rolls by where its area falls among them.",
 					a_ranking.areas->ladder.size());
 			} else {
-				REX::INFO("Loot lying around rolls the same everywhere, since bLootByArea is false.");
+				REX::INFO("Loose loot rolls the same everywhere, since fLootAreaEffect is {:g}.",
+					Settings::fLootAreaEffect.GetValue());
 			}
 		}
 	}
@@ -168,13 +189,19 @@ namespace Provenance
 		}
 
 		// A ranked stamped list always wins, and the area stands in only when
-		// no list ranked for this kind handed the item out. While bLootByArea
-		// is off no cell is walked, and the item rolls at the ordinary middle,
-		// as in a cell with no list. The switch is asked too, since the page
-		// turns it a moment before SwitchAreas drops the areas.
-		if (origin.supply == UNMEASURED && a_cell && ranking->areas && Settings::bLootByArea.GetValue()) {
+		// no list ranked for this kind handed the item out. While
+		// fLootAreaEffect is off no cell is walked, and the item rolls at the
+		// ordinary middle, as in a cell with no list. The slider is read too,
+		// since the page sets it a moment before FollowAreaEffect drops the
+		// areas. The slider multiplies how far the area's rank lies from the
+		// middle, never past 0 or 1. 1 takes the rank untouched, so the
+		// default rolls bit for bit as built.
+		const auto effect = AreaEffect();
+		if (origin.supply == UNMEASURED && a_cell && ranking->areas && effect > 0.0F) {
 			if (const auto area = AreaOf(*ranking->supply, *ranking->areas, *a_cell)) {
-				origin.supply = *area;
+				origin.supply = effect == BUILT_AREA_EFFECT ?
+				                    *area :
+				                    std::clamp(UNKNOWN_HALF + (*area - UNKNOWN_HALF) * effect, 0.0F, 1.0F);
 				origin.pipeline = a_cell->formID;
 			}
 		}
@@ -221,15 +248,23 @@ namespace Provenance
 		return moved;
 	}
 
-	void SwitchAreas()
+	void FollowAreaEffect()
 	{
 		const std::scoped_lock measuring{ g_measuring };
-		const auto             was = g_ranking.Get();
-		if (!was || (was->areas != nullptr) == Settings::bLootByArea.GetValue()) {
+		auto                   was = g_ranking.Get();
+		if (!was || (was->areas != nullptr) == (AreaEffect() > 0.0F)) {
 			return;
 		}
 		const auto now = std::make_shared<const Ranking>(Ranking{ was->supply, was->care, AreasOf(*was->supply) });
 		g_ranking.Publish(now);
 		SayAreas(*now);
+
+		// On a move to off the old ranking's ladder and kept cells go now and
+		// not at the next publish. This copy goes first, or the old ranking
+		// is held twice and LetGo keeps it. Both halves live on in now.
+		if (!now->areas) {
+			was.reset();
+			g_ranking.LetGo();
+		}
 	}
 }

@@ -142,12 +142,6 @@ namespace Settings
 	// says, so it works as soon as it is switched on in play.
 	inline Live<bool> bSpawnCondition{ "Features", "bSpawnCondition", true };
 
-	// Loot lying around rolls by how well stocked its area is, see
-	// Provenance/Area.h. No feature's row: Provenance::Of asks it at each roll,
-	// and Provenance::SwitchAreas builds or drops the areas as it turns. On by
-	// default.
-	inline Live<bool> bLootByArea{ "Features", "bLootByArea", true };
-
 	// Traders who deal in weapons, armor or clothing repair them for caps.
 	inline Live<bool> bVendorRepair{ "Features", "bVendorRepair", true };
 
@@ -236,6 +230,12 @@ namespace Settings
 	// trader's stock too, see SpawnCondition/Band.h. Counts as 0 to 1000, and
 	// 0 means no item does.
 	inline Live<std::int32_t> iLootSurpriseOdds{ "Loot", "iLootSurpriseOdds", 100 };
+
+	// How far an area's value moves the roll of loot outside containers, as a
+	// multiplier of the built rule, see Provenance/Area.h. Counts as 0 to 5,
+	// and under 0.05, which the slider shows as 0, walks no cell and builds
+	// no ladder.
+	inline Live<float> fLootAreaEffect{ "Loot", "fLootAreaEffect", 1.0F };
 }
 
 // [Balance] and [HUD]. Each setting joins the setting store as it is made, so

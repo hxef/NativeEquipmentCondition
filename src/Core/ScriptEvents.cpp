@@ -32,7 +32,7 @@ namespace ScriptEvents
 		};
 		constexpr FreezeAt FREEZE_AT{ 0x610, 0x600 };
 
-		// Made once and never freed, so no list is let go after the game's
+		// Made once and never freed, so no list is let go after the engine's
 		// heap has shut down at a quit.
 		struct Queue
 		{

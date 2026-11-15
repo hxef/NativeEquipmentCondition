@@ -27,13 +27,13 @@ namespace Papyrus
 		// The 3 ways to name an item
 		// -------------------------------------------------------------------
 
-		// The holder of a persistent reference that sits in a container: the
-		// container the handle names, or the one the reference's own list
-		// says it is in. Null for an item lying in the world.
-		RE::NiPointer<RE::TESObjectREFR> HolderOf(const Item& a_item, RE::TESObjectREFR& a_ref)
+		// The holder of a persistent reference that sits in a container:
+		// a_container, the one a handle names, or else the one the reference's
+		// own list says it is in. Null for an item lying in the world.
+		RE::NiPointer<RE::TESObjectREFR> HolderOf(RE::TESObjectREFR* a_container, RE::TESObjectREFR& a_ref)
 		{
-			if (auto* container = a_item.Container()) {
-				return RE::NiPointer<RE::TESObjectREFR>{ container };
+			if (a_container) {
+				return RE::NiPointer<RE::TESObjectREFR>{ a_container };
 			}
 			const auto* handles = a_ref.extraList ? a_ref.extraList->GetByType<RE::ExtraReferenceHandles>() : nullptr;
 			return handles ? handles->containerRef.get() : nullptr;
@@ -62,6 +62,15 @@ namespace Papyrus
 				}
 			}
 			return a_found.matches != 0;
+		}
+
+		// The item a Holding looks for as Shown words it, for a warning.
+		std::string Sought(const Found& a_found, const RE::TESObjectREFR* a_ref)
+		{
+			if (a_found.uid != 0) {
+				return std::format("item {:d} in container {:s}", a_found.uid, Hex(a_found.holder.get()));
+			}
+			return a_ref ? std::format("ref {:08X}", a_ref->GetFormID()) : "none";
 		}
 
 		void TraceFound(const Found& a_found)
@@ -100,24 +109,37 @@ namespace Papyrus
 			_found.holder.reset(a_item.Container());
 			_found.uid = a_item.UniqueID();
 		} else if (ref) {
-			_found.holder = HolderOf(a_item, *ref);
+			_found.holder = HolderOf(a_item.Container(), *ref);
 		} else {
 			TraceLog::Papyrus::Line("none", "no item");
 			Log::Warn(Log::Warning::kNone);
 			return;
 		}
+		Find(_found.uid == 0 ? ref : nullptr);
+	}
 
+	Holding::Holding(RE::TESObjectREFR& a_ref)
+	{
+		if (!Answering()) {
+			return;
+		}
+		_found.holder = HolderOf(nullptr, a_ref);
+		Find(&a_ref);
+	}
+
+	void Holding::Find(RE::TESObjectREFR* a_ref)
+	{
 		if (!_found.holder) {
 			// An item lying in the world, with its own list and its own lock.
-			auto* base = ref->GetObjectReference();
-			if (ref->IsDeleted() || !base) {
-				TraceLog::Papyrus::Line("gone", "ref {:08X} is deleted or has no base", ref->GetFormID());
-				Log::Warn(Log::Warning::kGone, Shown(a_item));
+			auto* base = a_ref->GetObjectReference();
+			if (a_ref->IsDeleted() || !base) {
+				TraceLog::Papyrus::Line("gone", "ref {:08X} is deleted or has no base", a_ref->GetFormID());
+				Log::Warn(Log::Warning::kGone, Sought(_found, a_ref));
 				return;
 			}
-			_found.world.reset(ref);
+			_found.world.reset(a_ref);
 			_found.base = base;
-			_found.extra = ref->extraList.get();
+			_found.extra = a_ref->extraList.get();
 			_found.count = _found.extra ? static_cast<std::uint32_t>(_found.extra->GetCount()) : 1;
 			_found.matches = 1;
 			TraceFound(_found);
@@ -145,14 +167,14 @@ namespace Papyrus
 		}
 		_locked = inv;
 
-		const auto* list = _found.uid == 0 ? ref->extraList.get() : nullptr;
+		const auto* list = a_ref ? a_ref->extraList.get() : nullptr;
 		if (!FindStack(*inv, list, _found)) {
 			if (list) {
-				TraceLog::Papyrus::Line("gone", "no stack of {:s} holds ref {:08X}", Hex(_found.holder.get()), ref->GetFormID());
+				TraceLog::Papyrus::Line("gone", "no stack of {:s} holds ref {:08X}", Hex(_found.holder.get()), a_ref->GetFormID());
 			} else {
 				TraceLog::Papyrus::Line("gone", "no stack of {:s} holds uid {:d}", Hex(_found.holder.get()), _found.uid);
 			}
-			WarnLater(Log::Warning::kGone, Shown(a_item));
+			WarnLater(Log::Warning::kGone, Sought(_found, a_ref));
 			return;
 		}
 		_found.crew = Condition::KindOf(*_found.base) == Condition::Kind::kArmor ? armor : weapons;
@@ -216,7 +238,11 @@ namespace Papyrus
 		if (!ref) {
 			return a_form;
 		}
-		return ref->IsDeleted() ? nullptr : ref->GetObjectReference();
+		// The game marks a persistent reference deleted while a container holds it.
+		if (ref->IsDeleted() && !HolderOf(nullptr, *ref)) {
+			return nullptr;
+		}
+		return ref->GetObjectReference();
 	}
 
 	std::string FormName(const RE::TESForm& a_form)

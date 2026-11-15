@@ -35,7 +35,7 @@ namespace Papyrus
 		Log::Calling("WhyNotTracked");
 		TraceLog::Papyrus::Begin("CALL", "NEC.WhyNotTracked base={:s}", Hex(a_base));
 		std::string why;
-		if (!RecordOf(a_base)) {  // also a deleted reference or one with no base
+		if (!RecordOf(a_base)) {  // also a deleted reference no container holds or one with no base
 			why = "None";
 		} else if (const auto* base = BoundOf(a_base)) {
 			const auto* text = Condition::WhyNoCondition(*base);

@@ -65,6 +65,7 @@ namespace Papyrus
 			bind("IsBroken"sv, IsBroken);
 			bind("IsUnrolled"sv, IsUnrolled);
 			bind("GetDamageShare"sv, GetDamageShare);
+			bind("GetWeaponDamageShare"sv, GetWeaponDamageShare);
 			bind("GetArmorShare"sv, GetArmorShare);
 			bind("GetAccuracyShare"sv, GetAccuracyShare);
 			bind("GetRangeShare"sv, GetRangeShare);
@@ -73,9 +74,11 @@ namespace Papyrus
 			bind("GetPriceShare"sv, GetPriceShare);
 			bind("GetJamChance"sv, GetJamChance);
 			bind("GetWearPerUse"sv, GetWearPerUse);
-			bind("GetFreeMendAbove"sv, GetFreeMendAbove);
-			bind("GetModLockBelow"sv, GetModLockBelow);
+			bind("GetFreeMendFrom"sv, GetFreeMendFrom);
+			bind("GetSuppliesOnlyFrom"sv, GetSuppliesOnlyFrom);
+			bind("GetModdingFrom"sv, GetModdingFrom);
 			bind("GetRepairDiscount"sv, GetRepairDiscount);
+			bind("GetItemRepairDiscount"sv, GetItemRepairDiscount);
 			bind("GetRepairCost"sv, GetRepairCost);
 			bind("GetScrapYield"sv, GetScrapYield);
 			bind("GetSpareGain"sv, GetSpareGain);

@@ -103,6 +103,26 @@ namespace Papyrus
 		return Result(share);
 	}
 
+	float GetWeaponDamageShare(std::monostate, Item a_item, float a_percent)
+	{
+		Log::Calling("GetWeaponDamageShare");
+		TraceLog::Papyrus::Begin("CALL", "NEC.GetWeaponDamageShare item={:s} percent={:.4f}", Shown(a_item), a_percent);
+		auto share = 1.0F;
+		{
+			// The copy's own stats and mods, since either can bring a damage
+			// line of the wear list. A weapon NEC gives no condition, a
+			// grenade among them, keeps all its damage, as in the hooks.
+			Holding     held{ a_item };
+			const auto* found = held.found();
+			const auto* weapon = found ? found->base->As<RE::TESObjectWEAP>() : nullptr;
+			if (weapon && Tracked(*found)) {
+				const auto& data = Condition::InstanceDataOf<RE::TESObjectWEAP::InstanceData>(found->extra, weapon->weaponData);
+				share = HealthDamage::DamageShare(*weapon, &data, found->extra, HealthAt(a_percent));
+			}
+		}
+		return Result(share);
+	}
+
 	float GetWearPerUse(std::monostate, Item a_item)
 	{
 		Log::Calling("GetWearPerUse");

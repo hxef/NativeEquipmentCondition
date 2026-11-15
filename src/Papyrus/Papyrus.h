@@ -3,7 +3,7 @@
 #include "Core/Plugin.h"
 
 // The script NEC that other mods call, as NEC.GetCondition(akItem). Its
-// functions are global natives bound here to the game's script VM, and
+// functions are global natives bound here to the engine's script VM, and
 // NEC.pex declares them, built from publish/Scripts/Source/User/NEC.psc.in.
 // The game builds a new VM as it starts and after every full reset, and F4SE
 // asks NEC to bind again each time, so nothing here keeps a VM.

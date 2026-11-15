@@ -15,10 +15,13 @@
 //   MyMod.esp|0x000801
 //
 // The plugin is the one that adds the record, and the ID is as FO4Edit shows
-// it. Its top 2 digits, the load order slot, never count, and for a light
-// plugin only the last 3 do. A list may ask for a word after the ID, as in
-// "MyMod.esp|000801 = raw". A line that starts with ; or # is a comment, and a
-// comment may follow the ID or the word.
+// it. For a full plugin the first 2 digits of an ID, the load order slot,
+// never count. For a light plugin (.esl or ESL flagged), write the last 3
+// digits, such as 801, or the whole ID, such as FE001801. A light plugin's
+// ID that starts with FE counts only its last 3 digits. Any other counts its
+// last 6, which work only up to FFF, so NEC skips 001801. A list may ask for
+// a word after the ID, as in "MyMod.esp|000801 = raw". A line that starts
+// with ; or # is a comment, and a comment may follow the ID or the word.
 namespace ListFiles
 {
 	// What sets 1 list apart.

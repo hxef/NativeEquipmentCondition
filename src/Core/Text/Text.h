@@ -48,7 +48,7 @@ namespace Text
 		kClothing,
 	};
 
-	// "Combat Rifle is at 62% condition. Repair it to:"
+	// "Repair Combat Rifle from 62% condition to:"
 	[[nodiscard]] std::string RepairQuestion(std::string_view a_name, std::uint32_t a_percent);
 
 	// "Repair 10mm Pistol to 70%?", the title of the bench's repair box.
@@ -76,17 +76,17 @@ namespace Text
 	// carries a spare, see Workbench/Spares.h.
 	[[nodiscard]] std::string SpareButton();
 
-	// "Scrapper 2 raises the condition these spares restore.", said over the
+	// "Scrapper 2 raises how much condition a spare restores.", said over the
 	// question below while the player's rank raises what a listed spare
 	// restores. It names 1 perk rank, Scrapper's or the pricing perk's.
 	[[nodiscard]] std::string SparePerk(std::string_view a_perk, std::uint32_t a_rank);
 
-	// "Gun Nut 2 and Scrapper 1 raise the condition these spares restore.",
+	// "Gun Nut 2 and Scrapper 1 raise how much condition a spare restores.",
 	// said in its place while both ranks raise what a listed spare restores.
 	[[nodiscard]] std::string SparePerks(std::string_view a_pricing, std::uint32_t a_pricingRank,
 		std::string_view a_scrapper, std::uint32_t a_scrapperRank);
 
-	// "Hunting Rifle is at 85% condition. Use up a spare to repair it:"
+	// "Use up a spare to repair Hunting Rifle from 85% condition:"
 	[[nodiscard]] std::string SpareQuestion(std::string_view a_name, std::uint32_t a_percent);
 
 	// A spare's 1 mark, the first of equipped, favorite and legendary that
@@ -108,8 +108,8 @@ namespace Text
 	// no word for.
 	[[nodiscard]] std::string GainByType(std::int64_t a_gain, std::uint32_t a_type, bool a_armor, bool a_short);
 
-	// "Salvaged Steel, Screw (2) and Spring.", the parts a spare gave back,
-	// each with its count past 1.
+	// "Salvaged Steel, Screw (2) and Spring.", the components a spare gave
+	// back, each with its count past 1.
 	[[nodiscard]] std::string SpareSalvaged(std::span<const std::string> a_parts);
 
 	// Takes the barter screen's word for caps as the screen opens, a_word as
@@ -121,8 +121,8 @@ namespace Text
 	// Back to the language file's word for caps, as the barter screen closes.
 	void ForgetCurrency();
 
-	// "240 caps", the column after the level in a row of the question a
-	// trader asks, see VendorRepair.h.
+	// "240 caps", or "1 cap", the column after the level in a row of the
+	// question a trader asks, see VendorRepair.h.
 	[[nodiscard]] std::string RepairCaps(std::uint32_t a_caps);
 
 	// "Repaired to 100% for 240 caps.", said once the caps have changed hands.
@@ -133,8 +133,8 @@ namespace Text
 	// to full condition." instead, since "up to 100%" reads as a limit.
 	[[nodiscard]] std::string RepairUpTo(std::uint32_t a_ceiling, Trade a_trade);
 
-	// "This trader can't repair clothing past 40%.", said when REPAIR is
-	// pressed on an item already past what the trader can do for its kind.
+	// "This trader can repair clothing only up to 40%.", said when REPAIR is
+	// pressed on an item the trader can bring no further for its kind.
 	[[nodiscard]] std::string RepairCeiling(std::uint32_t a_ceiling, Trade a_trade);
 
 	// "Not enough caps to repair.", said when REPAIR is pressed and the player
@@ -155,10 +155,10 @@ namespace Text
 	// "Weapons", a kind's name on the sign, which prints the level beside it.
 	[[nodiscard]] std::string SignKind(Trade a_trade);
 
-	// "This item can't be repaired at a workbench. A trader can restore it.",
-	// said when REPAIR is pressed on an item the bench has nothing to rebuild
-	// from, see Workbench/Cost.h.
-	[[nodiscard]] std::string BenchCannotRepair();
+	// "This item can't be repaired at a workbench. A trader can still restore
+	// it.", said when REPAIR is pressed on an item the bench has nothing to
+	// rebuild from, see Workbench/Cost.h. a_trader adds the 2nd sentence.
+	[[nodiscard]] std::string BenchCannotRepair(bool a_trader);
 
 	// "Repairing this item from 10% needs Gun Nut 4. A spare or a trader can
 	// still restore it.", when the repair lock holds REPAIR back, see
@@ -194,9 +194,9 @@ namespace Text
 
 	// The tips the loading screen shows now and then, on wear, the bench, a
 	// trader's repairs, broken gear, jams, loot and food. See LoadingTips.h.
-	// The bench tip tells of the mod lock only where a_modifyFloor is at full.
+	// BenchTip tells of supplies while a_supplies, and of the mod lock at full.
 	[[nodiscard]] std::string WearTip();
-	[[nodiscard]] std::string BenchTip(std::uint32_t a_modifyFloor);
+	[[nodiscard]] std::string BenchTip(std::uint32_t a_modifyFloor, bool a_supplies);
 	[[nodiscard]] std::string TraderTip();
 	[[nodiscard]] std::string BrokenTip();
 	[[nodiscard]] std::string JamTip();

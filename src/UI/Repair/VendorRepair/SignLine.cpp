@@ -68,7 +68,7 @@ namespace VendorRepair::Sign
 		{
 			Value field;
 			a_movie.CreateObject(&field, "flash.text.TextField");
-			// The game's fonts live in its font library, which is what
+			// The engine's fonts live in its font library, which is what
 			// embedFonts asks for.
 			const auto made = field.IsDisplayObject() && Flash::Set(field, "name"sv, Value(LINE_NAME)) && Flash::Set(field, "embedFonts"sv, Value(true)) &&
 			                  Flash::Set(field, "selectable"sv, Value(false)) && Flash::Set(field, "mouseEnabled"sv, Value(false)) &&

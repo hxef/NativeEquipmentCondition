@@ -125,8 +125,8 @@ namespace Workbench
 		// What comes back
 		// -------------------------------------------------------------------
 
-		// The parts to the player, each as its scrap item, the way the SCRAP
-		// button hands them out. The player is told in the corner, not by
+		// The components to the player, each as its scrap item, the way the
+		// SCRAP button hands them out. The player is told in the corner, not by
 		// vanilla's own lines, see SpareBox.h.
 		void GiveBack(RE::PlayerCharacter& a_player, const std::vector<Materials::Part>& a_parts)
 		{
@@ -138,7 +138,8 @@ namespace Workbench
 			}
 		}
 
-		// "Salvaged Steel, Screw (2) and Spring.", or nothing for no parts.
+		// "Salvaged Steel, Screw (2) and Spring.", or nothing for no
+		// components.
 		std::string Salvaged(const std::vector<Materials::Part>& a_parts)
 		{
 			std::vector<std::string> names;
@@ -150,7 +151,7 @@ namespace Workbench
 			return names.empty() ? std::string{} : Text::SpareSalvaged(names);
 		}
 
-		// The crafting loop over the parts taken, or over the spare itself
+		// The crafting loop over the components taken, or over the spare itself
 		// when it gave none, as MEND plays it over the item.
 		void PlaySound(RE::ExamineMenu& a_menu, RE::TESBoundObject& a_object, const std::vector<Materials::Part>& a_taken)
 		{
@@ -196,7 +197,7 @@ namespace Workbench
 			const auto from = item->percent;
 			const auto payment = Pay(*spare, *item, a_priced);
 			auto       level = std::min(from + spare->gain, FULL);
-			const auto mended = level < FULL && level > FreeAbove();
+			const auto mended = level < FULL && level >= FreeFrom();
 			if (mended) {
 				level = FULL;
 			}
@@ -225,7 +226,7 @@ namespace Workbench
 			TraceLog::Line("menu",
 				"Workbench used up {:s}{:s} at {:d}% on {:s}, from {:d}% to {:d}%{:s}, taking {:s} and giving back {:s}, worth {:d} for {:g} experience before Intelligence and perks",
 				spare->equipped ? "the equipped " : "", spare->name, spare->percent, name, from, level,
-				mended ? std::format(", mended for nothing above {:d}%", FreeAbove()) : std::string{},
+				mended ? std::format(", mended for nothing from {:d}% up", FreeFrom()) : std::string{},
 				Spell(payment.taken), Spell(payment.back), paid.worth, paid.experience);
 
 			const bool kept = KeepHighlight(*menu, a_object, written);

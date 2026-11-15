@@ -167,7 +167,7 @@ namespace VendorRepair
 		// The barter screen's word for caps, or "" when a step fails. A text
 		// field the screen never shows is given "$CAPS", which the movie
 		// translates as it does the barter screen's own labels, so the word is
-		// whatever the game's translations hold.
+		// whatever vanilla's translations hold.
 		std::string CapsWord(Scaleform::GFx::Movie& a_movie)
 		{
 			Scaleform::GFx::Value field;

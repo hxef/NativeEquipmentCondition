@@ -135,10 +135,10 @@ namespace ArmorWear
 			return 1.0F;
 		}
 
-		// The game's own order, ID 2198561: by the mod's priority, lowest
+		// The engine's own order, ID 2198561: by the mod's priority, lowest
 		// first, and in each priority every kSet, then every kMul, then every
-		// kAdd, each in the order of the mod list. Each step is the game's own
-		// sum, see Property::Mod::ApplyToInt in CommonLibF4.
+		// kAdd, each in the order of the mod list. Each step is the engine's
+		// own sum, see Property::Mod::ApplyToInt in CommonLibF4.
 		std::ranges::stable_sort(steps, {}, [](const Step& a_step) { return std::pair{ a_step.priority, std::to_underlying(a_step.property->op) }; });
 		auto health = base;
 		for (const auto& step : steps) {

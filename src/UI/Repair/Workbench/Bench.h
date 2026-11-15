@@ -25,9 +25,9 @@ namespace Workbench
 		// True for an item too worn for the bench to modify.
 		[[nodiscard]] bool TooWorn() const { return object && percent < ModifyFloor(); }
 
-		// True for an item worn so little that repairing it is free, and for
-		// any worn item while repairs cost nothing.
-		[[nodiscard]] bool Trifling() const { return Worn() && (FreeRepairs() || percent > FreeAbove()); }
+		// True for an item worn so little that repairing it is free, from
+		// FreeFrom up, and for any worn item while repairs cost nothing.
+		[[nodiscard]] bool Trifling() const { return Worn() && (FreeRepairs() || percent >= FreeFrom()); }
 	};
 
 	// What the highlight is on, or nothing while the bench has no list. The

@@ -30,9 +30,9 @@ namespace
 	constexpr Piece WORN_LOOT[]{ kWornLoot };
 	constexpr Piece WORN_LOOT_SIDE[]{ kWorldLoot, kModlessLoot };
 	constexpr Piece WORN_LOOT_EXCEPTIONS[]{ kConsoleNew, kGifts };
-	// The area stands in for weapons and armor lying around and for food
-	// found, whose freshness is stamped at the pickup and not by Loot lying
-	// around, so each works alone.
+	// The area stands in for weapons and armor outside containers and for
+	// food found, whose freshness is stamped at the pickup and not by Loot
+	// outside containers, so each works alone.
 	constexpr Piece LOOT_BY_AREA[]{ kWorldLoot, kFoodSpoils };
 	// A repair is priced from a worn item's price, which only Worn item
 	// prices gives. Without it a quote still scales, but from the item's
@@ -129,7 +129,6 @@ namespace
 
 	constexpr SettingLink SETTINGS[]{
 		{ &Settings::bSpawnCondition, nullptr, WORN_LOOT, WORN_LOOT_SIDE, WORN_LOOT_EXCEPTIONS },
-		{ &Settings::bLootByArea, &Settings::bSpawnCondition, LOOT_BY_AREA },
 		{ &Settings::bVendorRepair, nullptr, TRADER_REPAIRS, TRADER_REPAIRS_SIDE },
 		{ &Settings::bTraderSign, &Settings::bVendorRepair, TRADER_REPAIRS },
 		{ &Settings::bSpareRepair, &Settings::fBenchCostMult, BENCH, SPARE_SIDE },
@@ -167,6 +166,7 @@ namespace
 		{ &Settings::fArmorPenaltyStart, &Settings::fArmorFloor, ARMOR },
 		{ &Settings::iLootShift, &Settings::bSpawnCondition, WORN_LOOT },
 		{ &Settings::iLootSurpriseOdds, &Settings::bSpawnCondition, WORN_LOOT },
+		{ &Settings::fLootAreaEffect, &Settings::bSpawnCondition, LOOT_BY_AREA },
 		{ &Settings::fValueExponent, nullptr, PRICES },
 		{ &Settings::fFireRateFloor, nullptr, FIRE_RATE, FIRE_RATE_SIDE },
 		{ &Settings::fCritMeterFloor, nullptr, CRIT_METER },
@@ -176,10 +176,10 @@ namespace
 		{ &Settings::fJamStart, &Settings::fJamChance, JAM, JAM_SIDE },
 		{ &Settings::fBenchCostMult, nullptr, BENCH, {}, BENCH_EXCEPTIONS },
 		{ &Settings::fSpareWorthMult, &Settings::fBenchCostMult, BENCH },
-		{ &Settings::iFreeMendAbove, &Settings::fBenchCostMult, BENCH },
+		{ &Settings::iFreeMendFrom, &Settings::fBenchCostMult, BENCH },
 		{ &Settings::iRepairSupplies, &Settings::fBenchCostMult, BENCH },
 		{ &Settings::iSuppliesOnlyFrom, &Settings::fBenchCostMult, BENCH },
-		{ &Settings::fModLockStart, &Settings::fBenchCostMult, BENCH, MOD_LOCK_SIDE },
+		{ &Settings::iModdingFrom, &Settings::fBenchCostMult, BENCH, MOD_LOCK_SIDE },
 		{ &Settings::iLock1RankShort, &Settings::fBenchCostMult, BENCH },
 		{ &Settings::iLock2RanksShort, &Settings::fBenchCostMult, BENCH },
 		{ &Settings::iLock3RanksShort, &Settings::fBenchCostMult, BENCH },

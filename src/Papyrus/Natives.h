@@ -68,6 +68,7 @@ namespace Papyrus
 	// The curves, see Curves.cpp: what NEC applies at a percent of
 	// condition, from the settings as they stand.
 	[[nodiscard]] float GetDamageShare(std::monostate, float a_percent);
+	[[nodiscard]] float GetWeaponDamageShare(std::monostate, Item a_item, float a_percent);
 	[[nodiscard]] float GetArmorShare(std::monostate, float a_percent);
 	[[nodiscard]] float GetAccuracyShare(std::monostate, RE::TESForm* a_weapon, float a_percent);
 	[[nodiscard]] float GetRangeShare(std::monostate, RE::TESForm* a_weapon, float a_percent);
@@ -82,9 +83,11 @@ namespace Papyrus
 
 	// The repair economics, see Repair.cpp, each from the code the bench or
 	// the barter screen prices with.
-	[[nodiscard]] std::int32_t                     GetFreeMendAbove(std::monostate);
-	[[nodiscard]] std::int32_t                     GetModLockBelow(std::monostate);
+	[[nodiscard]] std::int32_t                     GetFreeMendFrom(std::monostate);
+	[[nodiscard]] std::int32_t                     GetSuppliesOnlyFrom(std::monostate);
+	[[nodiscard]] std::int32_t                     GetModdingFrom(std::monostate);
 	[[nodiscard]] std::int32_t                     GetRepairDiscount(std::monostate, RE::TESForm* a_base);
+	[[nodiscard]] std::int32_t                     GetItemRepairDiscount(std::monostate, Item a_item);
 	[[nodiscard]] std::optional<std::vector<Cost>> GetRepairCost(std::monostate, Item a_item, std::int32_t a_toPercent);
 	[[nodiscard]] std::optional<std::vector<Cost>> GetScrapYield(std::monostate, Item a_item);
 	[[nodiscard]] std::int32_t                     GetSpareGain(std::monostate, Item a_item, Item a_spare);

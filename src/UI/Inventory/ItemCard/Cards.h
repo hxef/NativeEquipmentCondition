@@ -109,7 +109,7 @@ namespace ItemCard
 	// WatchCard when a card's movie loads.
 	void ForgetWearRate();
 
-	// The entries of a card the game's builder filled, into a_out: a_target
+	// The entries of a card the engine's builder filled, into a_out: a_target
 	// itself when a menu refreshes its card, else the ItemCardInfoList member
 	// of the list entry a menu builds. False when it holds neither.
 	bool CardEntries(Scaleform::GFx::Value& a_target, Scaleform::GFx::Value& a_out);

@@ -73,6 +73,12 @@ namespace Papyrus
 	{
 	public:
 		explicit Holding(const Item& a_item);
+
+		// A reference a script passed as a Form, found as an item argument
+		// finds it. Item is made only from the VM's handle, so it cannot hold
+		// this reference.
+		explicit Holding(RE::TESObjectREFR& a_ref);
+
 		~Holding();
 
 		Holding(const Holding&) = delete;
@@ -88,6 +94,11 @@ namespace Papyrus
 		void WarnLater(Log::Warning a_warning, std::string a_detail);
 
 	private:
+		// What both constructors share once the holder and the number are
+		// set: a_ref is the reference named, null for a stack named by its
+		// number.
+		void Find(RE::TESObjectREFR* a_ref);
+
 		Found                       _found;
 		RE::BGSInventoryList*       _locked{ nullptr };
 		bool                        _ok{ false };
@@ -127,8 +138,8 @@ namespace Papyrus
 	[[nodiscard]] std::string RowsOf(const RE::BGSInventoryList& a_inv, const RE::TESBoundObject& a_base);
 
 	// The base form a Form argument names: a_form itself, or the base of a
-	// reference, so a script may pass either. Null for None and for a
-	// deleted reference or one with no base.
+	// reference, so a script may pass either. Null for None, for a deleted
+	// reference no container holds and for one with no base.
 	[[nodiscard]] RE::TESForm* RecordOf(RE::TESForm* a_form);
 
 	// True for gear NEC gives a condition, else a trace line saying why not.

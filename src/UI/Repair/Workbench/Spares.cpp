@@ -112,7 +112,8 @@ namespace Workbench
 			return favorite && favorite->quickkeyIndex != -2;
 		}
 
-		// What the yield counts with nothing scaled, the parts a spare holds.
+		// What the yield counts with nothing scaled, the components a spare
+		// holds.
 		constexpr std::uint32_t AS_HELD = 10;
 
 		// fSpareWorthMult in whole tenths, the slider's step, kept to the
@@ -339,8 +340,8 @@ namespace Workbench
 			out.taken.push_back({ cheapest.front().component, 1 });
 		}
 
-		// What goes back is worked from the parts the spare holds, so a worth
-		// above 1 never hands back more than the spare is made of.
+		// What goes back is worked from the components the spare holds, so a
+		// worth above 1 never hands back more than the spare is made of.
 		for (const auto& part : a_spare.held) {
 			const auto taken = std::ranges::find(out.taken, part.component, &Materials::Part::component);
 			const auto used = taken != out.taken.end() ? taken->count : 0U;

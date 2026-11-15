@@ -3,13 +3,13 @@
 #include "Core/Plugin.h"
 
 // A CND bar in the pickup prompt, the name and "E) Take" the HUD shows while
-// the crosshair rests on something lying around. For a weapon or a piece of
-// armor it shows the condition, and for food, while food spoils, how fresh it
-// is: full when fresh, empty when spoiled. It sits under the name, centred on
-// it, in the gap above the button hints, drawn as the other HUD bars are, see
-// HudParts::Readout. It has a colour target of its own, so it is drawn whole
-// in the gameplay HUD colour, and in the warning colour with the name and the
-// hints while taking the item is stealing, see Bar.cpp.
+// the crosshair rests on something outside a container. For a weapon or a
+// piece of armor it shows the condition, and for food, while food spoils, how
+// fresh it is: full when fresh, empty when spoiled. It sits under the name,
+// centred on it, in the gap above the button hints, drawn as the other HUD
+// bars are, see HudParts::Readout. It has a colour target of its own, so it
+// is drawn whole in the gameplay HUD colour, and in the warning colour with
+// the name and the hints while taking the item is stealing, see Bar.cpp.
 //
 // What the game sends to the HUD names no item, only its text, so the call
 // that builds the prompt is patched: after it, the crosshair's pick says

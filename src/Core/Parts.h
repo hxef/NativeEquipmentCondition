@@ -44,7 +44,7 @@ enum class Part : std::uint8_t
 	kFertilizer,     // Fertilizer from spoiled food
 	kSpawn,          // Worn loot
 	kConsoleNew,     // Console items arrive new
-	kWorldLoot,      // Loot lying around
+	kWorldLoot,      // Loot outside containers
 	kModlessLoot,    // Loot with no mod slots
 	kGifts,          // Quest rewards arrive new
 	kCardCnd,        // CND on item cards

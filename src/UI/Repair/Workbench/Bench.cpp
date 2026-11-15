@@ -2,25 +2,32 @@
 
 #include "Core/BenchRow.h"
 #include "Core/Settings.h"
+#include "UI/Repair/Workbench/Supplies.h"
 
 #include <algorithm>
-#include <cmath>
 
 namespace Workbench
 {
-	std::uint32_t FreeAbove()
+	std::uint32_t FreeFrom()
 	{
 		constexpr auto full = static_cast<std::int32_t>(Repair::FULL);
-		return static_cast<std::uint32_t>(std::clamp(Settings::iFreeMendAbove.GetValue(), 0, full));
+		return static_cast<std::uint32_t>(std::clamp(Settings::iFreeMendFrom.GetValue(), 0, full));
+	}
+
+	bool SuppliesAlone()
+	{
+		return Supplies::Count() > 0 && !FreeRepairs() && Supplies::From() < FreeFrom() && Supplies::AnyHeld();
+	}
+
+	std::uint32_t SuppliesOnlyFrom()
+	{
+		return SuppliesAlone() ? Supplies::From() : FreeFrom();
 	}
 
 	std::uint32_t ModifyFloor()
 	{
-		// Rounded, since a share such as 0.29 times 100 can land just under
-		// the whole percent as a float. NaN and anything at 1 or above lock at
-		// full.
-		const auto start = Settings::fModLockStart.GetValue();
-		return start < 1.0F ? static_cast<std::uint32_t>(std::lround(std::max(start, 0.0F) * 100.0F)) : Repair::FULL;
+		constexpr auto full = static_cast<std::int32_t>(Repair::FULL);
+		return static_cast<std::uint32_t>(std::clamp(Settings::iModdingFrom.GetValue(), 0, full));
 	}
 
 	bool FreeRepairs()

@@ -99,9 +99,9 @@ namespace Settings
 	// see Workbench/Spares.h. Counts as 0.5 to 2.
 	inline Live<float> fSpareWorthMult{ "Balance", "fSpareWorthMult", 1.0F };
 
-	// The condition above which a workbench mends an item for nothing, a
+	// The condition from which a workbench mends an item for nothing, a
 	// whole percent, see Workbench/Bench.h.
-	inline Live<std::int32_t> iFreeMendAbove{ "Balance", "iFreeMendAbove", 95 };
+	inline Live<std::int32_t> iFreeMendFrom{ "Balance", "iFreeMendFrom", 95 };
 
 	// How many of each supply a paid workbench repair takes, 0 to 5, see
 	// Workbench/Supplies.h. 0 turns them off.
@@ -109,11 +109,11 @@ namespace Settings
 
 	// The condition from which a workbench repair takes only its supplies, a
 	// whole percent, see Workbench/Supplies.h.
-	inline Live<std::int32_t> iSuppliesOnlyFrom{ "Balance", "iSuppliesOnlyFrom", 80 };
+	inline Live<std::int32_t> iSuppliesOnlyFrom{ "Balance", "iSuppliesOnlyFrom", 88 };
 
-	// The condition below which a workbench opens no mod slots, a share of
-	// full, see Workbench/Bench.h.
-	inline Live<float> fModLockStart{ "Balance", "fModLockStart", 1.0F };
+	// The condition from which a workbench opens mod slots, a whole percent,
+	// see Workbench/Bench.h.
+	inline Live<std::int32_t> iModdingFrom{ "Balance", "iModdingFrom", 100 };
 
 	// The condition a workbench repair that takes components can start from
 	// with 1, 2, and 3 or more ranks short of what iRepairLock asks, a whole
@@ -218,7 +218,7 @@ namespace Settings
 	inline Live<bool> bPowerArmorBarShowsWord{ "HUD", "bPowerArmorBarShowsWord", true };
 
 	// Whether the Pickup CND bar shows under the name in the prompt of a
-	// weapon, armor or food lying around, see PickupBar.h.
+	// weapon, armor or food outside a container, see PickupBar.h.
 	inline Live<bool> bPickupBar{ "HUD", "bPickupBar", true };
 
 	// How far right of its own place under the name the Pickup CND bar sits,

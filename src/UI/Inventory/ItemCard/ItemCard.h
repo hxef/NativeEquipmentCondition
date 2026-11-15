@@ -40,8 +40,9 @@
 // Hooks.cpp is the CND row, Rate.cpp the fire rate and the sort's note,
 // Aim.cpp accuracy and range, Raise.cpp moves the row past Damage,
 // FridgeIcon.cpp marks food in a fridge on it, WearRate.cpp writes the wear
-// rate on it, Effects.cpp shows what spoiled food gives, PowerArmor.cpp shows
-// a power armor piece's Health as CND, and Cards.h is what they share.
+// rate on it, WearRateForms.cpp fits it into the row, Effects.cpp shows what
+// spoiled food gives, PowerArmor.cpp shows a power armor piece's Health as
+// CND, and Cards.h is what they share.
 namespace ItemCard
 {
 	// Patches the calls that fill item cards.

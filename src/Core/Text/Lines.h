@@ -73,14 +73,13 @@ namespace Text
 		Key                    help;
 	};
 
-	// The 15 switches, bPlainApparelNeverWears, bLootByArea, bHudCondition,
-	// bPowerArmorBar, bSpareRepair, iUnscrappableSpares, iRepairBoxRow,
-	// iRepairLock, bRepairBoxColumns, bRepairBoxGains, bTraderSign,
-	// bCardWearRate, bPowerArmorCardCnd, bFridgeIcon and bTraceLogs, in
-	// MenuSwitches.cpp, the 10 wear speeds, in MenuWear.cpp, the 2 Loot
-	// numbers and the 31 Balance numbers, in MenuNumbers.cpp, and the 12 HUD
-	// numbers, the 5 HUD bar switches and sLogLevel, in MenuHudLog.cpp, each in
-	// NEC.ini's order.
+	// The 14 switches, bPlainApparelNeverWears, bTraderSign, bSpareRepair,
+	// iUnscrappableSpares, iRepairBoxRow, iRepairLock, bRepairBoxColumns,
+	// bRepairBoxGains, bHudCondition, bPowerArmorBar, bCardWearRate,
+	// bPowerArmorCardCnd, bFridgeIcon and bTraceLogs, in MenuSwitches.cpp, the
+	// 10 wear speeds, in MenuWear.cpp, the 3 Loot numbers and the 31 Balance
+	// numbers, in MenuNumbers.cpp, and the 12 HUD numbers, the 6 HUD bar
+	// switches and sLogLevel, in MenuHudLog.cpp, each in NEC.ini's order.
 	[[nodiscard]] std::span<const MenuRow> MenuSwitches();
 	[[nodiscard]] std::span<const MenuRow> MenuWear();
 	[[nodiscard]] std::span<const MenuRow> MenuNumbers();

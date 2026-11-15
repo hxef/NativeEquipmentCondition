@@ -43,6 +43,21 @@ public:
 		}
 	}
 
+	// Frees the table the last Publish replaced, here and now, once no
+	// reader holds it, so a big table a setting dropped goes at once. Get
+	// hands out only the current table, so a count of 1 cannot rise
+	// again. A reader still on it keeps it until the next Publish.
+	void LetGo()
+	{
+		std::shared_ptr<const T> gone;
+		{
+			const std::unique_lock l{ _lock };
+			if (_retired.use_count() == 1) {
+				gone = std::move(_retired);
+			}
+		}
+	}
+
 private:
 	mutable std::shared_mutex _lock;
 	std::shared_ptr<const T>  _table;

@@ -55,10 +55,11 @@ namespace LoadingTips
 			return Jam::Jams() && !CallPatch::LossOf(Part::kJam);
 		}
 
-		// The bench tip with the mod lock as it stands.
+		// The bench tip with the mod lock as it stands, and the supplies while
+		// a repair can take them alone.
 		std::string BenchWords()
 		{
-			return Text::BenchTip(Workbench::ModifyFloor());
+			return Text::BenchTip(Workbench::ModifyFloor(), Workbench::SuppliesAlone());
 		}
 
 		// Every tip, each on a picture of what it tells of. Another one is a

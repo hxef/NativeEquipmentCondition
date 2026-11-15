@@ -3,7 +3,6 @@
 #include "Condition/Provenance/Supply.h"
 #include "Core/Plugin.h"
 
-#include <cstddef>
 #include <mutex>
 #include <optional>
 #include <unordered_map>
@@ -24,16 +23,16 @@ namespace Provenance
 		std::vector<float> ladder;
 
 		// Each cell's rank by form ID, measured at its first roll once it is
-		// attached. A cell with no list is kept as UNMEASURED. The map
-		// lives and dies with these Areas, which every measure and every turn
-		// of bLootByArea on makes anew, so each starts empty.
+		// attached. A cell with no list is kept as UNMEASURED. The map lives
+		// and dies with these Areas, which every measure, and each rise of
+		// fLootAreaEffect from off, makes anew, so each starts empty.
 		mutable std::mutex                               lock;
 		mutable std::unordered_map<RE::TESFormID, float> ranks;
 	};
 
 	// Measures every container and character record by the weapon lists it
-	// starts with and builds the ladder. Returns the ladder's size.
-	std::size_t MeasureAreas(const Supply& a_supply, Areas& a_out);
+	// starts with and builds the ladder.
+	void MeasureAreas(const Supply& a_supply, Areas& a_out);
 
 	// Where a_cell sits on the ladder, from 0 for the poorest place to 1 for
 	// the richest, or nothing when the cell has no list, its lock was busy or

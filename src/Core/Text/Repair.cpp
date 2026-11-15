@@ -105,9 +105,10 @@ namespace Text
 		return Say(SPARE_SALVAGED, parts);
 	}
 
-	std::string BenchCannotRepair()
+	std::string BenchCannotRepair(bool a_trader)
 	{
-		return Pick(BENCH_CANNOT_REPAIR);
+		const auto* cannot = Pick(BENCH_CANNOT_REPAIR);
+		return a_trader ? Say(SENTENCES, cannot, Pick(REPAIR_LOCKED_TRADER)) : std::string{ cannot };
 	}
 
 	std::string RepairLocked(std::string_view a_perk, std::uint32_t a_rank, std::uint32_t a_percent, bool a_spare, bool a_trader)

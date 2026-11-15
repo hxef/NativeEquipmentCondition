@@ -66,9 +66,8 @@ local function game_folder()
 end
 
 -- F4SE's script sources, which NEC.psc needs for Form.GetName:
--- --f4se_scripts, the game's own Data/Scripts/Source where F4SE was
--- installed into the game, or F4SE's mod beside deploy_dir in Mod Organizer
--- 2.
+-- --f4se_scripts, Data/Scripts/Source in the game folder once F4SE is
+-- installed there, or F4SE's mod beside deploy_dir in Mod Organizer 2.
 local function f4se_folder(a_game)
     local function holds(a_dir)
         return os.isfile(path.join(a_dir, "F4SE.psc")) and a_dir or nil
@@ -88,7 +87,7 @@ local function f4se_folder(a_game)
         path.join(a_game, "Data", "Scripts", "Source"))
 end
 
--- The game's own script sources, unpacked once from the Creation Kit's
+-- Vanilla's own script sources, unpacked once from the Creation Kit's
 -- Base.zip into the generated folder, since the game folder is never written.
 local function base_folder(a_target, a_game)
     local zip = path.join(a_game, "Data", "Scripts", "Source", "Base", "Base.zip")
@@ -262,7 +261,7 @@ function build(a_target)
     os.mkdir(compiled)
     os.mkdir(path.join(dir, SCRIPTS))
     -- The first folder that holds a script wins, so NEC.psc's own comes
-    -- first, then F4SE's, whose ScriptObject.psc adds to the game's own.
+    -- first, then F4SE's, whose ScriptObject.psc adds to vanilla's own.
     local imports = { dir, f4se_folder(game), base_folder(a_target, game) }
     local out = compile(game, imports, compiled, dir)
     if not out:find("1 succeeded, 0 failed", 1, true) or not os.isfile(path.join(compiled, "NEC.pex")) then

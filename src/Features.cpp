@@ -95,7 +95,7 @@ namespace
 		{ .name = "ArmorWear", .Load = ArmorWear::Load },
 		// Where a weapon or a piece of armor came from, measured from every
 		// leveled list and outfit. Only SpawnCondition uses it, and it measures
-		// whatever the switch says, the areas only while bLootByArea is on.
+		// whatever the switch says, the areas unless fLootAreaEffect is off.
 		{ .name = "Provenance", .Load = Provenance::Load, .Unload = Provenance::Unload },
 		// How far a trader, an NPC record or a faction repairs a kind, as a
 		// player sets it by hand. Read whatever Trader repairs says.
@@ -162,8 +162,8 @@ namespace
 		// and bPowerArmorBar switches the bar itself, see HudParts::Waiter.
 		{ .name = "PowerArmorCondition", .on = &Settings::bHudCondition, .Load = PowerArmorCondition::Load, .OnMovieLoaded = PowerArmorCondition::OnMovieLoaded },
 		// A CND bar under the name in the prompt of a weapon, armor or food
-		// lying around. Its hook asks bPickupBar itself, as the power armor
-		// bar asks bPowerArmorBar, so the row has no switch.
+		// outside a container. Its hook asks bPickupBar itself, as the power
+		// armor bar asks bPowerArmorBar, so the row has no switch.
 		{ .name = "PickupBar", .part = Part::kPickup, .Install = PickupBar::Install, .OnMovieLoaded = PickupBar::OnMovieLoaded },
 		// Condition meters on the rows of the HUD's quick container.
 		{ .name = "QuickContainer", .on = &Settings::bQuickContainer, .part = Part::kQuick, .Install = QuickContainer::Install, .OnMovieLoaded = QuickContainer::OnMovieLoaded },

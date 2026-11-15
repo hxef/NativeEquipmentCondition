@@ -79,7 +79,7 @@ namespace Workbench
 		const auto& standing = a_priced.standing;
 		const auto  mode = LockNow();
 		if (mode == LockMode::kOff || !a_selection.Worn() || a_selection.Trifling() ||
-			!Supplies::TakesComponents(a_selection.percent, a_selection.kind) || !standing.perk || standing.ranks == 0) {
+			!Supplies::TakesComponents(a_selection) || !standing.perk || standing.ranks == 0) {
 			return std::nullopt;
 		}
 

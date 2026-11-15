@@ -19,7 +19,7 @@ src/Core/       plumbing every layer may use
 src/Condition/  what condition is, and what putting it right costs
 src/Gameplay/   hooks that change play
 src/UI/         what is drawn into Fallout 4's own menus
-src/Papyrus/    the script NEC that other mods call, bound to the game's script VM
+src/Papyrus/    the script NEC that other mods call, bound to the engine's script VM
 ```
 
 A file includes only from its own layer and the layers above it in that list.
@@ -273,6 +273,7 @@ src/
         Raise.cpp            moving the row up past Damage
         FridgeIcon.cpp       the icon on the CND row of food in a fridge
         WearRate.cpp         the wear rate beside the condition on the CND row
+        WearRateForms.h/.cpp fitting the wear rate into the row or the cell beside it
         Effects.cpp          what spoiled food gives, on its card, the HP bar and STAT Effects
         PowerArmor.cpp       a power armor piece's Health shown as CND, by its switch
     Repair/
@@ -295,7 +296,7 @@ src/
     Writer.cpp               SetCondition, Damage, Repair, Wear and RollCondition, through 1 writer
     Readers.cpp              IsTracked, WhyNotTracked, GetCondition, IsBroken and IsUnrolled
     Curves.cpp               the shares and the jam chance NEC applies at a condition, and the wear of 1 use
-    Repair.cpp               the bench's bill and free mend, the mod lock, scrap, spares, a trader's limit and price
+    Repair.cpp               the bench's bill, its free mend and supplies only points, the mod lock, the perk discount, scrap, spares, a trader's limit and price
     Food.cpp                 a food's kind, days, freshness and fridge, and setting it fresh or spoiled
     Events.h/.cpp            the task that runs what a write leaves and hands the waiting events to the scripts registered for them
     Works.cpp                what a write leaves for that task: the item cards, the armor rating, putting a broken weapon away

@@ -93,8 +93,8 @@ namespace ItemCard
 			return static_cast<const Text*>(member);
 		}
 
-		// a_value as a_entry's member a_name. The game's own AddMember puts it
-		// in place of the member of that name and frees the old value.
+		// a_value as a_entry's member a_name. The engine's own AddMember puts
+		// it in place of the member of that name and frees the old value.
 		void PutMember(RE::PipboyObject& a_entry, const char* a_name, RE::PipboyValue* a_value)
 		{
 			const RE::BSFixedString name{ a_name };
@@ -110,7 +110,7 @@ namespace ItemCard
 			return;
 		}
 
-		// From the end, where the game's builder adds its entries. No Health
+		// From the end, where the engine's builder adds its entries. No Health
 		// row leaves the card as the game built it.
 		for (auto i = entries.GetArraySize(); i-- > 0;) {
 			Value entry;
@@ -142,7 +142,7 @@ namespace ItemCard
 			return;
 		}
 
-		// The game's builder made this array from scratch just now, so its
+		// The engine's builder made this array from scratch just now, so its
 		// order is still free to change, as Hooks.cpp does for CND.
 		auto& elements = entries->elements;
 		for (auto i = elements.size(); i-- > 0;) {
@@ -166,7 +166,7 @@ namespace ItemCard
 				Trace(a_site, a_item, std::string_view{ shown->m_value }, *percent);
 			}
 
-			// The members the game's own number entry has, written as it
+			// The members the engine's own number entry has, written as it
 			// writes them, so the Pip-Boy copies them to the card the same way.
 			PutMember(*entry, "text", new RE::PipboyPrimitiveValue<RE::BSFixedStringCS>(RE::BSFixedStringCS{ CND_TEXT }, entry));
 			PutMember(*entry, "value", new RE::PipboyPrimitiveValue<float>(static_cast<float>(*percent), entry));

@@ -186,11 +186,6 @@ namespace Mcm
 			if (on == &Settings::bFoodSpoils && value) {
 				Queue(FollowUp::kFood);
 			}
-			// Built or dropped at once, as the trace files open and close
-			// above, so the next roll finds the areas the switch says.
-			if (on == &Settings::bLootByArea) {
-				Provenance::SwitchAreas();
-			}
 		}
 		Answer(a_params, true);
 	}
@@ -269,6 +264,11 @@ namespace Mcm
 		Owe(number->section, number->key, std::format("{:g}", before), std::format("{:g}", value), std::format("{:g}", number->GetValueDefault()));
 		if (value != before) {
 			QueueFollowUps(*number);
+			// Built or dropped at once, so the next roll finds the areas the
+			// slider says. Only a move to or from off changes them.
+			if (number == &Settings::fLootAreaEffect) {
+				Provenance::FollowAreaEffect();
+			}
 		}
 		Answer(a_params, true);
 	}

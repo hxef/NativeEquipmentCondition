@@ -10,7 +10,7 @@
 #include <string>
 #include <string_view>
 
-// What a trader says about a repair and the sign under their caps, the
+// What a trader says about a repair and the sign on the barter screen, the
 // [Trader] lines of the language files.
 namespace Text
 {
@@ -104,14 +104,23 @@ namespace Text
 	// The lines
 	// -------------------------------------------------------------------
 
+	// A price of 1 takes the _ONE line, "1 cap", which a cheap step shows,
+	// since a step costs 1 cap at least. A renamed word stays as the barter
+	// screen gives it, "1 tickets", since NEC knows no singular of it.
 	std::string RepairCaps(std::uint32_t a_caps)
 	{
-		return g_currency.empty() ? Say(REPAIR_CAPS, a_caps) : Say(REPAIR_CAPS_RENAMED, a_caps, g_currency);
+		if (!g_currency.empty()) {
+			return Say(REPAIR_CAPS_RENAMED, a_caps, g_currency);
+		}
+		return Say(a_caps == 1 ? REPAIR_CAPS_ONE : REPAIR_CAPS, a_caps);
 	}
 
 	std::string RepairPaid(std::uint32_t a_level, std::uint32_t a_caps)
 	{
-		return g_currency.empty() ? Say(REPAIR_PAID, a_level, a_caps) : Say(REPAIR_PAID_RENAMED, a_level, a_caps, g_currency);
+		if (!g_currency.empty()) {
+			return Say(REPAIR_PAID_RENAMED, a_level, a_caps, g_currency);
+		}
+		return Say(a_caps == 1 ? REPAIR_PAID_ONE : REPAIR_PAID, a_level, a_caps);
 	}
 
 	std::string RepairUpTo(std::uint32_t a_ceiling, Trade a_trade)

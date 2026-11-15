@@ -124,6 +124,13 @@ namespace Materials
 	// together.
 	std::vector<Part> BillOfParts(std::span<const Line> a_bill);
 
+	// Whether an enabled mod of the copy a_extra describes asks for any of
+	// a_components, read the same way as the bill. The item's own scrap
+	// recipe and a borrowed one do not count, so a Super Sledge with a heated
+	// head asks for Circuitry and a plain one asks for none. a_extra can be
+	// null, and a null entry in a_components matches nothing.
+	[[nodiscard]] bool ModsAskFor(const RE::ExtraDataList* a_extra, std::span<const RE::BGSComponent* const> a_components);
+
 	// The bill laid out 1 unit at a time, mixed in proportion, so the first n
 	// entries are what n units of the gun are made of. A component with 11
 	// units places its first unit at 0.5/11 and its second at 1.5/11, and all

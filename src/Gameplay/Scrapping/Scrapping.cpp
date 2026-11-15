@@ -1,7 +1,7 @@
 #include "Gameplay/Scrapping/Scrapping.h"
 
 #include "Condition/Materials/Yield.h"
-#include "Core/TraceLog.h"
+#include "Core/TraceLog/TraceLog.h"
 
 namespace Scrapping
 {

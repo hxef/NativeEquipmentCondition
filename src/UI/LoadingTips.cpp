@@ -4,7 +4,7 @@
 #include "Core/Runtime.h"
 #include "Core/Settings.h"
 #include "Core/Text/Text.h"
-#include "Core/TraceLog.h"
+#include "Core/TraceLog/TraceLog.h"
 #include "Gameplay/BrokenEquip.h"
 #include "Gameplay/ItemValue.h"
 #include "Gameplay/Jam.h"

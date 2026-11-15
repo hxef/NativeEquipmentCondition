@@ -1,7 +1,7 @@
 #include "Gameplay/BrokenEquip.h"
 
 #include "Core/CallPatch/CallPatch.h"
-#include "Core/TraceLog.h"
+#include "Core/TraceLog/TraceLog.h"
 
 #include <array>
 #include <cstddef>

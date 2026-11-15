@@ -7,7 +7,7 @@
 #include "UI/Hud/HudParts/HudParts.h"
 #include "UI/Roles/Hud.h"
 #include "Core/Settings.h"
-#include "Core/TraceLog.h"
+#include "Core/TraceLog/TraceLog.h"
 
 #include <algorithm>
 #include <chrono>

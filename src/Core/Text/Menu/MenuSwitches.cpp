@@ -3,10 +3,10 @@
 #include "Core/Settings.h"
 
 // The help lines of the switches on the MCM page, the names and help of the
-// plain apparel, 2 CND bar, spare repair, repair columns, repair gains, trader
-// sign, card wear rate, power armor CND, fridge icon and bug report logs
-// switches, and of the unscrappable spares, repair box and repair lock
-// steppers, see MenuLine in Text.h.
+// plain apparel, loot by area, 2 CND bar, spare repair, repair columns, repair
+// gains, trader sign, card wear rate, power armor CND, fridge icon and bug
+// report logs switches, and of the unscrappable spares, repair box and repair
+// lock steppers, see MenuLine in Text.h.
 namespace Text
 {
 	namespace
@@ -14,6 +14,7 @@ namespace Text
 		constexpr MenuRow ROWS[]{
 			{ &Settings::bPlainApparelNeverWears, PLAIN_APPAREL_NAME, PLAIN_APPAREL_HELP },
 			{ &Settings::bSpawnCondition, {}, SPAWN_CONDITION_HELP },
+			{ &Settings::bLootByArea, LOOT_BY_AREA_NAME, LOOT_BY_AREA_HELP },
 			{ &Settings::bVendorRepair, {}, VENDOR_REPAIR_HELP },
 			{ &Settings::bTraderSign, TRADER_SIGN_NAME, TRADER_SIGN_HELP },
 			{ &Settings::bSpareRepair, SPARE_REPAIR_NAME, SPARE_REPAIR_HELP },

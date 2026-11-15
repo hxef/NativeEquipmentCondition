@@ -1,7 +1,7 @@
 #include "UI/Hud/PickupBar/Bar.h"
 
 #include "Core/Settings.h"
-#include "Core/TraceLog.h"
+#include "Core/TraceLog/TraceLog.h"
 #include "UI/Flash.h"
 #include "UI/Hud/HudParts/HudParts.h"
 #include "UI/Hud/PickupBar/Look.h"

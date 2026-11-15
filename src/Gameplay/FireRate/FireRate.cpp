@@ -6,7 +6,7 @@
 #include "Core/CallPatch/CallPatch.h"
 #include "Core/Runtime.h"
 #include "Core/Settings.h"
-#include "Core/TraceLog.h"
+#include "Core/TraceLog/TraceLog.h"
 #include "Gameplay/FireRate/Cuts.h"
 #include "Gameplay/InHand.h"
 #include "Gameplay/WeaponEvents/WeaponEvents.h"

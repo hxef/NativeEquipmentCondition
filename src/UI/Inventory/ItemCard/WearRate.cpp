@@ -3,7 +3,7 @@
 #include "Condition/ArmorWear/ArmorWear.h"
 #include "Condition/WeaponWear/WeaponWear.h"
 #include "Core/IniText.h"
-#include "Core/TraceLog.h"
+#include "Core/TraceLog/TraceLog.h"
 #include "Gameplay/FoodSpoil/FoodSpoil.h"
 #include "UI/Flash.h"
 #include "UI/Roles/Card.h"

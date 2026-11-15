@@ -4,7 +4,7 @@
 #include "Condition/Equipped.h"
 #include "Condition/WeaponWear/WeaponWear.h"
 #include "Core/CallPatch/CallPatch.h"
-#include "Core/TraceLog.h"
+#include "Core/TraceLog/TraceLog.h"
 #include "Gameplay/Aim/Aim.h"
 #include "Gameplay/FireRate/FireRate.h"
 #include "Gameplay/Jam.h"

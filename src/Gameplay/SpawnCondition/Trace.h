@@ -3,7 +3,7 @@
 #include "Core/Plugin.h"
 
 #include "Condition/Provenance/Provenance.h"
-#include "Core/TraceLog.h"
+#include "Core/TraceLog/TraceLog.h"
 #include "Gameplay/SpawnCondition/Band.h"
 #include "Gameplay/SpawnCondition/SpawnCondition.h"
 

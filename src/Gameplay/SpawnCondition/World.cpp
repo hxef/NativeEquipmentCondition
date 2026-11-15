@@ -4,7 +4,7 @@
 #include "Core/CallPatch/CallPatch.h"
 #include "Core/Runtime.h"
 #include "Core/Settings.h"
-#include "Core/TraceLog.h"
+#include "Core/TraceLog/TraceLog.h"
 #include "Gameplay/SpawnCondition/Guards.h"
 #include "Gameplay/SpawnCondition/Handover.h"
 #include "Gameplay/SpawnCondition/Trace.h"

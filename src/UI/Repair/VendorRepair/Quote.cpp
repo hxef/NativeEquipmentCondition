@@ -3,7 +3,7 @@
 #include "Condition/Repair.h"
 #include "Core/Settings.h"
 #include "Core/Text/Text.h"
-#include "Core/TraceLog.h"
+#include "Core/TraceLog/TraceLog.h"
 #include "UI/Repair/Columns/Columns.h"
 #include "UI/Repair/Gains.h"
 #include "UI/Repair/VendorRepair/VendorRepair.h"

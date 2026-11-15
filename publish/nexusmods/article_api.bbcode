@@ -30,6 +30,8 @@ Identical new copies share 1 stack, so GetCount can be above 1. A write, a wear 
 
 A pile lying in the world shares 1 condition between its copies, and a write changes all of them.
 
+A function that takes a Form, such as IsTracked or GetAccuracyShare, takes a base form or a reference, and a reference answers as its base form does. A handle from GetItems or GetEquippedWeapon may reach a Form argument as None, so pass NEC.GetBase(akItem) there instead.
+
 [size=3][b][font=Georgia][color=#1AFF80]Units[/color][/font][/b][/size]
 
 Condition and freshness are a percent from 0 to 100, with decimals: the API gives 85.3 where the item card shows 85. A new item reads 100. -1 means NEC gives this item no condition, or akItem is None or no longer exists. The curve functions below, GetDamageShare to GetJamChance, answer a fraction from 0 to 1: the share of its damage a weapon keeps, or the chance a magazine jams. Vanilla's GetItemHealthPercent is a fraction from 0 to 1 too, not a percent.
@@ -135,9 +137,9 @@ The share of its damage a weapon keeps at afPercent, from 0 to 1, from fDamageFl
 [*][font=Courier New]float Function GetArmorShare(float afPercent)[/font]
 The share of its protection a piece of armor keeps at afPercent, from fArmorFloor at 0 to 1 at fArmorPenaltyStart times 100.
 [*][font=Courier New]float Function GetAccuracyShare(Form akWeapon, float afPercent)[/font]
-The share of its accuracy the gun akWeapon keeps at afPercent, 1 for anything that is not a gun.
+The share of its accuracy the gun akWeapon keeps at afPercent, 1 for anything that is not a gun. Mods do not change it.
 [*][font=Courier New]float Function GetRangeShare(Form akWeapon, float afPercent)[/font]
-The share of its range the gun akWeapon keeps at afPercent, 1 for anything that is not a gun.
+The share of its range the gun akWeapon keeps at afPercent, 1 for anything that is not a gun. Mods do not change it.
 [*][font=Courier New]float Function GetFireRateShare(ObjectReference akWeapon, float afPercent)[/font]
 The share of its fire rate the automatic weapon akWeapon keeps at afPercent, with its mods, 1 for any other.
 [*][font=Courier New]float Function GetCritShare(float afPercent)[/font]
@@ -158,7 +160,7 @@ The Free mend above setting: a repair of an item above this percent costs nothin
 [*][font=Courier New]int Function GetModLockBelow()[/font]
 The Mod lock below setting: the bench modifies no item below this percent.
 [*][font=Courier New]int Function GetRepairDiscount(Form akBase)[/font]
-How many percent the player's crafting perk rank takes off a bench repair of akBase, 0 to 50.
+How many percent the player's crafting perk rank takes off a bench repair of akBase with no mods, 0 to 50.
 [*][code]Struct Cost
     Component object
     int count

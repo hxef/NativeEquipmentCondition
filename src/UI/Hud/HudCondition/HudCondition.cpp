@@ -6,7 +6,7 @@
 #include "UI/MenuMovies.h"
 #include "UI/Roles/Hud.h"
 #include "Core/Settings.h"
-#include "Core/TraceLog.h"
+#include "Core/TraceLog/TraceLog.h"
 
 #include <array>
 #include <string_view>

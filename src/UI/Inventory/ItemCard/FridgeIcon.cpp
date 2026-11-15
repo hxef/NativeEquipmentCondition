@@ -1,6 +1,6 @@
 #include "UI/Inventory/ItemCard/Cards.h"
 
-#include "Core/TraceLog.h"
+#include "Core/TraceLog/TraceLog.h"
 #include "UI/Flash.h"
 #include "UI/FridgeIcon.h"
 #include "UI/Roles/Card.h"

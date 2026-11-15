@@ -218,11 +218,7 @@ namespace WearList
 					total += count;
 				}
 			}
-			std::string text;
-			for (std::size_t i = 0; i < parts.size(); i++) {
-				text += (i == 0 ? ": " : i + 1 == parts.size() ? " and " : ", ") + parts[i];
-			}
-			REX::INFO("{:s} sets wear or damage for {:d} {:s}{:s}.", a_file, total, total == 1 ? "form" : "forms", text);
+			REX::INFO("{:s} sets wear or damage for {:d} {:s}{:s}.", a_file, total, total == 1 ? "form" : "forms", ListFiles::Joined(parts));
 		}
 
 		// -------------------------------------------------------------------

@@ -1,7 +1,7 @@
 #include "UI/Hud/QuickContainer/Meters.h"
 
 #include "Core/Settings.h"
-#include "Core/TraceLog.h"
+#include "Core/TraceLog/TraceLog.h"
 #include "UI/Flash.h"
 #include "UI/Hud/QuickContainer/Draw.h"
 #include "UI/Hud/QuickContainer/RowLayout.h"

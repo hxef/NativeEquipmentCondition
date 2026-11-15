@@ -268,7 +268,7 @@ namespace ListFiles
 				}
 				// The plugin's ID keeps the last 6 digits, so FF001234 would
 				// name its 001234.
-				if (item->digits.size() == 8 && (item->id >> 24) == 0xFF) {
+				if (item->digits.size() == 8 && Made(item->id)) {
 					faults.Add(std::format("{:s} line {:d}: {:s} is a form the game made in 1 save, so NEC skips it.{:s}{:s}",
 						a_file.name, line, item->digits, a_list.madeHint.empty() ? "" : " ", a_list.madeHint));
 					continue;
@@ -318,5 +318,33 @@ namespace ListFiles
 				a_done(file.name);
 			}
 		}
+	}
+
+	// -------------------------------------------------------------------
+	// Words the lists share
+	// -------------------------------------------------------------------
+
+	std::string Joined(const std::vector<std::string>& a_parts)
+	{
+		std::string text;
+		for (std::size_t i = 0; i < a_parts.size(); i++) {
+			text += (i == 0 ? ": " : i + 1 == a_parts.size() ? " and " : ", ") + a_parts[i];
+		}
+		return text;
+	}
+
+	bool Made(RE::TESFormID a_id)
+	{
+		return (a_id >> 24) == 0xFF;
+	}
+
+	std::uint32_t LocalOf(const RE::TESFile& a_plugin, RE::TESFormID a_id)
+	{
+		return a_plugin.IsLight() ? a_id & 0xFFF : a_id & 0xFFFFFF;
+	}
+
+	std::string Spelled(const RE::TESFile& a_plugin, std::uint32_t a_local)
+	{
+		return std::format("{:s}|{:06X}", a_plugin.GetFilename(), a_local);
 	}
 }

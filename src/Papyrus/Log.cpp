@@ -2,7 +2,7 @@
 
 #include "Core/LogFiles.h"
 #include "Core/ScriptEvents.h"
-#include "Core/TraceLog.h"
+#include "Core/TraceLog/TraceLog.h"
 
 #include <spdlog/details/os.h>
 #include <spdlog/spdlog.h>

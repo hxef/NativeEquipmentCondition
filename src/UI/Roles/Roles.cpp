@@ -1,6 +1,6 @@
 #include "UI/Roles/Roles.h"
 
-#include "Core/TraceLog.h"
+#include "Core/TraceLog/TraceLog.h"
 #include "UI/Flash.h"
 #include "UI/MenuMovies.h"
 

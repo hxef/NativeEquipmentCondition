@@ -5,7 +5,7 @@
 #include "Condition/Repair.h"
 #include "Core/CallPatch/CallPatch.h"
 #include "Core/ItemCards.h"
-#include "Core/TraceLog.h"
+#include "Core/TraceLog/TraceLog.h"
 #include "UI/Repair/Restore.h"
 
 #include <algorithm>

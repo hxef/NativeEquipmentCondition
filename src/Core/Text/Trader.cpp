@@ -1,7 +1,7 @@
 #include "Core/Text/Text.h"
 
 #include "Core/Text/Lines.h"
-#include "Core/TraceLog.h"
+#include "Core/TraceLog/TraceLog.h"
 
 #include <REX/CONVERT.h>
 
@@ -17,7 +17,7 @@ namespace Text
 	namespace
 	{
 		// The barter screen's word for caps while a mod renamed it, as the 3
-		// lines print it, else empty. See ReadCurrency.
+		// lines print it, else empty. See SetCurrency.
 		std::string g_currency;
 
 		// a_text in lower or upper case by a_case. The invariant locale with
@@ -70,23 +70,13 @@ namespace Text
 	// The word for caps
 	// -------------------------------------------------------------------
 
-	// A text field the screen never shows is given "$CAPS", which the movie
-	// translates as it does the barter screen's own labels, so the word is
-	// whatever the game's translations hold. A key the translations lack
-	// stays "$CAPS". Only a word that differs from the language file's
-	// CURRENCY_VANILLA in more than its capitals counts as renamed, so with
-	// vanilla's word every line reads as before.
-	void ReadCurrency(Scaleform::GFx::Movie& a_movie)
+	// A key the translations lack stays "$CAPS". Only a word that differs
+	// from the language file's CURRENCY_VANILLA in more than its capitals
+	// counts as renamed, so with vanilla's word every line reads as before.
+	void SetCurrency(std::string_view a_word)
 	{
 		g_currency.clear();
-		Scaleform::GFx::Value field;
-		a_movie.CreateObject(&field, "flash.text.TextField");
-		Scaleform::GFx::Value text;
-		if (!field.IsDisplayObject() || !field.SetMember("text"sv, Scaleform::GFx::Value("$CAPS")) ||
-			!field.GetMember("text"sv, &text) || !text.IsString()) {
-			return;
-		}
-		const std::string word = text.GetString();
+		const std::string word{ a_word };
 		std::wstring live;
 		if (word.empty() || word.starts_with('$') || !REX::UTF8_TO_UTF16(word, live)) {
 			return;

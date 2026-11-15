@@ -4,7 +4,7 @@
 #include "Condition/Excluded.h"
 #include "Core/CallPatch/CallPatch.h"
 #include "Core/Settings.h"
-#include "Core/TraceLog.h"
+#include "Core/TraceLog/TraceLog.h"
 #include "Gameplay/InHand.h"
 #include "Gameplay/WeaponEvents/WeaponEvents.h"
 

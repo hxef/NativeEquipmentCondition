@@ -1,6 +1,6 @@
 #include "Gameplay/HealthDamage/Trace.h"
 
-#include "Core/TraceLog.h"
+#include "Core/TraceLog/TraceLog.h"
 
 #include <bit>
 

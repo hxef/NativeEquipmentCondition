@@ -3,7 +3,7 @@
 #include "Condition/Provenance/Provenance.h"
 #include "Condition/Provenance/Rank.h"
 #include "Condition/Provenance/Supply.h"
-#include "Core/TraceLog.h"
+#include "Core/TraceLog/TraceLog.h"
 
 #include <algorithm>
 #include <chrono>

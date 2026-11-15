@@ -3,7 +3,7 @@
 #include "Condition/ArmorWear/ArmorWear.h"
 #include "Condition/Crew.h"
 #include "Condition/Equipped.h"
-#include "Core/TraceLog.h"
+#include "Core/TraceLog/TraceLog.h"
 #include "Gameplay/ArmorRating.h"
 
 #include <algorithm>

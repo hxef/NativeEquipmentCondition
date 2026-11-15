@@ -1,6 +1,6 @@
 #include "UI/Repair/VendorRepair/Restock.h"
 
-#include "Core/TraceLog.h"
+#include "Core/TraceLog/TraceLog.h"
 #include "UI/Repair/VendorRepair/Quote.h"
 
 #include <algorithm>

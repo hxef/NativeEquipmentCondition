@@ -1,6 +1,6 @@
 #include "UI/Hud/HudCondition/Spot.h"
 
-#include "Core/TraceLog.h"
+#include "Core/TraceLog/TraceLog.h"
 
 #include <algorithm>
 #include <cmath>

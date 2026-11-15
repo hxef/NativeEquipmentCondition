@@ -1,7 +1,7 @@
 #include "UI/Repair/Workbench/Label.h"
 
 #include "Core/Text/Text.h"
-#include "Core/TraceLog.h"
+#include "Core/TraceLog/TraceLog.h"
 #include "UI/Flash.h"
 #include "UI/Repair/Workbench/Display.h"
 #include "UI/Repair/Workbench/Workbench.h"

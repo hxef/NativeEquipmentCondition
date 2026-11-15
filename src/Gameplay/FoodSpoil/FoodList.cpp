@@ -91,11 +91,8 @@ namespace FoodSpoil
 					total += a_counts[i];
 				}
 			}
-			std::string text;
-			for (std::size_t i = 0; i < parts.size(); i++) {
-				text += (i == 0 ? ": " : i + 1 == parts.size() ? " and " : ", ") + parts[i];
-			}
-			NoteFile(LogPart::kFoodFiles, std::format("{:s} sets {:d} {:s}{:s}.", a_file, total, total == 1 ? "food" : "foods", text));
+			NoteFile(LogPart::kFoodFiles,
+				std::format("{:s} sets {:d} {:s}{:s}.", a_file, total, total == 1 ? "food" : "foods", ListFiles::Joined(parts)));
 		}
 
 		// -------------------------------------------------------------------
@@ -198,13 +195,13 @@ namespace FoodSpoil
 			if (!plugin || !form) {
 				return {};
 			}
-			const auto local = plugin->IsLight() ? a_id & 0xFFF : a_id & 0xFFFFFF;
+			const auto spelled = ListFiles::Spelled(*plugin, ListFiles::LocalOf(*plugin, a_id));
 			const auto name = RE::TESFullName::GetFullName(*form);
 			auto       why = WhyOf(a_food);
 			if (a_food.by && a_food.by != plugin) {
 				why += std::format(" by {:s}", a_food.by->GetFilename());
 			}
-			return std::format("{:s}|{:06X} = {:<{}s}; {:s}", plugin->GetFilename(), local, WordOf(a_food.kind), WORD_WIDTH,
+			return std::format("{:s} = {:<{}s}; {:s}", spelled, WordOf(a_food.kind), WORD_WIDTH,
 				name.empty() ? why : std::format("{:s}, {:s}", name, why));
 		}
 	}

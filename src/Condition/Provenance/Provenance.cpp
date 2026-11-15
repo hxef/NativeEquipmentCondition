@@ -4,13 +4,15 @@
 #include "Condition/Provenance/Care.h"
 #include "Condition/Provenance/Rank.h"
 #include "Condition/Provenance/Supply.h"
+#include "Core/Settings.h"
 #include "Core/Snapshot.h"
 
 #include <cmath>
-#include <cstddef>
 #include <format>
 #include <memory>
+#include <mutex>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace Provenance
@@ -36,24 +38,55 @@ namespace Provenance
 		// half. The spawn hook is live from the moment the plugin loads and
 		// several threads build inventories at once, so every reader takes the
 		// ranking whole, see Core/Snapshot.h, and with none rolls the item at
-		// the plain middle.
+		// the plain middle. The 3 are shared, so a turn of bLootByArea swaps
+		// in a ranking with new areas or none and keeps both halves.
 		struct Ranking
 		{
-			Supply supply;
-			Care   care;
-			Areas  areas;
+			std::shared_ptr<const Supply> supply;
+			std::shared_ptr<const Care>   care;
+			std::shared_ptr<const Areas>  areas;  // nothing while bLootByArea is off
 		};
 		Snapshot<Ranking> g_ranking;
 
+		// Held from reading the last ranking to publishing the next, so a
+		// save load's measure and a turn of the switch on the MCM page never
+		// build on the same ranking and drop the other's work.
+		std::mutex g_measuring;
+
+		// The areas measured against a_supply, or nothing while bLootByArea is
+		// off, so no ladder is built.
+		std::shared_ptr<const Areas> AreasOf(const Supply& a_supply)
+		{
+			if (!Settings::bLootByArea.GetValue()) {
+				return nullptr;
+			}
+			auto areas = std::make_shared<Areas>();
+			MeasureAreas(a_supply, *areas);
+			return areas;
+		}
+
 		// The care half and the areas read back what the supply half measured
 		// for each leveled list, so the supply half goes first.
-		std::shared_ptr<Ranking> Measure(const Ranking* a_last, SupplyCount& a_supply, CareCount& a_care, std::size_t& a_areas)
+		std::shared_ptr<const Ranking> Measure(const Ranking* a_last, SupplyCount& a_supply, CareCount& a_care)
 		{
-			auto ranking = std::make_shared<Ranking>();
-			a_supply = MeasureSupply(ranking->supply);
-			a_areas = MeasureAreas(ranking->supply, ranking->areas);
-			a_care = MeasureCare(ranking->supply, a_last ? &a_last->care : nullptr, ranking->care);
-			return ranking;
+			auto supply = std::make_shared<Supply>();
+			a_supply = MeasureSupply(*supply);
+			auto areas = AreasOf(*supply);
+			auto care = std::make_shared<Care>();
+			a_care = MeasureCare(*supply, a_last ? a_last->care.get() : nullptr, *care);
+			return std::make_shared<const Ranking>(Ranking{ std::move(supply), std::move(care), std::move(areas) });
+		}
+
+		// Where loot lying around rolls, for NEC.log at each load and each
+		// turn of the switch.
+		void SayAreas(const Ranking& a_ranking)
+		{
+			if (a_ranking.areas) {
+				REX::INFO("Ranked {:d} containers and characters by the weapons they start with. Loot lying around rolls by where its area falls among them.",
+					a_ranking.areas->ladder.size());
+			} else {
+				REX::INFO("Loot lying around rolls the same everywhere, since bLootByArea is false.");
+			}
 		}
 	}
 
@@ -81,6 +114,7 @@ namespace Provenance
 
 	void Unload()
 	{
+		const std::scoped_lock measuring{ g_measuring };
 		g_ranking.Publish(nullptr);
 	}
 
@@ -91,14 +125,15 @@ namespace Provenance
 			return;
 		}
 
-		SupplyCount supply{};
-		CareCount   care{};
-		std::size_t areas = 0;
-		g_ranking.Publish(Measure(nullptr, supply, care, areas));
+		const std::scoped_lock measuring{ g_measuring };
+		SupplyCount            supply{};
+		CareCount              care{};
+		const auto             now = Measure(nullptr, supply, care);
+		g_ranking.Publish(now);
 
 		REX::INFO("Ranked {:d} leveled lists that hand out weapons, {:d} that hand out armor, and what {:d} characters are issued. Of those, {:d} are issued armor and ranked against each other, {:d} are issued none, and {:d} spawn in power armor.",
 			supply.ranked, supply.armorRanked, care.ranked, care.kits, care.issuedNothing, care.armored);
-		REX::INFO("Ranked {:d} containers and characters by the weapons they start with. Loot lying around rolls by where its area falls among them.", areas);
+		SayAreas(*now);
 
 		// Loud on purpose. A leveled list in this load order points round in a
 		// circle or nests absurdly deep, and whatever draws from it has lost
@@ -125,7 +160,7 @@ namespace Provenance
 		// any of it reaches an inventory.
 		if (a_extra) {
 			if (const auto* came = a_extra->GetByType<RE::ExtraLeveledItem>()) {
-				if (const auto supply = SupplyOf(ranking->supply, came->levItem, a_kind)) {
+				if (const auto supply = SupplyOf(*ranking->supply, came->levItem, a_kind)) {
 					origin.supply = *supply;
 					origin.pipeline = came->levItem;
 				}
@@ -133,9 +168,12 @@ namespace Provenance
 		}
 
 		// A ranked stamped list always wins, and the area stands in only when
-		// no list ranked for this kind handed the item out.
-		if (origin.supply == UNMEASURED && a_cell) {
-			if (const auto area = AreaOf(ranking->supply, ranking->areas, *a_cell)) {
+		// no list ranked for this kind handed the item out. While bLootByArea
+		// is off no cell is walked, and the item rolls at the ordinary middle,
+		// as in a cell with no list. The switch is asked too, since the page
+		// turns it a moment before SwitchAreas drops the areas.
+		if (origin.supply == UNMEASURED && a_cell && ranking->areas && Settings::bLootByArea.GetValue()) {
+			if (const auto area = AreaOf(*ranking->supply, *ranking->areas, *a_cell)) {
 				origin.supply = *area;
 				origin.pipeline = a_cell->formID;
 			}
@@ -153,7 +191,7 @@ namespace Provenance
 			// Kept whether or not the half was measured, so the trace can tell
 			// a character this failed on from a footlocker.
 			origin.keeper = &npc;
-			origin.care = CareOf(ranking->supply, ranking->care, npc);
+			origin.care = CareOf(*ranking->supply, *ranking->care, npc);
 		}
 
 		return origin;
@@ -161,25 +199,37 @@ namespace Provenance
 
 	std::vector<std::string> MeasureAgain()
 	{
-		const auto was = g_ranking.Get();
+		const std::scoped_lock measuring{ g_measuring };
+		const auto             was = g_ranking.Get();
 		if (!was) {
 			return {};
 		}
 		SupplyCount supply{};
 		CareCount   care{};
-		std::size_t areas = 0;
-		auto        now = Measure(was.get(), supply, care, areas);
+		auto        now = Measure(was.get(), supply, care);
 
 		// What went into the ranks and not the ranks, since 1 list or
 		// character that moves shifts the place of every one ranked between.
 		std::vector<std::string> moved;
-		if (const auto lists = ChangedKeys(was->supply.hauls, now->supply.hauls); lists > 0) {
+		if (const auto lists = ChangedKeys(was->supply->hauls, now->supply->hauls); lists > 0) {
 			moved.push_back(std::format("what {:d} {:s}", lists, lists == 1 ? "leveled list hands out" : "leveled lists hand out"));
 		}
-		if (const auto characters = ChangedKeys(was->care.issued, now->care.issued); characters > 0) {
+		if (const auto characters = ChangedKeys(was->care->issued, now->care->issued); characters > 0) {
 			moved.push_back(std::format("what {:d} {:s}", characters, characters == 1 ? "character is issued" : "characters are issued"));
 		}
 		g_ranking.Publish(std::move(now));
 		return moved;
+	}
+
+	void SwitchAreas()
+	{
+		const std::scoped_lock measuring{ g_measuring };
+		const auto             was = g_ranking.Get();
+		if (!was || (was->areas != nullptr) == Settings::bLootByArea.GetValue()) {
+			return;
+		}
+		const auto now = std::make_shared<const Ranking>(Ranking{ was->supply, was->care, AreasOf(*was->supply) });
+		g_ranking.Publish(now);
+		SayAreas(*now);
 	}
 }

@@ -4,7 +4,7 @@
 #include "Condition/WeaponWear/Copy.h"
 #include "Condition/WeaponWear/Rate.h"
 #include "Core/ScriptEvents.h"
-#include "Core/TraceLog.h"
+#include "Core/TraceLog/TraceLog.h"
 
 #include <algorithm>
 #include <atomic>

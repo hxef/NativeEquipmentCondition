@@ -33,6 +33,10 @@ Scriptname NEC Native Hidden
 ;
 ; A pile lying in the world shares 1 condition between its copies, and a write changes all of them.
 ;
+; A function that takes a Form, such as IsTracked or GetAccuracyShare, takes a base form or a reference, and a
+; reference answers as its base form does. A handle from GetItems or GetEquippedWeapon may reach a Form argument as
+; None, so pass NEC.GetBase(akItem) there instead.
+;
 ; # Units
 ; Condition and freshness are a percent from 0 to 100, with decimals: the API gives 85.3 where the item card shows 85.
 ; A new item reads 100. -1 means NEC gives this item no condition, or akItem is None or no longer exists.
@@ -164,10 +168,10 @@ float Function GetDamageShare(float afPercent) global native
 ; The share of its protection a piece of armor keeps at afPercent, from fArmorFloor at 0 to 1 at fArmorPenaltyStart times 100.
 float Function GetArmorShare(float afPercent) global native
 
-; The share of its accuracy the gun akWeapon keeps at afPercent, 1 for anything that is not a gun.
+; The share of its accuracy the gun akWeapon keeps at afPercent, 1 for anything that is not a gun. Mods do not change it.
 float Function GetAccuracyShare(Form akWeapon, float afPercent) global native
 
-; The share of its range the gun akWeapon keeps at afPercent, 1 for anything that is not a gun.
+; The share of its range the gun akWeapon keeps at afPercent, 1 for anything that is not a gun. Mods do not change it.
 float Function GetRangeShare(Form akWeapon, float afPercent) global native
 
 ; The share of its fire rate the automatic weapon akWeapon keeps at afPercent, with its mods, 1 for any other.
@@ -193,7 +197,7 @@ int Function GetFreeMendAbove() global native
 ; The Mod lock below setting: the bench modifies no item below this percent.
 int Function GetModLockBelow() global native
 
-; How many percent the player's crafting perk rank takes off a bench repair of akBase, 0 to 50.
+; How many percent the player's crafting perk rank takes off a bench repair of akBase with no mods, 0 to 50.
 int Function GetRepairDiscount(Form akBase) global native
 
 ; 1 component of a bill and how many of it.

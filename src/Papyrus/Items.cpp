@@ -6,7 +6,7 @@
 #include "Condition/UniqueID.h"
 #include "Condition/WeaponWear/WeaponWear.h"
 #include "Core/ScriptEvents.h"
-#include "Core/TraceLog.h"
+#include "Core/TraceLog/TraceLog.h"
 #include "Papyrus/Natives.h"
 #include "Papyrus/Waiting.h"
 
@@ -208,6 +208,15 @@ namespace Papyrus
 	std::string Hex(const RE::TESForm* a_form)
 	{
 		return a_form ? std::format("{:08X}", a_form->GetFormID()) : "none";
+	}
+
+	RE::TESForm* RecordOf(RE::TESForm* a_form)
+	{
+		auto* ref = a_form ? a_form->As<RE::TESObjectREFR>() : nullptr;
+		if (!ref) {
+			return a_form;
+		}
+		return ref->IsDeleted() ? nullptr : ref->GetObjectReference();
 	}
 
 	std::string FormName(const RE::TESForm& a_form)

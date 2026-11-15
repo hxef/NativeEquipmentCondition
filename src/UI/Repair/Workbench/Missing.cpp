@@ -1,6 +1,6 @@
 #include "UI/Repair/Workbench/Missing.h"
 
-#include "Core/TraceLog.h"
+#include "Core/TraceLog/TraceLog.h"
 #include "UI/Repair/RepairPrompt.h"
 
 #include <cstdint>

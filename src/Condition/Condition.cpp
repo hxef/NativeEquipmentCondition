@@ -4,7 +4,7 @@
 #include "Condition/Excluded.h"
 #include "Condition/WeaponWear/WeaponWear.h"
 #include "Core/Settings.h"
-#include "Core/TraceLog.h"
+#include "Core/TraceLog/TraceLog.h"
 
 #include <algorithm>
 #include <cmath>

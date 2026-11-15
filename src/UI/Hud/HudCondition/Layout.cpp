@@ -1,7 +1,7 @@
 #include "UI/Hud/HudCondition/Listener.h"
 
 #include "Core/Settings.h"
-#include "Core/TraceLog.h"
+#include "Core/TraceLog/TraceLog.h"
 #include "UI/Roles/Roles.h"
 
 #include <array>

@@ -6,7 +6,7 @@
 #include "Condition/WeaponWear/Sources.h"
 #include "Condition/WearList/WearList.h"
 #include "Core/Settings.h"
-#include "Core/TraceLog.h"
+#include "Core/TraceLog/TraceLog.h"
 
 #include <algorithm>
 #include <atomic>

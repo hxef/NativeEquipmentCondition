@@ -2,7 +2,7 @@
 
 #include "Condition/Condition.h"
 #include "Core/CallPatch/CallPatch.h"
-#include "Core/TraceLog.h"
+#include "Core/TraceLog/TraceLog.h"
 #include "UI/Inventory/Pipboy.h"
 
 #include <algorithm>

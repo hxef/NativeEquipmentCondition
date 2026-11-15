@@ -1,7 +1,7 @@
 #include "UI/Repair/Workbench/Box.h"
 
 #include "Core/Text/Text.h"
-#include "Core/TraceLog.h"
+#include "Core/TraceLog/TraceLog.h"
 #include "UI/Repair/Workbench/Job.h"
 #include "UI/Repair/Workbench/Workbench.h"
 #include "UI/Roles/Boxes.h"

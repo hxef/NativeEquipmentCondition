@@ -1,4 +1,4 @@
-#include "Core/TraceWords.h"
+#include "Core/TraceLog/Words.h"
 
 namespace TraceLog
 {

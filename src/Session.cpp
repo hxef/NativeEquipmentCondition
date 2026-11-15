@@ -7,7 +7,7 @@
 #include "Condition/WeaponWear/WeaponWear.h"
 #include "Core/ScriptEvents.h"
 #include "Core/Text/Text.h"
-#include "Core/TraceLog.h"
+#include "Core/TraceLog/TraceLog.h"
 #include "Gameplay/FireRate/FireRate.h"
 #include "Gameplay/FoodSpoil/FoodSpoil.h"
 #include "Gameplay/InHand.h"

@@ -13,7 +13,7 @@
 // last line, so a script calling in a loop cannot flood the file. Nothing here
 // is called under an inventory lock, since a line can wait on the disk. Every
 // event and every call but the version and settings functions go to
-// NEC.papyrus.trace.log, see Core/TraceLog.h. Private to this folder.
+// NEC.papyrus.trace.log, see Core/TraceLog/TraceLog.h. Private to this folder.
 namespace Papyrus::Log
 {
 	enum class Warning : std::uint8_t

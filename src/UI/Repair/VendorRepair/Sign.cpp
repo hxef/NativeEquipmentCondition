@@ -1,7 +1,7 @@
 #include "UI/Repair/VendorRepair/Sign.h"
 
 #include "Core/Settings.h"
-#include "Core/TraceLog.h"
+#include "Core/TraceLog/TraceLog.h"
 #include "UI/Flash.h"
 #include "UI/Repair/VendorRepair/SignBlock.h"
 #include "UI/Repair/VendorRepair/SignLine.h"
@@ -114,7 +114,9 @@ namespace VendorRepair::Sign
 		// Where the sign was last put on this screen, as the trace says it,
 		// so it says each change once.
 		constexpr auto SHOWS_UNDER = "shows under the trader's list"sv;
-		constexpr auto LEFT_OUT = "is left out, as it has no room under or above the trader's list"sv;
+		constexpr auto LEFT_OUT = "is left out, as it has no room under, above or left of the trader's list"sv;
+		// A screen with no line clip tries only the place under the list.
+		constexpr auto LEFT_OUT_UNDER = "is left out, as it has no room under the trader's list"sv;
 
 		std::optional<std::string_view> g_placed;
 
@@ -227,7 +229,7 @@ namespace VendorRepair::Sign
 		}
 		Off(sign);
 		if (!line.IsDisplayObject()) {
-			Say(a_menu, LEFT_OUT);
+			Say(a_menu, LEFT_OUT_UNDER);
 			return;
 		}
 

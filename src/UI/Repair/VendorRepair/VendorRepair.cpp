@@ -4,7 +4,7 @@
 #include "Core/CallPatch/CallPatch.h"
 #include "Core/ItemCards.h"
 #include "Core/Text/Text.h"
-#include "Core/TraceLog.h"
+#include "Core/TraceLog/TraceLog.h"
 #include "UI/Repair/VendorRepair/Button.h"
 #include "UI/Repair/VendorRepair/Payment.h"
 #include "UI/Repair/VendorRepair/Quote.h"
@@ -164,6 +164,22 @@ namespace VendorRepair
 			return _OnButtonEventRelease(a_menu, a_event);
 		}
 
+		// The barter screen's word for caps, or "" when a step fails. A text
+		// field the screen never shows is given "$CAPS", which the movie
+		// translates as it does the barter screen's own labels, so the word is
+		// whatever the game's translations hold.
+		std::string CapsWord(Scaleform::GFx::Movie& a_movie)
+		{
+			Scaleform::GFx::Value field;
+			a_movie.CreateObject(&field, "flash.text.TextField");
+			Scaleform::GFx::Value text;
+			if (!field.IsDisplayObject() || !field.SetMember("text"sv, Scaleform::GFx::Value("$CAPS")) ||
+				!field.GetMember("text"sv, &text) || !text.IsString()) {
+				return {};
+			}
+			return text.GetString();
+		}
+
 		// A new screen forgets the last one before the game builds its lists,
 		// and reads its word for caps. The screen being put away takes its
 		// sign out. The vanilla handling stops the markup on every price, so
@@ -184,7 +200,7 @@ namespace VendorRepair
 				ForgetWait();
 				Sign::Forget(a_menu);
 				if (a_menu->uiMovie) {
-					Text::ReadCurrency(*a_menu->uiMovie);
+					Text::SetCurrency(CapsWord(*a_menu->uiMovie));
 				}
 			}
 			const auto result = _ProcessMessage(a_menu, a_message);

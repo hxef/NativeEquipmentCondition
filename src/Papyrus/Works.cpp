@@ -5,7 +5,7 @@
 #include "Condition/WeaponWear/WeaponWear.h"
 #include "Core/ItemCards.h"
 #include "Core/ScriptEvents.h"
-#include "Core/TraceLog.h"
+#include "Core/TraceLog/TraceLog.h"
 #include "Gameplay/ArmorRating.h"
 #include "Papyrus/Items.h"
 

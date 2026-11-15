@@ -1,7 +1,7 @@
 #include "Papyrus/Natives.h"
 
 #include "Condition/Condition.h"
-#include "Core/TraceLog.h"
+#include "Core/TraceLog/TraceLog.h"
 #include "Gameplay/Aim/Aim.h"
 #include "Gameplay/ArmorRating.h"
 #include "Gameplay/CritMeter.h"
@@ -35,10 +35,12 @@ namespace Papyrus
 			return Result(a_share(HealthAt(a_percent)));
 		}
 
-		// a_form as a weapon record, or null for None and any other form.
+		// The weapon record a_form names, itself or a reference's base, or null
+		// for None and any other form.
 		const RE::TESObjectWEAP* WeaponOf(RE::TESForm* a_form)
 		{
-			return a_form ? a_form->As<RE::TESObjectWEAP>() : nullptr;
+			auto* record = RecordOf(a_form);
+			return record ? record->As<RE::TESObjectWEAP>() : nullptr;
 		}
 	}
 

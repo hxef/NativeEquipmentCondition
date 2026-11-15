@@ -7,6 +7,7 @@
 #include <functional>
 #include <string>
 #include <string_view>
+#include <vector>
 
 // The lists a mod ships in a folder under Data/F4SE/Plugins/NEC/, such as
 // Exclude, 1 form a line:
@@ -98,4 +99,19 @@ namespace ListFiles
 	// instead of the log's "has no form".
 	void Read(const List& a_list, const std::function<void(const Line&, Faults&)>& a_line,
 		const std::function<void(const Unloaded&, Faults&)>& a_unloaded, const std::function<void(std::string_view)>& a_done);
+
+	// Words a list file's summary and lines share.
+
+	// ": a, b and c" to end a summary's count, ": a" for 1 part, empty for none.
+	[[nodiscard]] std::string Joined(const std::vector<std::string>& a_parts);
+
+	// A form the game made, whose ID starts with FF and lasts 1 save. This is
+	// for a bare ID. A loaded form asks its own IsCreated().
+	[[nodiscard]] bool Made(RE::TESFormID a_id);
+
+	// a_id inside a_plugin, its last 3 digits for a light plugin, 6 for any other.
+	[[nodiscard]] std::uint32_t LocalOf(const RE::TESFile& a_plugin, RE::TESFormID a_id);
+
+	// "Fallout4.esm|002CB9", as a line names a form.
+	[[nodiscard]] std::string Spelled(const RE::TESFile& a_plugin, std::uint32_t a_local);
 }

@@ -49,6 +49,10 @@ rest.
 
 A pile lying in the world shares 1 condition between its copies, and a write changes all of them.
 
+A function that takes a Form, such as IsTracked or GetAccuracyShare, takes a base form or a
+reference, and a reference answers as its base form does. A handle from GetItems or
+GetEquippedWeapon may reach a Form argument as None, so pass NEC.GetBase(akItem) there instead.
+
 
 Units
 =====
@@ -217,9 +221,11 @@ float Function GetArmorShare(float afPercent)
 
 float Function GetAccuracyShare(Form akWeapon, float afPercent)
     The share of its accuracy the gun akWeapon keeps at afPercent, 1 for anything that is not a gun.
+    Mods do not change it.
 
 float Function GetRangeShare(Form akWeapon, float afPercent)
     The share of its range the gun akWeapon keeps at afPercent, 1 for anything that is not a gun.
+    Mods do not change it.
 
 float Function GetFireRateShare(ObjectReference akWeapon, float afPercent)
     The share of its fire rate the automatic weapon akWeapon keeps at afPercent, with its mods, 1
@@ -251,7 +257,8 @@ int Function GetModLockBelow()
     The Mod lock below setting: the bench modifies no item below this percent.
 
 int Function GetRepairDiscount(Form akBase)
-    How many percent the player's crafting perk rank takes off a bench repair of akBase, 0 to 50.
+    How many percent the player's crafting perk rank takes off a bench repair of akBase with no
+    mods, 0 to 50.
 
 Struct Cost
     Component object

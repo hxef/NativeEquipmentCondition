@@ -95,7 +95,7 @@ namespace
 		{ .name = "ArmorWear", .Load = ArmorWear::Load },
 		// Where a weapon or a piece of armor came from, measured from every
 		// leveled list and outfit. Only SpawnCondition uses it, and it measures
-		// whatever the switch says.
+		// whatever the switch says, the areas only while bLootByArea is on.
 		{ .name = "Provenance", .Load = Provenance::Load, .Unload = Provenance::Unload },
 		// How far a trader, an NPC record or a faction repairs a kind, as a
 		// player sets it by hand. Read whatever Trader repairs says.

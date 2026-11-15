@@ -1,7 +1,7 @@
 #include "UI/Repair/Columns/Columns.h"
 
 #include "Core/Settings.h"
-#include "Core/TraceLog.h"
+#include "Core/TraceLog/TraceLog.h"
 #include "UI/MessageBox.h"
 #include "UI/Repair/Columns/Cells.h"
 #include "UI/Repair/Columns/Fit.h"

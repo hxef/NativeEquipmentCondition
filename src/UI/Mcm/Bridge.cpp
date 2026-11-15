@@ -1,9 +1,10 @@
 #include "UI/Mcm/Bridge.h"
 
+#include "Condition/Provenance/Provenance.h"
 #include "Core/CallPatch/CallPatch.h"
 #include "Core/Settings.h"
 #include "Core/Text/Text.h"
-#include "Core/TraceLog.h"
+#include "Core/TraceLog/TraceLog.h"
 #include "UI/Flash.h"
 
 #include <Scaleform/G/GFx_ASMovieRootBase.h>
@@ -184,6 +185,11 @@ namespace Mcm
 			// Food carried while food spoiling was off starts fresh now.
 			if (on == &Settings::bFoodSpoils && value) {
 				Queue(FollowUp::kFood);
+			}
+			// Built or dropped at once, as the trace files open and close
+			// above, so the next roll finds the areas the switch says.
+			if (on == &Settings::bLootByArea) {
+				Provenance::SwitchAreas();
 			}
 		}
 		Answer(a_params, true);

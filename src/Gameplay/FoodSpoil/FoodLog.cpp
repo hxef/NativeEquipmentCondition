@@ -18,7 +18,7 @@
 // from, then every food and its kind. It is written whole, never added to, at
 // the data load with food spoiling on and each time it is turned on, see
 // FoodSpoil.cpp. What happens to food in play goes to NEC.food.trace.log, see
-// Core/TraceLog.h.
+// Core/TraceLog/TraceLog.h.
 namespace FoodSpoil
 {
 	namespace

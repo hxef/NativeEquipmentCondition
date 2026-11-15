@@ -30,6 +30,10 @@ namespace
 	constexpr Piece WORN_LOOT[]{ kWornLoot };
 	constexpr Piece WORN_LOOT_SIDE[]{ kWorldLoot, kModlessLoot };
 	constexpr Piece WORN_LOOT_EXCEPTIONS[]{ kConsoleNew, kGifts };
+	// The area stands in for weapons and armor lying around and for food
+	// found, whose freshness is stamped at the pickup and not by Loot lying
+	// around, so each works alone.
+	constexpr Piece LOOT_BY_AREA[]{ kWorldLoot, kFoodSpoils };
 	// A repair is priced from a worn item's price, which only Worn item
 	// prices gives. Without it a quote still scales, but from the item's
 	// barter price.
@@ -125,6 +129,7 @@ namespace
 
 	constexpr SettingLink SETTINGS[]{
 		{ &Settings::bSpawnCondition, nullptr, WORN_LOOT, WORN_LOOT_SIDE, WORN_LOOT_EXCEPTIONS },
+		{ &Settings::bLootByArea, &Settings::bSpawnCondition, LOOT_BY_AREA },
 		{ &Settings::bVendorRepair, nullptr, TRADER_REPAIRS, TRADER_REPAIRS_SIDE },
 		{ &Settings::bTraderSign, &Settings::bVendorRepair, TRADER_REPAIRS },
 		{ &Settings::bSpareRepair, &Settings::fBenchCostMult, BENCH, SPARE_SIDE },

@@ -2,7 +2,7 @@
 
 #include "Condition/Equipped.h"
 #include "Core/ScriptEvents.h"
-#include "Core/TraceLog.h"
+#include "Core/TraceLog/TraceLog.h"
 #include "Gameplay/FoodSpoil/FoodSpoil.h"
 #include "Papyrus/Events.h"
 #include "Papyrus/Items.h"
@@ -249,7 +249,8 @@ namespace Papyrus
 	{
 		Log::Calling("GetFoodKind");
 		TraceLog::Papyrus::Begin("CALL", "NEC.GetFoodKind base={:s}", Hex(a_food));
-		const auto kind = a_food ? FoodSpoil::KindNumber(*a_food) : -1;
+		auto*      food = RecordOf(a_food);
+		const auto kind = food ? FoodSpoil::KindNumber(*food) : -1;
 		TraceLog::Papyrus::Line("result", "{:d}", kind);
 		return kind;
 	}
@@ -258,7 +259,8 @@ namespace Papyrus
 	{
 		Log::Calling("GetSpoilDays");
 		TraceLog::Papyrus::Begin("CALL", "NEC.GetSpoilDays base={:s}", Hex(a_food));
-		const auto days = a_food ? FoodSpoil::DaysFor(*a_food).value_or(-1.0F) : -1.0F;
+		auto*      food = RecordOf(a_food);
+		const auto days = food ? FoodSpoil::DaysFor(*food).value_or(-1.0F) : -1.0F;
 		TraceLog::Papyrus::Line("result", "{:.4f}", days);
 		return days;
 	}

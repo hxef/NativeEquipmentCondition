@@ -2,7 +2,7 @@
 
 #include "Condition/Equipped.h"
 #include "Condition/UniqueID.h"
-#include "Core/TraceLog.h"
+#include "Core/TraceLog/TraceLog.h"
 #include "Papyrus/Waiting.h"
 
 #include <cstddef>

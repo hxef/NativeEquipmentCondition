@@ -1,7 +1,7 @@
 #include "UI/Repair/VendorRepair/Payment.h"
 
 #include "Core/Text/Text.h"
-#include "Core/TraceLog.h"
+#include "Core/TraceLog/TraceLog.h"
 #include "UI/Flash.h"
 #include "UI/Repair/Restore.h"
 #include "UI/Repair/VendorRepair/Button.h"

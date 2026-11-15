@@ -1,6 +1,6 @@
 #include "UI/Repair/Workbench/Display.h"
 
-#include "Core/TraceLog.h"
+#include "Core/TraceLog/TraceLog.h"
 #include "UI/Flash.h"
 #include "UI/Repair/Workbench/Bench.h"
 #include "UI/Repair/Workbench/Label.h"

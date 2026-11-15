@@ -9,7 +9,7 @@
 #include "Core/ScriptEvents.h"
 #include "Core/Settings.h"
 #include "Core/Text/Text.h"
-#include "Core/TraceLog.h"
+#include "Core/TraceLog/TraceLog.h"
 
 #include <string>
 

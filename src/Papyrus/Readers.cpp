@@ -1,7 +1,7 @@
 #include "Papyrus/Natives.h"
 
 #include "Condition/Condition.h"
-#include "Core/TraceLog.h"
+#include "Core/TraceLog/TraceLog.h"
 #include "Papyrus/Items.h"
 
 #include <string>
@@ -13,10 +13,12 @@ namespace Papyrus
 {
 	namespace
 	{
-		// a_form as an item record, or null for None and any other form.
+		// The item record a_form names, itself or a reference's base, or null
+		// for None and any other form.
 		const RE::TESBoundObject* BoundOf(RE::TESForm* a_form)
 		{
-			return a_form ? a_form->As<RE::TESBoundObject>() : nullptr;
+			auto* record = RecordOf(a_form);
+			return record ? record->As<RE::TESBoundObject>() : nullptr;
 		}
 	}
 
@@ -33,7 +35,7 @@ namespace Papyrus
 		Log::Calling("WhyNotTracked");
 		TraceLog::Papyrus::Begin("CALL", "NEC.WhyNotTracked base={:s}", Hex(a_base));
 		std::string why;
-		if (!a_base) {
+		if (!RecordOf(a_base)) {  // also a deleted reference or one with no base
 			why = "None";
 		} else if (const auto* base = BoundOf(a_base)) {
 			const auto* text = Condition::WhyNoCondition(*base);

@@ -126,6 +126,11 @@ namespace Papyrus
 	// lock.
 	[[nodiscard]] std::string RowsOf(const RE::BGSInventoryList& a_inv, const RE::TESBoundObject& a_base);
 
+	// The base form a Form argument names: a_form itself, or the base of a
+	// reference, so a script may pass either. Null for None and for a
+	// deleted reference or one with no base.
+	[[nodiscard]] RE::TESForm* RecordOf(RE::TESForm* a_form);
+
 	// True for gear NEC gives a condition, else a trace line saying why not.
 	[[nodiscard]] bool Tracked(const Found& a_found);
 

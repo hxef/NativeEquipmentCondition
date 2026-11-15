@@ -5,7 +5,7 @@
 #include "Core/CallPatch/CallPatch.h"
 #include "Core/Runtime.h"
 #include "Core/Settings.h"
-#include "Core/TraceLog.h"
+#include "Core/TraceLog/TraceLog.h"
 #include "Gameplay/FoodSpoil/FoodSpoil.h"
 #include "Gameplay/SpawnCondition/Band.h"
 #include "Gameplay/SpawnCondition/Fill.h"

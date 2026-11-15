@@ -25,8 +25,8 @@ namespace Provenance
 
 		// Each cell's rank by form ID, measured at its first roll once it is
 		// attached. A cell with no list is kept as UNMEASURED. The map
-		// lives and dies with the Ranking it was measured against, so a new
-		// measure starts empty.
+		// lives and dies with these Areas, which every measure and every turn
+		// of bLootByArea on makes anew, so each starts empty.
 		mutable std::mutex                               lock;
 		mutable std::unordered_map<RE::TESFormID, float> ranks;
 	};

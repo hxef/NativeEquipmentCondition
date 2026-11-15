@@ -142,6 +142,12 @@ namespace Settings
 	// says, so it works as soon as it is switched on in play.
 	inline Live<bool> bSpawnCondition{ "Features", "bSpawnCondition", true };
 
+	// Loot lying around rolls by how well stocked its area is, see
+	// Provenance/Area.h. No feature's row: Provenance::Of asks it at each roll,
+	// and Provenance::SwitchAreas builds or drops the areas as it turns. On by
+	// default.
+	inline Live<bool> bLootByArea{ "Features", "bLootByArea", true };
+
 	// Traders who deal in weapons, armor or clothing repair them for caps.
 	inline Live<bool> bVendorRepair{ "Features", "bVendorRepair", true };
 

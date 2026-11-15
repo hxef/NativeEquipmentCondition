@@ -1,7 +1,7 @@
 #include "UI/MessageBox.h"
 
 #include "Core/CallPatch/CallPatch.h"
-#include "Core/TraceLog.h"
+#include "Core/TraceLog/TraceLog.h"
 #include "UI/MessageBoxAsked.h"
 
 #include <cstdint>

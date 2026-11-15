@@ -92,9 +92,10 @@ src/
         MenuHudLog.cpp       the MCM page's HUD settings and log level: names and help, and the HUD bar sliders' default
         MenuNotes.cpp        the MCM page's grey lines about parts left to other mods
         MenuPieces.cpp       a part with its pieces in brackets, what still works, and a setting's sentence with pieces off
-    TraceLog.h/.cpp          the trace logs, for lines that arrive in floods
-    TraceHold.h/.cpp         a script call's Papyrus trace lines, held until the call knows which try counts
-    TraceWords.h/.cpp        how a trace line names an actor and a damage type, which TraceLog.h includes
+    TraceLog/
+      TraceLog.h/.cpp        the trace logs, for lines that arrive in floods
+      Hold.h/.cpp            a script call's Papyrus trace lines, held until the call knows which try counts
+      Words.h/.cpp           how a trace line names an actor and a damage type, which TraceLog.h includes
 
   Condition/
     Condition.h/.cpp         the reading, its bounds, the share a stat keeps, what takes part, the write

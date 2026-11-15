@@ -5,7 +5,7 @@
 #include "Condition/Materials/Materials.h"
 #include "Condition/Materials/Yield.h"
 #include "Condition/Repair.h"
-#include "Core/TraceLog.h"
+#include "Core/TraceLog/TraceLog.h"
 #include "Papyrus/Items.h"
 #include "UI/Repair/VendorRepair/VendorRepair.h"
 #include "UI/Repair/Workbench/Workbench.h"
@@ -64,10 +64,12 @@ namespace Papyrus
 			return out;
 		}
 
-		// a_form as an item NEC gives a condition, or null.
+		// The item NEC gives a condition that a_form names, itself or a
+		// reference's base, or null.
 		RE::TESBoundObject* TrackedBase(RE::TESForm* a_form)
 		{
-			auto* base = a_form ? a_form->As<RE::TESBoundObject>() : nullptr;
+			auto* record = RecordOf(a_form);
+			auto* base = record ? record->As<RE::TESBoundObject>() : nullptr;
 			return base && Condition::WearsOut(*base) ? base : nullptr;
 		}
 

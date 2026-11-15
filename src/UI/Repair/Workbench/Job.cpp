@@ -5,7 +5,7 @@
 #include "Core/ItemCards.h"
 #include "Core/Settings.h"
 #include "Core/Text/Text.h"
-#include "Core/TraceLog.h"
+#include "Core/TraceLog/TraceLog.h"
 #include "UI/Flash.h"
 #include "UI/Repair/Columns/Columns.h"
 #include "UI/Repair/Gains.h"

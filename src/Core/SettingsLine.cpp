@@ -101,6 +101,7 @@ namespace Settings
 		Live<bool>* const EVERY_SWITCH[]{
 			&bPlainApparelNeverWears,
 			&bSpawnCondition,
+			&bLootByArea,
 			&bVendorRepair,
 			&bTraderSign,
 			&bSpareRepair,
@@ -128,6 +129,7 @@ namespace Settings
 		// The switches SWITCHES leaves out, each after the setting NEC.ini has
 		// it after, for the Settings line. bPlainApparelNeverWears comes first
 		// in [Features], so ReportLine says it before the list.
+		Live<bool>* const AFTER_SPAWN_CONDITION[]{ &bLootByArea };
 		Live<bool>* const AFTER_VENDOR_REPAIR[]{ &bTraderSign, &bSpareRepair, &bRepairBoxColumns, &bRepairBoxGains };
 		Live<bool>* const AFTER_HUD_CONDITION[]{ &bPowerArmorBar };
 		Live<bool>* const AFTER_QUICK_CONTAINER[]{ &bCardWearRate, &bPowerArmorCardCnd };
@@ -150,6 +152,9 @@ namespace Settings
 
 		[[nodiscard]] std::span<Live<bool>* const> SwitchesAfter(const Named& a_setting)
 		{
+			if (&a_setting == &bSpawnCondition) {
+				return AFTER_SPAWN_CONDITION;
+			}
 			if (&a_setting == &bVendorRepair) {
 				return AFTER_VENDOR_REPAIR;
 			}

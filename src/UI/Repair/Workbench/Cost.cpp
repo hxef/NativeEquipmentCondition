@@ -2,7 +2,7 @@
 
 #include "Condition/Repair.h"
 #include "Core/Settings.h"
-#include "Core/TraceLog.h"
+#include "Core/TraceLog/TraceLog.h"
 #include "UI/Repair/Workbench/Lock.h"
 #include "UI/Repair/Workbench/Supplies.h"
 

@@ -2,7 +2,7 @@
 
 #include "Condition/Condition.h"
 #include "Condition/Equipped.h"
-#include "Core/TraceLog.h"
+#include "Core/TraceLog/TraceLog.h"
 #include "UI/Flash.h"
 #include "UI/Hud/HudParts/HudParts.h"
 #include "UI/MenuMovies.h"

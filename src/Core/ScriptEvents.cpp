@@ -1,7 +1,7 @@
 #include "Core/ScriptEvents.h"
 
 #include "Core/Runtime.h"
-#include "Core/TraceLog.h"
+#include "Core/TraceLog/TraceLog.h"
 
 #include <atomic>
 #include <cstdint>

@@ -4,7 +4,7 @@
 #include "Condition/Condition.h"
 #include "Condition/Provenance/Provenance.h"
 #include "Core/ScriptEvents.h"
-#include "Core/TraceLog.h"
+#include "Core/TraceLog/TraceLog.h"
 #include "Gameplay/SpawnCondition/Guards.h"
 #include "Gameplay/SpawnCondition/Owners.h"
 #include "Gameplay/SpawnCondition/Trace.h"

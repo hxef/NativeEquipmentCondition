@@ -3,7 +3,7 @@
 #include "Condition/Condition.h"
 #include "Condition/Equipped.h"
 #include "Core/ScriptEvents.h"
-#include "Core/TraceLog.h"
+#include "Core/TraceLog/TraceLog.h"
 #include "Gameplay/SpawnCondition/SpawnCondition.h"
 #include "Papyrus/Events.h"
 #include "Papyrus/Natives.h"

@@ -1,6 +1,6 @@
 #include "Condition/WeaponWear/Sources.h"
 
-#include "Core/TraceLog.h"
+#include "Core/TraceLog/TraceLog.h"
 
 #include <cstdint>
 #include <mutex>

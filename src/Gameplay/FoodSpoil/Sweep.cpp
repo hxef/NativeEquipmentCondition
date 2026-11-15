@@ -2,7 +2,7 @@
 
 #include "Core/ScriptEvents.h"
 #include "Core/Settings.h"
-#include "Core/TraceLog.h"
+#include "Core/TraceLog/TraceLog.h"
 #include "Gameplay/FoodSpoil/FoodSpoil.h"
 #include "Gameplay/FoodSpoil/Kinds.h"
 #include "Gameplay/FoodSpoil/Stamp.h"

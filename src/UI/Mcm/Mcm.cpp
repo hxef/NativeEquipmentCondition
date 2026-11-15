@@ -2,7 +2,7 @@
 
 #include "Core/ItemCards.h"
 #include "Core/Settings.h"
-#include "Core/TraceLog.h"
+#include "Core/TraceLog/TraceLog.h"
 #include "Gameplay/ArmorRating.h"
 #include "Gameplay/FoodSpoil/FoodSpoil.h"
 #include "Gameplay/SpawnCondition/SpawnCondition.h"

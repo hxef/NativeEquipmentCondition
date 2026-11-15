@@ -1,6 +1,6 @@
 #include "UI/Hud/QuickContainer/FridgeIcon.h"
 
-#include "Core/TraceLog.h"
+#include "Core/TraceLog/TraceLog.h"
 #include "Gameplay/FoodSpoil/FoodSpoil.h"
 #include "UI/Flash.h"
 #include "UI/FridgeIcon.h"

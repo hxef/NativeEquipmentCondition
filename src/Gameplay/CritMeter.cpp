@@ -4,7 +4,7 @@
 #include "Condition/Equipped.h"
 #include "Core/CallPatch/CallPatch.h"
 #include "Core/Settings.h"
-#include "Core/TraceLog.h"
+#include "Core/TraceLog/TraceLog.h"
 
 #include <limits>
 #include <utility>

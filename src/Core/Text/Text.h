@@ -112,10 +112,11 @@ namespace Text
 	// each with its count past 1.
 	[[nodiscard]] std::string SpareSalvaged(std::span<const std::string> a_parts);
 
-	// Reads the barter screen's word for caps from a_movie's translations as
-	// the screen opens. When a mod renamed the currency, the 3 lines below that
-	// name caps use that word until the screen closes: "240 tickets".
-	void ReadCurrency(Scaleform::GFx::Movie& a_movie);
+	// Takes the barter screen's word for caps as the screen opens, a_word as
+	// the movie translated "$CAPS". When a mod renamed the currency, the 3
+	// lines below that name caps use that word until the screen closes: "240
+	// tickets".
+	void SetCurrency(std::string_view a_word);
 
 	// Back to the language file's word for caps, as the barter screen closes.
 	void ForgetCurrency();

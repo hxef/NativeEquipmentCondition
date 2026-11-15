@@ -1,7 +1,7 @@
 #include "Papyrus/Events.h"
 
 #include "Core/ScriptEvents.h"
-#include "Core/TraceLog.h"
+#include "Core/TraceLog/TraceLog.h"
 #include "Papyrus/Items.h"
 #include "Papyrus/Log.h"
 #include "Papyrus/Pack.h"

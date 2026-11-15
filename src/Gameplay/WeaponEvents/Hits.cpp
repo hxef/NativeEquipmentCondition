@@ -3,7 +3,7 @@
 #include "Condition/Condition.h"
 #include "Condition/Equipped.h"
 #include "Condition/WeaponWear/WeaponWear.h"
-#include "Core/TraceLog.h"
+#include "Core/TraceLog/TraceLog.h"
 #include "Gameplay/FireRate/FireRate.h"
 
 #include <string>

@@ -3,7 +3,7 @@
 #include "Condition/Condition.h"
 #include "Condition/Excluded.h"
 #include "Core/CallPatch/CallPatch.h"
-#include "Core/TraceLog.h"
+#include "Core/TraceLog/TraceLog.h"
 #include "Gameplay/HealthDamage/Curve.h"
 #include "Gameplay/HealthDamage/HealthDamage.h"
 #include "Gameplay/HealthDamage/Trace.h"

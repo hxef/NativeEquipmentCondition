@@ -1,6 +1,6 @@
 #include "UI/Hud/PowerArmorCondition/Dash.h"
 
-#include "Core/TraceLog.h"
+#include "Core/TraceLog/TraceLog.h"
 
 #include <atomic>
 #include <mutex>

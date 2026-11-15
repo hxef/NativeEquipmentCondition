@@ -4,7 +4,7 @@
 #include "Condition/Equipped.h"
 #include "Condition/UniqueID.h"
 #include "Core/ScriptEvents.h"
-#include "Core/TraceLog.h"
+#include "Core/TraceLog/TraceLog.h"
 #include "Gameplay/FoodSpoil/FoodSpoil.h"
 #include "Papyrus/Natives.h"
 #include "Papyrus/Numbering.h"
@@ -192,8 +192,9 @@ namespace Papyrus
 	{
 		Log::Calling("GetItems");
 		TraceLog::Papyrus::Begin("CALL", "NEC.GetItems holder={:s} base={:s}", Hex(a_holder), Hex(a_base));
-		// A reference passed as the base names no item.
-		auto* base = a_base && a_base->IsBoundObject() ? static_cast<RE::TESBoundObject*>(a_base) : nullptr;
+		// A reference names its base form.
+		auto* record = RecordOf(a_base);
+		auto* base = record && record->IsBoundObject() ? static_cast<RE::TESBoundObject*>(record) : nullptr;
 		if (!a_holder || (a_base && !base)) {
 			return AllOf(std::nullopt);
 		}

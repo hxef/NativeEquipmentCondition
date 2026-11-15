@@ -1,6 +1,6 @@
 #include "Condition/CraftingPerks/Ladder.h"
 
-#include "Core/TraceLog.h"
+#include "Core/TraceLog/TraceLog.h"
 
 #include <utility>
 

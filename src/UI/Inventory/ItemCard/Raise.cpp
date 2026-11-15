@@ -1,7 +1,7 @@
 #include "UI/Inventory/ItemCard/Cards.h"
 
 #include "Core/Settings.h"
-#include "Core/TraceLog.h"
+#include "Core/TraceLog/TraceLog.h"
 #include "UI/Flash.h"
 #include "UI/Inventory/Pipboy.h"
 #include "UI/Roles/Card.h"

@@ -7,7 +7,7 @@
 #include "Condition/WeaponWear/Sources.h"
 #include "Core/ScriptEvents.h"
 #include "Core/Settings.h"
-#include "Core/TraceLog.h"
+#include "Core/TraceLog/TraceLog.h"
 
 #include <cstdint>
 #include <string_view>

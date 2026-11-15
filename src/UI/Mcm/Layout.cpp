@@ -1,6 +1,6 @@
 #include "UI/Mcm/Bridge.h"
 
-#include "Core/TraceLog.h"
+#include "Core/TraceLog/TraceLog.h"
 #include "UI/Flash.h"
 
 #include <atomic>

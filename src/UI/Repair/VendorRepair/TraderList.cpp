@@ -42,12 +42,6 @@ namespace VendorRepair::TraderList
 		// What the logs call each tier.
 		constexpr std::string_view TIER_NAMES[TIERS]{ "ref ID", "base ID", "faction" };
 
-		// A form the game made, which lasts 1 save.
-		[[nodiscard]] bool Made(RE::TESFormID a_id)
-		{
-			return (a_id >> 24) == 0xFF;
-		}
-
 		// "Lucas Miller [00130B7A]", or "[001679CE]" for a form with no name.
 		// A reference goes by its base's name.
 		std::string NameOf(const RE::TESForm& a_form)
@@ -58,22 +52,16 @@ namespace VendorRepair::TraderList
 			return name.empty() ? std::format("[{:08X}]", a_form.formID) : std::format("{:s} [{:08X}]", name, a_form.formID);
 		}
 
-		// "Fallout4.esm|002CB9", as a line names a form.
-		std::string Spelled(const RE::TESFile& a_plugin, std::uint32_t a_local)
-		{
-			return std::format("{:s}|{:06X}", a_plugin.GetFilename(), a_local);
-		}
-
-		// The same for a form ID in the load order, by the plugin whose slot
-		// it carries, or nothing for a form the game made.
+		// "Fallout4.esm|002CB9" for a form ID in the load order, by the plugin
+		// whose slot it carries, or nothing for a form the game made.
 		std::optional<std::string> Spelled(RE::TESFormID a_id)
 		{
-			if (!g_dataHandler || Made(a_id)) {
+			if (!g_dataHandler || ListFiles::Made(a_id)) {
 				return std::nullopt;
 			}
 			for (const auto* plugin : g_dataHandler->files) {
 				if (plugin && plugin->IsActive() && plugin->GetLoadOrderFormID(a_id) == a_id) {
-					return Spelled(*plugin, plugin->IsLight() ? a_id & 0xFFF : a_id & 0xFFFFFF);
+					return ListFiles::Spelled(*plugin, ListFiles::LocalOf(*plugin, a_id));
 				}
 			}
 			return std::nullopt;
@@ -102,7 +90,7 @@ namespace VendorRepair::TraderList
 			}
 			records[1] = a_trader.GetObjectReference();
 			for (const auto* record : records) {
-				if (record && record->Is(RE::ENUM_FORM_ID::kNPC_) && !Made(record->formID)) {
+				if (record && record->Is(RE::ENUM_FORM_ID::kNPC_) && !record->IsCreated()) {
 					return record->formID;
 				}
 			}
@@ -113,7 +101,7 @@ namespace VendorRepair::TraderList
 		std::array<RE::TESFormID, TIERS> WhoIs(const RE::Actor& a_trader)
 		{
 			const auto* faction = a_trader.vendorFaction;
-			return { Made(a_trader.formID) ? 0 : a_trader.formID, NpcOf(a_trader), faction ? faction->formID : 0 };
+			return { a_trader.IsCreated() ? 0 : a_trader.formID, NpcOf(a_trader), faction ? faction->formID : 0 };
 		}
 
 		// -------------------------------------------------------------------
@@ -239,11 +227,7 @@ namespace VendorRepair::TraderList
 					total += a_counts[i];
 				}
 			}
-			std::string text;
-			for (std::size_t i = 0; i < parts.size(); i++) {
-				text += (i == 0 ? ": " : i + 1 == parts.size() ? " and " : ", ") + parts[i];
-			}
-			REX::INFO("{:s} sets {:d} repair {:s}{:s}.", a_file, total, total == 1 ? "level" : "levels", text);
+			REX::INFO("{:s} sets {:d} repair {:s}{:s}.", a_file, total, total == 1 ? "level" : "levels", ListFiles::Joined(parts));
 		}
 
 		// -------------------------------------------------------------------
@@ -261,7 +245,7 @@ namespace VendorRepair::TraderList
 		ListFiles::Read(
 			LIST, [&reading](const ListFiles::Line& a_line, ListFiles::Faults& a_faults) { Take(reading, a_line, a_faults); },
 			[&reading](const ListFiles::Unloaded& a_line, ListFiles::Faults& a_faults) {
-				Keep(reading, Tier::kPlaced, a_line.plugin.GetLoadOrderFormID(a_line.local), Spelled(a_line.plugin, a_line.local), true,
+				Keep(reading, Tier::kPlaced, a_line.plugin.GetLoadOrderFormID(a_line.local), ListFiles::Spelled(a_line.plugin, a_line.local), true,
 					a_line.word, a_line.file, a_line.number, a_faults);
 			},
 			[&reading](std::string_view a_file) {

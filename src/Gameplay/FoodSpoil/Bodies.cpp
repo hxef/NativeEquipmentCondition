@@ -1,7 +1,7 @@
 #include "Gameplay/FoodSpoil/Food.h"
 
 #include "Core/Settings.h"
-#include "Core/TraceLog.h"
+#include "Core/TraceLog/TraceLog.h"
 #include "Gameplay/FoodSpoil/FoodSpoil.h"
 #include "Gameplay/FoodSpoil/Stamp.h"
 #include "Gameplay/SpawnCondition/SpawnCondition.h"

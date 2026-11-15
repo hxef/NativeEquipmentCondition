@@ -4,6 +4,7 @@
 
 #include <algorithm>
 #include <array>
+#include <cstdint>
 #include <format>
 
 namespace HudParts
@@ -41,6 +42,39 @@ namespace HudParts
 		if (!box.GetMember("graphics"sv, &graphics) ||
 			!graphics.Invoke("beginFill", std::array{ Value(0xFFFFFF), Value(1.0) }) ||
 			!graphics.Invoke("drawRect", std::array{ Value(0.0), Value(0.0), Value(1.0), Value(1.0) }) ||
+			!graphics.Invoke("endFill")) {
+			return false;
+		}
+
+		box.SetMember("name"sv, Value(a_name));
+		return a_parent.Invoke("addChild", std::array{ box });
+	}
+
+	bool AddNotches(Scaleform::GFx::Movie& a_movie, Value& a_parent, const char* a_name, double a_deep)
+	{
+		// Black stays black under the HUD colour, as the quick container's
+		// black text on its highlighted row shows, and under the Pip-Boy's
+		// tint, so the notches look dark on any world.
+		constexpr std::uint32_t BLACK = 0x000000;
+
+		Value box;
+		a_movie.CreateObject(&box, "flash.display.Sprite");
+		if (!box.IsDisplayObject()) {
+			return false;
+		}
+
+		// 2 triangles in 1 fill, tips toward the middle. They never overlap,
+		// since shapes that overlap in 1 fill cut holes in each other. MCM's
+		// own movie fills its scroll arrows with moveTo and lineTo too, on OG
+		// and AE.
+		Value      graphics;
+		const auto to = [&](const char* a_how, double a_x, double a_y) {
+			return graphics.Invoke(a_how, std::array{ Value(a_x), Value(a_y) });
+		};
+		if (!box.GetMember("graphics"sv, &graphics) ||
+			!graphics.Invoke("beginFill", std::array{ Value(BLACK), Value(1.0) }) ||
+			!to("moveTo", 0.0, 0.0) || !to("lineTo", 1.0, 0.0) || !to("lineTo", 0.5, a_deep) || !to("lineTo", 0.0, 0.0) ||
+			!to("moveTo", 0.0, 1.0) || !to("lineTo", 0.5, 1.0 - a_deep) || !to("lineTo", 1.0, 1.0) || !to("lineTo", 0.0, 1.0) ||
 			!graphics.Invoke("endFill")) {
 			return false;
 		}

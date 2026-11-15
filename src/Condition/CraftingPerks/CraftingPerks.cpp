@@ -22,10 +22,12 @@ namespace CraftingPerks
 		// read, see Perks.h.
 		Snapshot<Perks> g_perks;
 
-		// The most iPerkComponentDiscount counts for. Never 100: a multiple of
-		// 0 would make a paid repair that takes no components, a path the
-		// bench's press never meets.
-		constexpr std::int32_t MOST_DISCOUNT = 90;
+		// The most iPerkComponentDiscount counts for, as the MCM page's slider
+		// allows. Never 100: a multiple of 0 would make a paid repair that
+		// takes no components, a path the bench's press never meets. At 99 the
+		// top rank's multiple is 0.02, and a paid repair still takes 1
+		// component at least, see CostOf in Workbench/Cost.h.
+		constexpr std::int32_t MOST_DISCOUNT = 99;
 
 		// iPerkComponentDiscount kept between 0 and MOST_DISCOUNT: what the
 		// top rank takes off, in whole percent.
@@ -89,6 +91,15 @@ namespace CraftingPerks
 				}
 				REX::INFO("Crafting perk {:s} has {:d} ranks and gates {:d} recipes, taking off {:s}",
 					RE::TESFullName::GetFullName(*first), ranks, Weight(a_perks, first), steps);
+
+				// Where the recipes ask less than the last rank, the repair
+				// lock's line on the perk pages counts from the rank they ask
+				// while the lock goes by the item's mods.
+				const auto asks = AsksOf(a_perks, first);
+				if (asks < ranks) {
+					REX::INFO("Crafting perk {:s}'s recipes ask up to rank {:d} of {:d}",
+						RE::TESFullName::GetFullName(*first), asks, ranks);
+				}
 			}
 			for (std::size_t kind = 0; kind < KINDS; kind++) {
 				if (a_perks.kinds[kind]) {
@@ -166,6 +177,7 @@ namespace CraftingPerks
 	void Unload()
 	{
 		g_perks.Publish(nullptr);
+		ForgetPipboy();
 	}
 
 	void Load()

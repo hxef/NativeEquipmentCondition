@@ -41,7 +41,9 @@ namespace CraftingPerks
 
 	// 1 rank's own description, the perk's rank count, from which the hook
 	// works out what the rank takes off a repair at each draw, and what its
-	// mods go on. perk and rank name it in the trace.
+	// mods go on. perk and rank name it in the trace. highest is the highest
+	// rank of the perk any recipe asks, never more than ranks, see
+	// Perks::asks, from which the repair lock's line counts.
 	struct Told
 	{
 		const RE::TESDescription* description{ nullptr };
@@ -50,6 +52,7 @@ namespace CraftingPerks
 		std::uint32_t             rank{ 0 };
 		bool                      weapons{ false };
 		bool                      armor{ false };
+		std::uint32_t             highest{ 0 };
 
 		[[nodiscard]] bool operator==(const Told&) const = default;
 	};
@@ -68,6 +71,13 @@ namespace CraftingPerks
 		const RE::BGSPerk* armor{ nullptr };
 		// What each perk unlocks.
 		std::unordered_map<const RE::BGSPerk*, Gates> gates;
+		// The highest rank of each perk, by its first rank, that any recipe
+		// with a created item asks, settlement objects and chems included.
+		// An item's bill reads scrap recipes beside mod recipes, its own and
+		// borrowed ones, and a scrap recipe builds a form list, not a mod, so
+		// only every recipe holds each rank a bill can ask. The repair lock's
+		// line on the perk pages counts its condition from it.
+		std::unordered_map<const RE::BGSPerk*, std::uint32_t> asks;
 		// Every rank of every perk that can price a repair, 15 in vanilla, so
 		// a plain loop is fast enough.
 		std::vector<Told> told;
@@ -101,6 +111,10 @@ namespace CraftingPerks
 
 	// What 1 perk unlocks, looked up without adding an entry.
 	[[nodiscard]] Gates GatesOf(const Perks& a_perks, const RE::BGSPerk* a_perk);
+
+	// The highest rank of 1 perk any recipe asks, 0 for none, looked up
+	// without adding an entry.
+	[[nodiscard]] std::uint32_t AsksOf(const Perks& a_perks, const RE::BGSPerk* a_perk);
 
 	// How many recipes 1 perk unlocks in all.
 	[[nodiscard]] std::uint32_t Weight(const Perks& a_perks, const RE::BGSPerk* a_perk);

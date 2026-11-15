@@ -4,6 +4,7 @@
 
 #include "Core/Settings.h"
 #include "UI/Flash.h"
+#include "UI/Hud/HudParts/Readout.h"
 
 #include <chrono>
 #include <cstdint>
@@ -16,8 +17,8 @@
 // folders each place it by their own rules, and all 3 share the readout, the
 // HUD menu lookup and the colour kept here. The 2 weapon bars also share the
 // condition of the weapon in hand, and the pickup bar follows the prompt's
-// warning colour. Readout.cpp draws the readout, Draw.cpp the boxes and text
-// fields it is built from, HudParts.cpp the rest.
+// warning colour. Readout.h declares the readout and Readout.cpp draws it,
+// Draw.cpp the boxes and text fields it is built from, HudParts.cpp the rest.
 namespace HudParts
 {
 	using Value = Scaleform::GFx::Value;
@@ -84,113 +85,6 @@ namespace HudParts
 		void Forget();
 	}
 
-	// The readout itself: a bar over a dimmed track, and the word CND past the
-	// right end of the bar, drawn the way the AP meter is. The track shows the
-	// worn part at half opacity like the HP meter's spare bar, and the word
-	// starts a little past the bar. Still below says which end of the bar
-	// stays put. A readout's origin is the right end of its bar, halfway down,
-	// so placing a readout means saying where its bar ends.
-	//
-	// The Pip-Boy's doll sizes everything from the font size, in the AP
-	// meter's proportions below: at font size 20 the bar is 6 deep, like the
-	// AP bar. The ammo counter sizes its word the same way and its bar from
-	// the counter's divider, see HudCondition.h. The power armor readout sizes
-	// its bar and its word separately to fit the dash, with the word level
-	// with the bar and anti-aliased for animation since it moves. Each HUD
-	// bar's length and thickness then take the player's Size.
-	namespace Readout
-	{
-		inline constexpr double BAR_DEEP = 6.0 / 20.0;
-		inline constexpr double LABEL_GAP = 6.0 / 25.0;
-		inline constexpr double LABEL_DROP = 4.0 / 25.0;
-
-		// How the word is written, in the movie's units.
-		struct Label
-		{
-			double size = 0.0;  // its font size
-			double gap = 0.0;   // how far past the right end of the bar it starts
-			double drop = 0.0;  // how far its middle hangs below the bar's, 0 for level
-			double wide = 1.0;  // how wide its letters are, as a share of the font's own
-		};
-
-		// Builds a hidden readout with nothing drawn yet, for the caller to add
-		// where it belongs. Returns a value that is not a display object when
-		// the movie refuses any part.
-		[[nodiscard]] Value Create(Scaleform::GFx::Movie& a_movie, const char* a_name);
-
-		// Lets the word move as smoothly as the bar, for a readout moved every
-		// frame. A text field made from code starts anti-aliased for
-		// readability, which snaps text to whole pixels, so a word moved a
-		// fraction of a pixel per frame would jump while the bar moves
-		// smoothly.
-		void AntiAliasForAnimation(Value& a_readout);
-
-		// Writes the word as a_label says and returns how far past the end of
-		// the bar it reaches. It measures text, so call it when the size
-		// changes, not every frame.
-		double SetLabel(Value& a_readout, const Label& a_label);
-
-		// Where the word sits from the readout's origin: its field, and the
-		// box its letters fill, from the top of the line to the baseline, and
-		// how far the line reaches below that. The letters are the field
-		// inside its margins when they cannot be measured, and measured says
-		// which. All 0 when the readout has no word.
-		struct LabelPlace
-		{
-			Flash::Box field;
-			Flash::Box letters;
-			bool       measured = false;
-			double     descent = 0.0;
-		};
-		[[nodiscard]] LabelPlace LabelExtent(Value& a_readout);
-
-		// Puts the word's field with its top left corner at a_x, a_y from the
-		// readout's origin.
-		void MoveLabel(Value& a_readout, double a_x, double a_y);
-
-		// Shows or hides the word of a HUD bar as a_shows, its own switch,
-		// says. The bar keeps its place either way. a_shown is what was last
-		// written, so a frame writes only on a change, and a_bar names the bar
-		// in the trace.
-		void FollowWordSwitch(Value& a_readout, const Settings::Live<bool>& a_shows, std::optional<bool>& a_shown, std::string_view a_bar);
-
-		// How many times its own length and thickness a HUD bar is drawn. The
-		// bar grows and shrinks about the readout's origin, so the right end
-		// it is placed by and the word past it stay where they are, and the
-		// word keeps its size so it stays readable.
-		struct Size
-		{
-			double length = 1.0;
-			double thickness = 1.0;
-
-			bool operator==(const Size&) const = default;
-		};
-
-		// The least and the most a size setting counts for, as the MCM page's
-		// sliders allow.
-		inline constexpr double LEAST_SIZE = 0.5;
-		inline constexpr double MOST_SIZE = 3.0;
-
-		// The size a bar's 2 settings ask for now, each held from LEAST_SIZE
-		// to MOST_SIZE, and 1 for one that is no number.
-		[[nodiscard]] Size SizeFrom(const Settings::Live<float>& a_length, const Settings::Live<float>& a_thickness);
-
-		// Lays the track out a_width across and a_deep deep.
-		void SetTrack(Value& a_readout, double a_width, double a_deep);
-
-		// The end of the bar that stays still as it empties. The HUD keeps the
-		// right end, as the AP meter does. The Pip-Boy keeps the left end, as
-		// its own meters do.
-		enum class Still
-		{
-			kRightEnd,
-			kLeftEnd,
-		};
-
-		// Sets how much of a bar laid out as above is left.
-		void SetPercent(Value& a_readout, double a_width, double a_deep, std::int32_t a_percent, Still a_still = Still::kRightEnd);
-	}
-
 	// Puts text into a field as HTML with a font tag, as the HUD's own fields
 	// are written. A TextFormat made from native code never reached the fields.
 	// The tag takes a whole size only. Scaleform ignores a size with a fraction
@@ -209,6 +103,11 @@ namespace HudParts
 	// Adds a white 1 by 1 box under a_parent, drawn as vanilla menus
 	// draw their backing boxes. The HUD tints the white with its colour.
 	bool AddBox(Scaleform::GFx::Movie& a_movie, Value& a_parent, const char* a_name);
+
+	// Adds a 1 by 1 box under a_parent holding 2 black triangles, 1 with its
+	// base on the top edge and 1 on the bottom edge, each reaching a_deep of
+	// the box's depth in. PutBox sizes it like any box.
+	bool AddNotches(Scaleform::GFx::Movie& a_movie, Value& a_parent, const char* a_name, double a_deep);
 
 	// Adds an empty text field under a_parent, in the vanilla fonts and out
 	// of the way of the mouse.

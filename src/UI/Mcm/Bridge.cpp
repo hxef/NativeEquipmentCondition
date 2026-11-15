@@ -59,6 +59,16 @@ namespace Mcm
 			{ &Settings::fAutoWearRateMult, FollowUp::kCards },
 			{ &Settings::fSuppressedWearRateMult, FollowUp::kCards },
 			{ &Settings::bPowerArmorCardCnd, FollowUp::kCards },
+			// These change a line NEC adds to a perk description. bLockSpares
+			// changes none.
+			{ &Settings::bSpareRepair, FollowUp::kPerks },
+			{ &Settings::iPerkComponentDiscount, FollowUp::kPerks },
+			{ &Settings::iRepairLock, FollowUp::kPerks },
+			{ &Settings::iPerkLock, FollowUp::kPerks },
+			{ &Settings::fBenchCostMult, FollowUp::kPerks },
+			{ &Settings::iSuppliesOnlyFrom, FollowUp::kPerks },
+			{ &Settings::iRepairSupplies, FollowUp::kPerks },
+			{ &Settings::iFreeMendFrom, FollowUp::kPerks },
 		};
 
 		// Said once for each id, since the page asks again every time it is

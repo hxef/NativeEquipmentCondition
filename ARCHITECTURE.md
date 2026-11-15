@@ -5,8 +5,9 @@ condition that wears down with use. It patches about 120 places in the
 engine's code, reads what the load order says about weapons, armor, recipes,
 perks and leveled lists, and draws its readouts into Fallout 4's own menus. It
 ships no ESP and no assets, only the DLL, `NEC.ini` beside it, 1 language file
-per language in `NEC/Translations`, a page for the Mod Configuration Menu and
-the Papyrus API script `NEC.pex` for other mods.
+per language in `NEC/Translations`, a page for the Mod Configuration Menu,
+the Papyrus API script `NEC.pex` for other mods, and `README.txt` and
+`NEC_Papyrus_API.txt` in `NEC/Docs`.
 
 Read `src/Features.cpp` next. It lists every feature in the order it runs.
 Then read the header of whichever feature you are here for. Every header opens
@@ -133,7 +134,7 @@ src/
       Ladder.h/.cpp          walking a perk's ring of ranks
       Perks.h/.cpp           what every recipe says about perks: the gates, the fallbacks and the perk page lines
       Recipes.h/.cpp         which perks a recipe needs and what its mod reaches, a weapon's kind
-      Description.h/.cpp     the line every rank of a crafting perk and of Scrapper grows on the perk page
+      Description.h/.cpp     the lines every rank of a crafting perk and of Scrapper grows on the perk page
     Provenance/
       Provenance.h/.cpp      where an item came from and who carries it
       Supply.h/.cpp          walking the leveled lists, where each one sits
@@ -228,6 +229,7 @@ src/
     Mcm/
       Mcm.h/.cpp             the settings page in the Mod Configuration Menu
       Bridge.h/.cpp          the page's answers: values, changes and words
+      FollowUps.cpp          what the game keeps worked out from a setting, done again a frame after a change
       Notes.cpp              the page's grey rows: each block's note, and what MCM asks of them
       TopList.cpp            the list at the top of the main page, of the parts no note names
       Fit.cpp                how tall a grey row may be, and a row cut to fit
@@ -236,7 +238,7 @@ src/
     Hud/
       HudParts/
         HudParts.h/.cpp      what the HUD readouts share
-        Readout.cpp          the readout itself, a bar and the word CND
+        Readout.h/.cpp       the readout itself, a bar, the penalty mark and the word CND
         Draw.cpp             the boxes and text fields a readout is built from
       HudCondition/
         HudCondition.h/.cpp          the Weapon CND bar by the ammo counter: the movie
@@ -262,7 +264,10 @@ src/
         FridgeIcon.h/.cpp            the icon beside a fridge's name
     Inventory/
       Pipboy.h/.cpp          a worn out item's or spoiled food's name faded in the Pip-Boy, and each entry's wear rate
-      PaperDoll.h/.cpp       a CND bar over each region of the apparel tab's paper doll
+      PaperDoll/
+        PaperDoll.h/.cpp     the feature, a CND bar over each region of the apparel tab's paper doll
+        Regions.h/.cpp       the lowest condition worn over each region, read through the task queue
+        Room.h/.cpp          where each bar sits and how far it may grow before it meets the figure or a tab name
       ItemCard/
         ItemCard.h/.cpp      the feature: its install and the movies
         Cards.h              what the folder's files share

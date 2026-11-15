@@ -21,6 +21,11 @@ add_rules("plugin.vsxmake.autoupdate")
 -- NEC.ini is read through CommonLibF4's INI support, off unless asked for.
 set_config("commonlib_ini", true)
 
+-- The folder that holds README.txt and NEC_Papyrus_API.txt, in every archive
+-- and in what a build deploys, from the mod's root. The deploy and xmake
+-- release read it as target:values("nec.docs").
+local DOCS = "F4SE/Plugins/NEC/Docs"
+
 -- Copies the plugin into a folder after every build, for example a Mod
 -- Organizer 2 mod, into F4SE/Plugins, F4SE/Plugins/NEC/Translations and
 -- MCM/Config/NEC. Off unless set, and remembered once configured:
@@ -93,15 +98,18 @@ target("NEC")
         texts.build(target:autogendir())
     end)
 
-    -- NEC.ini and NEC_Papyrus_API.txt ship beside the DLL, the language files
-    -- in NEC/Translations beside them, the vanilla fridge list in NEC/Fridge,
-    -- an example file in NEC/Exclude, NEC/Food, NEC/Fridge, NEC/Traders and
-    -- NEC/Wear, and the MCM page's config.json in the folder MCM reads, all
-    -- kept in publish with the rest of what the archive carries.
+    -- NEC.ini ships beside the DLL, the language files in NEC/Translations
+    -- beside it, README.txt and NEC_Papyrus_API.txt in DOCS, the vanilla
+    -- fridge list in NEC/Fridge, an example file in NEC/Exclude, NEC/Food,
+    -- NEC/Fridge, NEC/Traders and NEC/Wear, and the MCM page's config.json in
+    -- the folder MCM reads, all kept in publish with the rest of what the
+    -- archive carries.
     -- NEC_custom.ini is the player's own, and NEC writes a key there only when
     -- the MCM page changes it.
     add_installfiles("publish/NEC.ini", { prefixdir = "F4SE/Plugins" })
-    add_installfiles("publish/NEC_Papyrus_API.txt", { prefixdir = "F4SE/Plugins" })
+    add_installfiles("publish/README.txt", { prefixdir = DOCS })
+    add_installfiles("publish/NEC_Papyrus_API.txt", { prefixdir = DOCS })
+    set_values("nec.docs", DOCS)
     add_installfiles("publish/Translations/*.ini", { prefixdir = "F4SE/Plugins/NEC/Translations" })
     add_installfiles("publish/Exclude/*.ini", { prefixdir = "F4SE/Plugins/NEC/Exclude" })
     add_installfiles("publish/Food/*.ini", { prefixdir = "F4SE/Plugins/NEC/Food" })
@@ -125,12 +133,14 @@ target("NEC")
         end
         local plugins = path.join(dir, "F4SE", "Plugins")
         local mcm = path.join(dir, "MCM", "Config", "NEC")
+        local docs = path.join(dir, target:values("nec.docs"))
         local publish = path.join(os.projectdir(), "publish")
         local files = {
             { target:targetfile(), plugins },
             { target:symbolfile(), plugins },
             { path.join(publish, "NEC.ini"), plugins },
-            { path.join(publish, "NEC_Papyrus_API.txt"), plugins },
+            { path.join(publish, "README.txt"), docs },
+            { path.join(publish, "NEC_Papyrus_API.txt"), docs },
             { path.join(publish, "MCM", "Config", "NEC", "config.json"), mcm },
         }
         for _, folder in ipairs({ "Translations", "Exclude", "Food", "Fridge", "Traders", "Wear" }) do
@@ -156,12 +166,13 @@ target("NEC")
     end)
 
 -- Packs build/NativeEquipmentCondition-<version>.zip, for any site, from the
--- last build. The archive holds F4SE/Plugins with NEC.dll, NEC.pdb, NEC.ini and
--- NEC_Papyrus_API.txt, F4SE/Plugins/NEC/Translations with the 12 language files,
+-- last build. The archive holds F4SE/Plugins with NEC.dll, NEC.pdb and NEC.ini,
+-- F4SE/Plugins/NEC/Translations with the 12 language files,
+-- the Docs folder (DOCS at the top) with README.txt and NEC_Papyrus_API.txt,
 -- F4SE/Plugins/NEC/Fridge with the vanilla fridge list, an example file in
 -- F4SE/Plugins/NEC/Exclude, NEC/Food, NEC/Fridge, NEC/Traders and NEC/Wear,
--- MCM/Config/NEC with the MCM page's config.json, Scripts with NEC.pex,
--- Scripts/Source/User with NEC.psc, and README.txt at the root, so Mod
+-- MCM/Config/NEC with the MCM page's config.json, Scripts with NEC.pex and
+-- Scripts/Source/User with NEC.psc, and nothing at the root, so Mod
 -- Organizer 2 installs it as it is. The PDB lets a player's crash log name the
 -- file and line in NEC.dll.
 -- It stops before packing on any fault of a language file, which a plain build
@@ -176,9 +187,9 @@ target("NEC")
 -- DLL, like a comment or this task.
 --
 -- With --nexus it packs build/nexusmods/NativeEquipmentCondition-<version>.zip
--- instead, without README.txt, since Nexus Mods shows the readme in a section
--- of its own. It also checks this version's file description and changelog in
--- publish/nexusmods and prints both, ready to paste into the upload form.
+-- instead, with the same files. It also checks this version's file
+-- description and changelog in publish/nexusmods and prints both, ready to
+-- paste into the upload form.
 -- --outputdir writes the zip into another folder, so a second pack leaves the
 -- one in build alone.
 --
@@ -192,7 +203,7 @@ task("release")
         usage = "xmake release [--nexus] [--lastbuild] [--outputdir=DIR]",
         description = "Pack the release archive from the last build",
         options = {
-            { nil, "nexus", "k", nil, "Pack it for Nexus Mods, without README.txt, and check the texts in publish/nexusmods" },
+            { nil, "nexus", "k", nil, "Pack it for Nexus Mods and check the texts in publish/nexusmods" },
             { nil, "lastbuild", "k", nil, "Pack the last build even when a source changed after it" },
             { nil, "outputdir", "kv", nil, "Write the zip into this folder instead of build or build/nexusmods" },
         },
@@ -233,8 +244,8 @@ task("release")
             -- Checked first, so a text to fix stops the release early. Nexus
             -- Mods takes at most 255 characters for a file's description,
             -- and every text here is plain ASCII, 1 byte each. The
-            -- description is 1 sentence from "v<version>", a blank line and
-            -- "OG/AE only", the newlines counted.
+            -- description runs from "v<version>" to "OG/AE only" after a
+            -- blank line, the newlines counted.
             local texts = path.join(os.projectdir(), "publish", "nexusmods")
             description = block(path.join(texts, "file_descriptions.txt"), version)
             changelog = block(path.join(texts, "changelog.txt"), version)
@@ -303,12 +314,15 @@ task("release")
         local stage = os.tmpfile() .. ".dir"
         local plugins = path.join(stage, "F4SE", "Plugins")
         local mcm = path.join(stage, "MCM", "Config", "NEC")
+        local docs = path.join(stage, target:values("nec.docs"))
         os.mkdir(plugins)
         os.mkdir(mcm)
+        os.mkdir(docs)
         os.cp(dll, plugins)
         os.cp(pdb, plugins)
         os.cp(path.join(os.projectdir(), "publish", "NEC.ini"), plugins)
-        os.cp(path.join(os.projectdir(), "publish", "NEC_Papyrus_API.txt"), plugins)
+        os.cp(path.join(os.projectdir(), "publish", "README.txt"), docs)
+        os.cp(path.join(os.projectdir(), "publish", "NEC_Papyrus_API.txt"), docs)
         os.mkdir(path.join(plugins, "NEC", "Translations"))
         os.cp(path.join(os.projectdir(), "publish", "Translations", "*.ini"), path.join(plugins, "NEC", "Translations"))
         for _, folder in ipairs({ "Exclude", "Food", "Fridge", "Traders", "Wear" }) do
@@ -323,10 +337,6 @@ task("release")
         local into = option.get("outputdir")
         if not into then
             into = nexus and path.join(config.builddir(), "nexusmods") or config.builddir()
-        end
-        if not nexus then
-            os.cp(path.join(os.projectdir(), "publish", "README.txt"), stage)
-            table.insert(packed, "README.txt")
         end
 
         local file = path.absolute(path.join(into, "NativeEquipmentCondition-" .. version .. ".zip"))

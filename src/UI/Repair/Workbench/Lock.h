@@ -2,6 +2,7 @@
 
 #include "Core/Plugin.h"
 
+#include "Condition/CraftingPerks/CraftingPerks.h"
 #include "UI/Repair/Workbench/Bench.h"
 #include "UI/Repair/Workbench/Cost.h"
 
@@ -44,6 +45,22 @@ namespace Workbench
 	// perk has: every rank for every item, standing.asked by its mods, 0 while
 	// the lock is off.
 	[[nodiscard]] std::uint32_t LockAsks(const Priced& a_priced, LockMode a_mode);
+
+	// The same rule for a perk of a_ranks ranks, a_asked the rank asked by
+	// its mods.
+	[[nodiscard]] std::uint32_t LockAsks(std::uint32_t a_asked, std::uint32_t a_ranks, LockMode a_mode);
+
+	// What a perk page says of the lock for 1 rank of a perk of a_ranks: the
+	// condition from which a player holding a_rank can start a repair that
+	// takes components and asks the highest rank such a repair can ask, 0 for
+	// any. By its mods that rank is a_highest, the highest rank any recipe of
+	// the load order asks of the perk. Every item asks the last rank. Nothing
+	// while the lock holds nothing back: off, free repairs or iPerkLock 0.
+	// The number stops at SuppliesOnlyFrom, since from there no repair takes
+	// components and HeldBack holds nothing (its Trifling and TakesComponents
+	// tests). That is wrong only for an item whose supply bill is empty while
+	// supplies exist, which needs a load order without its supply forms.
+	[[nodiscard]] std::optional<std::uint32_t> RankOpensFrom(std::uint32_t a_rank, std::uint32_t a_ranks, std::uint32_t a_highest);
 
 	// Why the lock turns a repair away, for the trace and the bench's words.
 	// Not named Held, since Spares.h's function Held would hide it.

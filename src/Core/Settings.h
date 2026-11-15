@@ -266,7 +266,7 @@ namespace Settings
 	// whole number where the setting only takes whole steps.
 	using Number = std::variant<Live<float>*, Live<std::int32_t>*>;
 
-	// The 8 switches under [Features] and the 58 numbers under [Features],
+	// The 8 switches under [Features] and the 60 numbers under [Features],
 	// [Loot], [Balance] and [HUD], in NEC.ini's order, for Report and the MCM
 	// page.
 	[[nodiscard]] std::span<Live<bool>* const> Switches();

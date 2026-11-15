@@ -1,5 +1,6 @@
 #include "UI/Hud/PowerArmorCondition/PowerArmorCondition.h"
 
+#include "Condition/Condition.h"
 #include "Core/Settings.h"
 #include "Core/TraceLog/TraceLog.h"
 #include "UI/Flash.h"
@@ -101,6 +102,7 @@ namespace PowerArmorCondition
 					}
 					laidOutSize = size;
 					shownPercent = NOT_DRAWN;
+					shownMark = HudParts::Readout::Mark{};
 					TraceLog::Line("menu", "Power armor CND bar is {:.0f} across and {:.1f} deep, its word at size {:.1f} and ending {:.1f} past it of the {:.1f} the box leaves, a row of the dash being {:.1f}, turned {:.2f} degrees from level",
 						bar.width, bar.deep, bar.size, bar.reach, box.room, box.row, box.turn * DEGREES);
 				}
@@ -153,10 +155,30 @@ namespace PowerArmorCondition
 
 				HudParts::Readout::FollowWordSwitch(readout, Settings::bPowerArmorBarShowsWord, wordShown, "Power armor"sv);
 
-				if (wanted && percent != shownPercent) {
-					HudParts::Readout::SetPercent(readout, bar.width, bar.deep, percent);
+				// The mark is as wide as half the bar's depth before its
+				// thickness slider. It is sized from laidOutFor, the box the
+				// bar was laid out for, never from this frame's box: box.row is
+				// the distance between 2 digits that sway, and only a change
+				// past 0.25 lays the bar out again, so the mark changes only at
+				// a relayout. laidOutFor.row is 0 before the first layout,
+				// which reads no mark.
+				const auto deep = laidOutFor.row * BAR_DEEP;
+				const auto mark = deep > 0.0 ? HudParts::Readout::PenaltyMark(Condition::Kind::kWeapon, deep, deep / 2.0) : HudParts::Readout::Mark{};
+				if (wanted && (percent != shownPercent || mark != shownMark)) {
+					HudParts::Readout::SetPercent(readout, bar.width, bar.deep, percent, HudParts::Readout::Still::kRightEnd, mark);
+					if (percent != shownPercent) {
+						TraceLog::Line("menu", "Power armor CND bar drawn at {:d}%", percent);
+					}
 					shownPercent = percent;
-					TraceLog::Line("menu", "Power armor CND bar drawn at {:d}%", percent);
+					shownMark = mark;
+					if (mark != saidMark) {
+						saidMark = mark;
+						if (mark.at != 0) {
+							TraceLog::Line("menu", "Power armor CND bar marks weapon penalties from {:d}% {:s} {:.2f} wide", mark.at, mark.line ? "with a line" : "with notches", mark.wide);
+						} else {
+							TraceLog::Line("menu", "Power armor CND bar marks no penalty start");
+						}
+					}
 				}
 
 				const auto target = wanted ? 1.0 : 0.0;
@@ -178,6 +200,8 @@ namespace PowerArmorCondition
 				lastFrame.reset();
 				lastReading.reset();
 				shownPercent = NOT_DRAWN;
+				shownMark = HudParts::Readout::Mark{};
+				saidMark = HudParts::Readout::Mark{};
 				shownOpacity = -1.0;
 				fade = 0.0;
 				laidOutFor = Box{};
@@ -202,6 +226,11 @@ namespace PowerArmorCondition
 			bool                             colored = false;
 			bool                             saidOffScreen = false;
 			bool                             saidScaled = false;
+
+			// The mark as last drawn, forgotten with shownPercent, and as the
+			// trace last named it, forgotten only in Reset.
+			HudParts::Readout::Mark shownMark;
+			HudParts::Readout::Mark saidMark;
 		};
 
 		// Lives as long as the plugin, see Flash.h.

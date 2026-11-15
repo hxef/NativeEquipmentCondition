@@ -60,17 +60,21 @@ namespace Workbench
 		}
 	}
 
-	std::uint32_t LockAsks(const Priced& a_priced, LockMode a_mode)
+	std::uint32_t LockAsks(std::uint32_t a_asked, std::uint32_t a_ranks, LockMode a_mode)
 	{
-		const auto& standing = a_priced.standing;
 		switch (a_mode) {
 		case LockMode::kOff:
 			return 0;
 		case LockMode::kEveryItem:
-			return standing.ranks;
+			return a_ranks;
 		default:
-			return std::min(standing.asked, standing.ranks);
+			return std::min(a_asked, a_ranks);
 		}
+	}
+
+	std::uint32_t LockAsks(const Priced& a_priced, LockMode a_mode)
+	{
+		return LockAsks(a_priced.standing.asked, a_priced.standing.ranks, a_mode);
 	}
 
 	std::optional<LockHold> HeldBack(const Selection& a_selection, const Priced& a_priced)
@@ -106,6 +110,19 @@ namespace Workbench
 			}
 		}
 		return out;
+	}
+
+	std::optional<std::uint32_t> RankOpensFrom(std::uint32_t a_rank, std::uint32_t a_ranks, std::uint32_t a_highest)
+	{
+		const auto mode = LockNow();
+		if (mode == LockMode::kOff || FreeRepairs() || a_ranks == 0 || PerkLock() == 0) {
+			return std::nullopt;
+		}
+
+		const auto asked = LockAsks(a_highest, a_ranks, mode);
+		const auto held = std::min(a_rank, a_ranks);
+		const auto from = asked > held ? LockFrom(asked - held, a_ranks) : 0U;
+		return std::min(from, SuppliesOnlyFrom());
 	}
 
 	// -------------------------------------------------------------------

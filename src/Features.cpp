@@ -30,7 +30,7 @@
 #include "UI/Hud/QuickContainer/QuickContainer.h"
 #include "UI/InspectPrice.h"
 #include "UI/Inventory/ItemCard/ItemCard.h"
-#include "UI/Inventory/PaperDoll.h"
+#include "UI/Inventory/PaperDoll/PaperDoll.h"
 #include "UI/Inventory/Pipboy.h"
 #include "UI/LoadingTips.h"
 #include "UI/Mcm/Mcm.h"

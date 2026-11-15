@@ -1,5 +1,6 @@
 #include "UI/Hud/PickupBar/Bar.h"
 
+#include "Condition/Condition.h"
 #include "Core/Settings.h"
 #include "Core/TraceLog/TraceLog.h"
 #include "UI/Flash.h"
@@ -124,6 +125,7 @@ namespace PickupBar
 					Readout::SetTrack(readout, width, deep);
 					laidOutSize = size;
 					shownPercent = NOT_DRAWN;
+					shownMark = Readout::Mark{};
 					TraceLog::Line("menu", "Pickup CND bar sized to {:g} times its length and {:g} times its thickness, {:.0f} across and {:.1f} deep",
 						size.length, size.thickness, width, deep);
 				}
@@ -145,14 +147,24 @@ namespace PickupBar
 					shownX = x;
 					shownY = y;
 					shownPercent = NOT_DRAWN;
+					shownMark = Readout::Mark{};
 				}
 
-				if (kept->percent != shownPercent || kept->name != shownName) {
-					Readout::SetPercent(readout, width, deep, kept->percent, Readout::Still::kLeftEnd);
+				// A weapon's bar marks the weapon point and an armor or
+				// clothing piece's the armor point, a food's nothing. The mark
+				// is as wide as half the bar's depth before its thickness
+				// slider.
+				const auto mark = kept->kind ? Readout::PenaltyMark(*kept->kind, BAR_DEEP, BAR_DEEP / 2.0) : Readout::Mark{};
+				if (kept->percent != shownPercent || kept->name != shownName || mark != shownMark) {
+					Readout::SetPercent(readout, width, deep, kept->percent, Readout::Still::kLeftEnd, mark);
+					if (kept->percent != shownPercent || kept->name != shownName) {
+						TraceLog::Line("menu", "Pickup CND bar drawn at {:d}% for {:s}, its right end at {:.0f},{:.0f} in the prompt, the name's middle at {:.1f}",
+							kept->percent, kept->name, x, y, centre);
+					}
 					shownPercent = kept->percent;
 					shownName = kept->name;
-					TraceLog::Line("menu", "Pickup CND bar drawn at {:d}% for {:s}, its right end at {:.0f},{:.0f} in the prompt, the name's middle at {:.1f}",
-						kept->percent, kept->name, x, y, centre);
+					shownMark = mark;
+					TellMark(mark, *kept);
 				}
 
 				// The game paints the prompt's name and hints in the warning
@@ -171,6 +183,9 @@ namespace PickupBar
 				laidOutSize = Readout::Size{ 0.0, 0.0 };
 				shownPercent = NOT_DRAWN;
 				shownName.clear();
+				shownMark = Readout::Mark{};
+				saidMark = Readout::Mark{};
+				saidName.clear();
 				shownX = NOWHERE;
 				shownY = NOWHERE;
 				shown.reset();
@@ -182,6 +197,26 @@ namespace PickupBar
 			}
 
 		private:
+			// Names the mark when it changes, and each new item while either
+			// point is from 0.01 to 0.99, so an item with no mark is named too.
+			// The shown percent is forgotten whenever the prompt moves, and a
+			// new name moves it, so the trace keeps its own mark and name.
+			void TellMark(const Readout::Mark& a_mark, const Looked& a_kept)
+			{
+				const auto marking = Condition::StartPercent(Condition::Kind::kWeapon) != 0 || Condition::StartPercent(Condition::Kind::kArmor) != 0;
+				if (a_mark == saidMark && (!marking || a_kept.name == saidName)) {
+					return;
+				}
+				saidMark = a_mark;
+				saidName = a_kept.name;
+				if (a_mark.at != 0 && a_kept.kind) {
+					TraceLog::Line("menu", "Pickup CND bar marks {:s} penalties from {:d}% {:s} {:.2f} wide for {:s}", *a_kept.kind == Condition::Kind::kArmor ? "armor" : "weapon",
+						a_mark.at, a_mark.line ? "with a line" : "with notches", a_mark.wide, a_kept.name);
+				} else {
+					TraceLog::Line("menu", "Pickup CND bar marks no penalty start for {:s}", a_kept.name);
+				}
+			}
+
 			void Show(Value& a_readout, bool a_shown)
 			{
 				if (shown != a_shown) {
@@ -196,6 +231,7 @@ namespace PickupBar
 			double              deep = 0.0;
 			std::int32_t        shownPercent = NOT_DRAWN;
 			std::string         shownName;
+			Readout::Mark       shownMark;
 			double              shownX = NOWHERE;
 			double              shownY = NOWHERE;
 			std::optional<bool> shown;
@@ -210,6 +246,11 @@ namespace PickupBar
 			// follows, and whether the bar is in that colour now.
 			const RE::HUDComponentBase* rolloverPart = nullptr;
 			bool                        warned = false;
+
+			// The mark and the item the trace last named, forgotten only in
+			// Reset.
+			Readout::Mark saidMark;
+			std::string   saidName;
 		};
 
 		FrameListener g_frameListener;

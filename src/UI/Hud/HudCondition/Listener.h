@@ -54,6 +54,12 @@ namespace HudCondition
 		bool                             colored = false;
 		bool                             dividerHidden = false;
 
+		// The mark where penalties start as last drawn, forgotten with
+		// shownPercent, and as the trace last named it, forgotten only in
+		// Reset, so a relayout redraws it without a second line.
+		HudParts::Readout::Mark shownMark;
+		HudParts::Readout::Mark saidMark;
+
 		// Where the word and its letters sit at its place past the bar,
 		// and whether it was last shown, see FollowWordSwitch.
 		HudParts::Readout::LabelPlace label;

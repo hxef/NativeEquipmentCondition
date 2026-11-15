@@ -124,6 +124,12 @@ namespace Condition
 	// counts as 1.
 	float Start(Kind a_kind);
 
+	// Start as a whole percent, from 1 to 99, or 0 where no CND bar marks it,
+	// at 0 and 1. The CND bars and the MCM page ask it. It compares with
+	// ShownPercent's whole percents, so a gun shown at 75 counts as at the
+	// point 75.
+	[[nodiscard]] std::int32_t StartPercent(Kind a_kind);
+
 	// The share of a full stat an item of a_kind keeps at a_health. At its
 	// start and above it keeps all of it, and below it the share runs in a
 	// straight line down to a_floor at 0. A health below 0, meaning none was

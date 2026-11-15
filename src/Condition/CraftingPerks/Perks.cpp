@@ -26,6 +26,12 @@ namespace CraftingPerks
 		return found != a_perks.gates.end() ? found->second : Gates{};
 	}
 
+	std::uint32_t AsksOf(const Perks& a_perks, const RE::BGSPerk* a_perk)
+	{
+		const auto found = a_perk ? a_perks.asks.find(a_perk) : a_perks.asks.end();
+		return found != a_perks.asks.end() ? found->second : 0U;
+	}
+
 	std::uint32_t Weight(const Perks& a_perks, const RE::BGSPerk* a_perk)
 	{
 		const auto gates = GatesOf(a_perks, a_perk);
@@ -63,6 +69,14 @@ namespace CraftingPerks
 			LaddersOf(*recipe, perks->all, ladders);
 			if (ladders.empty()) {
 				continue;
+			}
+
+			// Every recipe counts, before the reach test, settlement objects
+			// too: an item's bill reads scrap recipes beside mod recipes, see
+			// Of and Materials.h, and a scrap recipe builds a form list.
+			for (const auto* ladder : ladders) {
+				auto& most = perks->asks[ladder];
+				most = std::max(most, RankAsked(*recipe, ladder));
 			}
 
 			const auto reach = ReachOf(*built, slots);

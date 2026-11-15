@@ -95,6 +95,8 @@ namespace Settings
 			&fPickupBarY,
 			&fPickupBarLength,
 			&fPickupBarThickness,
+			&fPipboyBarThickness,
+			&fPenaltyMarkWidth,
 		};
 
 		// Every switch in NEC.ini's order, for a lookup by id.
@@ -123,6 +125,7 @@ namespace Settings
 			&bPowerArmorBarShowsWord,
 			&bPickupBar,
 			&bPickupBarShowsWord,
+			&bPenaltyMarkAsLine,
 			&bTraceLogs,
 		};
 
@@ -136,6 +139,7 @@ namespace Settings
 		Live<bool>* const AFTER_HUD_BAR[]{ &bHudBarHidesWithCounter, &bHudBarStandsAlone, &bHudBarShowsWord };
 		Live<bool>* const AFTER_POWER_ARMOR_BAR[]{ &bPowerArmorBarShowsWord, &bPickupBar };
 		Live<bool>* const AFTER_PICKUP_BAR[]{ &bPickupBarShowsWord };
+		Live<bool>* const AFTER_PENALTY_MARK[]{ &bPenaltyMarkAsLine };
 
 		// The numbers under [Features], which the Settings line puts after the
 		// switch NEC.ini has them after.
@@ -171,6 +175,9 @@ namespace Settings
 			}
 			if (&a_setting == &fPickupBarThickness) {
 				return AFTER_PICKUP_BAR;
+			}
+			if (&a_setting == &fPenaltyMarkWidth) {
+				return AFTER_PENALTY_MARK;
 			}
 			return {};
 		}

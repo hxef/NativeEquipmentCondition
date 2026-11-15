@@ -8,6 +8,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <optional>
 #include <span>
 #include <string>
 #include <string_view>
@@ -171,13 +172,12 @@ namespace Text
 	// asked for. See Workbench/Display.h.
 	[[nodiscard]] std::string CannotModify();
 
-	// "Weapons built mostly from this perk's mods take 25% fewer components to
-	// repair at the workbench.", added to every rank of a crafting perk that
-	// takes something off a repair, with what that rank alone is worth.
-	// a_weapons and a_armor say what the perk's mods go on: armor alone reads
-	// "Armor built mostly ... takes", both read "Weapons and armor built
-	// mostly ... take". See CraftingPerks.h.
-	[[nodiscard]] std::string PerkDiscount(std::uint32_t a_percent, bool a_weapons, bool a_armor);
+	// A crafting perk rank's sentence, see CraftingPerks.h and en.ini: the
+	// discount a_off on weapons, armor or both by a_weapons and a_armor, joined
+	// to the repair lock's start a_from (0 is any condition), else either one
+	// alone, else nothing. Each form is a key of its own, so every language
+	// joins the 2 its own way.
+	[[nodiscard]] std::string PerkRepairs(std::uint32_t a_off, bool a_weapons, bool a_armor, std::optional<std::uint32_t> a_from);
 
 	// "Spares used to repair weapons and armor at the workbench restore more
 	// condition.", added to every rank of Scrapper while spare repair is on.

@@ -106,6 +106,12 @@ namespace Condition
 		return start < 1.0F ? std::max(start, 0.0F) : 1.0F;
 	}
 
+	std::int32_t StartPercent(Kind a_kind)
+	{
+		const auto percent = static_cast<std::int32_t>(std::lround(static_cast<double>(Start(a_kind)) * 100.0));
+		return percent >= 1 && percent <= 99 ? percent : 0;
+	}
+
 	float Share(float a_health, float a_floor, Kind a_kind)
 	{
 		// -1 is an item with no health extra data, which counts as new. 0 and

@@ -41,12 +41,13 @@ namespace PickupBar
 		// What the prompt's item reads
 		// -------------------------------------------------------------------
 
-		// A whole percent, and whether the item still waits for its first
-		// roll.
+		// A whole percent, whether the item still waits for its first roll,
+		// and its kind, empty for a food.
 		struct Reading
 		{
-			std::int32_t percent{ 0 };
-			bool         unrolled{ false };
+			std::int32_t                   percent{ 0 };
+			bool                           unrolled{ false };
+			std::optional<Condition::Kind> kind;
 		};
 
 		// The condition of a weapon or a piece of armor that wears, or the
@@ -65,10 +66,11 @@ namespace PickupBar
 			std::optional<Reading> reading;
 			if (base->IsWeapon() || base->Is(RE::ENUM_FORM_ID::kARMO)) {
 				if (const auto percent = Condition::Percent(*base, extra)) {
-					reading = Reading{ static_cast<std::int32_t>(*percent), extra && Condition::IsUnrolled(extra->GetHealthPerc()) };
+					const auto kind = base->IsWeapon() ? Condition::Kind::kWeapon : Condition::Kind::kArmor;
+					reading = Reading{ static_cast<std::int32_t>(*percent), extra && Condition::IsUnrolled(extra->GetHealthPerc()), kind };
 				}
 			} else if (const auto fresh = FoodSpoil::FreshnessOf(*base, extra)) {
-				reading = Reading{ static_cast<std::int32_t>(std::lround(*fresh * 100.0F)), extra && FoodSpoil::Unrolled(*extra) };
+				reading = Reading{ static_cast<std::int32_t>(std::lround(*fresh * 100.0F)), extra && FoodSpoil::Unrolled(*extra), std::nullopt };
 			}
 			if (reading && reading->unrolled && Settings::bSpawnCondition.GetValue() && SpawnCondition::WaitsForTaker(a_ref)) {
 				return std::nullopt;
@@ -139,7 +141,7 @@ namespace PickupBar
 				Keep(std::nullopt);
 				return;
 			}
-			Keep(Looked{ name, reading->percent, item });
+			Keep(Looked{ name, reading->percent, item, reading->kind });
 			if (reading->unrolled) {
 				QueueRoll(item);
 			}

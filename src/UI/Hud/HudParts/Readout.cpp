@@ -1,8 +1,10 @@
-#include "UI/Hud/HudParts/HudParts.h"
+#include "UI/Hud/HudParts/Readout.h"
 
+#include "Condition/Condition.h"
 #include "Core/Settings.h"
 #include "Core/TraceLog/TraceLog.h"
 #include "UI/Flash.h"
+#include "UI/Hud/HudParts/HudParts.h"
 
 #include <algorithm>
 #include <cmath>
@@ -15,18 +17,50 @@ namespace HudParts
 		namespace
 		{
 			// The parts of every readout. Each readout is a sprite of its own,
-			// so all of them use the same 3 names.
+			// so all of them use the same 7 names. The 4 in the middle draw
+			// the mark where penalties start, see SetPercent.
 			constexpr const char* TRACK_NAME = "NEC_ConditionTrack_mc";
 			constexpr const char* FILL_NAME = "NEC_ConditionFill_mc";
+			constexpr const char* TRACK_PAST_NAME = "NEC_ConditionTrackPast_mc";
+			constexpr const char* FILL_PAST_NAME = "NEC_ConditionFillPast_mc";
+			constexpr const char* NOTCHES_NAME = "NEC_ConditionNotches_mc";
+			constexpr const char* LINE_NAME = "NEC_ConditionLine_mc";
 			constexpr const char* LABEL_NAME = "NEC_ConditionLabel_tf";
 
 			// The HP meter draws its spare bar at half opacity, so the track
 			// does too.
 			constexpr double TRACK_ALPHA = 0.5;
 
+			// Each notch reaches 0.4 of the bar's depth in, so a fifth of the
+			// bar runs between their tips.
+			constexpr double NOTCH_DEEP = 0.4;
+
+			// The fill is the white at 1 and the track at 0.5, so the line at
+			// 0.75 is always halfway between them on whatever is behind the bar.
+			constexpr double LINE_ALPHA = (1.0 + TRACK_ALPHA) / 2.0;
+
+			// How far the fill's end keeps out of the mark near the point, as a
+			// share of the bar's normal depth.
+			constexpr double STEP_SHARE = 1.0 / 6.0;
+
 			// The whole size the word is written at, see SetStyledText. Its
 			// field is then scaled to the size asked for.
 			constexpr std::int32_t WRITTEN_SIZE = 20;
+
+			// Adds a box of the mark, hidden and 0 wide at the readout's
+			// origin until SetPercent places it.
+			bool AddMarkBox(Scaleform::GFx::Movie& a_movie, Value& a_readout, const char* a_name, double a_alpha, bool a_notches)
+			{
+				const auto added = a_notches ? AddNotches(a_movie, a_readout, a_name, NOTCH_DEEP) : AddBox(a_movie, a_readout, a_name);
+				auto       box = Flash::Child(a_readout, a_name);
+				if (!added || !box.IsDisplayObject()) {
+					return false;
+				}
+				PutBox(box, 0.0, 0.0, 0.0, 0.0);
+				box.SetMember("alpha"sv, Value(a_alpha));
+				box.SetMember("visible"sv, Value(false));
+				return true;
+			}
 		}
 
 		Value Create(Scaleform::GFx::Movie& a_movie, const char* a_name)
@@ -41,9 +75,14 @@ namespace HudParts
 			readout.SetMember("mouseChildren"sv, Value(false));
 			readout.SetMember("visible"sv, Value(false));
 
-			// The track goes down first and the bar over it.
+			// The track goes down first, the bar over it and the mark over
+			// both.
 			if (!AddBox(a_movie, readout, TRACK_NAME) ||
 				!AddBox(a_movie, readout, FILL_NAME) ||
+				!AddMarkBox(a_movie, readout, TRACK_PAST_NAME, TRACK_ALPHA, false) ||
+				!AddMarkBox(a_movie, readout, FILL_PAST_NAME, 1.0, false) ||
+				!AddMarkBox(a_movie, readout, NOTCHES_NAME, 1.0, true) ||
+				!AddMarkBox(a_movie, readout, LINE_NAME, LINE_ALPHA, false) ||
 				!AddField(a_movie, readout, LABEL_NAME)) {
 				return Value{};
 			}
@@ -137,22 +176,105 @@ namespace HudParts
 			track.SetMember("alpha"sv, Value(TRACK_ALPHA));
 		}
 
-		void SetPercent(Value& a_readout, double a_width, double a_deep, std::int32_t a_percent, Still a_still)
+		void SetPercent(Value& a_readout, double a_width, double a_deep, std::int32_t a_percent, Still a_still, const Mark& a_mark)
 		{
 			auto fill = Flash::Child(a_readout, FILL_NAME);
 			if (!fill.IsDisplayObject()) {
 				return;
 			}
+			auto track = Flash::Child(a_readout, TRACK_NAME);
+			auto trackPast = Flash::Child(a_readout, TRACK_PAST_NAME);
+			auto fillPast = Flash::Child(a_readout, FILL_PAST_NAME);
+			auto notches = Flash::Child(a_readout, NOTCHES_NAME);
+			auto line = Flash::Child(a_readout, LINE_NAME);
+
+			// Every span is counted from the end that stays still, so on the
+			// HUD 0 is the right end and on the Pip-Boy the left end.
+			const auto place = [&](Value& a_box, double a_from, double a_to) {
+				if (a_box.IsDisplayObject()) {
+					const auto left = a_still == Still::kLeftEnd ? -a_width + a_from : -a_to;
+					PutBox(a_box, left, -a_deep / 2.0, a_to - a_from, a_deep);
+				}
+			};
+			const auto show = [&](Value& a_box, double a_from, double a_to) {
+				place(a_box, a_from, a_to);
+				if (a_box.IsDisplayObject()) {
+					a_box.SetMember("visible"sv, Value(true));
+				}
+			};
+			// A hidden child may still count in its parent's bounds, so a
+			// hidden box sits 0 wide at the track's left end and the
+			// readout's box never changes.
+			const auto hide = [&](Value& a_box) {
+				if (a_box.IsDisplayObject()) {
+					PutBox(a_box, -a_width, -a_deep / 2.0, 0.0, a_deep);
+					a_box.SetMember("visible"sv, Value(false));
+				}
+			};
 
 			const auto filled = a_width * std::clamp(a_percent, 0, 100) / 100.0;
-			const auto left = a_still == Still::kLeftEnd ? -a_width : -filled;
-			PutBox(fill, left, -a_deep / 2.0, filled, a_deep);
+			if (a_mark.at == 0) {
+				place(track, 0.0, a_width);
+				place(fill, 0.0, filled);
+				hide(trackPast);
+				hide(fillPast);
+				hide(notches);
+				hide(line);
+				return;
+			}
+
+			// The mark is centred on the point and kept inside the bar. Near
+			// the point the fill's end keeps a_mark.step out of it, so over
+			// and under read apart: at or over the point the fill runs past
+			// the mark, under it the fill stops short of it.
+			const auto wide = std::min(a_mark.wide, a_width);
+			const auto from = std::clamp((a_width * a_mark.at / 100.0) - (wide / 2.0), 0.0, a_width - wide);
+			const auto to = from + wide;
+			const auto over = a_percent >= a_mark.at;
+			const auto end = over ? std::min(a_width, std::max(filled, to + a_mark.step)) : std::max(0.0, std::min(filled, from - a_mark.step));
+
+			if (!a_mark.line) {
+				place(track, 0.0, a_width);
+				place(fill, 0.0, end);
+				show(notches, from, to);
+				hide(trackPast);
+				hide(fillPast);
+				hide(line);
+				return;
+			}
+
+			// The line splits the track and the fill in 2, since a box at
+			// LINE_ALPHA laid over the fill would vanish into it.
+			place(track, 0.0, from);
+			show(trackPast, to, a_width);
+			place(fill, 0.0, std::min(end, from));
+			if (over) {
+				show(fillPast, to, end);
+			} else {
+				hide(fillPast);
+			}
+			show(line, from, to);
+			hide(notches);
+		}
+
+		double Held(const Settings::Live<float>& a_value, double a_least, double a_most)
+		{
+			const auto value = a_value.GetValue();
+			return std::isfinite(value) ? std::clamp(static_cast<double>(value), a_least, a_most) : 1.0;
 		}
 
 		Size SizeFrom(const Settings::Live<float>& a_length, const Settings::Live<float>& a_thickness)
 		{
-			const auto held = [](float a_value) { return std::isfinite(a_value) ? std::clamp(static_cast<double>(a_value), LEAST_SIZE, MOST_SIZE) : 1.0; };
-			return Size{ held(a_length.GetValue()), held(a_thickness.GetValue()) };
+			return Size{ Held(a_length, LEAST_SIZE, MOST_SIZE), Held(a_thickness, LEAST_SIZE, MOST_SIZE) };
+		}
+
+		Mark PenaltyMark(Condition::Kind a_kind, double a_deep, double a_wide)
+		{
+			const auto at = Condition::StartPercent(a_kind);
+			if (at == 0) {
+				return Mark{};
+			}
+			return Mark{ at, a_wide * Held(Settings::fPenaltyMarkWidth, MARK_LEAST, MARK_MOST), a_deep * STEP_SHARE, Settings::bPenaltyMarkAsLine.GetValue() };
 		}
 	}
 }

@@ -166,8 +166,10 @@ SEE IT AT A GLANCE
   mod makes the item wear slower or faster, as on Weight.
 * CND bars on the HUD ammo counter, the power armor dash, the pickup prompt and
   the Pip-Boy apparel figure, and condition meters on the quick container rows
-  and a food's freshness. Each HUD bar has its own switch, place and size in
-  MCM.
+  and a food's freshness. When you set Weapon penalties start at or Armor
+  penalties start at from 0.01 to 0.99 in MCM, the bars mark that point with 2
+  small notches, as in New Vegas. Each HUD bar has its own switch, place and
+  size in MCM.
 * Broken items fade out in the Pip-Boy lists.
 
 MAKE IT YOURS
@@ -422,9 +424,9 @@ PAPYRUS API
   spoils.
 * Every function is global, so a call reads NEC.GetCondition(akItem), and it
   works the same on OG and AE.
-* NEC_Papyrus_API.txt in Data\F4SE\Plugins lists every function and event
-  with some examples, the same text as the Papyrus API article on the mod's
-  Nexus Mods page.
+* NEC_Papyrus_API.txt in Data\F4SE\Plugins\NEC\Docs, beside this readme,
+  lists every function and event with some examples, the same text as the
+  Papyrus API article on the mod's Nexus Mods page.
 * Compile against NEC.psc in Data\Scripts\Source\User, and never ship NEC.pex
   or NEC.psc with your mod.
 

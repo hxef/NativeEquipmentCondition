@@ -103,8 +103,8 @@ namespace
 	// With another mod on the bench lists the lock still refuses BUILD, but
 	// no row fades and the mod slots stay open.
 	constexpr Piece MOD_LOCK_SIDE[]{ kBenchItemList, kBenchModLists };
-	// The perk pages tell of what Scrapper adds to a spare and of the Perk
-	// component discount.
+	// The perk pages tell of what Scrapper adds to a spare, of the Perk
+	// component discount and of the repair lock.
 	constexpr Piece PERK_PAGES[]{ kPerksChart, kPerksPipboy };
 	// The bite, the station rows and the Fertilizer row each go off alone,
 	// and food still spoils. The 2 days and the fridge speed set only how fast
@@ -135,7 +135,7 @@ namespace
 		{ &Settings::bSpareRepair, &Settings::fBenchCostMult, BENCH, PERK_PAGES },
 		{ &Settings::iUnscrappableSpares, &Settings::fBenchCostMult, BENCH },
 		{ &Settings::iRepairBoxRow, &Settings::fBenchCostMult, BENCH },
-		{ &Settings::iRepairLock, &Settings::fBenchCostMult, BENCH },
+		{ &Settings::iRepairLock, &Settings::fBenchCostMult, BENCH, PERK_PAGES },
 		{ &Settings::bLockSpares, &Settings::fBenchCostMult, BENCH },
 		{ &Settings::bRepairBoxColumns, &Settings::fBenchCostMult, REPAIR_BOXES },
 		{ &Settings::bRepairBoxGains, &Settings::fBenchCostMult, REPAIR_BOXES },
@@ -189,7 +189,7 @@ namespace
 		{ &Settings::iRepairSupplies, &Settings::fBenchCostMult, BENCH },
 		{ &Settings::iSuppliesOnlyFrom, &Settings::fBenchCostMult, BENCH },
 		{ &Settings::iModdingFrom, &Settings::fBenchCostMult, BENCH, MOD_LOCK_SIDE },
-		{ &Settings::iPerkLock, &Settings::fBenchCostMult, BENCH },
+		{ &Settings::iPerkLock, &Settings::fBenchCostMult, BENCH, PERK_PAGES },
 		{ &Settings::fTraderPriceMult, &Settings::bVendorRepair, TRADER_REPAIRS, TRADER_PRICE_SIDE },
 		{ &Settings::iTraderLeeway, &Settings::bVendorRepair, TRADER_REPAIRS, TRADER_STOCK_SIDE },
 		{ &Settings::iTraderFullStock, &Settings::bVendorRepair, TRADER_REPAIRS, TRADER_STOCK_SIDE },

@@ -1,10 +1,10 @@
 -- The Papyrus API's document, for xmake apidoc and xmake release.
 --
 -- The comments of NEC.psc.in are its 1 source. It is written twice with the
--- same words in the same order: NEC_Papyrus_API.txt, which ships beside
--- NEC.ini, and the Nexus article, which adds only markup. xmake apidoc writes
--- both, and xmake release stops when a committed copy differs from what this
--- writes, so neither drifts from the script.
+-- same words in the same order: NEC_Papyrus_API.txt, which ships in the
+-- Docs folder (DOCS in xmake.lua), and the Nexus article, which adds only
+-- markup. xmake apidoc writes both, and xmake release stops when a committed
+-- copy differs from what this writes, so neither drifts from the script.
 --
 -- How the comments are read, each line from its "; ":
 --

@@ -24,9 +24,15 @@
 // and hides with it. The Pip-Boy tints white with its colour on its own, so the
 // bar needs no colour target.
 //
+// Each bar is then half again as deep, times Pip-Boy CND bar thickness, from
+// 0.5 to 2. It keeps its bottom 2 above the icon and grows upward. A bar stops
+// 2 under the figure's named clips, shown or hidden, and under a header text's
+// drawn letters, so none covers the figure or a tab name, see Room.h. The bars
+// mark where armor penalties start, as the HUD's CND bars mark theirs.
+//
 // The condition is checked through F4SE's task queue and kept in atomics, the
-// way the HUD checks the weapon in hand, and a frame listener on the Pip-Boy
-// movie draws it, since the doll sends no event when it changes.
+// way the HUD checks the weapon in hand, see Regions.h, and a frame listener
+// on the Pip-Boy movie draws it, since the doll sends no event when it changes.
 namespace PaperDoll
 {
 	// Adds the frame listener to the Pip-Boy movie and ignores every other.

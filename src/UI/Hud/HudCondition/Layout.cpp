@@ -107,6 +107,7 @@ namespace HudCondition
 		HudParts::Readout::MoveLabel(a_readout, label.field.left + a_drawn.wordX, label.field.top + a_drawn.wordY);
 		laidOut = a_drawn;
 		shownPercent = NOT_DRAWN;
+		shownMark = HudParts::Readout::Mark{};
 		placedFrom.reset();
 		if (a_size != laidOutSize) {
 			laidOutSize = a_size;

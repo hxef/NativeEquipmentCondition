@@ -339,6 +339,7 @@ namespace Workbench
 		MessageBox::Install();
 
 		CraftingPerks::SetBench(&Repairs);
+		CraftingPerks::SetLock(&RankOpensFrom);
 		if (!canRepair || !switchItem || !repair) {
 			REX::WARN("Workbenches stay as they were, with no repairs from NEC.");
 			return;

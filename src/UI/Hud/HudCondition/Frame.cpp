@@ -6,6 +6,7 @@
 #include "UI/Hud/HudCondition/Spot.h"
 #include "UI/Hud/HudParts/HudParts.h"
 #include "UI/Roles/Hud.h"
+#include "Condition/Condition.h"
 #include "Core/Settings.h"
 #include "Core/TraceLog/TraceLog.h"
 
@@ -120,14 +121,28 @@ namespace HudCondition
 
 		HudParts::Readout::FollowWordSwitch(readout, Settings::bHudBarShowsWord, wordShown, "HUD"sv);
 
+		// The mark is read every frame, as the size is, and is as wide as
+		// half the bar's depth before its thickness slider.
 		const auto percent = HudParts::Weapon::Percent(Settings::bHudCondition);
-		if (percent != shownPercent) {
-			HudParts::Readout::SetPercent(readout, drawn.line.width, drawn.deep, percent);
+		const auto mark = HudParts::Readout::PenaltyMark(Condition::Kind::kWeapon, spot.deep, spot.deep / 2.0);
+		if (percent != shownPercent || mark != shownMark) {
+			HudParts::Readout::SetPercent(readout, drawn.line.width, drawn.deep, percent, HudParts::Readout::Still::kRightEnd, mark);
+			if (percent != shownPercent) {
+				if (percent >= 0) {
+					TraceLog::Line("menu", "HUD CND bar drawn at {:d}%", percent);
+				} else {
+					TraceLog::Line("menu", "HUD CND bar has no reading to draw");
+				}
+			}
 			shownPercent = percent;
-			if (percent >= 0) {
-				TraceLog::Line("menu", "HUD CND bar drawn at {:d}%", percent);
-			} else {
-				TraceLog::Line("menu", "HUD CND bar has no reading to draw");
+			shownMark = mark;
+			if (mark != saidMark) {
+				saidMark = mark;
+				if (mark.at != 0) {
+					TraceLog::Line("menu", "HUD CND bar marks weapon penalties from {:d}% {:s} {:.2f} wide", mark.at, mark.line ? "with a line" : "with notches", mark.wide);
+				} else {
+					TraceLog::Line("menu", "HUD CND bar marks no penalty start");
+				}
 			}
 		}
 
@@ -201,6 +216,8 @@ namespace HudCondition
 		lastFrame.reset();
 		lastReading.reset();
 		shownPercent = NOT_DRAWN;
+		shownMark = HudParts::Readout::Mark{};
+		saidMark = HudParts::Readout::Mark{};
 		shownOpacity = -1.0;
 		fade = 0.0;
 		spot = SHIPPED;

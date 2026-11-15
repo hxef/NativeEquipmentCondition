@@ -87,7 +87,7 @@ Your weapons and armor [b]wear down as you use them[/b], the way they did in Fal
 [list]
 [*]CND on the item cards, with the worn damage, resistances, fire rate, accuracy and range.
 [*]Beside CND, how fast the item wears or spoils, x1.0 for an ordinary item of its kind. While you try a mod at a workbench, marks beside it show that the mod makes the item wear slower or faster, as on Weight.
-[*]CND bars on the HUD ammo counter, the power armor dash, the pickup prompt and the Pip-Boy apparel figure, and condition meters on the quick container rows and a food's freshness. Each HUD bar has its own switch, place and size in MCM.
+[*]CND bars on the HUD ammo counter, the power armor dash, the pickup prompt and the Pip-Boy apparel figure, and condition meters on the quick container rows and a food's freshness. When you set [b]Weapon penalties start at[/b] or [b]Armor penalties start at[/b] from 0.01 to 0.99 in MCM, the bars mark that point with 2 small notches, as in New Vegas. Each HUD bar has its own switch, place and size in MCM.
 [*]Broken items fade out in the Pip-Boy lists.
 [/list]
 
@@ -347,7 +347,7 @@ bTraceLogs=true[/code]
 [list]
 [*]NEC ships a Papyrus script that your mod can call to read and change the condition of any weapon, armor or food, read the repair costs and the curves, and hear when condition changes, an item breaks, a gun jams or food spoils.
 [*]Every function is global, so a call reads NEC.GetCondition(akItem), and it works the same on OG and AE.
-[*]The [url=https://www.nexusmods.com/fallout4/articles/6727]Papyrus API[/url] article lists every function and event with some examples. The same text ships as NEC_Papyrus_API.txt in Data\F4SE\Plugins.
+[*]The [url=https://www.nexusmods.com/fallout4/articles/6727]Papyrus API[/url] article lists every function and event with some examples. The same text ships as NEC_Papyrus_API.txt in Data\F4SE\Plugins\NEC\Docs.
 [*]Compile against NEC.psc in Data\Scripts\Source\User, and never ship NEC.pex or NEC.psc with your mod.
 [/list]
 

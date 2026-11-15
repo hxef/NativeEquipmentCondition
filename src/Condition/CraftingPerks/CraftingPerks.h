@@ -3,6 +3,7 @@
 #include "Condition/Materials/Materials.h"
 #include "Core/Plugin.h"
 
+#include <optional>
 #include <span>
 #include <string>
 #include <vector>
@@ -15,7 +16,8 @@
 // ranks. The top rank takes off iPerkComponentDiscount, half by default, and
 // each rank an equal share of it. Every rank's description gets a line saying
 // how much it takes off: at 50, 13% 25% 38% 50% on a 4 rank perk and 17% 33%
-// 50% on a 3 rank one.
+// 50% on a 3 rank one. Each rank's description also says from which condition
+// the repair lock lets a repair that takes components start with that rank.
 //
 // One repair is priced by one perk, chosen by counting components. A bill has
 // one line per component per recipe, and every recipe names the perk that
@@ -68,6 +70,19 @@ namespace CraftingPerks
 	// hands it over, since this layer cannot include UI.
 	void SetBench(bool (*a_repairs)());
 
+	// Takes the repair lock's rule for 1 rank, so each rank's line says where
+	// its repairs can start: the condition from which a repair that needs the
+	// perk can start with that rank held, 0 for any, or nothing while the
+	// lock holds nothing back. Workbench/Lock.h answers it, and
+	// Workbench::Install hands it over, since this layer cannot include UI.
+	void SetLock(std::optional<std::uint32_t> (*a_opensFrom)(std::uint32_t a_rank, std::uint32_t a_ranks, std::uint32_t a_highest));
+
+	// Writes NEC's lines again into the descriptions the Pip-Boy keeps from
+	// the last save load, after a setting that changes them moved, so its
+	// perks page shows them at the next open. The level up chart asks fresh
+	// each time. Run on the main thread, from the MCM page's follow ups.
+	void RetellPipboy();
+
 	// What repairing a broken item costs with no rank of the perk, as a
 	// multiple of its components. 2, so a broken gun is better scrapped than
 	// repaired, and keeping a gun in shape is always cheaper than buying it
@@ -76,7 +91,7 @@ namespace CraftingPerks
 
 	// What the same repair costs at the perk's top rank: UNSKILLED_MULTIPLE
 	// less iPerkComponentDiscount, so 1 copy of its components at 50, the
-	// default, 0.2 at 90 and 2 at 0. The multiple falls in equal steps across
+	// default, 0.02 at 99 and 2 at 0. The multiple falls in equal steps across
 	// the ranks, so each of 4 ranks takes a quarter of the difference.
 	[[nodiscard]] float SkilledMultiple();
 

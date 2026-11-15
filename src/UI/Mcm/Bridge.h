@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Core/Plugin.h"
+#include "Condition/Condition.h"
 #include "Core/CallPatch/CallPatch.h"
 #include "Core/Parts.h"
 #include "Core/Pieces.h"
@@ -46,7 +47,10 @@ namespace Mcm
 	// a free MEND and no repair box opens, see FreeRepairs in
 	// UI/Repair/Workbench/Bench.h. The Maintenance header hides with them, as
 	// no row is left under it. Lock spares too also hides while Spare repair
-	// is off, by its config.json row.
+	// is off, by its config.json row. The Penalty mark section shows while
+	// either penalty point marks a bar, from 0.01 to 0.99. Its 2 points sit on
+	// the Weapons and the Armor page, so its id names the first, and both
+	// sliders refresh the menu.
 	inline constexpr Hide HIDES[]{
 		{ "fJamChance:Jams"sv, [] { return Settings::fJamChance.GetValue() > 0.0F; }, { &Settings::fJamStart } },
 		{ "iRepairLock:Lock"sv, [] { return Settings::iRepairLock.GetValue() != 0; }, { &Settings::iPerkLock, &Settings::bLockSpares } },
@@ -54,6 +58,8 @@ namespace Mcm
 		{ "fBenchCostMult:Paid"sv, [] { return Settings::fBenchCostMult.GetValue() > 0.0F; },
 			{ &Settings::iFreeMendFrom, &Settings::iRepairSupplies, &Settings::iSuppliesOnlyFrom, &Settings::iRepairLock,
 				&Settings::iPerkLock, &Settings::iPerkComponentDiscount, &Settings::bLockSpares, &Settings::iRepairBoxRow } },
+		{ "fWeaponPenaltyStart:Marks"sv, [] { return Condition::StartPercent(Condition::Kind::kWeapon) != 0 || Condition::StartPercent(Condition::Kind::kArmor) != 0; },
+			{ &Settings::fPenaltyMarkWidth, &Settings::bPenaltyMarkAsLine } },
 	};
 
 	// The hide a_id names, or nullptr.
@@ -128,13 +134,14 @@ namespace Mcm
 	void Owe(std::string_view a_section, std::string_view a_key, std::string_view a_before, std::string_view a_now, std::string_view a_default);
 
 	// What the game keeps worked out from a setting, done again on the engine's
-	// task queue after a change, in Mcm.cpp.
+	// task queue after a change, in FollowUps.cpp.
 	enum class FollowUp : std::size_t
 	{
 		kCards,        // the Pip-Boy's item cards
 		kResistances,  // every loaded actor's damage type resistances
 		kCarried,      // what the player carries, see SpawnCondition::KeepCarried
 		kFood,         // the food the player and companions carry, see FoodSpoil::StampCarried
+		kPerks,        // the perk descriptions the Pip-Boy keeps, see CraftingPerks::RetellPipboy
 		kTotal,
 	};
 

@@ -96,7 +96,7 @@ namespace Settings
 	inline Live<float> fBenchCostMult{ "Balance", "fBenchCostMult", 1.0F };
 
 	// What the last rank of a crafting perk takes off a workbench repair's
-	// components, a whole percent, 0 to 90, see CraftingPerks.h.
+	// components, a whole percent, 0 to 99, see CraftingPerks.h.
 	inline Live<std::int32_t> iPerkComponentDiscount{ "Balance", "iPerkComponentDiscount", 50 };
 
 	// What a spare is worth, against what vanilla scrapping gives it at 0.5,
@@ -237,4 +237,13 @@ namespace Settings
 	// Whether the CND word shows beside the Pickup CND bar. When off, only
 	// the bar shows, at the same place.
 	inline Live<bool> bPickupBarShowsWord{ "HUD", "bPickupBarShowsWord", true };
+
+	// How thick the CND bars on the Pip-Boy apparel figure are drawn.
+	inline Live<float> fPipboyBarThickness{ "HUD", "fPipboyBarThickness", 1.0F };
+
+	// How wide the mark where penalties start is on CND bars, 1 for its normal width.
+	inline Live<float> fPenaltyMarkWidth{ "HUD", "fPenaltyMarkWidth", 1.0F };
+
+	// Draws that mark as a plain line instead of 2 notches.
+	inline Live<bool> bPenaltyMarkAsLine{ "HUD", "bPenaltyMarkAsLine", false };
 }

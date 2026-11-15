@@ -42,8 +42,22 @@ namespace Text
 			{ "Extras", EXTRAS_TITLE },
 			{ "Food", FOOD_TITLE },
 			{ "Menus", MENUS_TITLE },
+			{ "PenaltyMark", PENALTY_MARK_TITLE },
 			{ "Log", LOG_TITLE },
 		};
+
+		// A crafting perk rank's discount sentence for 1 subject, alone and
+		// joined to the repair lock's line, see PerkRepairs.
+		struct DiscountKeys
+		{
+			Key alone;
+			Key from;
+			Key any;
+		};
+
+		constexpr DiscountKeys DISCOUNT_WEAPONS{ PERK_DISCOUNT_WEAPONS, PERK_DISCOUNT_WEAPONS_LOCK_FROM, PERK_DISCOUNT_WEAPONS_LOCK_ANY };
+		constexpr DiscountKeys DISCOUNT_ARMOR{ PERK_DISCOUNT_ARMOR, PERK_DISCOUNT_ARMOR_LOCK_FROM, PERK_DISCOUNT_ARMOR_LOCK_ANY };
+		constexpr DiscountKeys DISCOUNT_BOTH{ PERK_DISCOUNT_BOTH, PERK_DISCOUNT_BOTH_LOCK_FROM, PERK_DISCOUNT_BOTH_LOCK_ANY };
 
 		// The id of the first line of NEC's main page.
 		constexpr std::string_view VERSION = "version";
@@ -77,12 +91,15 @@ namespace Text
 		return a_out == Out::kLog ? InEnglish(a_key) : Pick(a_key);
 	}
 
-	std::string PerkDiscount(std::uint32_t a_percent, bool a_weapons, bool a_armor)
+	std::string PerkRepairs(std::uint32_t a_off, bool a_weapons, bool a_armor, std::optional<std::uint32_t> a_from)
 	{
+		if (a_off == 0) {
+			return !a_from ? std::string{} : *a_from > 0 ? Say(PERK_PAGE_LOCK_FROM, *a_from) : std::string{ Pick(PERK_PAGE_LOCK_ANY) };
+		}
 		// A perk pricing neither never gets a line, so the weapons wording it
 		// falls back to is never seen.
-		return Say(a_weapons && a_armor ? PERK_DISCOUNT_BOTH : a_armor ? PERK_DISCOUNT_ARMOR : PERK_DISCOUNT_WEAPONS,
-			a_percent);
+		const auto& keys = a_weapons && a_armor ? DISCOUNT_BOTH : a_armor ? DISCOUNT_ARMOR : DISCOUNT_WEAPONS;
+		return !a_from ? Say(keys.alone, a_off) : *a_from > 0 ? Say(keys.from, a_off, *a_from) : Say(keys.any, a_off);
 	}
 
 	std::string PerkScrapper()

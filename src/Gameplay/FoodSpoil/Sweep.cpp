@@ -186,7 +186,7 @@ namespace FoodSpoil
 			// Queued, since the game sends this while it works on its menus.
 			RE::BSEventNotifyControl ProcessEvent(const RE::MenuOpenCloseEvent& a_event, RE::BSTEventSource<RE::MenuOpenCloseEvent>*) override
 			{
-				if (!a_event.opening || !Settings::bFoodSpoils.GetValue()) {
+				if (!a_event.opening || !Settings::NecOn() || !Settings::bFoodSpoils.GetValue()) {
 					return RE::BSEventNotifyControl::kContinue;
 				}
 				Screen screen;
@@ -203,7 +203,7 @@ namespace FoodSpoil
 					tasks->AddTask([screen] {
 						const auto today = Today();
 						auto*      player = RE::PlayerCharacter::GetSingleton();
-						if (!today || !player || !Settings::bFoodSpoils.GetValue()) {
+						if (!today || !player || !Settings::NecOn() || !Settings::bFoodSpoils.GetValue()) {
 							return;
 						}
 						const auto written = Sweep(*player, *today);

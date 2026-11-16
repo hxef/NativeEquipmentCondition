@@ -53,8 +53,9 @@ namespace HudParts
 	// It is checked through F4SE's task queue and read from an atomic a frame
 	// later, and both readouts share it. F4SE runs the task on a worker thread
 	// during play, so the check holds the inventory lock while it reads. While
-	// both bars are switched off nothing is checked, and while one is, Percent
-	// says NONE to it, so it fades as for a weapon with no condition.
+	// both bars are switched off, or bNecOn is, nothing is checked. While 1
+	// bar is, Percent says NONE to it, so it fades as for a weapon with no
+	// condition.
 	namespace Weapon
 	{
 		// What Percent returns when nothing in hand wears out, which hides a
@@ -72,7 +73,7 @@ namespace HudParts
 		inline constexpr std::chrono::milliseconds READING_EVERY{ 300 };
 
 		// The condition of the weapon in hand as a whole percent, or NONE
-		// while a_on, the asking bar's switch, is off.
+		// while a_on, the asking bar's switch, or bNecOn is off.
 		[[nodiscard]] std::int32_t Percent(const Settings::Live<bool>& a_on);
 
 		// Whether the player has a weapon drawn. A melee weapon hides the ammo

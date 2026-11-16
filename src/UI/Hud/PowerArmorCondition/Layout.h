@@ -73,13 +73,15 @@ namespace PowerArmorCondition
 	// starts and how far it is turned.
 	struct Box
 	{
-		double x = 0.0;      // the bar's left end, halfway down it
+		double x = 0.0;           // the bar's left end, halfway down it
 		double y = 0.0;
-		double width = 0.0;  // how far the bar runs
-		double gap = 0.0;    // how far past the bar's right end the word starts
-		double room = 0.0;   // how far past the bar's right end the word may reach
-		double row = 0.0;    // one row of the dash, which the rest is sized by
-		double turn = 0.0;   // how far it is turned from level, clockwise, in radians
+		double width = 0.0;       // how far the bar runs
+		double gap = 0.0;         // how far past the bar's right end the word starts
+		double room = 0.0;        // how far past the bar's right end the word may reach
+		double gapBefore = 0.0;   // how far before the bar's left end a flipped bar's word ends
+		double roomBefore = 0.0;  // how far before the bar's left end that word may reach
+		double row = 0.0;         // one row of the dash, which the rest is sized by
+		double turn = 0.0;        // how far it is turned from level, clockwise, in radians
 
 		// A place so far along the bar from its left end and so far below its
 		// middle.
@@ -94,13 +96,14 @@ namespace PowerArmorCondition
 	// How the bar and its word came out, worked out at layout and wanted every
 	// frame. The readout's origin is the right end of the bar, which stays at
 	// the box's right end whatever the bar's length, so the bar grows and
-	// shrinks to the left of it.
+	// shrinks to the left of it. A flipped bar keeps the box's left end and
+	// grows to the right, with its word before that end.
 	struct Bar
 	{
 		double width = 0.0;  // how far back to the left the bar runs
 		double deep = 0.0;   // how deep it is
 		double size = 0.0;   // how big the word is
-		double reach = 0.0;  // how far past the bar's right end the word ends
+		double reach = 0.0;  // how far past the bar's right end the word ends, before its left end while flipped
 	};
 
 	[[nodiscard]] Box Place(const Frame& a_frame, const Anchor& a_anchor);
@@ -110,7 +113,7 @@ namespace PowerArmorCondition
 	[[nodiscard]] bool SameSize(const Box& a_box, const Box& a_other);
 
 	// Lays the bar out for a size of dash and the player's size of bar and
-	// returns how it came out. Called again only when either changes, since
-	// it measures text.
-	Bar Layout(Scaleform::GFx::Value& a_readout, const Box& a_box, const HudParts::Readout::Size& a_size);
+	// returns how it came out, its word before the bar while a_flipped.
+	// Called again only when one of the 3 changes, since it measures text.
+	Bar Layout(Scaleform::GFx::Value& a_readout, const Box& a_box, const HudParts::Readout::Size& a_size, bool a_flipped);
 }

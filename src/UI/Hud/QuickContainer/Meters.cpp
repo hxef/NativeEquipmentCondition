@@ -53,6 +53,7 @@ namespace QuickContainer
 	{
 		drawn.fill({});
 		tints.fill({});
+		saidFlipped = false;
 	}
 
 	// a_afterRedraw says the rows have just redrawn, which is when the
@@ -65,9 +66,9 @@ namespace QuickContainer
 			return;
 		}
 
-		// Switched off, a row NEC drew into goes back to how the game
-		// draws it, once, and every other row is left as it is.
-		if (!Settings::bQuickContainer.GetValue()) {
+		// Switched off, or with bNecOn off, a row NEC drew into goes back to
+		// how the game draws it, once, and every other row is left as it is.
+		if (!Settings::NecOn() || !Settings::bQuickContainer.GetValue()) {
 			for (std::size_t i = 0; i < MAX_ROWS; i++) {
 				auto row = Flash::Child(list, ROW_NAMES[i]);
 				if (a_afterRedraw || !Flash::Bool(row, "bIsDirty"sv)) {

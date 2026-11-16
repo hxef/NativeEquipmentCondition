@@ -133,9 +133,10 @@ namespace SpawnCondition
 		// Raises the mark the AddStack hook reads. The pickup is from the
 		// world unless it moves an item placed to spawn inside a container,
 		// see ScopedSpawnContainer. The other 2 count only with an old
-		// container, which they also keep for food spoiling whatever the
-		// switch says. The handed list is kept as a bare pointer for
-		// NoteBought, which only compares it.
+		// container, which they also keep for food spoiling whatever Worn
+		// loot and bNecOn say, so a fridge stamp turns back while off too.
+		// The handed list is kept as a bare pointer for NoteBought, which
+		// only compares it.
 		template <std::size_t I>
 		void HandoverHk(RE::TESObjectREFR* a_receiver, RE::TESBoundObject* a_object, RE::BSTSmartPointer<RE::ExtraDataList> a_extra,
 			std::uint32_t a_count, RE::TESObjectREFR* a_oldContainer, const RE::INSTANCE_FILTER* a_filter, RE::TESObjectREFR* a_worldRef)
@@ -148,7 +149,7 @@ namespace SpawnCondition
 			{
 				const Handing handing{ a_object, a_receiver, source, fromWorld, fromWorld && a_worldRef ? a_worldRef->GetParentCell() : nullptr };
 				const Scoped  mark{ t_handing, marks ? &handing : t_handing };
-				const Scoped  from{ t_source, source && g_handoverLinks[I].Live() ? &handing : t_source };
+				const Scoped  from{ t_source, source && g_handoverLinks[I].Holds() ? &handing : t_source };
 				g_handoverLinks[I](a_receiver, a_object, std::move(a_extra), a_count, a_oldContainer, a_filter, a_worldRef);
 			}
 			if (fromWorld && marks && a_receiver) {

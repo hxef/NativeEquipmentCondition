@@ -38,6 +38,8 @@ namespace PowerArmorCondition
 		const auto end = a_frame.Stage(a_anchor.end);
 		const auto word = a_frame.Stage(a_anchor.word);
 		const auto limit = a_frame.Stage(a_anchor.limit);
+		const auto before = a_frame.Stage(a_anchor.before);
+		const auto back = a_frame.Stage(a_anchor.back);
 		const auto first = a_frame.Stage(a_anchor.first);
 		const auto above = a_frame.Stage(a_anchor.above);
 
@@ -47,6 +49,8 @@ namespace PowerArmorCondition
 		box.width = std::hypot(end.x - start.x, end.y - start.y);
 		box.gap = std::hypot(word.x - end.x, word.y - end.y);
 		box.room = std::hypot(limit.x - end.x, limit.y - end.y);
+		box.gapBefore = std::hypot(start.x - before.x, start.y - before.y);
+		box.roomBefore = std::hypot(start.x - back.x, start.y - back.y);
 		box.row = std::hypot(first.x - above.x, first.y - above.y);
 		box.turn = std::atan2(end.y - start.y, end.x - start.x);
 		return box;
@@ -62,7 +66,7 @@ namespace PowerArmorCondition
 		       std::abs(a_box.row - a_other.row) < CLOSE_ENOUGH;
 	}
 
-	Bar Layout(Value& a_readout, const Box& a_box, const HudParts::Readout::Size& a_size)
+	Bar Layout(Value& a_readout, const Box& a_box, const HudParts::Readout::Size& a_size, bool a_flipped)
 	{
 		Bar bar;
 		bar.width = a_box.width * a_size.length;
@@ -71,16 +75,22 @@ namespace PowerArmorCondition
 		// The word is written at its largest, then again smaller when it runs
 		// past the room in the box. Its field is scaled to its size, so its
 		// width grows in step with it and 1 measure is enough, and a longer
-		// word such as COND comes out smaller.
-		HudParts::Readout::Label label{ .size = a_box.row * LABEL_SIZE, .gap = a_box.gap, .wide = LABEL_WIDE };
+		// word such as COND comes out smaller. A flipped bar's word is
+		// written past the end with the room before the bar, then mirrored.
+		const auto gap = a_flipped ? a_box.gapBefore : a_box.gap;
+		const auto room = a_flipped ? a_box.roomBefore : a_box.room;
+		HudParts::Readout::Label label{ .size = a_box.row * LABEL_SIZE, .gap = gap, .wide = LABEL_WIDE };
 		bar.reach = HudParts::Readout::SetLabel(a_readout, label);
-		if (bar.reach > a_box.room) {
-			label.size *= (a_box.room - a_box.gap) / (bar.reach - a_box.gap);
+		if (bar.reach > room) {
+			label.size *= (room - gap) / (bar.reach - gap);
 			bar.reach = HudParts::Readout::SetLabel(a_readout, label);
 		}
 		bar.size = label.size;
 
 		HudParts::Readout::SetTrack(a_readout, bar.width, bar.deep);
+		if (a_flipped) {
+			HudParts::Readout::MirrorLabel(a_readout, bar.width);
+		}
 		return bar;
 	}
 }

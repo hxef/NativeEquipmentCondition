@@ -32,6 +32,7 @@ namespace PaperDoll
 	// the last condition for a frame.
 	void Queue();
 
-	// The latest condition over a_region as a whole percent, or NONE.
+	// The latest condition over a_region as a whole percent, or NONE, which
+	// it always is while bNecOn is off.
 	[[nodiscard]] std::int32_t LowestPercent(std::size_t a_region);
 }

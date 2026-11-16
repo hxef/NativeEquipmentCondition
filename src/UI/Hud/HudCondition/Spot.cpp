@@ -1,9 +1,9 @@
 #include "UI/Hud/HudCondition/Spot.h"
 
 #include "Core/TraceLog/TraceLog.h"
+#include "UI/Hud/HudCondition/Boxes.h"
 
 #include <algorithm>
-#include <cmath>
 #include <format>
 #include <set>
 #include <span>
@@ -30,137 +30,19 @@ namespace HudCondition
 		// rounding never moves it into the bar.
 		constexpr double SIDE_LEEWAY = 0.01;
 
+		// A flipped word moves left from its mirror by at most 2 of its gaps
+		// from the bar, 1 to clear a number field that reaches into its
+		// letters and 1 to keep its gap. A field that asks more reaches far
+		// into the bar's row and covers the word, which then takes the
+		// nearest free spot beside the bar rather than sit apart from it.
+		constexpr double MOST_CLEAR_PER_GAP = 2.0;
+
 		// How long a choice holds before NEC.log says it. A HUD mod seen
 		// moved its parts for 0.3 seconds after the HUD loaded.
 		constexpr std::chrono::seconds SETTLE{ 1 };
 
 		// The keys NEC.log has said this game start.
 		std::set<std::string, std::less<>> g_told;
-
-		// What the HUD shows around the counter now, in the counter's units.
-		// inside holds the counter's other children but a backdrop, beside the
-		// parts next to the counter. word is where the word's letters sit from
-		// the bar's right end and line the same down to the bottom of their
-		// line, deep how deep the bar is, and frame the screen, or nothing
-		// while it cannot be told.
-		struct Around
-		{
-			Roles::Hud::DividerShape divider;
-			std::vector<Part>        numbers;
-			std::vector<Part>        inside;
-			std::vector<Part>        beside;
-			Box                      word;
-			Box                      line;
-			double                   deep = 0.0;
-			std::optional<Box>       frame;
-		};
-
-		// Why the bar does not fit on its divider, in the words NEC.log uses,
-		// and the same without its numbers.
-		struct Why
-		{
-			std::string said;
-			std::string kind;
-		};
-
-		// An origin to try for a box, and the side of what it stands beside,
-		// in the words NEC.log uses.
-		struct Try
-		{
-			double      x = 0.0;
-			double      y = 0.0;
-			const char* side = "";
-		};
-
-		// -------------------------------------------------------------------
-		// Boxes
-		// -------------------------------------------------------------------
-
-		[[nodiscard]] Box BarAt(double a_x, double a_y, double a_length, double a_deep)
-		{
-			return Box{ a_x - a_length, a_y - (a_deep / 2.0), a_x, a_y + (a_deep / 2.0) };
-		}
-
-		[[nodiscard]] double MiddleAcross(const Box& a_box)
-		{
-			return (a_box.left + a_box.right) / 2.0;
-		}
-
-		[[nodiscard]] double MiddleDown(const Box& a_box)
-		{
-			return (a_box.top + a_box.bottom) / 2.0;
-		}
-
-		// Whether a box is on screen. While the screen cannot be told every
-		// box is.
-		[[nodiscard]] bool OnScreen(const Around& a_around, const Box& a_box)
-		{
-			return !a_around.frame || a_around.frame->Holds(a_box);
-		}
-
-		// Whether the word's whole line, the box Filled holds, is on screen
-		// with the bar's right end at a_x, a_y.
-		[[nodiscard]] bool WordOnScreen(const Around& a_around, double a_x, double a_y)
-		{
-			return OnScreen(a_around, a_around.line.Moved(a_x, a_y));
-		}
-
-		// The word's letters down to the bottom of their line.
-		[[nodiscard]] Box WholeLine(const HudParts::Readout::LabelPlace& a_label)
-		{
-			return Box{ a_label.letters.left, a_label.letters.top, a_label.letters.right, a_label.letters.bottom + a_label.descent };
-		}
-
-		// The first shown part a box would cover, or null.
-		[[nodiscard]] const Part* Covered(const Box& a_box, std::span<const Part> a_parts)
-		{
-			const auto it = std::ranges::find_if(a_parts, [&](const Part& a_part) { return a_part.shown && a_part.box.Meets(a_box); });
-			return it != a_parts.end() ? &*it : nullptr;
-		}
-
-		// Whether the divider runs between the numbers, with the middle of
-		// one above its own and the middle of another below. Numbers shown
-		// or not count, so one that drops out for a moment moves nothing.
-		[[nodiscard]] bool Between(const Box& a_divider, std::span<const Part> a_numbers)
-		{
-			const auto line = MiddleDown(a_divider);
-			const auto above = std::ranges::any_of(a_numbers, [&](const Part& a_number) { return MiddleDown(a_number.box) < line; });
-			const auto below = std::ranges::any_of(a_numbers, [&](const Part& a_number) { return MiddleDown(a_number.box) > line; });
-			return above && below;
-		}
-
-		// Origins that put a_box, drawn from its own origin, beside a_anchor
-		// and a_gap away from it, nearest a_aim first. On each side the box
-		// lines up with a_aim, with the anchor's ends and middle, and with
-		// each part's edges a_gap away, and part of it stays level with the
-		// anchor.
-		[[nodiscard]] std::vector<Try> Tries(const Box& a_anchor, const Box& a_box, double a_gap, const Point& a_aim, std::span<const Part> a_parts)
-		{
-			std::vector<double> across{ a_aim.x, a_anchor.right - a_box.right, MiddleAcross(a_anchor) - MiddleAcross(a_box), a_anchor.left - a_box.left };
-			std::vector<double> down{ a_aim.y, MiddleDown(a_anchor) - MiddleDown(a_box), a_anchor.bottom - a_box.bottom, a_anchor.top - a_box.top };
-			for (const auto& part : a_parts) {
-				across.insert(across.end(), { part.box.left - a_gap - a_box.right, part.box.right + a_gap - a_box.left });
-				down.insert(down.end(), { part.box.top - a_gap - a_box.bottom, part.box.bottom + a_gap - a_box.top });
-			}
-
-			std::vector<Try> tries;
-			for (const auto& [y, side] : { std::pair{ a_anchor.bottom + a_gap - a_box.top, "below" }, std::pair{ a_anchor.top - a_gap - a_box.bottom, "above" } }) {
-				for (const auto x : across) {
-					if (a_box.left + x < a_anchor.right && a_anchor.left < a_box.right + x) {
-						tries.push_back(Try{ x, y, side });
-					}
-				}
-			}
-			for (const auto& [x, side] : { std::pair{ a_anchor.left - a_gap - a_box.right, "left of" }, std::pair{ a_anchor.right + a_gap - a_box.left, "right of" } }) {
-				for (const auto y : down) {
-					if (a_box.top + y < a_anchor.bottom && a_anchor.top < a_box.bottom + y) {
-						tries.push_back(Try{ x, y, side });
-					}
-				}
-			}
-			std::ranges::stable_sort(tries, {}, [&](const Try& a_try) { return std::hypot(a_try.x - a_aim.x, a_try.y - a_aim.y); });
-			return tries;
-		}
 
 		// -------------------------------------------------------------------
 		// On the divider
@@ -193,42 +75,83 @@ namespace HudCondition
 			return std::nullopt;
 		}
 
+		// How much further left a flipped word whose letters sit at a_word
+		// moves to keep a_gap from every shown number right of it in its
+		// rows, the gap it keeps from the bar, and the number that asks the
+		// most. 0 and null when none comes that close.
+		struct Clearing
+		{
+			double      by = 0.0;
+			const Part* from = nullptr;
+		};
+
+		[[nodiscard]] Clearing Clear(const Box& a_word, double a_gap, std::span<const Part> a_numbers)
+		{
+			Clearing clearing;
+			for (const auto& number : a_numbers) {
+				const auto& box = number.box;
+				const auto  rows = box.top < a_word.bottom && a_word.top < box.bottom;
+				const auto  by = a_word.right + a_gap - box.left;
+				if (number.shown && rows && box.right > a_word.right && by > clearing.by) {
+					clearing = { by, &number };
+				}
+			}
+			return clearing;
+		}
+
 		// a_own, then a_word after a_and, or a_word alone when a_own is empty.
 		[[nodiscard]] std::string Joined(const std::string& a_own, std::string_view a_and, const std::string& a_word)
 		{
 			return a_own.empty() ? a_word : std::format("{:s}{:s}{:s}", a_own, a_and, a_word);
 		}
 
-		// The bar at a_line, on the divider's place, and its word past its
-		// end, else in the nearest free spot beside the bar, a gap as wide as
-		// the one past the end away. With none free the word stays past the
-		// end. a_said and a_key say why the bar sits there, empty for a bar
-		// that fits.
+		// The bar at a_line, on the divider's place, and its word at its own
+		// place, else in the nearest free spot beside the bar, a gap as wide
+		// as the one past the end away. With none free the word stays at its
+		// own place. a_said and a_key say why the bar sits there, empty for a
+		// bar that fits. A flipped key ends in flipped, so NEC.log says the
+		// flipped wording once too. A flipped word's own place is as far left
+		// as Clear asks, so it never crowds the numbers it sits beside, up to
+		// MOST_CLEAR_PER_GAP. Past that, the number covers the word at its
+		// mirror. Clear is worked out unflipped too, for Turned.
 		[[nodiscard]] Choice WithWord(const Around& a_around, const Roles::Hud::Line& a_line, std::span<const Part> a_keepOff, const std::string& a_said,
 			const std::string& a_key)
 		{
-			Spot        spot{ a_line, a_around.deep, true };
-			const auto  word = a_around.word.Moved(a_line.x, a_line.y);
-			const auto* over = Covered(word, a_keepOff);
-			const auto  shown = WordOnScreen(a_around, a_line.x, a_line.y);
+			const auto  mirror = Home(true, a_line.width, a_around.word);
+			const auto  gap = std::max(a_around.word.left, 0.0);
+			const auto  clear = Clear(a_around.word.Moved(a_line.x + mirror, a_line.y), gap, a_around.numbers);
+			const auto  fits = clear.by <= MOST_CLEAR_PER_GAP * gap;
+			const auto  cleared = fits ? clear.by : 0.0;
+			const auto  home = a_around.flipped ? mirror - cleared : 0.0;
+			const Spot  own{ a_line, a_around.deep, true, home, 0.0, a_around.flipped, cleared };
+			const auto  word = a_around.word.Moved(a_line.x + home, a_line.y);
+			const auto* over = a_around.flipped && !fits ? clear.from : Covered(word, a_keepOff);
+			const auto  shown = WordOnScreen(a_around, a_line.x + home, a_line.y);
+			if (shown && !over && a_around.flipped && cleared > 0.0) {
+				return Choice{ own, Joined(a_said, ", and its "sv, std::format("word sits {:.1f} further left, to keep its gap from {:s}", clear.by, clear.from->name)),
+					Joined(a_key, ", "sv, "word further left of " + clear.from->name + ", flipped") };
+			}
 			if (shown && !over) {
-				return Choice{ spot, a_said, a_key };
+				return Choice{ own, a_said, a_key };
 			}
 
 			const auto reason = shown ? "cover " + over->name : std::string{ "run off screen" };
-			const auto kind = shown ? "covers " + over->name : std::string{ "off screen" };
+			const auto kind = std::format("{:s}{:s}", shown ? "covers " + over->name : std::string{ "off screen" }, a_around.flipped ? ", flipped" : "");
+			const auto from = a_around.flipped ? "before the bar's start"sv : "past the bar's end"sv;
 			const auto bar = BarAt(a_line.x, a_line.y, a_line.width, a_around.deep);
-			for (const auto& at : Tries(bar, a_around.word, std::max(a_around.word.left, 0.0), Point{ a_line.x, a_line.y }, a_keepOff)) {
+			for (const auto& at : Tries(bar, a_around.word, std::max(a_around.word.left, 0.0), Point{ a_line.x + home, a_line.y }, a_keepOff)) {
 				const auto moved = a_around.word.Moved(at.x, at.y);
 				if (WordOnScreen(a_around, at.x, at.y) && !Covered(moved, a_keepOff)) {
+					auto spot = own;
 					spot.wordX = at.x - a_line.x;
 					spot.wordY = at.y - a_line.y;
-					return Choice{ spot, Joined(a_said, ", and its "sv, std::format("word sits {:s} its bar, since past the bar's end it would {:s}", at.side, reason)),
+					return Choice{ spot, Joined(a_said, ", and its "sv, std::format("word sits {:s} its bar, since {:s} it would {:s}", at.side, from, reason)),
 						Joined(a_key, ", "sv, std::format("word {:s}, {:s}", at.side, kind)) };
 				}
 			}
-			return Choice{ spot,
-				Joined(a_said, ", and its "sv, std::format("word stays past its bar {:s}, since no spot beside the bar is free", shown ? "over " + over->name : "partly off screen")),
+			return Choice{ own,
+				Joined(a_said, ", and its "sv,
+					std::format("word stays {:s} its bar {:s}, since no spot beside the bar is free", a_around.flipped ? "before" : "past", shown ? "over " + over->name : "partly off screen")),
 				Joined(a_key, ", "sv, "word stays, " + kind) };
 		}
 
@@ -236,14 +159,16 @@ namespace HudCondition
 		// Off the divider
 		// -------------------------------------------------------------------
 
-		// The nearest free spot for the bar with its word past its end, or
-		// nothing. The bar keeps the divider's length, or 4 times its depth if
-		// that is longer, and its distance is from its middle to the
+		// The nearest free spot for the bar with its word at its own place,
+		// or nothing. The bar keeps the divider's length, or 4 times its
+		// depth if that is longer, and its distance is from its middle to the
 		// divider's.
 		[[nodiscard]] std::optional<Choice> Nearest(const Around& a_around, const Why& a_why, std::span<const Part> a_others)
 		{
 			const auto  length = std::max(a_around.divider.length, MIN_LENGTH_PER_DEEP * a_around.deep);
 			const auto& divider = a_around.divider.box;
+			const auto  home = Home(a_around.flipped, length, a_around.word);
+			const auto  word = a_around.word.Moved(home, 0.0);
 
 			// What the counter draws: its divider, its shown numbers and its
 			// other children.
@@ -267,13 +192,13 @@ namespace HudCondition
 			const auto         bar = BarAt(0.0, 0.0, length, a_around.deep);
 			const Point        aim{ MiddleAcross(divider) + (length / 2.0), MiddleDown(divider) };
 			std::optional<Try> best;
-			for (const auto& at : Tries(drawn, bar.With(a_around.word), a_around.deep, aim, keepOff)) {
+			for (const auto& at : Tries(drawn, bar.With(word), a_around.deep, aim, keepOff)) {
 				const auto movedBar = bar.Moved(at.x, at.y);
-				const auto movedWord = a_around.word.Moved(at.x, at.y);
+				const auto movedWord = word.Moved(at.x, at.y);
 				if (!OnScreen(a_around, movedBar) || !OnScreen(a_around, movedWord) || Covered(movedBar, keepOff) || Covered(movedWord, keepOff)) {
 					continue;
 				}
-				if (WordOnScreen(a_around, at.x, at.y)) {
+				if (WordOnScreen(a_around, at.x + home, at.y)) {
 					best = at;
 					break;
 				}
@@ -284,7 +209,7 @@ namespace HudCondition
 			if (!best) {
 				return std::nullopt;
 			}
-			return Choice{ Spot{ Roles::Hud::Line{ best->x, best->y, length }, a_around.deep, false },
+			return Choice{ Spot{ Roles::Hud::Line{ best->x, best->y, length }, a_around.deep, false, home, 0.0, a_around.flipped },
 				std::format("bar sits {:s} the ammo counter, since {:s}", best->side, a_why.said), std::format("bar {:s}, {:s}", best->side, a_why.kind) };
 		}
 
@@ -298,6 +223,26 @@ namespace HudCondition
 			return WithWord(a_around, line, a_keepOff, std::format("bar keeps the ammo divider's place, since {:s} and no spot by the ammo counter is free", a_why.said),
 				"divider, " + a_why.kind);
 		}
+	}
+
+	double Home(bool a_flipped, double a_length, const Box& a_letters)
+	{
+		return a_flipped ? -a_length - a_letters.left - a_letters.right : 0.0;
+	}
+
+	Spot Turned(const Spot& a_spot, bool a_flipped, const Box& a_letters)
+	{
+		auto turned = a_spot;
+		if (a_spot.flipped == a_flipped) {
+			return turned;
+		}
+		turned.flipped = a_flipped;
+		const auto width = a_spot.line.width;
+		const auto own = a_spot.wordY == 0.0 && (a_spot.flipped ? a_spot.wordX <= Home(true, width, a_letters) : a_spot.wordX == 0.0);
+		if (own) {
+			turned.wordX = Home(a_flipped, width, a_letters) - (a_flipped ? a_spot.clear : 0.0);
+		}
+		return turned;
 	}
 
 	HudParts::Readout::LabelPlace Label(Roles::Value& a_readout, bool a_first, const Flash::Point& a_moved)
@@ -318,7 +263,7 @@ namespace HudCondition
 	}
 
 	std::optional<Choice> Choose(Scaleform::GFx::Movie& a_movie, Roles::Value& a_counter, const Roles::Value& a_readout,
-		std::optional<bool> a_ownVisible, const HudParts::Readout::LabelPlace& a_label)
+		std::optional<bool> a_ownVisible, const HudParts::Readout::LabelPlace& a_label, bool a_flipped)
 	{
 		const auto shape = Roles::Hud::Divider(a_movie, a_counter, a_ownVisible);
 		if (!shape) {
@@ -336,7 +281,7 @@ namespace HudCondition
 			return !numbers.empty() && std::ranges::all_of(numbers, [&](const Part& a_number) { return a_part.box.Holds(a_number.box); });
 		});
 		const Around around{ *shape, std::move(numbers), std::move(inside), Roles::Hud::Beside(a_counter, a_readout, frame), a_label.letters, WholeLine(a_label),
-			DEEP_PER_THICK * shape->thick, frame };
+			DEEP_PER_THICK * shape->thick, frame, a_flipped };
 
 		std::vector<Part> others{ around.inside };
 		others.insert(others.end(), around.beside.begin(), around.beside.end());
@@ -367,12 +312,26 @@ namespace HudCondition
 		const auto own = BarAt(0.0, 0.0, a_spot.line.width, a_spot.deep);
 		const auto grown = BarAt(0.0, 0.0, sized.line.width, sized.deep);
 		const auto word = a_label.letters.Moved(a_spot.wordX, a_spot.wordY);
-		if (word.top >= own.bottom - SIDE_LEEWAY) {
+		const auto below = word.top >= own.bottom - SIDE_LEEWAY;
+		const auto above = !below && word.bottom <= own.top + SIDE_LEEWAY;
+		if (below) {
 			sized.wordY += grown.bottom - own.bottom;
-		} else if (word.bottom <= own.top + SIDE_LEEWAY) {
+		} else if (above) {
 			sized.wordY += grown.top - own.top;
 		} else if (word.right <= own.left + SIDE_LEEWAY) {
 			sized.wordX += grown.left - own.left;
+		}
+
+		// A flipped bar's right end, the readout's origin, moves by what the
+		// bar grew. A word above or below is moved back by as much, and a
+		// word left of the bar already is, so only a word right of the bar
+		// moves with that end.
+		if (a_spot.flipped) {
+			const auto grownBy = sized.line.width - a_spot.line.width;
+			sized.line.x += grownBy;
+			if (below || above) {
+				sized.wordX -= grownBy;
+			}
 		}
 		return sized;
 	}

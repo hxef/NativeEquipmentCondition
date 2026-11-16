@@ -3,6 +3,7 @@
 #include "Condition/Repair.h"
 #include "Core/CallPatch/CallPatch.h"
 #include "Core/ItemCards.h"
+#include "Core/Settings.h"
 #include "Core/Text/Text.h"
 #include "Core/TraceLog/TraceLog.h"
 #include "UI/Repair/VendorRepair/Button.h"
@@ -131,6 +132,14 @@ namespace VendorRepair
 		// Refresh puts in place.
 		void UpdateListHk(RE::BarterMenu* a_menu, bool a_inContainer)
 		{
+			// A screen built on the last one's movie can still show REPAIR and
+			// the sign, so while bNecOn is off both are taken out.
+			if (!Settings::NecOn() && g_listLink.Holds() && g_messagesLink.Holds()) {
+				_UpdateList(a_menu, a_inContainer);
+				Sign::Draw(a_menu);
+				Refresh(a_menu);
+				return;
+			}
 			if (!g_listLink.Runs() || !g_messagesLink.Live()) {
 				_UpdateList(a_menu, a_inContainer);
 				return;

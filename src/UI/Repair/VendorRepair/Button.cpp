@@ -110,7 +110,7 @@ namespace VendorRepair
 
 		[[nodiscard]] Stand StandOf(RE::BarterMenu* a_menu, const Selection& a_selection, std::uint32_t a_ceiling)
 		{
-			if (!Settings::bVendorRepair.GetValue() || g_asking || !a_menu || BoxOpen() || !Shown(a_selection, a_ceiling)) {
+			if (!Settings::NecOn() || !Settings::bVendorRepair.GetValue() || g_asking || !a_menu || BoxOpen() || !Shown(a_selection, a_ceiling)) {
 				return Stand::kOff;
 			}
 			if (a_selection.percent >= a_ceiling) {
@@ -275,9 +275,9 @@ namespace VendorRepair
 
 	void Refresh(RE::BarterMenu* a_menu)
 	{
-		// Switched off, the screen shows no REPAIR. A screen built on the last
-		// one's movie still has the button, so it is hidden, and none is wired.
-		if (!Settings::bVendorRepair.GetValue()) {
+		// With bVendorRepair or bNecOn off there is no REPAIR. A screen built on
+		// the last one's movie keeps the button, so it is hidden and not wired.
+		if (!Settings::NecOn() || !Settings::bVendorRepair.GetValue()) {
 			if (auto hint = Hint(a_menu); hint.IsObject()) {
 				hint.SetMember("ButtonVisible"sv, Value(false));
 			}

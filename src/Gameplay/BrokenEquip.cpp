@@ -85,13 +85,13 @@ namespace BrokenEquip
 		}
 
 		// Marks the item being put back for CanEquipHk while the toggle runs.
-		// Marked whether the pair runs or not: CanEquipHk reads the mark only
-		// while the pair runs, and a pair that waits can run again inside the
-		// toggle.
+		// Marked whether the pair runs or not, and whatever bNecOn says:
+		// CanEquipHk reads the mark only while the pair runs, and a pair that
+		// waits can run again inside the toggle.
 		bool PutBackHk(RE::ActorEquipManager* a_manager, RE::Actor* a_actor, const std::uint32_t& a_handleID, std::uint32_t a_stackID,
 			const RE::BGSEquipSlot* a_slot, bool a_allowUnequip, bool a_locked)
 		{
-			if (!g_putBackLink.Live()) {
+			if (!g_putBackLink.Holds()) {
 				return g_putBackLink(a_manager, a_actor, a_handleID, a_stackID, a_slot, a_allowUnequip, a_locked);
 			}
 			const auto outer = std::exchange(t_puttingBack, a_handleID);

@@ -101,6 +101,7 @@ namespace Settings
 
 		// Every switch in NEC.ini's order, for a lookup by id.
 		Live<bool>* const EVERY_SWITCH[]{
+			&bNecOn,
 			&bPlainApparelNeverWears,
 			&bSpawnCondition,
 			&bVendorRepair,
@@ -125,13 +126,14 @@ namespace Settings
 			&bPowerArmorBarShowsWord,
 			&bPickupBar,
 			&bPickupBarShowsWord,
+			&bCndBarsFlipped,
 			&bPenaltyMarkAsLine,
 			&bTraceLogs,
 		};
 
 		// The switches SWITCHES leaves out, each after the setting NEC.ini has
-		// it after, for the Settings line. bPlainApparelNeverWears comes first
-		// in [Features], so ReportLine says it before the list.
+		// it after, for the Settings line. bNecOn and bPlainApparelNeverWears
+		// come first in [Features], so ReportLine says them before the list.
 		Live<bool>* const AFTER_VENDOR_REPAIR[]{ &bTraderSign, &bSpareRepair, &bLockSpares, &bRepairBoxColumns, &bRepairBoxGains };
 		Live<bool>* const AFTER_HUD_CONDITION[]{ &bPowerArmorBar };
 		Live<bool>* const AFTER_QUICK_CONTAINER[]{ &bCardWearRate, &bPowerArmorCardCnd };
@@ -139,6 +141,7 @@ namespace Settings
 		Live<bool>* const AFTER_HUD_BAR[]{ &bHudBarHidesWithCounter, &bHudBarStandsAlone, &bHudBarShowsWord };
 		Live<bool>* const AFTER_POWER_ARMOR_BAR[]{ &bPowerArmorBarShowsWord, &bPickupBar };
 		Live<bool>* const AFTER_PICKUP_BAR[]{ &bPickupBarShowsWord };
+		Live<bool>* const AFTER_PIPBOY_BAR[]{ &bCndBarsFlipped };
 		Live<bool>* const AFTER_PENALTY_MARK[]{ &bPenaltyMarkAsLine };
 
 		// The numbers under [Features], which the Settings line puts after the
@@ -175,6 +178,9 @@ namespace Settings
 			}
 			if (&a_setting == &fPickupBarThickness) {
 				return AFTER_PICKUP_BAR;
+			}
+			if (&a_setting == &fPipboyBarThickness) {
+				return AFTER_PIPBOY_BAR;
 			}
 			if (&a_setting == &fPenaltyMarkWidth) {
 				return AFTER_PENALTY_MARK;
@@ -285,7 +291,7 @@ namespace Settings
 	{
 		// Every key as it stands now, before any limit, in NEC.ini's order and
 		// spelling.
-		std::string line = std::format("Settings: [Features] {:s}={:s}", bPlainApparelNeverWears.key, Shown(bPlainApparelNeverWears));
+		std::string line = std::format("Settings: [Features] {:s}={:s} {:s}={:s}", bNecOn.key, Shown(bNecOn), bPlainApparelNeverWears.key, Shown(bPlainApparelNeverWears));
 		const auto say = [&](const auto& a_number) {
 			std::format_to(std::back_inserter(line), " {:s}={:s}{:s}", a_number.key, Shown(a_number.GetValue()), Mark(a_number));
 		};

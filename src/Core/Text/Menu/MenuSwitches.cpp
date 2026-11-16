@@ -3,15 +3,16 @@
 #include "Core/Settings.h"
 
 // The help lines of the switches on the MCM page, the names and help of the
-// plain apparel, 2 CND bar, spare repair, repair columns, repair gains, trader
-// sign, card wear rate, power armor CND, fridge icon and bug report logs
-// switches, and of the unscrappable spares, repair box and repair lock
-// steppers, see MenuLine in Text.h.
+// All NEC features, plain apparel, 2 CND bar, spare repair, repair columns,
+// repair gains, trader sign, card wear rate, power armor CND, fridge icon and
+// bug report logs switches, and of the unscrappable spares, repair box and
+// repair lock steppers, see MenuLine in Text.h.
 namespace Text
 {
 	namespace
 	{
 		constexpr MenuRow ROWS[]{
+			{ &Settings::bNecOn, NEC_ON_NAME, NEC_ON_HELP },
 			{ &Settings::bPlainApparelNeverWears, PLAIN_APPAREL_NAME, PLAIN_APPAREL_HELP },
 			{ &Settings::bSpawnCondition, {}, SPAWN_CONDITION_HELP },
 			{ &Settings::bVendorRepair, {}, VENDOR_REPAIR_HELP },

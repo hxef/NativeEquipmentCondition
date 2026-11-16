@@ -291,12 +291,19 @@ namespace HudCondition
 		if (!kept) {
 			return std::nullopt;
 		}
+		// The HUD makes no new measure while MCM is open, so a new size or a
+		// flip on the page is worked out here, the flip as Turned turns the
+		// bar. The staging is the readout's as placed, its origin the bar's
+		// right end then, so the box moves by how far that end moved since.
 		const auto size = SizeNow();
-		if (size == kept->size || !kept->staging) {
+		const auto flipped = Settings::bCndBarsFlipped.GetValue();
+		if ((size == kept->size && flipped == kept->spot.flipped) || !kept->staging) {
 			return kept->measure;
 		}
 		const auto& label = kept->label;
-		const auto  box = kept->staging->Holding(Filled(Sized(kept->spot, size, label), label));
+		const auto  was = Sized(kept->spot, kept->size, label);
+		const auto  now = Sized(Turned(kept->spot, flipped, label.letters), size, label);
+		const auto  box = kept->staging->Holding(Filled(now, label).Moved(now.line.x - was.line.x, now.line.y - was.line.y));
 		if (!kept->alone) {
 			return Measure{ box, kept->measure.frame };
 		}

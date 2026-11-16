@@ -45,6 +45,11 @@ namespace Mcm
 		};
 
 		constexpr Owes OWES[]{
+			// bNecOn changes every card, resistance and perk line NEC adds.
+			{ &Settings::bNecOn, FollowUp::kCards },
+			{ &Settings::bNecOn, FollowUp::kResistances },
+			{ &Settings::bNecOn, FollowUp::kPerks },
+			{ &Settings::bNecOn, FollowUp::kFoodCards },
 			{ &Settings::bPlainApparelNeverWears, FollowUp::kCards },
 			{ &Settings::fDamageFloor, FollowUp::kCards },
 			{ &Settings::fWeaponPenaltyStart, FollowUp::kCards },
@@ -195,6 +200,16 @@ namespace Mcm
 			// Food carried while food spoiling was off starts fresh now.
 			if (on == &Settings::bFoodSpoils && value) {
 				Queue(FollowUp::kFood);
+			}
+			// bNecOn back on does what Worn loot and food spoiling each do as
+			// they turn on.
+			if (on == &Settings::bNecOn && value) {
+				if (Settings::bSpawnCondition.GetValue()) {
+					Queue(FollowUp::kCarried);
+				}
+				if (Settings::bFoodSpoils.GetValue()) {
+					Queue(FollowUp::kFood);
+				}
 			}
 		}
 		Answer(a_params, true);

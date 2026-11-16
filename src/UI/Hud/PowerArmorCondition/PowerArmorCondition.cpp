@@ -74,7 +74,7 @@ namespace PowerArmorCondition
 					lastReading = now;
 					HudParts::Weapon::Queue();
 				}
-				QueueAnchor();
+				QueueAnchor(Settings::bCndBarsFlipped.GetValue());
 
 				const auto anchor = CurrentAnchor();
 				const auto measured = anchor.miss == Miss::kNone;
@@ -92,28 +92,34 @@ namespace PowerArmorCondition
 
 				// Laying out again means measuring text, so it waits for the
 				// dash to be drawn at a different size, or for the player to
-				// size the bar. Moving and turning is 3 numbers, every frame.
+				// size or flip the bar. Moving and turning is 3 numbers, every
+				// frame.
 				const auto size = HudParts::Readout::SizeFrom(Settings::fPowerArmorBarLength, Settings::fPowerArmorBarThickness);
-				if (measured && (!SameSize(box, laidOutFor) || size != laidOutSize)) {
-					bar = Layout(readout, box, size);
+				// The flip the dash was measured for, so a flipped bar never
+				// lays out from a dash measured without the places left of it.
+				const auto flipped = anchor.flipped;
+				if (measured && (!SameSize(box, laidOutFor) || size != laidOutSize || flipped != laidOutFlipped)) {
+					bar = Layout(readout, box, size, flipped);
 					laidOutFor = box;
 					if (size != laidOutSize) {
 						TraceLog::Line("menu", "Power armor CND bar sized to {:g} times its length and {:g} times its thickness", size.length, size.thickness);
 					}
 					laidOutSize = size;
+					laidOutFlipped = flipped;
 					shownPercent = NOT_DRAWN;
 					shownMark = HudParts::Readout::Mark{};
-					TraceLog::Line("menu", "Power armor CND bar is {:.0f} across and {:.1f} deep, its word at size {:.1f} and ending {:.1f} past it of the {:.1f} the box leaves, a row of the dash being {:.1f}, turned {:.2f} degrees from level",
-						bar.width, bar.deep, bar.size, bar.reach, box.room, box.row, box.turn * DEGREES);
+					TraceLog::Line("menu", "Power armor CND bar is {:.0f} across and {:.1f} deep, its word at size {:.1f} and ending {:.1f} {:s} it of the {:.1f} the box leaves, a row of the dash being {:.1f}, turned {:.2f} degrees from level",
+						bar.width, bar.deep, bar.size, bar.reach, flipped ? "before" : "past", flipped ? box.roomBefore : box.room, box.row, box.turn * DEGREES);
 				}
 
 				// Everything has to hold: the dash on screen and measured, a
 				// weapon that wears, and room in the movie for all 4 corners
 				// around the bar and its word, from the bar's left end to the
 				// word's end and as deep as the deeper of the 2. A readout that
-				// would go past the edge is not drawn.
-				const auto from = box.width - bar.width;
-				const auto to = box.width + bar.reach;
+				// would go past the edge is not drawn. A flipped bar starts at
+				// the box's left end with its word before it.
+				const auto from = laidOutFlipped ? -bar.reach : box.width - bar.width;
+				const auto to = laidOutFlipped ? bar.width : box.width + bar.reach;
 				const auto half = std::max(bar.size, bar.deep) / 2.0;
 				const auto fits = measured &&
 				                  frame.Holds(box.At(from, -half)) &&
@@ -125,8 +131,9 @@ namespace PowerArmorCondition
 				if (fits) {
 					// The readout's origin is the right end of its bar, which
 					// stays at the box's right end whatever the bar's length,
-					// turned the way the bar runs.
-					const auto origin = box.At(box.width, 0.0);
+					// turned the way the bar runs. A flipped bar keeps the
+					// box's left end, so its word stays inside the printed box.
+					const auto origin = box.At(laidOutFlipped ? bar.width : box.width, 0.0);
 					readout.SetMember("x"sv, Value(origin.x));
 					readout.SetMember("y"sv, Value(origin.y));
 					readout.SetMember("rotation"sv, Value(box.turn * DEGREES));
@@ -165,7 +172,9 @@ namespace PowerArmorCondition
 				const auto deep = laidOutFor.row * BAR_DEEP;
 				const auto mark = deep > 0.0 ? HudParts::Readout::PenaltyMark(Condition::Kind::kWeapon, deep, deep / 2.0) : HudParts::Readout::Mark{};
 				if (wanted && (percent != shownPercent || mark != shownMark)) {
-					HudParts::Readout::SetPercent(readout, bar.width, bar.deep, percent, HudParts::Readout::Still::kRightEnd, mark);
+					const auto still = HudParts::Readout::StillEnd(HudParts::Readout::Still::kRightEnd, laidOutFlipped);
+					HudParts::Readout::SetPercent(readout, bar.width, bar.deep, percent, still, mark);
+					HudParts::Readout::TellFlipped(laidOutFlipped, saidFlipped, "Power armor CND bar"sv);
 					if (percent != shownPercent) {
 						TraceLog::Line("menu", "Power armor CND bar drawn at {:d}%", percent);
 					}
@@ -206,6 +215,8 @@ namespace PowerArmorCondition
 				fade = 0.0;
 				laidOutFor = Box{};
 				laidOutSize = HudParts::Readout::Size{};
+				laidOutFlipped = false;
+				saidFlipped = false;
 				bar = Bar{};
 				wordShown.reset();
 				colored = false;
@@ -222,6 +233,12 @@ namespace PowerArmorCondition
 			Box                              laidOutFor;
 			HudParts::Readout::Size          laidOutSize;
 			Bar                              bar;
+
+			// Whether the bar was last laid out flipped, and whether the
+			// trace last said it is drawn flipped, see TellFlipped.
+			bool laidOutFlipped = false;
+			bool saidFlipped = false;
+
 			std::optional<bool>              wordShown;
 			bool                             colored = false;
 			bool                             saidOffScreen = false;
@@ -295,7 +312,7 @@ namespace PowerArmorCondition
 			}
 
 			HudParts::Weapon::Queue();
-			QueueAnchor();
+			QueueAnchor(Settings::bCndBarsFlipped.GetValue());
 			TraceLog::Line("menu", "HUDMenu.swf loaded, power armor CND will follow the dash's ammo box");
 		}
 

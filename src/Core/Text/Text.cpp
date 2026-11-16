@@ -31,7 +31,6 @@ namespace Text
 			{ "Wear", WEAR_TITLE },
 			{ "Penalties", PENALTIES_TITLE },
 			{ "Jams", JAMS_TITLE },
-			{ "Loot", LOOT_TITLE },
 			{ "BenchRepairs", BENCH_REPAIRS_TITLE },
 			{ "Maintenance", MAINTENANCE_TITLE },
 			{ "SpareRepairs", SPARE_REPAIRS_TITLE },
@@ -42,6 +41,7 @@ namespace Text
 			{ "Extras", EXTRAS_TITLE },
 			{ "Food", FOOD_TITLE },
 			{ "Menus", MENUS_TITLE },
+			{ "CndBars", CND_BARS_TITLE },
 			{ "PenaltyMark", PENALTY_MARK_TITLE },
 			{ "Log", LOG_TITLE },
 		};

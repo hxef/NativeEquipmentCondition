@@ -34,13 +34,13 @@ namespace FoodSpoil
 			// does.
 			RE::BSEventNotifyControl ProcessEvent(const RE::TESDeathEvent& a_event, RE::BSTEventSource<RE::TESDeathEvent>*) override
 			{
-				if (!a_event.actorDying || !Settings::bFoodSpoils.GetValue()) {
+				if (!a_event.actorDying || !Settings::NecOn() || !Settings::bFoodSpoils.GetValue()) {
 					return RE::BSEventNotifyControl::kContinue;
 				}
 				if (const auto* tasks = F4SE::GetTaskInterface()) {
 					tasks->AddTask([body = a_event.actorDying, dead = a_event.dead] {
 						const auto today = Today();
-						if (!today || !Settings::bFoodSpoils.GetValue()) {
+						if (!today || !Settings::NecOn() || !Settings::bFoodSpoils.GetValue()) {
 							return;
 						}
 						const auto stamped = body->IsDead(true) ? StampHeld(*body, *today, true) : 0u;

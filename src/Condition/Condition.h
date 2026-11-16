@@ -148,7 +148,8 @@ namespace Condition
 	// player's item in the Pip-Boy again after every write, even one that
 	// changes nothing, so a wear asks this before it picks a stack and picks
 	// none for a no. The trace line then says so, naming a_object and a_source
-	// as Decrease does. Runs under the inventory lock.
+	// as Decrease does. Always a no, with no line, while bNecOn is off, so
+	// nothing wears. Runs under the inventory lock.
 	bool Lowers(float a_health, const RE::TESBoundObject& a_object, float a_amount, const char* a_source, bool a_theirs);
 
 	// Takes a_amount off the health in a_extra, kept between MIN_HEALTH and

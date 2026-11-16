@@ -21,19 +21,25 @@ namespace CallPatch
 		explicit operator bool() const { return _next != 0; }
 
 		// Marks that this place's hook ran, for a set waiting on it, see
-		// Held::Runs and Runs. Only ever asked on a hook's cold path.
+		// Held::Runs and Runs. Asked on a hook's cold path, and on every call
+		// while bNecOn is off, where it costs 1 relaxed atomic load.
 		void Proved() const;
 
-		// Whether this place's set runs, 1 relaxed atomic load. A recheck
-		// that cuts the place makes it false for good. A hook of a place that
-		// stands alone asks it on every call and changes nothing while it is
-		// false, as a hook of a Together asks its Held.
+		// Whether NEC acts through this place now: its set runs and bNecOn is
+		// on, 2 relaxed atomic loads. A recheck that cuts the place makes it
+		// false for good. A hook of a place that stands alone asks it on every
+		// call and changes nothing while it is false, as a hook of a Together
+		// asks its Held.
 		[[nodiscard]] bool Live() const;
+
+		// Whether the place is still NEC's, whatever bNecOn says. For code
+		// that keeps or cleans up what NEC put in place, never for acting.
+		[[nodiscard]] bool Holds() const;
 
 		// Live, for the hook of a place a recheck can make wait for its menu,
 		// see Core/CallPatch/MenuWait.h. Asked before any other test. While
 		// the place waits it marks that this hook ran, so the call that
-		// reaches it runs NEC's change, and it pays the same 1 load while the
+		// reaches it runs NEC's change, and it pays the same 2 loads while the
 		// set runs.
 		[[nodiscard]] bool Runs() const;
 

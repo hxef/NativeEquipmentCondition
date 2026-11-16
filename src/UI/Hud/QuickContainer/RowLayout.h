@@ -36,6 +36,7 @@ namespace QuickContainer
 		{
 			std::int32_t percent{ NOT_DRAWN };
 			bool         selected{ false };
+			bool         fromRight{ false };
 			double       x{ 0.0 };
 			bool         visible{ false };
 
@@ -63,5 +64,9 @@ namespace QuickContainer
 		// keeps it while hidden, so only a new HUD movie, with new meters
 		// in no colour of their own, forgets it.
 		std::array<Flash::Tint, MAX_ROWS> tints{};
+
+		// Whether the trace last said the meters are drawn flipped, see
+		// HudParts::Readout::TellFlipped.
+		bool saidFlipped = false;
 	};
 }

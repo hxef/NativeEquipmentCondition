@@ -110,6 +110,6 @@ namespace FoodSpoil
 
 	bool FridgeIconOn()
 	{
-		return Settings::bFoodSpoils.GetValue() && Settings::bFridgeIcon.GetValue();
+		return Settings::NecOn() && Settings::bFoodSpoils.GetValue() && Settings::bFridgeIcon.GetValue();
 	}
 }

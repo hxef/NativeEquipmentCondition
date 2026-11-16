@@ -38,6 +38,12 @@ namespace PowerArmorCondition
 		constexpr float BOX_RIGHT = 3.135F;
 		constexpr float WORD_CLEAR = 0.1F;
 
+		// The inner side of the box's left edge, where a flipped bar's word
+		// may reach, measured the same way off a shot of the dash at the
+		// bar's row. The right edge's inner side, measured off the same shot,
+		// lands within 0.02 of a digit of BOX_RIGHT.
+		constexpr float BOX_LEFT = -1.17F;
+
 		[[nodiscard]] const char* MissText(Miss a_miss)
 		{
 			switch (a_miss) {
@@ -89,7 +95,7 @@ namespace PowerArmorCondition
 
 		// Finds the 3 digits and lays the bar out on the dash from them, or
 		// returns a miss.
-		[[nodiscard]] Anchor MeasureDash()
+		[[nodiscard]] Anchor MeasureDash(bool a_flipped)
 		{
 			static const RE::BSFixedString rendererName{ RENDERER_NAME };
 
@@ -142,16 +148,25 @@ namespace PowerArmorCondition
 			anchor.end = ScreenPoint(*camera, between + (across * DIGITS_RIGHT));
 			anchor.word = ScreenPoint(*camera, between + (across * (DIGITS_RIGHT + WORD_CLEAR)));
 			anchor.limit = ScreenPoint(*camera, between + (across * (BOX_RIGHT - WORD_CLEAR)));
+			anchor.before = ScreenPoint(*camera, between + (across * (DIGITS_LEFT - WORD_CLEAR)));
+			anchor.back = ScreenPoint(*camera, between + (across * (BOX_LEFT + WORD_CLEAR)));
 			anchor.first = ScreenPoint(*camera, origin);
 			anchor.above = ScreenPoint(*camera, above->GetWorldTranslate());
 			if (!anchor.start.ok || !anchor.end.ok || !anchor.word.ok || !anchor.limit.ok || !anchor.first.ok || !anchor.above.ok) {
 				return Anchor{ .miss = Miss::kBehindCamera };
 			}
 
+			// The 2 places left of the bar count only while the bars are
+			// flipped, so a dash measures as it ships while they are not.
+			anchor.flipped = a_flipped;
+			if (a_flipped && (!anchor.before.ok || !anchor.back.ok)) {
+				return Anchor{ .miss = Miss::kBehindCamera };
+			}
+
 			// A dash facing away, or one a mod rearranged, leaves nothing to
 			// lay the bar against.
 			if (!(anchor.end.x > anchor.start.x) || !(anchor.word.x > anchor.end.x) || !(anchor.limit.x > anchor.word.x) ||
-				!(anchor.first.y > anchor.above.y)) {
+				!(anchor.first.y > anchor.above.y) || (a_flipped && (!(anchor.start.x > anchor.before.x) || !(anchor.before.x > anchor.back.x)))) {
 				return Anchor{ .miss = Miss::kNotFacing };
 			}
 			anchor.miss = Miss::kNone;
@@ -170,7 +185,7 @@ namespace PowerArmorCondition
 		return geometry && geometry->validHUDModes.canBeVisible;
 	}
 
-	void QueueAnchor()
+	void QueueAnchor(bool a_flipped)
 	{
 		if (g_anchorQueued.exchange(true)) {
 			return;
@@ -182,9 +197,9 @@ namespace PowerArmorCondition
 			return;
 		}
 
-		tasks->AddTask([] {
+		tasks->AddTask([a_flipped] {
 			const auto inPowerArmor = RE::PowerArmor::PlayerInPowerArmor();
-			const auto measured = MeasureDash();
+			const auto measured = MeasureDash(a_flipped);
 			g_inPowerArmor = inPowerArmor;
 
 			// Logged on each change of what was found while in power armor, so

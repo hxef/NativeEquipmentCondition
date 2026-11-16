@@ -303,4 +303,20 @@ namespace FoodSpoil
 		StampAt(*extra, a_object, a_stack.count, StartOf(extra).value_or(1.0F), *today);
 		return true;
 	}
+
+	void Carry(const RE::BGSInventoryList& a_list, const RE::TESBoundObject& a_object, RE::BGSInventoryItem::Stack& a_stack,
+		const RE::TESObjectREFR* a_from)
+	{
+		auto*      extra = a_stack.extra.get();
+		const auto today = Today();
+		const auto stamp = StampOf(extra);
+		if (!today || !stamp || IsSpoiled(extra)) {
+			return;
+		}
+		const auto out = IsFridgeRef(a_from);
+		const auto owner = a_list.owner.get();
+		if (const auto into = IsFridgeRef(owner.get()); into != out) {
+			Restamp(*extra, a_object, a_stack.count, out ? Thaw(*stamp, *today) : *stamp, into, *today);
+		}
+	}
 }

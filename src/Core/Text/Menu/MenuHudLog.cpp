@@ -32,6 +32,7 @@ namespace Text
 			{ &Settings::fPickupBarThickness, PICKUP_BAR_THICKNESS_NAME, PICKUP_BAR_THICKNESS_HELP },
 			{ &Settings::bPickupBarShowsWord, PICKUP_BAR_WORD_NAME, PICKUP_BAR_WORD_HELP },
 			{ &Settings::fPipboyBarThickness, PIPBOY_BAR_THICKNESS_NAME, PIPBOY_BAR_THICKNESS_HELP },
+			{ &Settings::bCndBarsFlipped, CND_BARS_FLIPPED_NAME, CND_BARS_FLIPPED_HELP },
 			{ &Settings::fPenaltyMarkWidth, PENALTY_MARK_WIDTH_NAME, PENALTY_MARK_WIDTH_HELP },
 			{ &Settings::bPenaltyMarkAsLine, PENALTY_MARK_LINE_NAME, PENALTY_MARK_LINE_HELP },
 			{ &LOG_LEVEL, LOG_LEVEL_NAME, LOG_LEVEL_HELP },

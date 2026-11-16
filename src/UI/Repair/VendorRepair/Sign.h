@@ -37,8 +37,8 @@ namespace VendorRepair::Sign
 {
 	// Builds the block and the line again for a trader's side just rebuilt,
 	// each where the movie allows it, kept off the screen until Place puts
-	// one there. With Trader repairs or the sign switched off it only takes
-	// the last one out, and counts nothing.
+	// one there. With Trader repairs, the sign or bNecOn switched off it only
+	// takes the last one out, and counts nothing.
 	void Draw(RE::BarterMenu* a_menu);
 
 	// Puts the sign in the first place that has room, a_bar being the bar

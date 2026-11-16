@@ -102,10 +102,11 @@ namespace MessageBox
 		// are let go, as a click does, and go no further. So on AE the box's
 		// own Cancel press, which the box was handed the same button for,
 		// never answers it twice. On OG it has no such press. Every other key
-		// and every other box go as the game has them.
+		// and every other box go as the game has them. NEC's box answers these
+		// keys while bNecOn is off too, so both hooks read Holds.
 		bool OnButtonEventReleaseHk(RE::IMenu* a_this, const RE::BSFixedString& a_key)
 		{
-			if (g_keysLink.Live() && (a_key == CANCEL_KEY || a_key == PAUSE_KEY)) {
+			if (g_keysLink.Holds() && (a_key == CANCEL_KEY || a_key == PAUSE_KEY)) {
 				auto* menu = static_cast<RE::MessageBoxMenu*>(a_this);
 				if (const auto asked = Shown(*menu)) {
 					TraceLog::Line("menu", "NEC's box {:d} heard {:s} let go and presses its last button", asked->number, a_key.c_str());
@@ -121,7 +122,7 @@ namespace MessageBox
 		bool PauseShouldHandleEventHk(RE::BSInputEventUser* a_this, const RE::InputEvent* a_event)
 		{
 			const auto* button = a_event->As<RE::ButtonEvent>();
-			if (g_pauseLink.Live() && g_keysLink.Live() && button && button->QUserEvent() == PAUSE_KEY && AnyAsked()) {
+			if (g_pauseLink.Holds() && g_keysLink.Holds() && button && button->QUserEvent() == PAUSE_KEY && AnyAsked()) {
 				const auto* ui = RE::UI::GetSingleton();
 				const auto  menu = ui ? ui->GetMenu<RE::MessageBoxMenu>() : nullptr;
 				if (menu && Shown(*menu)) {

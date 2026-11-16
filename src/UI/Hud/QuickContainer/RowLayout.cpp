@@ -1,6 +1,8 @@
 #include "UI/Hud/QuickContainer/RowLayout.h"
 
+#include "Core/Settings.h"
 #include "Core/TraceLog/TraceLog.h"
+#include "UI/Hud/HudParts/HudParts.h"
 #include "UI/Hud/QuickContainer/Draw.h"
 #include "UI/Roles/Hud.h"
 
@@ -129,11 +131,14 @@ namespace QuickContainer
 		last.written = wanted;
 
 		const auto selected = Flash::Bool(a_row, "selected"sv);
-		const auto changed = last.percent != *a_percent || last.selected != selected;
+		const auto fromRight = Settings::bCndBarsFlipped.GetValue();
+		const auto changed = last.percent != *a_percent || last.selected != selected || last.fromRight != fromRight;
 		if (changed) {
-			Draw(meter, *a_percent, selected);
+			Draw(meter, *a_percent, selected, fromRight);
 			last.percent = *a_percent;
 			last.selected = selected;
+			last.fromRight = fromRight;
+			HudParts::Readout::TellFlipped(fromRight, saidFlipped, "Quick container CND meters"sv);
 		}
 		if (changed || a_afterRedraw) {
 			Recolor(meter, field, a_index);

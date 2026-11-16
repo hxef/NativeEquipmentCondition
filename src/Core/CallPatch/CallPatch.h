@@ -48,7 +48,8 @@ namespace CallPatch
 	// A set of places that only works whole. Its hooks ask on every call and
 	// give the vanilla result while it does not run: before the set is
 	// written, when it never is, once a recheck finds one of its places taken,
-	// and while it waits to see a hook of a changed place run, see Runs.
+	// while it waits to see a hook of a changed place run, see Runs, and while
+	// bNecOn is off.
 	class Held
 	{
 	public:
@@ -57,12 +58,17 @@ namespace CallPatch
 		// False when one of its places was taken as NEC noted it.
 		explicit operator bool() const { return set != 0; }
 
-		// 1 relaxed atomic load.
+		// Whether NEC acts through this set now: the set is NEC's and bNecOn
+		// is on, 2 relaxed atomic loads.
 		[[nodiscard]] bool Intact() const;
+
+		// Whether the set is still NEC's, whatever bNecOn says. For code that
+		// keeps or cleans up what NEC put in place, never for acting.
+		[[nodiscard]] bool Holds() const;
 
 		// Intact, for a hook of the set handing on through a_link. While the
 		// set waits it first marks that a_link's hook ran, see Sets.cpp, so
-		// it pays the same 1 load while the set runs.
+		// it pays the same 2 loads while the set runs.
 		[[nodiscard]] bool Runs(const LinkBase& a_link) const;
 
 	private:

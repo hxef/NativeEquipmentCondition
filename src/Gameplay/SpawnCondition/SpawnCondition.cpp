@@ -152,13 +152,18 @@ namespace SpawnCondition
 		// Asks FoodSpoil whatever Worn loot says, naming the container a
 		// handover takes the food out of. It leaves alone what the sort
 		// leaves alone: a save being applied, a copy of another inventory's
-		// stack, SpawnDupe's copies and the barter screen's.
-		bool FoodArrives(RE::BGSInventoryList* a_list, RE::TESBoundObject* a_object, RE::BGSInventoryItem::Stack* a_stack)
+		// stack, SpawnDupe's copies and the barter screen's. While a_on is
+		// false (bNecOn off) it only lets a fridge stamp turn, see Carry.
+		bool FoodArrives(RE::BGSInventoryList* a_list, RE::TESBoundObject* a_object, RE::BGSInventoryItem::Stack* a_stack, bool a_on)
 		{
 			if (!a_list || !a_object || !a_stack || !FoodSpoil::Spoils(*a_object)) {
 				return false;
 			}
 			if (Loading() || !Private(*a_stack) || UnderSpawnDupe() || BarterCopy(a_list)) {
+				return false;
+			}
+			if (!a_on) {
+				FoodSpoil::Carry(*a_list, *a_object, *a_stack, HandedFrom(a_object, a_list));
 				return false;
 			}
 			return FoodSpoil::Arrive(*a_list, *a_object, *a_stack, HandedFrom(a_object, a_list));
@@ -219,7 +224,7 @@ namespace SpawnCondition
 			if (live) {
 				FoodFound(a_list, a_object, a_stack);
 			}
-			const bool food = live && FoodArrives(a_list, a_object, a_stack);
+			const bool food = g_links[I].Holds() && FoodArrives(a_list, a_object, a_stack, live);
 			const auto aim = Settings::bSpawnCondition.GetValue() && live ? Sort(a_list, a_object, a_stack) : std::nullopt;
 			AddThenSplit<I>(aim, a_list, a_object, a_stack, a_oldCount, a_newCount);
 			if (food) {

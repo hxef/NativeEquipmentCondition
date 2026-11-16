@@ -142,6 +142,7 @@ namespace Mcm
 		kCarried,      // what the player carries, see SpawnCondition::KeepCarried
 		kFood,         // the food the player and companions carry, see FoodSpoil::StampCarried
 		kPerks,        // the perk descriptions the Pip-Boy keeps, see CraftingPerks::RetellPipboy
+		kFoodCards,    // the Aid cards, for food freshness rows
 		kTotal,
 	};
 
@@ -164,8 +165,9 @@ namespace Mcm
 	[[nodiscard]] bool                        HudBarRanges(Scaleform::GFx::Value& a_entries);
 
 	// Puts MCM's settings list in None mode while a page of NEC's shows, and
-	// back once another page shows, and keeps the HUD bar sliders' live ends,
-	// in Layout.cpp. Called every frame of the main or pause menu.
+	// back once another page shows, keeps the HUD bar sliders' live ends, and
+	// hides NEC's pages in the left list while bNecOn is off, in Layout.cpp.
+	// Called every frame of the main or pause menu.
 	void Layout(Scaleform::GFx::Movie& a_movie);
 
 	// Puts MCM's left list highlight back on the open page of NEC's when the

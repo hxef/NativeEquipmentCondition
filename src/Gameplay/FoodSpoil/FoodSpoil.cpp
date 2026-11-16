@@ -41,7 +41,7 @@ namespace FoodSpoil
 		void StampAndSay(bool a_afterLoad)
 		{
 			const auto today = Today();
-			if (!Settings::bFoodSpoils.GetValue() || !today) {
+			if (!Settings::NecOn() || !Settings::bFoodSpoils.GetValue() || !today) {
 				return;
 			}
 			// Turned on in play, NEC.food.log is written again with the
@@ -78,7 +78,7 @@ namespace FoodSpoil
 		LoadFridges();
 		WatchBodies();
 		WatchMenus();
-		if (!Settings::bFoodSpoils.GetValue()) {
+		if (!Settings::NecOn() || !Settings::bFoodSpoils.GetValue()) {
 			REX::INFO("Food spoiling is off.");
 		} else if (WriteFoodLog()) {
 			REX::INFO("Food spoiling is on, see NEC.food.log.");
@@ -113,7 +113,7 @@ namespace FoodSpoil
 		// A full reset is deleting every form, so it is no time to walk an
 		// inventory.
 		const auto* main = RE::Main::GetSingleton();
-		if (!Settings::bFoodSpoils.GetValue() || (main && main->resetGame)) {
+		if (!Settings::NecOn() || !Settings::bFoodSpoils.GetValue() || (main && main->resetGame)) {
 			return;
 		}
 		// A task, so the companions are read on the engine's thread.

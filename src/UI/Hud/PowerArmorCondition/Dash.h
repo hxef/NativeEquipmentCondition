@@ -34,8 +34,11 @@ namespace PowerArmorCondition
 		Point end{};                     // its right end
 		Point word{};                    // where the word starts, level with the bar
 		Point limit{};                   // the furthest the word may reach
+		Point before{};                  // where a flipped bar's word ends, left of the bar
+		Point back{};                    // the furthest left that word may reach
 		Point first{};                   // the reserve row's first digit
 		Point above{};                   // the first digit of the row above
+		bool  flipped = false;           // whether before and back were measured, for flipped bars
 		Miss  miss = Miss::kNoRenderer;  // why none of it is there, when it is not
 	};
 
@@ -46,9 +49,10 @@ namespace PowerArmorCondition
 	// Whether the current HUD mode lets the dash be seen.
 	[[nodiscard]] bool DashAllowed();
 
-	// Asks F4SE's task queue to measure where the dash is. Called every frame,
-	// and asks for nothing while the last measurement has not arrived yet.
-	void QueueAnchor();
+	// Asks F4SE's task queue to measure where the dash is, for flipped bars
+	// while a_flipped. Called every frame, and asks for nothing while the
+	// last measurement has not arrived yet.
+	void QueueAnchor(bool a_flipped);
 
 	// Where the dash was, as the last measurement left it.
 	[[nodiscard]] Anchor CurrentAnchor();

@@ -79,10 +79,12 @@ namespace HudCondition
 
 	// The first reading takes the spot chosen or the shipped place.
 	// Later only a spot that differs is taken. The frame then lays the
-	// bar out there.
+	// bar out there. A spot that differs by clear alone is taken with
+	// nothing in NEC.log, since the bar and its word do not move.
 	void FrameListener::Follow(const std::optional<Choice>& a_choice)
 	{
-		if (followed && (!a_choice || a_choice->spot == spot)) {
+		if (followed && (!a_choice || a_choice->spot.SitsAs(spot))) {
+			spot.clear = a_choice ? a_choice->spot.clear : spot.clear;
 			return;
 		}
 		spot = a_choice ? a_choice->spot : spot;

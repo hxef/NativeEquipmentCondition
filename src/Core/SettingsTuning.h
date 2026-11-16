@@ -241,6 +241,10 @@ namespace Settings
 	// How thick the CND bars on the Pip-Boy apparel figure are drawn.
 	inline Live<float> fPipboyBarThickness{ "HUD", "fPipboyBarThickness", 1.0F };
 
+	// Mirrors every CND bar NEC draws, so each fills from its other end and
+	// its CND word sits on the bar's other side.
+	inline Live<bool> bCndBarsFlipped{ "HUD", "bCndBarsFlipped", false };
+
 	// How wide the mark where penalties start is on CND bars, 1 for its normal width.
 	inline Live<float> fPenaltyMarkWidth{ "HUD", "fPenaltyMarkWidth", 1.0F };
 

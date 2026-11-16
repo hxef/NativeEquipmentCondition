@@ -10,7 +10,9 @@
 // the dead. Food never carried never spoils. How long a food keeps depends on
 // its kind, see Kinds.h: raw food and crops keep fRawFoodDays, cooked food
 // fCookedFoodDays, and drinks and packaged food never spoil. In a container
-// on the fridge list, food spoils at fFridgeSpoilSpeed, see Fridge.cpp.
+// on the fridge list, food spoils at fFridgeSpoilSpeed, see Fridge.cpp. While
+// bNecOn is off nothing is stamped or turns spoiled, and a stamp keeps its
+// day, so the food spoils on its usual day once bNecOn is on again.
 //
 // Food starts to spoil when it is stamped with the day, see Stamp.h: as it
 // arrives at the player or a companion, see Arrive, and as a character or
@@ -186,6 +188,12 @@ namespace FoodSpoil
 	bool Arrive(const RE::BGSInventoryList& a_list, const RE::TESBoundObject& a_object, RE::BGSInventoryItem::Stack& a_stack,
 		const RE::TESObjectREFR* a_from);
 
+	// The door while bNecOn is off, called as Arrive is: only rewrites the
+	// stamp of food going into or out of a fridge, since the stamp does not
+	// say which kind it is. Stamps nothing new and spoils nothing.
+	void Carry(const RE::BGSInventoryList& a_list, const RE::TESBoundObject& a_object, RE::BGSInventoryItem::Stack& a_stack,
+		const RE::TESObjectREFR* a_from);
+
 	// The door's other side, for a_stack of a_object as AddStack is about to
 	// add it to a_list: whether a cooking or chemistry station is filling
 	// a_list, the copy its rows count from, and a_stack is spoiled or out of
@@ -208,7 +216,7 @@ namespace FoodSpoil
 	[[nodiscard]] bool InOpenFridge(const RE::ExtraDataList* a_extra);
 
 	// Whether the fridge icon shows, beside a fridge's name on the HUD and on
-	// the cards of food inside: food spoils and bFridgeIcon is on. Read live,
-	// so the page's switches take effect at once.
+	// the cards of food inside: bNecOn, food spoils and bFridgeIcon are on.
+	// Read live, so the page's switches take effect at once.
 	[[nodiscard]] bool FridgeIconOn();
 }

@@ -147,15 +147,32 @@ namespace HudParts
 
 		// The end of the bar that stays still as it empties. The HUD keeps the
 		// right end, as the AP meter does. The Pip-Boy keeps the left end, as
-		// its own meters do.
+		// its own meters do. bCndBarsFlipped turns every bar to its other end.
 		enum class Still
 		{
 			kRightEnd,
 			kLeftEnd,
 		};
 
+		// The still end of a bar that ships with a_shipped, the other end
+		// while a_flipped, bCndBarsFlipped as the bar was laid out.
+		[[nodiscard]] Still StillEnd(Still a_shipped, bool a_flipped);
+
 		// Sets how much of a bar laid out as above is left, and draws a_mark
 		// over it.
 		void SetPercent(Value& a_readout, double a_width, double a_deep, std::int32_t a_percent, Still a_still = Still::kRightEnd, const Mark& a_mark = {});
+
+		// Moves the word to its mirror about the middle of a bar a_width
+		// long, so a word that starts 6 past the right end ends 6 before the
+		// left end. The field keeps the same margin on each side, so its
+		// letters mirror with it. Call it after SetLabel, which puts the word
+		// back past the end.
+		void MirrorLabel(Value& a_readout, double a_width);
+
+		// Says in the trace that a_bars are drawn flipped, or as shipped,
+		// when a_flipped differs from a_said, what was said last. a_said
+		// starts false and is reset with the bar, so a bar never flipped
+		// says nothing.
+		void TellFlipped(bool a_flipped, bool& a_said, std::string_view a_bars);
 	}
 }

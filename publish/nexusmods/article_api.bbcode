@@ -67,9 +67,11 @@ The version this NEC.pex belongs to, equal to GetVersion when the DLL and NEC.pe
 
 [b]Features and settings[/b]
 
+While the player turned NEC off on its main MCM page, GetSettingBool("bNecOn:Features") answers false, IsFeatureOn answers false for every name, the writes change nothing and answer false, and no event comes. The condition and food reads answer as before, since every item keeps its condition, and the share, trader and scrap reads answer as with their feature off.
+
 [list]
 [*][font=Courier New]bool Function IsFeatureOn(string asFeature)[/font]
-True when the NEC feature of this name runs: its NEC.ini switch is on and no other DLL took all of it. Names: see Feature names.
+True when the NEC feature of this name runs: NEC is on, its NEC.ini switch is on and no other DLL took all of it. Names: see Feature names.
 [*][font=Courier New]bool Function IsFeatureTakenOver(string asFeature)[/font]
 True when another DLL took some or all of this feature, as NEC's main MCM page and NEC.log say.
 [*][font=Courier New]float Function GetSettingFloat(string asId)[/font]

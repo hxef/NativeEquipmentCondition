@@ -65,6 +65,11 @@ namespace
 	// Patches the game for every row, in the order of the list.
 	void Install()
 	{
+		// Every place is still patched, so turning it on in play needs no
+		// restart.
+		if (!Settings::NecOn()) {
+			REX::INFO("All of NEC is off (bNecOn=false), so no feature changes anything until it is turned on in MCM.");
+		}
 		for (const auto& feature : Features()) {
 			if (!feature.Install) {
 				continue;

@@ -292,11 +292,11 @@ namespace ConsoleRepair
 	}
 
 	// Each is put back only while it is still NEC's, so another DLL mod that
-	// set its own keeps it.
+	// set its own keeps it. bNecOn off cuts nothing, so it keeps both.
 	void Settle()
 	{
 		auto* const command = g_found.command;
-		if (!command || g_srmLink.Live()) {
+		if (!command || g_srmLink.Holds()) {
 			return;
 		}
 		if (command->helpString == HELP) {

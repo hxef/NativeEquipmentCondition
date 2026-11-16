@@ -101,10 +101,26 @@ namespace HudCondition
 				label = Label(readout, !labelled, laidOut ? Flash::Point{ laidOut->wordX, laidOut->wordY } : Flash::Point{});
 				labelled = true;
 			}
-			const auto choice = Choose(*a_params.movie, counter, readout, ownVisible, label);
-			Follow(choice);
+			// Until a reading measures the divider, the bar keeps the shipped
+			// place, flipped as the switch says, so a bar shown before then
+			// is never the wrong way round.
+			const auto flipped = Settings::bCndBarsFlipped.GetValue();
+			const auto choice = Choose(*a_params.movie, counter, readout, ownVisible, label, flipped);
 			if (choice) {
+				chosen = true;
 				teller.Tell(*choice, now);
+			}
+			auto shipped = SHIPPED;
+			shipped.flipped = flipped;
+			shipped.wordX = Home(flipped, shipped.line.width, label.letters);
+			// A reading that measures nothing keeps the last spot, turned
+			// at once by a flip, since a flip moves no bar.
+			if (choice) {
+				Follow(choice);
+			} else if (!chosen) {
+				Follow(Choice{ shipped, {}, {} });
+			} else {
+				Follow(Choice{ Turned(spot, flipped, label.letters), "bar turns where it is, since the divider cannot be measured", {} });
 			}
 			if (colored && now >= recolorFrom) {
 				Recolor(readout, counter, toldTint);
@@ -112,21 +128,25 @@ namespace HudCondition
 		}
 
 		// The bar is drawn at the size the player set, laid out again
-		// when the spot or that size changes.
+		// when the spot or that size changes. clear alone moves nothing.
 		const auto size = SizeNow();
 		const auto drawn = Sized(spot, size, label);
-		if (drawn != laidOut) {
+		if (!laidOut || !drawn.SitsAs(*laidOut)) {
 			LayOut(readout, drawn, size);
 		}
 
 		HudParts::Readout::FollowWordSwitch(readout, Settings::bHudBarShowsWord, wordShown, "HUD"sv);
 
 		// The mark is read every frame, as the size is, and is as wide as
-		// half the bar's depth before its thickness slider.
+		// half the bar's depth before its thickness slider. The fill's end
+		// comes from the spot, as the word's place does, so the 2 never
+		// disagree.
 		const auto percent = HudParts::Weapon::Percent(Settings::bHudCondition);
 		const auto mark = HudParts::Readout::PenaltyMark(Condition::Kind::kWeapon, spot.deep, spot.deep / 2.0);
 		if (percent != shownPercent || mark != shownMark) {
-			HudParts::Readout::SetPercent(readout, drawn.line.width, drawn.deep, percent, HudParts::Readout::Still::kRightEnd, mark);
+			const auto still = HudParts::Readout::StillEnd(HudParts::Readout::Still::kRightEnd, drawn.flipped);
+			HudParts::Readout::SetPercent(readout, drawn.line.width, drawn.deep, percent, still, mark);
+			HudParts::Readout::TellFlipped(drawn.flipped, saidFlipped, "HUD CND bar"sv);
 			if (percent != shownPercent) {
 				if (percent >= 0) {
 					TraceLog::Line("menu", "HUD CND bar drawn at {:d}%", percent);
@@ -218,6 +238,7 @@ namespace HudCondition
 		shownPercent = NOT_DRAWN;
 		shownMark = HudParts::Readout::Mark{};
 		saidMark = HudParts::Readout::Mark{};
+		saidFlipped = false;
 		shownOpacity = -1.0;
 		fade = 0.0;
 		spot = SHIPPED;
@@ -231,6 +252,7 @@ namespace HudCondition
 		standsAlone = false;
 		aloneAt.reset();
 		followed = false;
+		chosen = false;
 		laidOut.reset();
 		laidOutSize = HudParts::Readout::Size{};
 		labelled = false;

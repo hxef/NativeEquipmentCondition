@@ -381,6 +381,10 @@ save. On anything but power armor the game ignores it for damage, protection
 and price, so what is left behind does nothing there, except that identical
 items at different conditions stay in separate stacks in your inventory.
 
+To stop NEC without quitting, turn off All NEC features on its main MCM page.
+NEC then changes nothing until you turn it back on, and your items keep their
+condition, broken ones too, so repair them first.
+
 A save made without any mod calling NEC's Papyrus API holds no trace of it.
 Once a mod that uses NEC's Papyrus API has run in your save, keep NEC
 installed for that playthrough: without it that mod's calls fail on every

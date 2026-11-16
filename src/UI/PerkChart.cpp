@@ -1,5 +1,6 @@
 #include "UI/PerkChart.h"
 
+#include "Core/Settings.h"
 #include "Core/TraceLog/TraceLog.h"
 #include "UI/Flash.h"
 #include "UI/MenuMovies.h"
@@ -23,6 +24,10 @@ namespace PerkChart
 		public:
 			void Call(const Params& a_params) override
 			{
+				// While bNecOn is off the field stays vanilla's.
+				if (!Settings::NecOn()) {
+					return;
+				}
 				auto field = a_params.movie ? Roles::PerkCard::Description(*a_params.movie) : std::nullopt;
 				if (!field || Flash::String(*field, "autoSize"sv) != "none"sv) {
 					return;

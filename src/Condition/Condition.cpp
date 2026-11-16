@@ -187,6 +187,9 @@ namespace Condition
 
 	bool Lowers(float a_health, const RE::TESBoundObject& a_object, float a_amount, const char* a_source, bool a_theirs)
 	{
+		if (!Settings::NecOn()) {
+			return false;
+		}
 		const auto before = Before(a_health);
 		if (Changes(before, a_amount)) {
 			return true;

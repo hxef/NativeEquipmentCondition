@@ -244,8 +244,9 @@ namespace Mcm
 			return std::nullopt;
 		}
 		const auto key = a_id.substr(0, a_id.size() - SHOWN.size());
+		// The top list hides while bNecOn is off, as NEC's other pages do.
 		if (key == PARTS) {
-			return !TopLines().empty();
+			return Settings::NecOn() && !TopLines().empty();
 		}
 		const auto* lead = LeadFor(key);
 		return lead ? std::optional{ !BlockOf(*lead).lines.empty() } : std::nullopt;

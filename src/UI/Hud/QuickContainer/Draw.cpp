@@ -25,7 +25,7 @@ namespace QuickContainer
 		}
 	}
 
-	void Draw(Value& a_meter, std::int32_t a_percent, bool a_selected)
+	void Draw(Value& a_meter, std::int32_t a_percent, bool a_selected, bool a_fromRight)
 	{
 		Value graphics;
 		if (!a_meter.GetMember("graphics"sv, &graphics) || !graphics.IsObject()) {
@@ -47,7 +47,7 @@ namespace QuickContainer
 
 		// The bar, a pixel clear of the frame all round.
 		if (bar > 0.0) {
-			Rect(graphics, 2.0, top + 2.0, bar, METER_HEIGHT - 4.0);
+			Rect(graphics, a_fromRight ? METER_WIDTH - 2.0 - bar : 2.0, top + 2.0, bar, METER_HEIGHT - 4.0);
 		}
 
 		graphics.Invoke("endFill");

@@ -62,8 +62,8 @@ namespace SpawnCondition
 
 	// Sets every weapon and piece of armor the player carries with no
 	// condition yet, in a stack that is the player's alone, to full, so what
-	// arrived while Worn loot was off stays as it came. Called as Worn loot is
-	// switched back on, after CanKeepCarried.
+	// arrived while Worn loot or bNecOn was off stays as it came. Called as
+	// either is switched back on, after CanKeepCarried.
 	void KeepCarried();
 
 	// The same once a save has loaded, for what a game in progress picked up

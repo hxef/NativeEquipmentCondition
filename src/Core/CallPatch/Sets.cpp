@@ -1,5 +1,7 @@
 #include "Core/CallPatch/Ledger.h"
 
+#include "Core/Settings.h"
+
 #include <array>
 #include <atomic>
 #include <cstdint>
@@ -12,6 +14,10 @@
 // hands the call on, and the set runs again. A recheck makes a place
 // MenuWait.h lists wait the same way, as a set of 1. A set that is off stays
 // off, so a cut never comes back.
+//
+// While bNecOn is off every hook gives the vanilla result, as for a set that
+// does not run, and a waiting set still settles as its hooks run. Holds is the
+// read that ignores bNecOn.
 //
 // Hooks read this with no lock. The ledger's lock covers the rest.
 namespace CallPatch
@@ -122,9 +128,14 @@ namespace CallPatch
 		}
 	}
 
-	bool LinkBase::Live() const
+	bool LinkBase::Holds() const
 	{
 		return g_live[_set].load(std::memory_order_relaxed) == SET_LIVE;
+	}
+
+	bool LinkBase::Live() const
+	{
+		return Holds() && Settings::NecOn();
 	}
 
 	bool LinkBase::Runs() const
@@ -136,17 +147,22 @@ namespace CallPatch
 		return Live();
 	}
 
-	bool Held::Intact() const
+	bool Held::Holds() const
 	{
 		return g_live[set].load(std::memory_order_relaxed) == SET_LIVE;
 	}
 
+	bool Held::Intact() const
+	{
+		return Holds() && Settings::NecOn();
+	}
+
 	bool Held::Runs(const LinkBase& a_link) const
 	{
-		if (g_live[set].load(std::memory_order_relaxed) == SET_LIVE) {
+		if (Intact()) {
 			return true;
 		}
 		a_link.Proved();
-		return g_live[set].load(std::memory_order_relaxed) == SET_LIVE;
+		return Intact();
 	}
 }

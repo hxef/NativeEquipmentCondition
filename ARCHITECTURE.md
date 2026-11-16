@@ -67,6 +67,7 @@ src/
     Runtime.h/.cpp           the game version NEC runs on, 1.11.240 or OG, and NEC.log's line about it
     ScriptEvents.h/.cpp      the events other mods' scripts hear, as every place that changes an item notes them, and the gate of a save load
     Settings.h/.cpp          every setting, read from NEC.ini, and a change kept in NEC_custom.ini
+    SettingsFeatures.h       the settings under [Features], which Settings.h includes
     SettingsLine.cpp         NEC.log's Settings line, and every switch and number in NEC.ini's order
     SettingsTuning.h         the settings under [Balance] and [HUD], which Settings.h includes
     Snapshot.h               a table other threads read while it is measured again, swapped in whole, and how 2 readings differ
@@ -233,7 +234,7 @@ src/
       Notes.cpp              the page's grey rows: each block's note, and what MCM asks of them
       TopList.cpp            the list at the top of the main page, of the parts no note names
       Fit.cpp                how tall a grey row may be, and a row cut to fit
-      Layout.cpp             MCM's list in None mode while one of NEC's pages shows, and the HUD bar sliders' live ends
+      Layout.cpp             MCM's list in None mode while one of NEC's pages shows, the HUD bar sliders' live ends, and NEC's pages out of the left list while bNecOn is off
       HudBar.cpp             the HUD bar sliders: the bar's place in HUD units from the screen's top left, with the screen as their range
     Hud/
       HudParts/
@@ -246,6 +247,7 @@ src/
         Listener.h                   the frame listener's class, which Frame.cpp and Layout.cpp share
         Layout.cpp                   the frame listener laying the bar out at its spot and size and placing it on screen
         Spot.h/.cpp                  where the bar and its word go, the divider's place or the nearest free spot, the NEC.log line, and the bar at its size
+        Boxes.h/.cpp                 the boxes that search works with: what the HUD shows by the counter, the bar's box, what a box covers and the places to try beside it
         Place.h/.cpp                 where the readout sits in the counter's parent, by the counter or standing alone from the screen's top left corner, moved by fHudBarX and fHudBarY and held whole on screen, and that place kept for the MCM page
       PowerArmorCondition/
         PowerArmorCondition.h/.cpp   the frame listener and the movie
@@ -371,9 +373,10 @@ loot on, it sets the weapons and armor the player carries with no condition
 to full.
 
 Every row runs at every step whatever its switch says. Its hooks ask the
-switch on every call and leave the game as it is while it is off. A row whose
-switch is left to another mod is not installed and adds nothing to a movie,
-see `src/Core/Feature.h`. Every setting is read once, as the game starts, see
+switch on every call and leave the game as it is while it is off. Every hook
+does the same while bNecOn is off, see `src/Core/CallPatch/Sets.cpp`. A row
+whose switch is left to another mod is not installed and adds nothing to a
+movie, see `src/Core/Feature.h`. Every setting is read once, as the game starts, see
 `src/Core/Settings.h`, and the MCM page changes any of them on the spot, see
 `src/UI/Mcm/Mcm.h`.
 

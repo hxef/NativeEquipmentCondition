@@ -11,6 +11,7 @@
 #include <REX/CONVERT.h>
 #include <REX/W32/KERNEL32.h>
 
+#include <algorithm>
 #include <array>
 #include <cmath>
 #include <cstdint>
@@ -71,6 +72,52 @@ namespace PickupBar
 			return written == size ? capitals : wide;
 		}
 
+		// The name without a sorter's tag in front: 1 bracket group that opens
+		// it, [..], (..), {..} or |..|, and the spaces after it, so
+		// [10mm] 10mm Pistol gives 10mm Pistol. A name with no such group, or
+		// with nothing after it, stays as it is.
+		std::string_view Untagged(std::string_view a_name)
+		{
+			constexpr std::string_view OPENS = "[({|";
+			constexpr std::string_view CLOSES = "])}|";
+			const auto kind = a_name.empty() ? std::string_view::npos : OPENS.find(a_name.front());
+			const auto close = kind == std::string_view::npos ? std::string_view::npos : a_name.find(CLOSES[kind], 1);
+			const auto rest = close == std::string_view::npos ? std::string_view::npos : a_name.find_first_not_of(' ', close + 1);
+			return rest == std::string_view::npos ? a_name : a_name.substr(rest);
+		}
+
+		// Whether a_text is a pile's count as vanilla prints it after the
+		// name, a space and a number in brackets, such as " (3)".
+		bool IsCount(std::wstring_view a_text)
+		{
+			if (a_text.size() < 4 || !a_text.starts_with(L" (") || !a_text.ends_with(L')')) {
+				return false;
+			}
+			const auto digits = a_text.substr(2, a_text.size() - 3);
+			return digits.find_first_not_of(L"0123456789") == std::wstring_view::npos;
+		}
+
+		// Whether the prompt's a_text names a_name. The prompt prints the name
+		// the game built, in capitals and with a count after it for a pile of
+		// several, so the name only has to be in it once both are in
+		// capitals. Some prompts print the name without a sorter's tag, see
+		// Untagged, so the name without it counts too, but only as the whole
+		// text or with a count after it, so another item never matches.
+		bool Names(std::string_view a_text, std::string_view a_name)
+		{
+			const auto text = Capitals(a_text);
+			if (text.find(Capitals(a_name)) != std::wstring::npos) {
+				return true;
+			}
+			const auto untagged = Untagged(a_name);
+			if (untagged.size() == a_name.size()) {
+				return false;
+			}
+			const auto name = Capitals(untagged);
+			const auto after = std::wstring_view{ text }.substr(std::min(name.size(), text.size()));
+			return !name.empty() && text.starts_with(name) && (after.empty() || IsCount(after));
+		}
+
 		// -------------------------------------------------------------------
 		// The frame listener
 		// -------------------------------------------------------------------
@@ -103,39 +150,45 @@ namespace PickupBar
 				const auto name = Roles::Rollover::Name(prompt);
 				const auto hints = Roles::Rollover::Hints(prompt);
 
-				// The prompt prints the name the game built, in capitals and
-				// with a count after it for a pile of several, so the kept name
-				// only has to be in it once both are in capitals.
+				// The prompt has to name the item NEC read, see Names.
 				const auto kept = Kept();
-				const auto wanted = Settings::bPickupBar.GetValue() && kept && kept->percent >= 0 && hints.IsDisplayObject() &&
+				const auto wanted = Settings::NecOn() && Settings::bPickupBar.GetValue() && kept && kept->percent >= 0 && hints.IsDisplayObject() &&
 				                    Flash::Bool(prompt, "visible"sv) &&
-				                    Capitals(Flash::String(name, "text"sv)).find(Capitals(kept->name)) != std::wstring::npos;
+				                    Names(Flash::String(name, "text"sv), kept->name);
 				if (!wanted) {
 					Show(readout, false);
 					return;
 				}
 
 				// Laying out again means measuring text, so it waits for the
-				// player to size the bar.
+				// player to size or flip the bar.
 				const auto size = Readout::SizeFrom(Settings::fPickupBarLength, Settings::fPickupBarThickness);
-				if (size != laidOutSize) {
+				const auto flipped = Settings::bCndBarsFlipped.GetValue();
+				if (size != laidOutSize || flipped != laidOutFlipped) {
 					width = BAR_LENGTH * size.length;
 					deep = BAR_DEEP * size.thickness;
 					Readout::SetLabel(readout, WORD);
+					if (flipped) {
+						Readout::MirrorLabel(readout, width);
+					}
 					Readout::SetTrack(readout, width, deep);
+					if (size != laidOutSize) {
+						TraceLog::Line("menu", "Pickup CND bar sized to {:g} times its length and {:g} times its thickness, {:.0f} across and {:.1f} deep",
+							size.length, size.thickness, width, deep);
+					}
 					laidOutSize = size;
+					laidOutFlipped = flipped;
 					shownPercent = NOT_DRAWN;
 					shownMark = Readout::Mark{};
-					TraceLog::Line("menu", "Pickup CND bar sized to {:g} times its length and {:g} times its thickness, {:.0f} across and {:.1f} deep",
-						size.length, size.thickness, width, deep);
 				}
 				Readout::FollowWordSwitch(readout, Settings::bPickupBarShowsWord, wordShown, "Pickup"sv);
 
 				// The bar is centred under the name and the word hangs off its
-				// right end, so turning the word off moves nothing. It sits
-				// halfway down the gap above the hints, read from the movie each
-				// frame since a long name wraps upward. The readout's origin is
-				// the bar's right end. Whole pixels keep the bar's edges sharp.
+				// right end, or its left end while flipped, so turning the word
+				// off moves nothing. It sits halfway down the gap above the
+				// hints, read from the movie each frame since a long name wraps
+				// upward. The readout's origin is the bar's right end. Whole
+				// pixels keep the bar's edges sharp.
 				// The movie's y runs down, so above 0 is taken off to go up.
 				const auto centre = Flash::Number(name, "x"sv) + (Flash::Number(name, "width"sv) / 2.0);
 				const auto below = Flash::Number(name, "y"sv) + Flash::Number(name, "height"sv);
@@ -156,7 +209,8 @@ namespace PickupBar
 				// slider.
 				const auto mark = kept->kind ? Readout::PenaltyMark(*kept->kind, BAR_DEEP, BAR_DEEP / 2.0) : Readout::Mark{};
 				if (kept->percent != shownPercent || kept->name != shownName || mark != shownMark) {
-					Readout::SetPercent(readout, width, deep, kept->percent, Readout::Still::kLeftEnd, mark);
+					Readout::SetPercent(readout, width, deep, kept->percent, Readout::StillEnd(Readout::Still::kLeftEnd, laidOutFlipped), mark);
+					Readout::TellFlipped(laidOutFlipped, saidFlipped, "Pickup CND bar"sv);
 					if (kept->percent != shownPercent || kept->name != shownName) {
 						TraceLog::Line("menu", "Pickup CND bar drawn at {:d}% for {:s}, its right end at {:.0f},{:.0f} in the prompt, the name's middle at {:.1f}",
 							kept->percent, kept->name, x, y, centre);
@@ -181,6 +235,8 @@ namespace PickupBar
 			void Reset()
 			{
 				laidOutSize = Readout::Size{ 0.0, 0.0 };
+				laidOutFlipped = false;
+				saidFlipped = false;
 				shownPercent = NOT_DRAWN;
 				shownName.clear();
 				shownMark = Readout::Mark{};
@@ -227,6 +283,8 @@ namespace PickupBar
 			}
 
 			Readout::Size       laidOutSize{ 0.0, 0.0 };
+			bool                laidOutFlipped = false;
+			bool                saidFlipped = false;
 			double              width = 0.0;
 			double              deep = 0.0;
 			std::int32_t        shownPercent = NOT_DRAWN;

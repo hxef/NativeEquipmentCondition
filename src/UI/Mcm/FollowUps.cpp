@@ -38,6 +38,9 @@ namespace Mcm
 				ItemCards::Refresh(RE::ENUM_FORM_ID::kWEAP);
 				ItemCards::Refresh(RE::ENUM_FORM_ID::kARMO);
 			}
+			if (Take(FollowUp::kFoodCards)) {
+				ItemCards::Refresh(RE::ENUM_FORM_ID::kALCH);
+			}
 			if (Take(FollowUp::kResistances)) {
 				if (auto* player = RE::PlayerCharacter::GetSingleton()) {
 					ArmorRating::Refresh(*player);

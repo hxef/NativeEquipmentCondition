@@ -3,6 +3,7 @@
 #include "Condition/Condition.h"
 #include "Condition/Equipped.h"
 #include "Core/ScriptEvents.h"
+#include "Core/Settings.h"
 #include "Core/TraceLog/TraceLog.h"
 #include "Gameplay/SpawnCondition/SpawnCondition.h"
 #include "Papyrus/Events.h"
@@ -279,6 +280,10 @@ namespace Papyrus
 				Log::Warn(Log::Warning::kRefused, std::format("{:.4f}", a_ask.value));
 				return Answer(false);
 			}
+			if (!Settings::NecOn()) {
+				TraceLog::Papyrus::Line("refused", "all of NEC is off");
+				return Answer(false);
+			}
 			if (a_ask.mode == Mode::kSet && (a_ask.value < 0.0F || a_ask.value > 100.0F)) {
 				TraceLog::Papyrus::Line("clamped", "{:.4f} is kept between 0 and 100", a_ask.value);
 				Log::Warn(Log::Warning::kClamped, std::format("{:.4f}, so it used {:d}", a_ask.value, a_ask.value < 0.0F ? 0 : 100));
@@ -328,6 +333,10 @@ namespace Papyrus
 	{
 		Log::Calling("RollCondition");
 		TraceLog::Papyrus::Begin("CALL", "NEC.RollCondition item={:s}", Shown(a_item));
+		if (!Settings::NecOn()) {
+			TraceLog::Papyrus::Line("refused", "all of NEC is off");
+			return Answer(false);
+		}
 		RE::NiPointer<RE::TESObjectREFR> world;
 		RE::TESBoundObject*              base = nullptr;
 		{

@@ -142,15 +142,15 @@ namespace CraftingPerks
 		// description rewritten by another plugin or read in another language
 		// comes through. Joined with a space, never a line break: the level up
 		// chart keeps only the first 2 pieces split on newlines and would drop
-		// the whole sentence. One per site, and only while the bench repairs.
-		// The Pip-Boy's site keeps what it gave each rank NEC knows, even with
-		// no line added, so a later switch can add one. Other ranks are dropped.
+		// the whole sentence. One per site, only while the bench repairs and
+		// bNecOn is on. While its place holds the Pip-Boy's site keeps what it
+		// gave each rank NEC knows, so a later switch can add a line.
 		template <std::size_t I>
 		void DescriptionHk(RE::TESDescription* a_description, RE::BSString& a_out, const RE::TESForm* a_form)
 		{
 			g_links[I](a_description, a_out, a_form);
-			const auto bench = g_benchRepairs && g_benchRepairs();
-			const auto perks = g_links[I].Live() && bench ? Current() : nullptr;
+			const auto bench = g_links[I].Live() && g_benchRepairs && g_benchRepairs();
+			const auto perks = (I == PIPBOY ? g_links[I].Holds() : bench) ? Current() : nullptr;
 			auto       kept = perks ? Whose(*perks, a_description) : std::nullopt;
 			if (!kept) {
 				if constexpr (I == PIPBOY) {
@@ -163,7 +163,7 @@ namespace CraftingPerks
 			const auto* already = a_out.c_str();
 			kept->base = already ? already : "";
 			kept->handed = kept->base;
-			const auto added = Added(*perks, a_description);
+			const auto added = bench ? Added(*perks, a_description) : std::string{};
 			if (!added.empty()) {
 				Join(kept->handed, added);
 				a_out.Set(kept->handed.c_str(), 0);
@@ -328,7 +328,7 @@ namespace CraftingPerks
 		// screen overlaps, and returns while Loading() says a load is under way.
 		const auto perks = Current();
 		auto*      manager = RE::PipboyDataManager::GetSingleton();
-		if (!g_links[PIPBOY].Live() || ScriptEvents::Loading() || !perks || !manager) {
+		if (!g_links[PIPBOY].Holds() || ScriptEvents::Loading() || !perks || !manager) {
 			return;
 		}
 

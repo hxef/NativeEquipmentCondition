@@ -2,6 +2,7 @@
 
 #include "Condition/Equipped.h"
 #include "Core/ScriptEvents.h"
+#include "Core/Settings.h"
 #include "Core/TraceLog/TraceLog.h"
 #include "Gameplay/FoodSpoil/FoodSpoil.h"
 #include "Papyrus/Events.h"
@@ -219,6 +220,10 @@ namespace Papyrus
 
 		bool Write(const Item& a_item, std::optional<float> a_share)
 		{
+			if (!Settings::NecOn()) {
+				TraceLog::Papyrus::Line("refused", "all of NEC is off");
+				return Answer(false);
+			}
 			const auto game = ScriptEvents::Game();
 			Done       done;
 			{

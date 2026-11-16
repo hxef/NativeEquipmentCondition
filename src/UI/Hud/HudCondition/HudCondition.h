@@ -9,9 +9,10 @@
 // RightMeters_mc.AmmoCount_mc in HUDMenu.swf, shows the rounds in the gun, the
 // rounds in reserve and a divider line between them. The bar replaces the
 // divider, 3 times as thick so its level is easy to read, shrinks from the
-// left as the weapon wears, and the word CND follows past its end. The drawing
-// is in HudParts.h, since the power armor readout is the same one at another
-// size.
+// left as the weapon wears, and the word CND follows past its end. With
+// bCndBarsFlipped on it shrinks from the right instead, and the word sits
+// before its start. The drawing is in HudParts.h, since the power armor
+// readout is the same one at another size.
 //
 // The bar is a sprite beside the counter, not inside it. With a gun out it
 // replaces the divider and fades with the counter. The game fades the counter
@@ -34,12 +35,12 @@
 //
 // fHudBarX and fHudBarY move the bar and its word from wherever they sit,
 // along the screen in HUD units, and off its spot the divider shows again.
-// fHudBarLength and fHudBarThickness size the bar about its right end, after
-// the spot is chosen at the bar's own size, see Sized in Spot.h. Whatever
-// they say, the bar and its word stay whole on screen, checked a few times a
-// second and on every change, and the bar hides while its counter is off
-// screen. The MCM page shows that place from the screen's top left corner,
-// also in HUD units, see Mcm/HudBar.cpp.
+// fHudBarLength and fHudBarThickness size the bar about its right end, or its
+// left end while flipped, after the spot is chosen at the bar's own size, see
+// Sized in Spot.h. Whatever they say, the bar and its word stay whole on
+// screen, checked a few times a second and on every change, and the bar hides
+// while its counter is off screen. The MCM page shows that place from the
+// screen's top left corner, also in HUD units, see Mcm/HudBar.cpp.
 //
 // A HUD mod can hide the counter for good for an ammo display of its own,
 // by moving it off screen. The bar then hides with it, since no

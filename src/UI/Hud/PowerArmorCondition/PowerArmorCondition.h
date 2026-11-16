@@ -8,9 +8,11 @@
 // rounds in reserve. The bar runs between the 2 rows of digits in the dash's
 // ammo box, as wide as the digits and as deep as the room between them allows,
 // and the word stands inside the box past the bar's right end, level with the
-// bar, sized to fit before the box's right edge, see Layout.h. No panel is
-// drawn around it, since the dash's own panels are part of the model, lit and
-// worn, and a flat copy never matches.
+// bar, sized to fit before the box's right edge, see Layout.h. With
+// bCndBarsFlipped on the bar keeps the box's left end and the word stands
+// before it, sized to fit after the box's left edge. No panel is drawn around
+// it, since the dash's own panels are part of the model, lit and worn, and a
+// flat copy never matches.
 //
 // The dash is not a menu but a model, Interface/Objects/PADashDials01.nif,
 // carried in front of the camera, so the bar is drawn in the HUD movie, which
@@ -24,16 +26,16 @@
 // asked. No renderer means no dash.
 //
 // The bar is laid out in digits across and rows down, the dash's own measure,
-// and put on the screen through the same camera, so it lands in the right place
-// at the dash's own slant on any screen, field of view or ini key. The dash
-// sways as the player breathes, so it is measured every frame and the bar
+// and put on the screen through the same camera, so it lands in the right
+// place at the dash's own slant on any screen, field of view or ini key. The
+// dash sways as the player breathes, so it is measured every frame and the bar
 // follows, its word anti-aliased for animation. fPowerArmorBarX and
 // fPowerArmorBarY move it off the digits, and it still follows the dash.
 // fPowerArmorBarLength and fPowerArmorBarThickness size the bar about its
-// right end, so the word past it stays as it is. Only its size waits for a
-// change, of the dash or of those 2, before it is laid out again, since that
-// means measuring text. If anything fails, or the bar would fall outside the
-// movie, nothing is drawn.
+// right end, or its left end while flipped, so the word beside that end stays
+// as it is. Only its size waits for a change, of the dash, of those 2 or of
+// the flip, before it is laid out again, since that means measuring text. If
+// anything fails, or the bar would fall outside the movie, nothing is drawn.
 //
 // Dash.cpp finds the dash through its camera, and Layout.cpp lays the bar out
 // in the movie. Dash.h and Layout.h are what they share.

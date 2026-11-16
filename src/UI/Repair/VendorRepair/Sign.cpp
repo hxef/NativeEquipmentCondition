@@ -151,6 +151,10 @@ namespace VendorRepair::Sign
 			return;
 		}
 		TakeOut(*a_menu);
+		if (!Settings::NecOn()) {
+			TraceLog::Line("menu", "All of NEC is off, so {:s}'s screen shows no sign", Trader(a_menu));
+			return;
+		}
 		if (!Settings::bVendorRepair.GetValue()) {
 			TraceLog::Line("menu", "Trader repairs are off, so {:s}'s screen shows no sign", Trader(a_menu));
 			return;

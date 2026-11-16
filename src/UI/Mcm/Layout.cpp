@@ -7,6 +7,7 @@
 #include <cstdint>
 #include <string>
 #include <string_view>
+#include <vector>
 
 // MCM draws its settings list in Multi-Line mode. There a row is as tall as
 // its name wrapped 530 px wide, while a grey note's words are drawn 670 px
@@ -19,7 +20,8 @@
 // no name on NEC's pages is wider than 1 line. On NEC's pages it also writes
 // the HUD bar sliders' live ends, see HudBar.cpp. And while MCM asks for a
 // hide of HIDES in Bridge.h, such as whether the Jams start at row shows,
-// NEC keeps MCM's left list on the open page, see KeepOpenPage.
+// NEC keeps MCM's left list on the open page, see KeepOpenPage. While bNecOn
+// is off, NEC's pages leave the left list, see HidePages.
 //
 // MCM's menu is a child of _root.Menu_mc, its list is configPanel_mc's
 // configList_mc, and the list holds the shown page's entries in entryList.
@@ -62,6 +64,13 @@ namespace Mcm
 		{
 			auto list = Flash::Member(Flash::Member(McmMenu(a_menus), "configPanel_mc"sv), "configList_mc"sv);
 			return list.IsObject() ? list : Value{};
+		}
+
+		// The left list of page names in a_mcm, MCM's menu, a value that is no
+		// object while MCM is not open.
+		Value LeftList(const Value& a_mcm)
+		{
+			return Flash::Member(Flash::Member(a_mcm, "HelpPanel_mc"sv), "HelpList_mc"sv);
 		}
 
 		// The left list's entry at a_at, a value that is no object past its
@@ -107,12 +116,105 @@ namespace Mcm
 			return a_entries.GetArraySize() > 0 && a_entries.GetElement(0, &first) && first.IsObject() &&
 			       first.GetMember("modName"sv, &mod) && mod.IsString() && mod.GetString() && std::string_view{ mod.GetString() } == MOD;
 		}
+
+		// The owner NEC's pages take while bNecOn is off. A mod's name is its
+		// folder's, which never holds a |, so no open mod matches it. MOD and
+		// this are literals, so each data() ends in a 0 for a Value.
+		constexpr std::string_view OFF_OWNER = "NEC|off"sv;
+
+		// The left list as NEC last wrote it, -1 when it has not yet, and the
+		// place of the first of NEC's pages in it, -1 for none. Set once a
+		// member is missing, which is said once, and then the pages stay.
+		std::atomic<std::int64_t> g_pagesLength{ -1 };
+		std::atomic<std::int64_t> g_firstPage{ -1 };
+		std::atomic<bool>         g_pagesOn{ true };
+		std::atomic<bool>         g_pagesMissing{ false };
+
+		// Hides NEC's pages in MCM's left list while bNecOn is off, and shows
+		// them again once it is on. The list shows a page only while its
+		// ownerModName is the open mod's modName (ListFiltererEx.as,
+		// EntryMatchesFilter), and NEC's own entry has no ownerModName, so it
+		// stays. MCM filters the list again on InvalidateData, as it does
+		// itself after it changes the open mod (MCM_Menu.as, onListItemPress),
+		// and reads ownerModName elsewhere only while it loads the configs
+		// (decodeJSON, onAllModsLoad). It walks the list only when bNecOn or
+		// the list's length changed, or when the entry where NEC last found
+		// its first page lacks the owner NEC wants, as in a list MCM built
+		// again at the same length. So a list MCM builds while NEC is off
+		// hides the pages before a player can open NEC. numPages is left
+		// alone, since MCM's page index counts on it.
+		void HidePages(Value& a_menus)
+		{
+			auto left = LeftList(McmMenu(a_menus));
+			auto pages = Flash::Member(left, "entryList"sv);
+			if (g_pagesMissing.load() || !pages.IsArray()) {
+				g_pagesLength.store(-1);
+				return;
+			}
+			const auto on = Settings::NecOn();
+			const auto owner = on ? MOD : OFF_OWNER;
+			const auto length = static_cast<std::int64_t>(pages.GetArraySize());
+			const auto first = PageAt(pages, static_cast<double>(g_firstPage.load()));
+			const auto kept = g_firstPage.load() < 0 || (first.IsObject() && Flash::String(first, "ownerModName"sv) == owner);
+			if (g_pagesLength.load() == length && g_pagesOn.load() == on && kept) {
+				return;
+			}
+			g_pagesLength.store(length);
+			g_pagesOn.store(on);
+			g_firstPage.store(-1);
+
+			// NEC's entries, and those of them that carry an owner, the 6 pages.
+			auto               ours = 0;
+			std::vector<Value> owned;
+			for (std::uint32_t i = 0; i < pages.GetArraySize(); i++) {
+				Value page;
+				if (pages.GetElement(i, &page) && page.IsObject() && Flash::String(page, "modName"sv) == MOD) {
+					ours++;
+					if (page.HasMember("ownerModName"sv)) {
+						if (owned.empty()) {
+							g_firstPage.store(i);
+						}
+						owned.push_back(page);
+					}
+				}
+			}
+			if (ours == 0) {
+				return;
+			}
+			// MCM puts NEC's entry and all its pages in the list at once, so an
+			// entry with no owned page means MCM no longer works this way.
+			const char* missing = nullptr;
+			if (owned.empty()) {
+				missing = "ownerModName";
+			} else if (Flash::Member(left, "InvalidateData"sv).IsUndefined()) {
+				missing = "InvalidateData";
+			}
+			if (missing) {
+				if (!g_pagesMissing.exchange(true)) {
+					REX::WARN("MCM's page list has no {:s}, so NEC's pages stay listed while NEC is off.", missing);
+				}
+				return;
+			}
+
+			auto moved = 0;
+			for (auto& page : owned) {
+				if (Flash::String(page, "ownerModName"sv) != owner && Flash::Set(page, "ownerModName"sv, Value(owner.data()))) {
+					moved++;
+				}
+			}
+			if (moved > 0) {
+				Flash::Call(left, "InvalidateData");
+				TraceLog::Line("menu", "MCM's left list {:s} {:d} of NEC's pages, as bNecOn is {:s}", on ? "shows" : "hides", moved, on ? "on" : "off");
+			}
+		}
 	}
 
 	void Layout(Scaleform::GFx::Movie& a_movie)
 	{
 		Value menus;
-		if (g_missing.load() || !a_movie.GetVariable(&menus, "_root.Menu_mc") || !menus.IsObject()) {
+		const auto found = a_movie.GetVariable(&menus, "_root.Menu_mc") && menus.IsObject();
+		HidePages(menus);
+		if (g_missing.load() || !found) {
 			return;
 		}
 		auto list = SettingsList(menus);
@@ -169,7 +271,7 @@ namespace Mcm
 			return;
 		}
 		const auto mcm = McmMenu(menus);
-		auto       left = Flash::Member(Flash::Member(mcm, "HelpPanel_mc"sv), "HelpList_mc"sv);
+		auto       left = LeftList(mcm);
 		const auto pages = Flash::Member(left, "entryList"sv);
 		if (!pages.IsArray()) {
 			return;

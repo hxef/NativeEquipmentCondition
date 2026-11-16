@@ -50,15 +50,18 @@ namespace HudCondition
 		Spot                             spot = SHIPPED;
 		Teller                           teller;
 		bool                             followed = false;
+		bool                             chosen = false;  // a reading chose a spot since the HUD loaded
 		bool                             labelled = false;
 		bool                             colored = false;
 		bool                             dividerHidden = false;
 
 		// The mark where penalties start as last drawn, forgotten with
 		// shownPercent, and as the trace last named it, forgotten only in
-		// Reset, so a relayout redraws it without a second line.
+		// Reset, so a relayout redraws it without a second line. saidFlipped
+		// is the same for the trace's flipped line.
 		HudParts::Readout::Mark shownMark;
 		HudParts::Readout::Mark saidMark;
+		bool                    saidFlipped = false;
 
 		// Where the word and its letters sit at its place past the bar,
 		// and whether it was last shown, see FollowWordSwitch.

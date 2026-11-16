@@ -23,6 +23,10 @@ namespace Workbench
 	using ModChoice = RE::WorkbenchMenuBase::ModChoiceData;
 	using PartList = RE::BSTArray<RE::BSTTuple<RE::TESForm*, RE::BGSTypedFormValuePair::SharedVal>>;
 
+	// The items the bench takes for a job's parts, an item and a count each,
+	// junk standing in for the components it holds.
+	using Taken = RE::BSScrapArray<RE::BSTTuple<RE::TESBoundObject*, std::uint32_t>>;
+
 	// What the bench is repairing, while it is. One bench is open at a time.
 	// The parts stay at this one address, since the boxes read them as they
 	// open, a frame after they go up.

@@ -21,6 +21,8 @@ namespace QuickContainer
 	// QuickContainerItem symbol in HUDMenu.swf.
 	constexpr double METER_CENTER_Y = 14.0;
 
-	// Draws a meter with its left edge at x 0 and its middle at y 0.
-	void Draw(Scaleform::GFx::Value& a_meter, std::int32_t a_percent, bool a_selected);
+	// Draws a meter with its left edge at x 0 and its middle at y 0, its bar
+	// filling from the frame's left side, or from its right side with
+	// a_fromRight.
+	void Draw(Scaleform::GFx::Value& a_meter, std::int32_t a_percent, bool a_selected, bool a_fromRight);
 }

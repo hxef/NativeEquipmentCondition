@@ -84,9 +84,10 @@ namespace HudParts
 		// Once the delete hook's slot is lost, the live HUD menu's targets are
 		// deleted at once, on the HUD's own thread while its movie still
 		// exists. The targets of a menu already gone are let go of first.
+		// bNecOn off loses no slot, so the targets stay for when it is on.
 		void DropTargets()
 		{
-			if (g_deleteLink.Live()) {
+			if (g_deleteLink.Holds()) {
 				return;
 			}
 			ForgetOldTargets();
@@ -214,6 +215,12 @@ namespace HudParts
 		void Queue()
 		{
 			DropTargets();
+			// While NEC is off the last reading goes, so once it is on again
+			// the bars wait for a fresh one and never show a weapon put away.
+			if (!Settings::NecOn()) {
+				g_percent = NONE;
+				return;
+			}
 			if ((!Settings::bHudCondition.GetValue() && !Settings::bPowerArmorBar.GetValue()) || g_queued.exchange(true)) {
 				return;
 			}
@@ -244,7 +251,7 @@ namespace HudParts
 
 		std::int32_t Percent(const Settings::Live<bool>& a_on)
 		{
-			return a_on.GetValue() ? g_percent.load() : NONE;
+			return Settings::NecOn() && a_on.GetValue() ? g_percent.load() : NONE;
 		}
 
 		bool Drawn()
@@ -290,8 +297,9 @@ namespace HudParts
 
 	const RE::BSGFxShaderFXTarget* AddColorTarget(RE::HUDMenu& a_menu, const Value& a_clip)
 	{
-		// Nothing would delete it as its menu goes.
-		if (!g_deleteLink.Live()) {
+		// Nothing would delete it as its menu goes. The delete hook runs
+		// whatever bNecOn says.
+		if (!g_deleteLink.Holds()) {
 			return nullptr;
 		}
 		auto target = std::make_unique<RE::BSGFxShaderFXTarget>(a_clip);

@@ -18,7 +18,7 @@ namespace Papyrus
 	bool FeatureRuns(std::string_view a_feature)
 	{
 		const auto* row = FeatureNamed(a_feature);
-		if (!row || (row->on && !row->on->GetValue()) || !row->Runs()) {
+		if (!Settings::NecOn() || !row || (row->on && !row->on->GetValue()) || !row->Runs()) {
 			return false;
 		}
 		// With its switch on, a loss that leaves no piece working means another

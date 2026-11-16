@@ -9,6 +9,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
+#include <string_view>
 
 namespace HudParts
 {
@@ -176,6 +177,14 @@ namespace HudParts
 			track.SetMember("alpha"sv, Value(TRACK_ALPHA));
 		}
 
+		Still StillEnd(Still a_shipped, bool a_flipped)
+		{
+			if (!a_flipped) {
+				return a_shipped;
+			}
+			return a_shipped == Still::kRightEnd ? Still::kLeftEnd : Still::kRightEnd;
+		}
+
 		void SetPercent(Value& a_readout, double a_width, double a_deep, std::int32_t a_percent, Still a_still, const Mark& a_mark)
 		{
 			auto fill = Flash::Child(a_readout, FILL_NAME);
@@ -255,6 +264,26 @@ namespace HudParts
 			}
 			show(line, from, to);
 			hide(notches);
+		}
+
+		void MirrorLabel(Value& a_readout, double a_width)
+		{
+			// The bar runs from -a_width to 0, so a field from x to x + width
+			// mirrors to -a_width - (x + width).
+			auto label = Flash::Child(a_readout, LABEL_NAME);
+			if (label.IsDisplayObject()) {
+				const auto x = Flash::Number(label, "x"sv);
+				label.SetMember("x"sv, Value(-a_width - (x + Flash::Number(label, "width"sv))));
+			}
+		}
+
+		void TellFlipped(bool a_flipped, bool& a_said, std::string_view a_bars)
+		{
+			if (a_flipped == a_said) {
+				return;
+			}
+			a_said = a_flipped;
+			TraceLog::Line("menu", "{:s} drawn {:s}", a_bars, a_flipped ? "flipped" : "as shipped");
 		}
 
 		double Held(const Settings::Live<float>& a_value, double a_least, double a_most)

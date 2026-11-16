@@ -279,7 +279,9 @@ namespace SpawnCondition
 			ItemCards::Refresh(RE::ENUM_FORM_ID::kWEAP);
 			ItemCards::Refresh(RE::ENUM_FORM_ID::kARMO);
 		}
-		REX::INFO("Worn loot is back on. {:d} stacks you carry that arrived while it was off keep their condition.", carried.kept);
+		// Worn loot or All NEC features turned this on, and the queue does not
+		// say which, so the line names both.
+		REX::INFO("Worn loot rolls again. {:d} stacks you carry that arrived while it or All NEC features was off keep their condition.", carried.kept);
 	}
 
 	void KeepCarriedAfterLoad()
@@ -288,7 +290,7 @@ namespace SpawnCondition
 		// switch says whether the rolls run at all. A full reset is deleting
 		// every form, so it is no time to walk an inventory.
 		const auto* main = RE::Main::GetSingleton();
-		if (!Settings::bSpawnCondition.GetValue() || (main && main->resetGame)) {
+		if (!Settings::NecOn() || !Settings::bSpawnCondition.GetValue() || (main && main->resetGame)) {
 			return;
 		}
 		// Runs on the load's own thread before its loading screen closes. The

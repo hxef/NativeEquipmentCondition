@@ -82,18 +82,20 @@ namespace PaperDoll
 		// before that, the room what it found above it then and held what
 		// held it thinner. tight is the room under held when the bar covers
 		// it, see Hold, and tightSaid what the trace last named of it.
-		// shownMark is the mark last drawn, forgotten with shown.
+		// shownMark and shownStill are the mark and the still end last
+		// drawn, forgotten with shown.
 		struct Bar
 		{
-			Placement               placed;
-			double                  digits{ -1.0 };
-			double                  thickness{ -1.0 };
-			Room                    room;
-			std::optional<Limit>    held;
-			std::optional<double>   tight;
-			std::optional<double>   tightSaid;
-			std::int32_t            shown{ NOT_DRAWN };
-			HudParts::Readout::Mark shownMark;
+			Placement                placed;
+			double                   digits{ -1.0 };
+			double                   thickness{ -1.0 };
+			Room                     room;
+			std::optional<Limit>     held;
+			std::optional<double>    tight;
+			std::optional<double>    tightSaid;
+			std::int32_t             shown{ NOT_DRAWN };
+			HudParts::Readout::Mark  shownMark;
+			HudParts::Readout::Still shownStill{ HudParts::Readout::Still::kLeftEnd };
 		};
 
 		// Called by the Pip-Boy every frame. The doll is looked up every time,
@@ -123,10 +125,12 @@ namespace PaperDoll
 					Queue();
 				}
 
-				// Both are read every frame, as the HUD bars read theirs. The
+				// All 3 are read every frame, as the HUD bars read theirs. The
 				// mark keeps its width at every thickness.
 				const auto thickness = HudParts::Readout::Held(Settings::fPipboyBarThickness, HudParts::Readout::LEAST_SIZE, PIPBOY_MOST);
 				const auto mark = HudParts::Readout::PenaltyMark(Condition::Kind::kArmor, BAR_DEEP, DOLL_MARK);
+				const auto flipped = Settings::bCndBarsFlipped.GetValue();
+				const auto still = HudParts::Readout::StillEnd(HudParts::Readout::Still::kLeftEnd, flipped);
 
 				// The header's texts, read on the first bar that needs them.
 				std::optional<std::vector<Value>> texts;
@@ -171,10 +175,10 @@ namespace PaperDoll
 					}
 
 					const auto percent = LowestPercent(region);
-					if (percent == bar.shown && mark == bar.shownMark) {
+					if (percent == bar.shown && mark == bar.shownMark && still == bar.shownStill) {
 						continue;
 					}
-					HudParts::Readout::SetPercent(readout, bar.placed.width, bar.placed.deep, percent, HudParts::Readout::Still::kLeftEnd, mark);
+					HudParts::Readout::SetPercent(readout, bar.placed.width, bar.placed.deep, percent, still, mark);
 					readout.SetMember("visible"sv, Value(percent >= 0));
 					if (percent != bar.shown) {
 						std::format_to(std::back_inserter(drawn), "{:s}{:s} {:s}", drawn.empty() ? "" : ", ", ENTRY_NAMES[region],
@@ -182,12 +186,16 @@ namespace PaperDoll
 					}
 					bar.shown = percent;
 					bar.shownMark = mark;
+					bar.shownStill = still;
 					redrawn = true;
 				}
 
 				SayLayouts(laid, thickness);
 				if (!drawn.empty()) {
 					TraceLog::Line("menu", "Pip-Boy doll CND drawn {:s}, hidden where nothing that wears covers it", drawn);
+				}
+				if (redrawn) {
+					HudParts::Readout::TellFlipped(flipped, saidFlipped, "Pip-Boy doll CND bars"sv);
 				}
 				if (redrawn && mark != saidMark) {
 					saidMark = mark;
@@ -205,6 +213,7 @@ namespace PaperDoll
 				refused = false;
 				bars.fill(Bar{});
 				saidMark = HudParts::Readout::Mark{};
+				saidFlipped = false;
 				noClipsSaid = false;
 				noBoxSaid = false;
 			}
@@ -267,6 +276,7 @@ namespace PaperDoll
 				a_bar.placed = placement;
 				a_bar.shown = NOT_DRAWN;
 				a_bar.shownMark = HudParts::Readout::Mark{};
+				a_bar.shownStill = HudParts::Readout::Still::kLeftEnd;
 				return true;
 			}
 
@@ -317,8 +327,10 @@ namespace PaperDoll
 			std::array<Bar, kRegions>    bars;
 
 			// The mark the trace last named, forgotten only in Reset, so a
-			// relayout redraws it without a second line.
+			// relayout redraws it without a second line, and the same for the
+			// flipped line.
 			HudParts::Readout::Mark saidMark;
+			bool                    saidFlipped = false;
 
 			// Whether the trace named the clips it could not read, see
 			// SayLayouts.

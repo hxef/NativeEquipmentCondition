@@ -19,10 +19,6 @@ namespace Workbench
 		// The box and what it does on yes or no
 		// -------------------------------------------------------------------
 
-		// The items the bench takes for the job's parts, an item and a count
-		// each, junk standing in for the components it holds.
-		using Taken = RE::BSScrapArray<RE::BSTTuple<RE::TESBoundObject*, std::uint32_t>>;
-
 		// NEC's callback behind the box. The bench calls OnAccept on yes and
 		// then frees it, and on no only frees it, on its first frame after
 		// the box closes. Its constructor writes NEC's function table over the

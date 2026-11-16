@@ -2,6 +2,7 @@
 
 #include "Condition/Condition.h"
 #include "Condition/Equipped.h"
+#include "Core/Settings.h"
 #include "Core/TraceLog/TraceLog.h"
 
 #include <algorithm>
@@ -100,6 +101,6 @@ namespace PaperDoll
 
 	std::int32_t LowestPercent(std::size_t a_region)
 	{
-		return a_region < kRegions ? g_percent[a_region].load() : NONE;
+		return a_region < kRegions && Settings::NecOn() ? g_percent[a_region].load() : NONE;
 	}
 }

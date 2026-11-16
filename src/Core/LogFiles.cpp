@@ -1,6 +1,6 @@
 #include "Core/LogFiles.h"
 
-#include "Core/Settings.h"
+#include "Core/Settings/Settings.h"
 
 #include <REX/CONVERT.h>
 #include <REX/W32/OLE32.h>

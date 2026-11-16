@@ -1,7 +1,7 @@
 #include "Gameplay/SpawnCondition/Band.h"
 
 #include "Condition/Condition.h"
-#include "Core/Settings.h"
+#include "Core/Settings/Settings.h"
 
 #include <algorithm>
 #include <cmath>

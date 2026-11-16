@@ -1,7 +1,7 @@
 #include "UI/Repair/VendorRepair/Quote.h"
 
 #include "Condition/Repair.h"
-#include "Core/Settings.h"
+#include "Core/Settings/Settings.h"
 #include "Core/Text/Text.h"
 #include "Core/TraceLog/TraceLog.h"
 #include "UI/Repair/Columns/Columns.h"
@@ -54,7 +54,7 @@ namespace VendorRepair
 
 		const auto worth = static_cast<float>(a_selection.worth);
 		const auto multiple = Scaled(WRECK_MULTIPLE);
-		const auto owed = Repair::Whole(worth * Repair::Debt(a_selection.percent, multiple));
+		const auto owed = Repair::Whole(worth * Repair::DebtTenths(a_selection.tenths, multiple));
 
 		std::vector<Quote> steps;
 		for (const auto level : Repair::Above(a_selection.percent)) {
@@ -68,16 +68,16 @@ namespace VendorRepair
 		return Repair::Distinct(std::move(steps));
 	}
 
-	std::optional<std::uint32_t> PriceFor(RE::Actor& a_trader, RE::TESBoundObject& a_object, std::uint32_t a_percent,
+	std::optional<std::uint32_t> PriceFor(RE::Actor& a_trader, RE::TESBoundObject& a_object, std::uint32_t a_tenths,
 		std::uint32_t a_worth, std::uint32_t a_to)
 	{
+		Selection selection;
+		selection.SetTenths(a_tenths);
 		const auto ceiling = LevelFor(a_trader, a_object);
-		if (a_to > ceiling || a_to <= a_percent) {
+		if (a_to > ceiling || a_to <= selection.percent) {
 			return std::nullopt;
 		}
-		Selection selection;
 		selection.object = &a_object;
-		selection.percent = a_percent;
 		selection.kind = Condition::KindOf(a_object);
 		selection.worth = a_worth;
 		selection.trade = TradeOf(a_object);

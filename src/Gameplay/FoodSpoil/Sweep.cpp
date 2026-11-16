@@ -1,7 +1,7 @@
 #include "Gameplay/FoodSpoil/Food.h"
 
 #include "Core/ScriptEvents.h"
-#include "Core/Settings.h"
+#include "Core/Settings/Settings.h"
 #include "Core/TraceLog/TraceLog.h"
 #include "Gameplay/FoodSpoil/FoodSpoil.h"
 #include "Gameplay/FoodSpoil/Kinds.h"

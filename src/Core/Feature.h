@@ -4,7 +4,7 @@
 
 #include "Core/CallPatch/CallPatch.h"
 #include "Core/Parts.h"
-#include "Core/Settings.h"
+#include "Core/Settings/Settings.h"
 
 #include <span>
 #include <string_view>

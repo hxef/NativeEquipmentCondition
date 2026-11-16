@@ -176,21 +176,13 @@ namespace FoodSpoil
 			}
 		}
 
-		// The plugin of a_plugins that adds the record a_id names, by its
-		// load order slot.
-		const RE::TESFile* PluginOf(RE::TESFormID a_id, const std::vector<const RE::TESFile*>& a_plugins)
-		{
-			const auto at = std::ranges::find_if(a_plugins, [a_id](const RE::TESFile* a_file) { return a_file->GetLoadOrderFormID(a_id) == a_id; });
-			return at != a_plugins.end() ? *at : nullptr;
-		}
-
 		// "MyFoodMod.esp|000801 = raw            ; Radstag Jerky, a disease
 		// risk", or nothing for a form no plugin adds. The plugin behind the
 		// rule follows when it is not the one that adds the food, as in "a
 		// disease risk by SomeMod.esp", so a vanilla line names none.
-		std::string LineOf(RE::TESFormID a_id, const Sorted& a_food, const std::vector<const RE::TESFile*>& a_plugins)
+		std::string LineOf(RE::TESFormID a_id, const Sorted& a_food)
 		{
-			const auto* plugin = PluginOf(a_id, a_plugins);
+			const auto* plugin = ListFiles::PluginOf(a_id);
 			const auto* form = RE::TESForm::GetFormByID(a_id);
 			if (!plugin || !form) {
 				return {};
@@ -218,12 +210,6 @@ namespace FoodSpoil
 
 	void NoteFoods(const std::unordered_map<RE::TESFormID, Sorted>& a_kinds)
 	{
-		std::vector<const RE::TESFile*> plugins;
-		for (const auto* plugin : g_dataHandler->files) {
-			if (plugin && plugin->IsActive()) {
-				plugins.push_back(plugin);
-			}
-		}
 		std::vector<RE::TESFormID> ids;
 		for (const auto& [id, food] : a_kinds) {
 			ids.push_back(id);
@@ -234,7 +220,7 @@ namespace FoodSpoil
 			Note(LogPart::kFoods, line);
 		}
 		for (const auto id : ids) {
-			if (const auto line = LineOf(id, a_kinds.at(id), plugins); !line.empty()) {
+			if (const auto line = LineOf(id, a_kinds.at(id)); !line.empty()) {
 				Note(LogPart::kFoods, line);
 			}
 		}

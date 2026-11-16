@@ -4,7 +4,7 @@
 #include "Condition/Provenance/Care.h"
 #include "Condition/Provenance/Rank.h"
 #include "Condition/Provenance/Supply.h"
-#include "Core/Settings.h"
+#include "Core/Settings/Settings.h"
 #include "Core/Snapshot.h"
 
 #include <algorithm>

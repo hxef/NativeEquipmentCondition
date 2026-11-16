@@ -1,11 +1,11 @@
 #include "Gameplay/FireRate/FireRate.h"
 
 #include "Condition/Condition.h"
-#include "Condition/Excluded.h"
 #include "Condition/Equipped.h"
+#include "Condition/Excluded.h"
 #include "Core/CallPatch/CallPatch.h"
 #include "Core/Runtime.h"
-#include "Core/Settings.h"
+#include "Core/Settings/Settings.h"
 #include "Core/TraceLog/TraceLog.h"
 #include "Gameplay/FireRate/Cuts.h"
 #include "Gameplay/InHand.h"

@@ -7,7 +7,7 @@
 #include "Condition/Equipped.h"
 #include "Condition/WeaponWear/WeaponWear.h"
 #include "Core/ScriptEvents.h"
-#include "Core/Settings.h"
+#include "Core/Settings/Settings.h"
 #include "Core/Text/Text.h"
 #include "Core/TraceLog/TraceLog.h"
 

@@ -3,7 +3,8 @@
 #include "Core/CallPatch/CallPatch.h"
 #include "Core/Parts.h"
 #include "Core/Pieces.h"
-#include "Core/Settings.h"
+#include "Core/Presets/Presets.h"
+#include "Core/Settings/Settings.h"
 #include "Core/Text/Text.h"
 #include "UI/Flash.h"
 
@@ -28,8 +29,11 @@
 // switch whose rows hide while it is off takes a number its page leaves free,
 // which other pages use too. So do the other hides. On the Repairs page,
 // where 14, 15, 16, 18 and 19 are taken, iRepairLock:Lock takes 20 for Perk
-// lock and Lock spares too, iRepairSupplies:Supplies 21 for Supplies only from
-// and fBenchCostMult:Paid 22 for the 8 rows of paid repairs.
+// lock and Lock spares too, iRepairSupplies:Supplies 21 for Supplies only
+// from, fBenchCostMult:Paid 22 for the 8 rows of paid repairs,
+// bWorkbenchRepair:Levels 23 for Repair box opens on and
+// bWorkbenchRepair:Repairs 24 for Workbench repair cost and the Repair with
+// spares section, and iKeepSpareMods:Choose 25 for Spare mod rows.
 // Each note is worked out from SettingLinks and CallPatch's losses, so a
 // setting needs no code of its own here. A piece left to a mod is named once:
 // in the note of a block that works through it, else in the list at the top.
@@ -47,10 +51,6 @@ namespace Mcm
 		constexpr std::string_view NOTE = ".note"sv;
 		constexpr std::string_view PARTS = "parts"sv;
 		constexpr std::string_view PARTS_HELP = "parts.help"sv;
-
-		// MCM draws a noTint text entry white, so this colour shows as is.
-		// The tag quotes it with " as MCM's own html does.
-		constexpr std::string_view GREY = "#808080"sv;
 
 		// -------------------------------------------------------------------
 		// The block notes
@@ -236,6 +236,17 @@ namespace Mcm
 		if (const auto* hide = HideOf(a_id)) {
 			return hide->shows();
 		}
+		// Reset preset shows while the picked preset has changes, Delete
+		// preset while it is the player's own.
+		if (a_id == PRESET_CHANGES_ID) {
+			return Presets::PickedHasChanges();
+		}
+		if (a_id == PRESET_OWN_ID) {
+			return Presets::PickedIsOwn();
+		}
+		if (a_id == PRESET_ABOUT_ID) {
+			return !AboutLine().empty();
+		}
 		if (a_id.ends_with(FREE)) {
 			const auto* on = Settings::SwitchByKey(a_id.substr(0, a_id.size() - FREE.size()));
 			return on ? std::optional{ !CallPatch::IsYielded(*on) } : std::nullopt;
@@ -259,6 +270,9 @@ namespace Mcm
 	{
 		if (a_id == PARTS_HELP) {
 			return Flash::HtmlEscaped(OnlyGameVersion() ? Text::MenuVersionHelp() : Text::MenuNoteHelp());
+		}
+		if (a_id == PRESET_ABOUT_NOTE) {
+			return AboutWords();
 		}
 		if (!a_id.ends_with(NOTE)) {
 			return std::nullopt;

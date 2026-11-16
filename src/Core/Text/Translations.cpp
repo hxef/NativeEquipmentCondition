@@ -35,7 +35,8 @@ namespace Text
 		// Reading a file
 		// -------------------------------------------------------------------
 
-		// In a folder beside NEC.ini, and the game runs from its own folder.
+		// In NEC's folder beside the list folders, and the game runs from its
+		// own folder.
 		constexpr std::string_view FOLDER = "Data/F4SE/Plugins/NEC/Translations/";
 
 		// A bigger file is no language file.
@@ -64,17 +65,6 @@ namespace Text
 			a_bytes.resize(static_cast<std::size_t>(a_size));
 			return file && file.read(a_bytes.data(), static_cast<std::streamsize>(a_size)) &&
 			       file.gcount() == static_cast<std::streamsize>(a_size);
-		}
-
-		// The key a file names, in any case.
-		std::optional<Key> KeyNamed(std::string_view a_name)
-		{
-			for (std::size_t i = 0; i < KEY_COUNT; i++) {
-				if (SameName(ENGLISH[i].name, a_name)) {
-					return Key{ static_cast<std::uint16_t>(i) };
-				}
-			}
-			return std::nullopt;
 		}
 
 		// -------------------------------------------------------------------
@@ -157,7 +147,7 @@ namespace Text
 					ReadLayout("RowLines", text, ROW_LINES_LOW, ROW_LINES_HIGH, a_table.rowLines, where, a_read);
 					continue;
 				}
-				const auto key = KeyNamed(name);
+				const auto key = KeyOf(name);
 				if (!key) {
 					a_read.faults.push_back(std::format("{:s}{:s} is no key of NEC {:d}.{:d}.{:d}, maybe one an older NEC had.", where, name,
 						F4SE::GetPluginVersion().major(), F4SE::GetPluginVersion().minor(), F4SE::GetPluginVersion().patch()));
@@ -337,6 +327,16 @@ namespace Text
 	{
 		g_ready.store(true, std::memory_order_release);
 		static_cast<void>(TableNow());
+	}
+
+	std::optional<Key> KeyOf(std::string_view a_name)
+	{
+		for (std::size_t i = 0; i < KEY_COUNT; i++) {
+			if (SameName(ENGLISH[i].name, a_name)) {
+				return Key{ static_cast<std::uint16_t>(i) };
+			}
+		}
+		return std::nullopt;
 	}
 
 	const char* Pick(Key a_key)

@@ -1,6 +1,6 @@
 #include "UI/Hud/HudCondition/Listener.h"
 
-#include "Core/Settings.h"
+#include "Core/Settings/Settings.h"
 #include "Core/TraceLog/TraceLog.h"
 #include "UI/Roles/Roles.h"
 
@@ -79,15 +79,17 @@ namespace HudCondition
 
 	// The first reading takes the spot chosen or the shipped place.
 	// Later only a spot that differs is taken. The frame then lays the
-	// bar out there. A spot that differs by clear alone is taken with
-	// nothing in NEC.log, since the bar and its word do not move.
+	// bar out there. A spot that differs by clear and turn alone is taken
+	// with nothing in NEC.log, since the bar and its word do not move.
 	void FrameListener::Follow(const std::optional<Choice>& a_choice)
 	{
-		if (followed && (!a_choice || a_choice->spot.SitsAs(spot))) {
-			spot.clear = a_choice ? a_choice->spot.clear : spot.clear;
+		const bool same = followed && (!a_choice || a_choice->spot.SitsAs(spot));
+		if (a_choice) {
+			spot = a_choice->spot;
+		}
+		if (same) {
 			return;
 		}
-		spot = a_choice ? a_choice->spot : spot;
 		followed = true;
 		const auto said = a_choice ? std::string_view{ a_choice->said } : std::string_view{};
 		if (!spot.onDivider) {

@@ -1,8 +1,8 @@
 #include "UI/Inventory/Pipboy.h"
 
+#include "Core/TraceLog/TraceLog.h"
 #include "UI/Inventory/ItemCard/ItemCard.h"
 #include "UI/MenuMovies.h"
-#include "Core/TraceLog/TraceLog.h"
 
 #include <algorithm>
 #include <array>

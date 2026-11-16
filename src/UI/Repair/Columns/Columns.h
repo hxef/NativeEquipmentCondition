@@ -8,11 +8,12 @@
 #include <string_view>
 #include <vector>
 
-// The rows of the 3 repair boxes in columns: the spare box and the repair level
-// boxes of the bench and of a trader. The box sets each row as html, so a row
-// that carries its own tab stops lines its cells up under the other rows'. Each
-// row is a centred paragraph as wide as the block, so the block is centred in
-// whatever field draws the rows, every row starting at the same left edge.
+// The rows of the repair boxes in columns: the spare box and the repair level
+// boxes of the bench and of a trader, whose rows end with gains, and the box
+// of a spare's mods. The box sets each row as html, so a row that carries its
+// own tab stops lines its cells up under the other rows'. Each row is a centred
+// paragraph as wide as the block, so the block is centred in whatever field
+// draws the rows, every row starting at the same left edge.
 // Nothing in the box's movie is written. Each column is as wide as its widest
 // cell, measured in the font the box draws its rows in, with a gap after it.
 // With bRepairBoxColumns off, each row is its cells joined by 2 spaces in a

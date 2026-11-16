@@ -4,6 +4,7 @@
 
 #include <cstdint>
 #include <optional>
+#include <string>
 
 // Condition is the vanilla health extra data on an inventory stack,
 // MIN_HEALTH to MAX_HEALTH. Each kind of item has its own folder saying which
@@ -119,6 +120,69 @@ namespace Condition
 	// piece's card shows it too, see UI/Inventory/ItemCard/PowerArmor.cpp.
 	double ShownPercent(float a_health);
 
+	// Full condition in tenths of a percent, the unit a card's number is
+	// counted in.
+	inline constexpr std::uint32_t FULL_TENTHS = 1000;
+
+	// 10 tenths make 1 percent.
+	inline constexpr std::uint32_t TENTHS_PER_PERCENT = 10;
+
+	// The most a worn item reads in tenths, 99.9, so only an item at full
+	// reads 100.
+	inline constexpr std::uint32_t MOST_WORN_TENTHS = FULL_TENTHS - 1;
+
+	// The settings of iCndDecimals, by their number.
+	enum class CardDecimals : std::int32_t
+	{
+		// Whole numbers.
+		kOff = 0,
+		// A tenth only when it is not 0: 97.5 and 98.
+		kFractions = 1,
+		// Always a tenth: 97.5 and 98.0.
+		kAlways = 2
+	};
+
+	// iCndDecimals as it stands. Any other number reads as Always.
+	[[nodiscard]] CardDecimals Decimals();
+
+	// The number the CND row of a card shows for a_health, in tenths, 0 to
+	// 1000. a_wears is true for gear and false for food, which has no top
+	// cap. At Off it is ShownPercent for gear and WholePercent for food times
+	// 10, so its tenth is always 0. Else a_health to the tenth, 1 at least for
+	// any health above 0, 999 at most for worn gear, and 1000 for a health
+	// below 0, no health extra data.
+	[[nodiscard]] std::uint32_t CardTenths(float a_health, bool a_wears);
+
+	// CardTenths of an item that wears, as Percent reads it, or nothing for
+	// one that does not. a_stack can be null.
+	std::optional<std::uint32_t> Tenths(const RE::BGSInventoryItem& a_item, const RE::BGSInventoryItem::Stack* a_stack);
+
+	// The same for a_object with a_extra as its health's list. a_extra can be
+	// null.
+	std::optional<std::uint32_t> Tenths(const RE::TESBoundObject& a_object, RE::ExtraDataList* a_extra);
+
+	// a_tenths as the card writes it, with no %. A full item is "100" in
+	// every setting. At Off "98", at Fractions "98" and "97.5", at Always
+	// "98.0" and "97.5". The mark is a point in every language, as vanilla's
+	// own cards write a weight.
+	[[nodiscard]] std::string CardText(std::uint32_t a_tenths);
+
+	// A point a setting starts from, in tenths, such as "97.5". A whole point
+	// is written whole, "25" and never "25.0", in every setting.
+	[[nodiscard]] std::string PointText(std::uint32_t a_tenths);
+
+	// a_tenths always with its tenth, "98.0", "97.5" and "100.0", in every
+	// setting.
+	[[nodiscard]] std::string TenthText(std::uint32_t a_tenths);
+
+	// The value a card is given for a_tenths. Vanilla, DEF_UI and FallUI cut
+	// a number's text after its precision without rounding, and a float tenth
+	// can sit just under its value: a Weight of 4.2 prints as 4.1. So a tenth
+	// goes a hair above, 97.5 as 97.505, the way WearRateChange feeds a rate
+	// change. A whole value goes exact at Off, for a full item and at
+	// Fractions, where the card shows no tenth.
+	[[nodiscard]] double CardValue(std::uint32_t a_tenths);
+
 	// Where wear starts to cost an item of a_kind, fWeaponPenaltyStart or
 	// fArmorPenaltyStart, kept between 0 and 1. A value that is not a number
 	// counts as 1.
@@ -142,6 +206,10 @@ namespace Condition
 	// under 1, since the engine deletes a health set to exactly 1, and an item
 	// with no health counts as never touched.
 	float FromPercent(std::uint32_t a_percent);
+
+	// The same for a condition in tenths, 704 for 70.4%, so the card reads
+	// a_tenths back. At a_percent times 10 it is FromPercent to the bit.
+	float FromTenths(std::uint32_t a_tenths);
 
 	// Whether Decrease would change a_health, what HealthOf reads off a stack,
 	// by taking a_amount off, see Changes in Condition.cpp. The game lists the

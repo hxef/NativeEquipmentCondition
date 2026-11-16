@@ -59,10 +59,11 @@ namespace Workbench
 
 	// Marks the rows the bench has built and not yet drawn. An item too worn to
 	// modify is faded. A worn item the bench left out, since no mod fits it
-	// here, is listed after all, greyed, and every stack of it stays listed
-	// until the bench closes, repaired or not, so a repair never takes the row
-	// out from under the highlight. The rows and the bench's list of what the
-	// player carries stay in the same order.
+	// here, is listed after all while the bench repairs, see BenchRepairs,
+	// greyed, and every stack of it stays listed until the bench closes,
+	// repaired or not, so a repair never takes the row out from under the
+	// highlight. The rows and the bench's list of what the player carries
+	// stay in the same order.
 	void MarkWorn(RE::ExamineMenu* a_menu);
 
 	// Whether no mod fits an item here, which is whether MarkWorn listed it
@@ -73,6 +74,7 @@ namespace Workbench
 	void ForgetListed();
 
 	// Adds the frame listener that fades the equipped items and keeps the
-	// button's word, see Relabel in Label.h, to a bench movie.
+	// button's word, see Relabel in Label.h, to a bench movie. It also
+	// decides REPAIR on a fresh Pip-Boy inspect screen, see Inspect.h.
 	void WatchEquipped(Scaleform::GFx::Movie& a_movie);
 }

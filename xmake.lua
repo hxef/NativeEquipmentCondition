@@ -26,9 +26,15 @@ set_config("commonlib_ini", true)
 -- release read it as target:values("nec.docs").
 local DOCS = "F4SE/Plugins/NEC/Docs"
 
+-- The folder that holds NEC.ini, the player's NEC_custom.ini and MCM_Presets,
+-- in every archive and in what a build deploys, from the mod's root. The
+-- deploy and xmake release read it as target:values("nec.config").
+local CONFIG = "F4SE/Plugins/NEC/Config"
+
 -- Copies the plugin into a folder after every build, for example a Mod
--- Organizer 2 mod, into F4SE/Plugins, F4SE/Plugins/NEC/Translations and
--- MCM/Config/NEC. Off unless set, and remembered once configured:
+-- Organizer 2 mod, into F4SE/Plugins, F4SE/Plugins/NEC/Config,
+-- F4SE/Plugins/NEC/Translations and MCM/Config/NEC. Off unless set, and
+-- remembered once configured:
 --
 --     xmake f --deploy_dir="C:/MO2/mods/Native Equipment Condition"
 --
@@ -98,24 +104,28 @@ target("NEC")
         texts.build(target:autogendir())
     end)
 
-    -- NEC.ini ships beside the DLL, the language files in NEC/Translations
-    -- beside it, README.txt and NEC_Papyrus_API.txt in DOCS, the vanilla
-    -- fridge list in NEC/Fridge, an example file in NEC/Exclude, NEC/Food,
-    -- NEC/Fridge, NEC/Traders and NEC/Wear, and the MCM page's config.json in
-    -- the folder MCM reads, all kept in publish with the rest of what the
-    -- archive carries.
-    -- NEC_custom.ini is the player's own, and NEC writes a key there only when
-    -- the MCM page changes it.
-    add_installfiles("publish/NEC.ini", { prefixdir = "F4SE/Plugins" })
+    -- NEC.ini ships in CONFIG and the presets NEC ships in CONFIG/MCM_Presets,
+    -- the language files in NEC/Translations, README.txt and
+    -- NEC_Papyrus_API.txt in DOCS, the vanilla fridge list in NEC/Fridge, an
+    -- example file in NEC/Exclude, NEC/Food, NEC/Fridge, NEC/Traders and
+    -- NEC/Wear, and the MCM page's config.json in the folder MCM reads, all
+    -- kept in publish with the rest of what the archive carries.
+    -- NEC_custom.ini is the player's own, and NEC makes it in CONFIG and writes
+    -- a key there only when the MCM page changes it. No Custom folder ships in
+    -- CONFIG/MCM_Presets, since NEC makes it for what the player changes or
+    -- saves there.
+    add_installfiles("publish/NEC.ini", { prefixdir = CONFIG })
     add_installfiles("publish/README.txt", { prefixdir = DOCS })
     add_installfiles("publish/NEC_Papyrus_API.txt", { prefixdir = DOCS })
     set_values("nec.docs", DOCS)
+    set_values("nec.config", CONFIG)
     add_installfiles("publish/Translations/*.ini", { prefixdir = "F4SE/Plugins/NEC/Translations" })
     add_installfiles("publish/Exclude/*.ini", { prefixdir = "F4SE/Plugins/NEC/Exclude" })
     add_installfiles("publish/Food/*.ini", { prefixdir = "F4SE/Plugins/NEC/Food" })
     add_installfiles("publish/Fridge/*.ini", { prefixdir = "F4SE/Plugins/NEC/Fridge" })
     add_installfiles("publish/Traders/*.ini", { prefixdir = "F4SE/Plugins/NEC/Traders" })
     add_installfiles("publish/Wear/*.ini", { prefixdir = "F4SE/Plugins/NEC/Wear" })
+    add_installfiles("publish/MCM_Presets/*.ini", { prefixdir = CONFIG .. "/MCM_Presets" })
     add_installfiles("publish/MCM/Config/NEC/config.json", { prefixdir = "MCM/Config/NEC" })
 
     -- Records what the DLL was built from for xmake release, see
@@ -134,11 +144,12 @@ target("NEC")
         local plugins = path.join(dir, "F4SE", "Plugins")
         local mcm = path.join(dir, "MCM", "Config", "NEC")
         local docs = path.join(dir, target:values("nec.docs"))
+        local config = path.join(dir, target:values("nec.config"))
         local publish = path.join(os.projectdir(), "publish")
         local files = {
             { target:targetfile(), plugins },
             { target:symbolfile(), plugins },
-            { path.join(publish, "NEC.ini"), plugins },
+            { path.join(publish, "NEC.ini"), config },
             { path.join(publish, "README.txt"), docs },
             { path.join(publish, "NEC_Papyrus_API.txt"), docs },
             { path.join(publish, "MCM", "Config", "NEC", "config.json"), mcm },
@@ -147,6 +158,9 @@ target("NEC")
             for _, file in ipairs(os.files(path.join(publish, folder, "*.ini"))) do
                 table.insert(files, { file, path.join(plugins, "NEC", folder) })
             end
+        end
+        for _, file in ipairs(os.files(path.join(publish, "MCM_Presets", "*.ini"))) do
+            table.insert(files, { file, path.join(config, "MCM_Presets") })
         end
         if pex then
             table.insert(files, { pex, path.join(dir, "Scripts") })
@@ -166,8 +180,9 @@ target("NEC")
     end)
 
 -- Packs build/NativeEquipmentCondition-<version>.zip, for any site, from the
--- last build. The archive holds F4SE/Plugins with NEC.dll, NEC.pdb and NEC.ini,
--- F4SE/Plugins/NEC/Translations with the 12 language files,
+-- last build. The archive holds F4SE/Plugins with NEC.dll and NEC.pdb,
+-- the Config folder (CONFIG at the top) with NEC.ini and the presets in
+-- MCM_Presets, F4SE/Plugins/NEC/Translations with the 12 language files,
 -- the Docs folder (DOCS at the top) with README.txt and NEC_Papyrus_API.txt,
 -- F4SE/Plugins/NEC/Fridge with the vanilla fridge list, an example file in
 -- F4SE/Plugins/NEC/Exclude, NEC/Food, NEC/Fridge, NEC/Traders and NEC/Wear,
@@ -315,12 +330,15 @@ task("release")
         local plugins = path.join(stage, "F4SE", "Plugins")
         local mcm = path.join(stage, "MCM", "Config", "NEC")
         local docs = path.join(stage, target:values("nec.docs"))
+        local config = path.join(stage, target:values("nec.config"))
         os.mkdir(plugins)
         os.mkdir(mcm)
         os.mkdir(docs)
+        os.mkdir(path.join(config, "MCM_Presets"))
         os.cp(dll, plugins)
         os.cp(pdb, plugins)
-        os.cp(path.join(os.projectdir(), "publish", "NEC.ini"), plugins)
+        os.cp(path.join(os.projectdir(), "publish", "NEC.ini"), config)
+        os.cp(path.join(os.projectdir(), "publish", "MCM_Presets", "*.ini"), path.join(config, "MCM_Presets"))
         os.cp(path.join(os.projectdir(), "publish", "README.txt"), docs)
         os.cp(path.join(os.projectdir(), "publish", "NEC_Papyrus_API.txt"), docs)
         os.mkdir(path.join(plugins, "NEC", "Translations"))

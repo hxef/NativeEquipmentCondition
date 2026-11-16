@@ -55,8 +55,10 @@ namespace Materials
 	// LeastPart. a_tenths scales the doubled count before vanilla's count, in
 	// tenths and rounded down, 10 for none and SCRAPPED_TENTHS for exactly
 	// what scrapping gives. With a_scrapper false the components only a
-	// Scrapper rank gives count as 0, as for a player with no rank. a_extra
-	// can be null.
+	// Scrapper rank gives count as 0, as for a player with no rank. a_kept
+	// names mods by form ID that come back whole as loose mods, see Loose.h:
+	// each passes over 1 enabled entry of the mod list, so its recipe counts
+	// for nothing. With none kept every mod counts. a_extra can be null.
 	[[nodiscard]] std::vector<Part> Yield(const RE::TESBoundObject& a_object, const RE::ExtraDataList* a_extra,
-		std::uint32_t a_percent, std::uint32_t a_tenths, bool a_scrapper = true);
+		std::uint32_t a_percent, std::uint32_t a_tenths, bool a_scrapper = true, std::span<const std::uint32_t> a_kept = {});
 }

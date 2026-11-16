@@ -1,11 +1,13 @@
 #include "UI/Inventory/ItemCard/Cards.h"
 
-#include "Core/Settings.h"
+#include "Condition/Condition.h"
+#include "Core/Settings/Settings.h"
 #include "Core/TraceLog/TraceLog.h"
 #include "UI/Flash.h"
 #include "UI/Inventory/Pipboy.h"
 #include "UI/Roles/Card.h"
 
+#include <algorithm>
 #include <array>
 #include <cmath>
 #include <cstdint>
@@ -51,7 +53,7 @@ namespace ItemCard
 		struct Entry
 		{
 			std::uint32_t        index;             // the child vanilla's card draws CND as
-			double               percent;           // the number the row prints
+			std::uint32_t        tenths;            // the number the row prints, see Condition::CardTenths
 			bool                 fridge;            // the row gets the fridge icon
 			std::optional<float> wearRate;          // the item's wear rate, see WearRate.cpp
 			std::optional<float> wearRateCompared;  // the rate of the item a workbench compares its copy with
@@ -63,6 +65,17 @@ namespace ItemCard
 		{
 			const auto rate = Flash::Member(a_entry, a_mark);
 			return Flash::IsAnyNumber(rate) ? std::optional{ static_cast<float>(Flash::AsNumber(rate)) } : std::nullopt;
+		}
+
+		// The tenths a CND entry's value stands for. NEC fed it as
+		// Condition::CardValue, a hair above its tenth at most, so the nearest
+		// tenth is the one. Kept between 0 and 1000.
+		std::uint32_t TenthsIn(const Value& a_entry)
+		{
+			const auto value = Flash::Number(a_entry, "value"sv);
+			const auto full = static_cast<double>(Condition::FULL_TENTHS);
+			const auto tenths = value * static_cast<double>(Condition::TENTHS_PER_PERCENT);
+			return std::isfinite(value) ? static_cast<std::uint32_t>(std::lround(std::clamp(tenths, 0.0, full))) : 0;
 		}
 
 		// The card draws its plain rows from the last entry to the first, then
@@ -82,7 +95,7 @@ namespace ItemCard
 					continue;
 				}
 				if (HasText(entry, CND_TEXT)) {
-					return Entry{ plainRows, Flash::Number(entry, "value"sv), Flash::Bool(entry, FRIDGE_MARK), WearRateIn(entry, WEAR_RATE_MARK),
+					return Entry{ plainRows, TenthsIn(entry), Flash::Bool(entry, FRIDGE_MARK), WearRateIn(entry, WEAR_RATE_MARK),
 						WearRateIn(entry, WEAR_RATE_COMPARED_MARK) };
 				}
 				plainRows++;
@@ -166,7 +179,7 @@ namespace ItemCard
 				return;
 			}
 
-			auto row = Roles::Card::ConditionRow(a_movie, a_card, entry->index, look.label, entry->percent, look.redrawn);
+			auto row = Roles::Card::ConditionRow(a_movie, a_card, entry->index, look.label, entry->tenths, look.redrawn);
 			if (!row) {
 				return;
 			}
@@ -210,7 +223,7 @@ namespace ItemCard
 			}
 			Flash::Set(row->clip, "y"sv, Value(lastY));
 
-			TraceLog::Line("card", "{:.0f}% row raised above {:d} rows", entry->percent, row->above.size());
+			TraceLog::Line("card", "{:s}% row raised above {:d} rows", Condition::CardText(entry->tenths), row->above.size());
 		}
 
 		// -------------------------------------------------------------------

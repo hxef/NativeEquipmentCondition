@@ -2,7 +2,7 @@
 
 #include "Condition/Condition.h"
 #include "Condition/Repair.h"
-#include "Core/Settings.h"
+#include "Core/Settings/Settings.h"
 
 #include <algorithm>
 #include <array>
@@ -102,10 +102,9 @@ namespace Workbench::Supplies
 		return static_cast<std::uint32_t>(std::clamp(Settings::iRepairSupplies.GetValue(), 0, MOST));
 	}
 
-	std::uint32_t From()
+	std::uint32_t FromTenths()
 	{
-		constexpr auto full = static_cast<std::int32_t>(Repair::FULL);
-		return static_cast<std::uint32_t>(std::clamp(Settings::iSuppliesOnlyFrom.GetValue(), 0, full));
+		return Repair::CardTenthsFrom(Settings::fSuppliesOnlyFrom.GetValue());
 	}
 
 	bool AnyHeld()
@@ -115,7 +114,7 @@ namespace Workbench::Supplies
 
 	bool TakesComponents(const SelectedItem::Item& a_item)
 	{
-		return a_item.percent < From() || Of(a_item).empty();
+		return a_item.tenths < FromTenths() || Of(a_item).empty();
 	}
 
 	// -------------------------------------------------------------------
@@ -162,9 +161,15 @@ namespace Workbench::Supplies
 			REX::INFO("Workbench repairs take no supplies, since iRepairSupplies is 0.");
 			return;
 		}
-		const auto from = From();
+		// At CND decimals Off the card shows whole percents, so the line names
+		// the one the slider starts from as well.
+		const auto from = FromTenths();
+		const auto value = Settings::fSuppliesOnlyFrom.GetValue();
+		const auto alone = Condition::Decimals() == Condition::CardDecimals::kOff ?
+		                       std::format("and from {:g}% condition, {:d}% on an item's card, nothing else", value, Repair::PercentFrom(from)) :
+		                       std::format("and from {:s}% condition on an item's card, nothing else", Condition::PointText(from));
 		REX::INFO("Workbench repairs take {0:d} Oil and {0:d} Cloth for a gun, an automatic melee weapon or one with a mod built from Circuitry or Nuclear Material, {0:d} Adhesive for any other weapon, {0:d} Adhesive and {0:d} Cloth for armor, {1:s}.",
-			count, from < Repair::FULL ? std::format("and from {:d}% condition nothing else", from) : std::string{ "on top of the components, since iSuppliesOnlyFrom is 100" });
+			count, from < Condition::FULL_TENTHS ? alone : std::format("on top of the components, since fSuppliesOnlyFrom is {:g}", value));
 	}
 
 	void SayMissing()

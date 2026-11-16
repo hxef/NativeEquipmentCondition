@@ -5,6 +5,7 @@
 #include "Core/CallPatch/CallPatch.h"
 #include "Core/Parts.h"
 #include "Core/Pieces.h"
+#include "Core/Text/Repair.h"
 
 #include <cstddef>
 #include <cstdint>
@@ -22,16 +23,17 @@
 //
 // A new sentence is 1 line in each of the 12 files of publish/Translations,
 // with its note in en.ini, and 1 function in Repair.cpp, for the repair
-// question and the bench, in Trader.cpp, for what a trader says, in Tips.cpp,
-// for the loading screen, or in Text.cpp, for the rest, declared here. A
-// sentence that names the kind of item takes a bool, or a Trade where a trader
-// tells clothing from armor, since Core cannot ask Condition which kind it is.
+// question and the bench, declared in Repair.h, or in Trader.cpp, for what a
+// trader says, in Tips.cpp, for the loading screen, or in Text.cpp, for the
+// rest, declared here. A sentence that names the kind of item takes a bool, or
+// a Trade where a trader tells clothing from armor, since Core cannot ask
+// Condition which kind it is.
 // An option of the MCM page is a row in MenuSwitches.cpp, MenuWear.cpp,
-// MenuNumbers.cpp or MenuHudLog.cpp, which MenuLine finds, with no function of
-// its own. A part's name is a row in PartsPlay.cpp, PartsLoot.cpp or
-// PartsUi.cpp, a piece's in PiecesPlay.cpp, PiecesArmor.cpp or PiecesUi.cpp,
-// and its phrase in Phrases.cpp. A grey line of the MCM page is said in
-// MenuNotes.cpp, or in MenuPieces.cpp where it names pieces.
+// MenuNumbers.cpp, MenuHudLog.cpp or MenuPresets.cpp, which MenuLine finds,
+// with no function of its own. A part's name is a row in PartsPlay.cpp,
+// PartsLoot.cpp or PartsUi.cpp, a piece's in PiecesPlay.cpp, PiecesArmor.cpp
+// or PiecesUi.cpp, and its phrase in Phrases.cpp. A grey line of the MCM page
+// is said in MenuNotes.cpp, or in MenuPieces.cpp where it names pieces.
 namespace Text
 {
 	// Lets NEC read the language files, once game data is ready, and reads
@@ -48,70 +50,6 @@ namespace Text
 		kArmor,
 		kClothing,
 	};
-
-	// "Repair Combat Rifle from 62% condition to:"
-	[[nodiscard]] std::string RepairQuestion(std::string_view a_name, std::uint32_t a_percent);
-
-	// "Repair 10mm Pistol to 70%?", the title of the bench's repair box.
-	[[nodiscard]] std::string RepairBoxTitle(std::string_view a_name, std::uint32_t a_percent);
-
-	// "Gun Nut 4 reduces the components required for this repair by 50%.", said
-	// over the question above when the player holds a rank of the perk pricing
-	// the item.
-	[[nodiscard]] std::string RepairDiscount(std::string_view a_perk, std::uint32_t a_rank,
-		std::uint32_t a_percent);
-
-	// "Condition must be at least 80% to modify.", or, where the floor is at
-	// full, "Condition must be full to modify."
-	[[nodiscard]] std::string TooDamaged(std::uint32_t a_floor);
-
-	// "MEND", the bench's REPAIR button over an item worn so little that
-	// repairing it is free. See Workbench/Bench.h.
-	[[nodiscard]] std::string MendButton();
-
-	// "Weapon mended.", or "Armor mended." with a_armor, said when MEND repairs
-	// an item on the spot for free.
-	[[nodiscard]] std::string Mended(bool a_armor);
-
-	// "USE A SPARE", the top row of the bench's repair box while the player
-	// carries a spare, see Workbench/Spares.h.
-	[[nodiscard]] std::string SpareButton();
-
-	// "Scrapper 2 raises how much condition a spare restores.", said over the
-	// question below while the player's rank raises what a listed spare
-	// restores. It names 1 perk rank, Scrapper's or the pricing perk's.
-	[[nodiscard]] std::string SparePerk(std::string_view a_perk, std::uint32_t a_rank);
-
-	// "Gun Nut 2 and Scrapper 1 raise how much condition a spare restores.",
-	// said in its place while both ranks raise what a listed spare restores.
-	[[nodiscard]] std::string SparePerks(std::string_view a_pricing, std::uint32_t a_pricingRank,
-		std::string_view a_scrapper, std::uint32_t a_scrapperRank);
-
-	// "Use up a spare to repair Hunting Rifle from 85% condition:"
-	[[nodiscard]] std::string SpareQuestion(std::string_view a_name, std::uint32_t a_percent);
-
-	// A spare's 1 mark, the first of equipped, favorite and legendary that
-	// applies, a word in brackets, since no language's font for the box has
-	// a star or a heart: "(equipped)" for an equipped legendary spare,
-	// "(legendary)", or nothing. The column before the spare's name in the
-	// spare box.
-	[[nodiscard]] std::string SpareMark(bool a_equipped, bool a_favorite, bool a_legendary);
-
-	// "(60%)", a spare's own condition, and "+7%", what it restores, the 2
-	// columns after its name.
-	[[nodiscard]] std::string SpareCondition(std::uint32_t a_percent);
-	[[nodiscard]] std::string SpareRestores(std::uint32_t a_gain);
-
-	// "+2 Damage" or "+3 DMG Resist", what a repair adds to 1 number the item
-	// card prints, a column of the 3 repair boxes, or "+2 DMG" and "+3 DR" in
-	// the short words. a_type is the damage type as the card numbers it, and
-	// an armor piece's number is a resistance. Empty for a type the card has
-	// no word for.
-	[[nodiscard]] std::string GainByType(std::int64_t a_gain, std::uint32_t a_type, bool a_armor, bool a_short);
-
-	// "Salvaged Steel, Screw (2) and Spring.", the components a spare gave
-	// back, each with its count past 1.
-	[[nodiscard]] std::string SpareSalvaged(std::span<const std::string> a_parts);
 
 	// Takes the barter screen's word for caps as the screen opens, a_word as
 	// the movie translated "$CAPS". When a mod renamed the currency, the 3
@@ -156,28 +94,12 @@ namespace Text
 	// "Weapons", a kind's name on the sign, which prints the level beside it.
 	[[nodiscard]] std::string SignKind(Trade a_trade);
 
-	// "This item can't be repaired at a workbench. Visit a trader to restore
-	// it.", said when REPAIR is pressed on an item the bench has nothing to
-	// rebuild from, see Workbench/Cost.h. a_trader adds the 2nd sentence.
-	[[nodiscard]] std::string BenchCannotRepair(bool a_trader);
-
-	// "Repairing this item from 10% needs Gun Nut 4. Find a spare or visit a
-	// trader to restore it.", when the repair lock holds REPAIR back, see
-	// Workbench/Lock.h. The 2nd sentence names a spare, a trader or both, as
-	// a_spare and a_trader say, and is left out with neither.
-	[[nodiscard]] std::string RepairLocked(std::string_view a_perk, std::uint32_t a_rank, std::uint32_t a_percent, bool a_spare, bool a_trader);
-
-	// "This item can't be modified.", said at the bench for an item no mod
-	// fits, once a repair brings it to full and whenever its mod slots are
-	// asked for. See Workbench/Display.h.
-	[[nodiscard]] std::string CannotModify();
-
 	// A crafting perk rank's sentence, see CraftingPerks.h and en.ini: the
 	// discount a_off on weapons, armor or both by a_weapons and a_armor, joined
-	// to the repair lock's start a_from (0 is any condition), else either one
-	// alone, else nothing. Each form is a key of its own, so every language
-	// joins the 2 its own way.
-	[[nodiscard]] std::string PerkRepairs(std::uint32_t a_off, bool a_weapons, bool a_armor, std::optional<std::uint32_t> a_from);
+	// to the repair lock's start a_from, written as 70.5 or 50 (empty is any
+	// condition), else either one alone, else nothing. Each form is a key of
+	// its own, so every language joins the 2 its own way.
+	[[nodiscard]] std::string PerkRepairs(std::uint32_t a_off, bool a_weapons, bool a_armor, const std::optional<std::string>& a_from);
 
 	// "Spares used to repair weapons and armor at the workbench restore more
 	// condition.", added to every rank of Scrapper while spare repair is on.

@@ -3,16 +3,48 @@
 #include "Condition/ArmorWear/ArmorWear.h"
 #include "Condition/Excluded.h"
 #include "Condition/WeaponWear/WeaponWear.h"
-#include "Core/Settings.h"
+#include "Core/Settings/Settings.h"
 #include "Core/TraceLog/TraceLog.h"
 
 #include <algorithm>
 #include <cmath>
 #include <format>
 #include <string>
+#include <utility>
 
 namespace Condition
 {
+	namespace
+	{
+		// a_health, kept between 0 and 1, as a whole count of a_steps to full,
+		// rounded half up. An item under half a step still works, so any
+		// health above 0 reads 1 at least and only a broken item reads 0.
+		// WholePercent counts 100 steps and CardTenths 1000.
+		double Rounded(float a_health, double a_steps)
+		{
+			const auto steps = std::round(std::clamp(a_health, 0.0F, 1.0F) * a_steps);
+			return a_health > MIN_HEALTH ? std::max(steps, 1.0) : steps;
+		}
+
+		// Whether a card writes a_tenths with its tenth, at most FULL_TENTHS.
+		// A full item never does, so it reads 100 and not 100.0, which would
+		// not fit beside a 4 letter CND word and the wear rate.
+		bool WithTenth(std::uint32_t a_tenths)
+		{
+			const auto decimals = Decimals();
+			return a_tenths < FULL_TENTHS && decimals != CardDecimals::kOff &&
+			       (decimals == CardDecimals::kAlways || a_tenths % TENTHS_PER_PERCENT != 0);
+		}
+
+		// a_tenths as text, 980 as "98.0" with a_tenth and "98" without. Whole
+		// numbers only, so no language's decimal mark can creep in.
+		std::string Written(std::uint32_t a_tenths, bool a_tenth)
+		{
+			const auto whole = a_tenths / TENTHS_PER_PERCENT;
+			return a_tenth ? std::format("{:d}.{:d}", whole, a_tenths % TENTHS_PER_PERCENT) : std::format("{:d}", whole);
+		}
+	}
+
 	const char* KindWhyNoCondition(const RE::TESBoundObject& a_object)
 	{
 		// One case per kind of item that wears. The form type byte costs
@@ -78,10 +110,7 @@ namespace Condition
 
 	double WholePercent(float a_health)
 	{
-		// An item under half a percent still works, so any health above 0
-		// reads 1 at least and only a broken item reads 0.
-		const auto percent = std::round(std::clamp(a_health, 0.0F, 1.0F) * 100.0);
-		return a_health > MIN_HEALTH ? std::max(percent, 1.0) : percent;
+		return Rounded(a_health, 100.0);
 	}
 
 	double ShownPercent(float a_health)
@@ -98,6 +127,72 @@ namespace Condition
 		// most.
 		const auto percent = WholePercent(a_health);
 		return a_health < MAX_HEALTH ? std::min(percent, 99.0) : percent;
+	}
+
+	CardDecimals Decimals()
+	{
+		switch (Settings::iCndDecimals.GetValue()) {
+		case std::to_underlying(CardDecimals::kOff):
+			return CardDecimals::kOff;
+		case std::to_underlying(CardDecimals::kFractions):
+			return CardDecimals::kFractions;
+		default:
+			return CardDecimals::kAlways;
+		}
+	}
+
+	std::uint32_t CardTenths(float a_health, bool a_wears)
+	{
+		if (Decimals() == CardDecimals::kOff) {
+			return static_cast<std::uint32_t>(a_wears ? ShownPercent(a_health) : WholePercent(a_health)) * TENTHS_PER_PERCENT;
+		}
+
+		// As ShownPercent: no health extra data counts as new, and any wear
+		// on gear reads 99.9 at most, so only an item at full reads 100.
+		if (a_health < 0.0F) {
+			return FULL_TENTHS;
+		}
+		const auto tenths = Rounded(a_health, static_cast<double>(FULL_TENTHS));
+		return static_cast<std::uint32_t>(a_wears && a_health < MAX_HEALTH ? std::min(tenths, static_cast<double>(MOST_WORN_TENTHS)) : tenths);
+	}
+
+	std::optional<std::uint32_t> Tenths(const RE::BGSInventoryItem& a_item, const RE::BGSInventoryItem::Stack* a_stack)
+	{
+		return a_item.object ? Tenths(*a_item.object, a_stack ? a_stack->extra.get() : nullptr) : std::nullopt;
+	}
+
+	std::optional<std::uint32_t> Tenths(const RE::TESBoundObject& a_object, RE::ExtraDataList* a_extra)
+	{
+		if (!WearsOut(a_object)) {
+			return std::nullopt;
+		}
+
+		return CardTenths(HealthOf(a_extra), true);
+	}
+
+	std::string CardText(std::uint32_t a_tenths)
+	{
+		const auto tenths = std::min(a_tenths, FULL_TENTHS);
+		return Written(tenths, WithTenth(tenths));
+	}
+
+	std::string PointText(std::uint32_t a_tenths)
+	{
+		return Written(a_tenths, a_tenths % TENTHS_PER_PERCENT != 0);
+	}
+
+	std::string TenthText(std::uint32_t a_tenths)
+	{
+		return Written(a_tenths, true);
+	}
+
+	double CardValue(std::uint32_t a_tenths)
+	{
+		// A cut after 1 decimal or after 2, as FallUI's list column cuts,
+		// still gives the tenth: 97.505 prints as 97.5 and 97.50.
+		const auto tenths = std::min(a_tenths, FULL_TENTHS);
+		const auto value = static_cast<double>(tenths) / static_cast<double>(TENTHS_PER_PERCENT);
+		return WithTenth(tenths) ? value + 0.005 : value;
 	}
 
 	float Start(Kind a_kind)
@@ -137,6 +232,13 @@ namespace Condition
 	float FromPercent(std::uint32_t a_percent)
 	{
 		return a_percent >= 100 ? MAX_HEALTH : static_cast<float>(a_percent) / 100.0F;
+	}
+
+	float FromTenths(std::uint32_t a_tenths)
+	{
+		// Both divide 2 whole numbers to the same quotient, so 700 / 1000
+		// is the same float as 70 / 100.
+		return a_tenths >= FULL_TENTHS ? MAX_HEALTH : static_cast<float>(a_tenths) / static_cast<float>(FULL_TENTHS);
 	}
 
 	float HealthOf(RE::ExtraDataList* a_extra)

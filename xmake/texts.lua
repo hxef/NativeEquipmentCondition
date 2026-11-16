@@ -247,7 +247,28 @@ local function faults(a_folder, a_english)
     return out
 end
 
--- The keys of en.ini that no file under src names, so a line nobody shows.
+-- The sDescription under [Presets] of a preset's file, or nil.
+local function description(a_file)
+    local section = ""
+    for line in (io.readfile(a_file, { encoding = "binary" }) .. "\n"):gmatch("(.-)\r?\n") do
+        line = trimmed(line)
+        local heading = line:match("^%[([^%]]*)%]")
+        if heading then
+            section = trimmed(heading):lower()
+        elseif section == "presets" then
+            local key, value = line:match("^([^=;#]+)=(.*)$")
+            if key and trimmed(key):lower() == "sdescription" then
+                return trimmed(value)
+            end
+        end
+    end
+    return nil
+end
+
+-- The keys of en.ini that no file under src names, so a line nobody shows. A
+-- PRESET_ABOUT_ line is found by a shipped preset's file name instead, see
+-- MenuPresetAbout, PRESET_ABOUT_NEW_VEGAS for NEC_New_Vegas.ini, and shows
+-- translated only while the file's sDescription is that line's English.
 local function unused(a_english)
     local words = {}
     for _, file in ipairs(os.files(path.join(os.projectdir(), "src", "**"))) do
@@ -255,10 +276,36 @@ local function unused(a_english)
             words[word] = true
         end
     end
+    local presets = {}
+    local shipped = {}
+    for _, file in ipairs(os.files(path.join(os.projectdir(), "publish", "MCM_Presets", "*.ini"))) do
+        local stem = path.basename(file)
+        local key = "PRESET_ABOUT_" .. (stem:match("^NEC_(.+)$") or stem):upper()
+        table.insert(presets, { key = key, name = "publish/MCM_Presets/" .. path.filename(file), file = file })
+        shipped[key] = true
+    end
     local out = {}
+    local lines = {}
     for _, line in ipairs(a_english) do
-        if not words[line.key] then
+        lines[line.key] = line
+        if words[line.key] then
+            -- Named in the code.
+        elseif line.key:find("^PRESET_ABOUT_") then
+            if not shipped[line.key] then
+                table.insert(out, string.format("%s/en.ini line %d: %s is the line of no preset in publish/MCM_Presets", FOLDER, line.number, line.key))
+            end
+        else
             table.insert(out, string.format("%s/en.ini line %d: %s is named by no file under src", FOLDER, line.number, line.key))
+        end
+    end
+    table.sort(presets, function(a_lhs, a_rhs) return a_lhs.name < a_rhs.name end)
+    for _, preset in ipairs(presets) do
+        local line = lines[preset.key]
+        if not line then
+            table.insert(out, string.format("%s has no line %s in %s/en.ini, so its description shows untranslated", preset.name, preset.key, FOLDER))
+        elseif description(preset.file) ~= line.text then
+            table.insert(out, string.format("%s's sDescription is not the English of %s, line %d of %s/en.ini, so it shows untranslated", preset.name,
+                preset.key, line.number, FOLDER))
         end
     end
     return out

@@ -5,7 +5,7 @@
 #include "Condition/WeaponWear/DamageKinds.h"
 #include "Condition/WeaponWear/Sources.h"
 #include "Condition/WearList/WearList.h"
-#include "Core/Settings.h"
+#include "Core/Settings/Settings.h"
 #include "Core/TraceLog/TraceLog.h"
 
 #include <algorithm>

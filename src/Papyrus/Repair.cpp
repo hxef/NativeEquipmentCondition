@@ -36,7 +36,10 @@ namespace Papyrus
 		{
 			RE::TESBoundObject*                    base{ nullptr };
 			RE::BSTSmartPointer<RE::ExtraDataList> extra;
+			// The whole percent the scrap yields count from,
+			// and the number the card shows, see Condition::CardTenths.
 			std::uint32_t                          percent{ Repair::FULL };
+			std::uint32_t                          tenths{ Condition::FULL_TENTHS };
 			std::uint32_t                          worth{ 0 };
 			bool                                   inventory{ false };
 			bool                                   player{ false };
@@ -55,6 +58,7 @@ namespace Papyrus
 			out.extra.reset(found->extra);
 			const auto percent = Condition::Percent(*found->base, found->extra);
 			out.percent = percent ? static_cast<std::uint32_t>(*percent) : Repair::FULL;
+			out.tenths = Condition::Tenths(*found->base, found->extra).value_or(Condition::FULL_TENTHS);
 			out.inventory = found->entry != nullptr;
 			out.player = found->holder && found->holder->IsPlayerRef();
 			if (a_worth && found->entry) {
@@ -150,14 +154,16 @@ namespace Papyrus
 	{
 		Log::Calling("GetFreeMendFrom");
 		TraceLog::Papyrus::Begin("CALL", "NEC.GetFreeMendFrom");
-		return Result(static_cast<std::int32_t>(Workbench::FreeFrom()));
+		// The first whole percent a card reads from the point, 98 for 97.5
+		// at every CND decimals setting.
+		return Result(static_cast<std::int32_t>(Repair::PercentFrom(Workbench::FreeFromTenths())));
 	}
 
 	std::int32_t GetSuppliesOnlyFrom(std::monostate)
 	{
 		Log::Calling("GetSuppliesOnlyFrom");
 		TraceLog::Papyrus::Begin("CALL", "NEC.GetSuppliesOnlyFrom");
-		return Result(static_cast<std::int32_t>(Workbench::SuppliesOnlyFrom()));
+		return Result(static_cast<std::int32_t>(Repair::PercentFrom(Workbench::SuppliesOnlyFromTenths())));
 	}
 
 	std::int32_t GetModdingFrom(std::monostate)
@@ -197,7 +203,7 @@ namespace Papyrus
 		if (!item) {
 			return Result(std::nullopt);
 		}
-		return Result(Workbench::BillFor(*item->base, item->extra.get(), item->percent, Level(a_toPercent)));
+		return Result(Workbench::BillFor(*item->base, item->extra.get(), item->tenths, Level(a_toPercent)));
 	}
 
 	std::optional<std::vector<Cost>> GetScrapYield(std::monostate, Item a_item)
@@ -213,6 +219,7 @@ namespace Papyrus
 		return Result(Materials::Yield(*item->base, item->extra.get(), percent, Materials::SCRAPPED_TENTHS));
 	}
 
+	// The whole points under what the box of spares shows, 10 for +10.4%.
 	std::int32_t GetSpareGain(std::monostate, Item a_item, Item a_spare)
 	{
 		Log::Calling("GetSpareGain");
@@ -250,7 +257,7 @@ namespace Papyrus
 		if (!item || !item->inventory) {
 			return Result(-1);
 		}
-		const auto price = VendorRepair::PriceFor(*a_trader, *item->base, item->percent, item->worth, Level(a_toPercent));
+		const auto price = VendorRepair::PriceFor(*a_trader, *item->base, item->tenths, item->worth, Level(a_toPercent));
 		return Result(price ? static_cast<std::int32_t>(*price) : -1);
 	}
 }

@@ -18,6 +18,7 @@ namespace Text
 			{ Part::kQuick, PART_QUICK },
 			{ Part::kBench, PART_BENCH },
 			{ Part::kBenchLists, PART_BENCH_LISTS },
+			{ Part::kPipboyRepairs, PART_PIPBOY_REPAIRS },
 			{ Part::kScroll, PART_SCROLL },
 			{ Part::kTraderRepairs, PART_TRADER_REPAIRS },
 			{ Part::kStock, PART_STOCK },

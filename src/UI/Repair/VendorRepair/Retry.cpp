@@ -1,6 +1,6 @@
 #include "UI/Repair/VendorRepair/Retry.h"
 
-#include "Core/Settings.h"
+#include "Core/Settings/Settings.h"
 #include "Core/TraceLog/TraceLog.h"
 #include "UI/Flash.h"
 #include "UI/Repair/VendorRepair/Button.h"

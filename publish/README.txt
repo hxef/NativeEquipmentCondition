@@ -70,7 +70,7 @@ Armor and clothing:
   was, but a damaged piece sells for less, and so does a drained fusion core.
 
 All gear:
-* Price drops faster than condition, on the Fallout 3 and New Vegas curve: an
+* Price drops faster than condition, on the Fallout 3 and New Vegas curve. An
   item at half condition is worth 35% of its full price, whether you buy it or
   sell it.
 * Worn gear scraps into fewer components at a workbench and in workshop mode,
@@ -95,7 +95,7 @@ LOOT WITH A HISTORY
   essential NPCs start with.
 * Legendary gear you find in chests or buy from traders arrives new.
   Legendaries dropped by enemies still turn up worn.
-* About 1 item in 100 ignores all that: a raider can drop a pristine rifle,
+* About 1 item in 100 ignores all that, so a raider can drop a pristine rifle,
   and a Courser a beaten one.
 
 REPAIR AT THE WORKBENCH
@@ -110,13 +110,19 @@ REPAIR AT THE WORKBENCH
   wears at the same rate. Short of components, you get the power armor
   station's list of what the repair takes, with the ones you lack faded.
 * Carrying a spare of the same item? USE A SPARE in the repair box takes it
-  apart for the repair: it restores as much condition as its scrap is worth,
+  apart for the repair. It restores as much condition as its scrap is worth,
   and the components left over go to your inventory. "Spare worth" sets how
   much condition a spare restores and Scrapper raises it, but you never get
   back more components than it holds.
-* Barely worn gear, from 95% up, gets a MEND button instead, which fixes it
-  on the spot for free. The 95% is the "Free mend from" setting. 100 turns
-  MEND off, and 0 mends everything for free.
+* "Keep spare mods" in MCM, off by default, hands back the mods of a spare
+  that a repair does not need as loose mods, the cheapest or priciest used
+  first, or lets you pick in a box which to scrap or keep.
+* "Pip-Boy repairs" in MCM, off by default, lets you repair from the Pip-Boy
+  as in Fallout 3 and New Vegas. Inspect a worn weapon or armor piece and
+  press REPAIR to use up a spare, or to repair it as at a workbench.
+* Barely worn gear, from 97.5%, gets a MEND button instead, which fixes it on
+  the spot for free. The 97.5% is the "Free mend from" setting. 100 turns MEND
+  off, and 0 mends everything for free.
 * Crafting perks like Gun Nut, Science!, Blacksmith and Armorer make repairs
   take fewer components, down to half at the top rank. The perk behind most of
   an item's components sets the discount, and each rank's description says how
@@ -124,9 +130,9 @@ REPAIR AT THE WORKBENCH
   grants them from your skills.
 * Every repair also takes supplies (oil and cloth for a gun or a powered melee
   weapon such as the Ripper or a Heated Super Sledge, adhesive for other melee
-  weapons, and adhesive and cloth for armor and clothing). From 88% up that is
-  all it takes. MEND, a spare and a trader take none, and
-  "Servicing supplies" at 0 turns them off.
+  weapons, and adhesive and cloth for armor and clothing). From 87.5% that is
+  all it takes. MEND, a spare and a trader take none, and "Servicing supplies"
+  at 0 turns them off.
 * When a repair takes components, the repair lock asks for the crafting perk
   rank the gear's mods need. Gear whose mods ask Gun Nut 3 repairs from 25%
   with Gun Nut 2, from 50% with Gun Nut 1 and from 75% with no rank. Most gear
@@ -166,48 +172,60 @@ SEE IT AT A GLANCE
   mod makes the item wear slower or faster, as on Weight.
 * CND bars on the HUD ammo counter, the power armor dash, the pickup prompt and
   the Pip-Boy apparel figure, and condition meters on the quick container rows
-  and a food's freshness. When you set Weapon penalties start at or Armor
-  penalties start at from 0.01 to 0.99 in MCM, the bars mark that point with 2
-  small notches, as in New Vegas. Each HUD bar has its own switch, place and
-  size in MCM.
+  and a food's freshness. When you set "Weapon penalties start at" or
+  "Armor penalties start at" from 0.01 to 0.99 in MCM, the bars mark that
+  point with 2 small notches, as in New Vegas. Each HUD bar has its own
+  switch, place and size in MCM.
 * Broken items fade out in the Pip-Boy lists.
 
 MAKE IT YOURS
 * With MCM, every setting changes on the spot. The main page shows NEC's
-  version, Log and any part another mod took over. The Weapons, Armor, Loot,
-  Repairs, UI and Little extras pages hold the rest: switch features off, or
-  tune wear, penalties, loot condition, prices and repair costs.
-* Without MCM, NEC.ini in Data\F4SE\Plugins explains every setting. Copy a
-  line into NEC_custom.ini beside it, under the same section heading, change
-  the value and restart the game.
-* Either way your changes go in NEC_custom.ini, and NEC.ini stays as it ships.
-  The mod comes without a NEC_custom.ini, so an update never wipes your
-  settings. With Mod Organizer 2, keep NEC_custom.ini in its own mod or in
-  overwrite.
+  version, "All NEC features", the presets, Log and any part another mod took
+  over. The Weapons, Armor, Loot, Repairs, UI and Little extras pages hold the
+  rest, where you switch features off or tune wear, penalties, loot condition,
+  prices and repair costs.
+* Without MCM, NEC.ini in Data\F4SE\Plugins\NEC\Config explains every setting.
+  Copy a line into NEC_custom.ini beside it, under the same section heading,
+  change the value and restart the game.
+* Either way your changes go in NEC_custom.ini, or into the presets' Custom
+  folder while a preset other than Default is picked, and NEC.ini stays as it
+  ships. The mod comes without a NEC_custom.ini, so an update never wipes your
+  settings. With Mod Organizer 2, keep NEC_custom.ini and the Custom folder in
+  their own mod or in overwrite.
+* Presets. The "Preset" row on NEC's main MCM page picks a preset, a set of the
+  gameplay settings. Default is NEC.ini's values. Casual makes gear wear half
+  as fast and repairs cost half. Hardcore makes gear wear 1.5 times as fast and
+  repairs cost more, and a repair that takes components asks crafting perk
+  ranks. New Vegas repairs from a spare in the Pip-Boy and none at the
+  workbench, as Fallout: New Vegas did. Your changes to Default, a shipped or a
+  downloaded preset show as (Custom) and are kept for it alone, so picking
+  another never loses them, and "Reset preset" drops them. "Save as new preset"
+  makes a preset of your own to share, and "Delete preset" removes it.
+  "Reset preset" and "Delete preset" ask first. A preset leaves the UI page and
+  the log as you set them. Presets you download go in
+  Data\F4SE\Plugins\NEC\Config\MCM_Presets, and a preset you save goes in its
+  Custom folder.
 
 LITTLE EXTRAS
-* Food spoiling, off until you switch it on: food you or a companion carry, and
-  food on the dead, spoils over game days, slower in coolers and unbroken
-  fridges, marked with a frost icon, as in Fallout 76. Spoiled food is its own
-  row at 0 condition, and its card shows its own healing and rads. Eating it
-  heals only 10% as much and gives more rads, which Lead Belly cuts as it cuts
-  the food's own. In Survival it heals nothing and fills hunger or thirst only a
-  tenth as much as the fresh food would. Survival has a minimum that every meal
-  fills, and spoiled food still gets that minimum. In Survival, spoiled food is
-  5 times as likely to make you sick as the fresh food. Food that never makes
-  you sick, such as cooked food, takes the smallest chance any food in your load
-  order has. Cooking stations won't take it, and a chemistry station turns it
-  into Fertilizer. With worn loot on, food you find is already partly spoiled,
-  while food you buy, cook, harvest or get as a reward starts fresh.
-  NEC.food.log, beside NEC.log, shows the food settings in force, what each food
-  and fridge file does, and every food with the kind NEC gave it.
+* Food spoiling, off until you switch it on, makes food you or a companion
+  carry, and food on the dead, spoil over game days, slower in coolers and
+  unbroken fridges, marked with a frost icon, as in Fallout 76. Spoiled food is
+  its own row at 0 condition, and its card shows its own healing and rads.
+  Eating it heals only 10% as much and gives more rads, which Lead Belly cuts
+  as it cuts the food's own. In Survival it heals nothing and fills hunger or
+  thirst only a tenth as much as the fresh food would. Survival has a minimum
+  that every meal fills, and spoiled food still gets that minimum. In Survival,
+  spoiled food is 5 times as likely to make you sick as the fresh food. Food
+  that never makes you sick, such as cooked food, takes the smallest chance any
+  food in your load order has. Cooking stations won't take it, and a chemistry
+  station turns it into Fertilizer. With worn loot on, food you find is already
+  partly spoiled, while food you buy, cook, harvest or get as a reward starts
+  fresh. NEC.food.log, beside NEC.log, shows the food settings in force, what
+  each food and fridge file does, and every food with the kind NEC gave it.
 * MCM's Little extras page turns food spoiling on and sets how long raw and
   cooked food stay fresh, how much coolers and fridges slow it down, how much
-  spoiled food makes 1 Fertilizer, its healing outside Survival and its hunger
-  in Survival (Spoiled food healing and Spoiled food hunger, from 0 to 100% of
-  the fresh food's), its extra rads (Spoiled food rads, from 0 to 5, where 1 is
-  15 for meat and 5 for other food), its sickness in Survival (Spoiled food
-  sickness, from 1 to 20 times the fresh food's chance) and whether the fridge
+  spoiled food makes 1 Fertilizer, its healing outside Survival, its hunger in
+  Survival, its extra rads, its sickness in Survival and whether the fridge
   icon shows.
 * 7 loading screen tips on wear, repairs, broken gear, jams, loot and food
   spoiling, in the vanilla style and as likely to show as any ordinary
@@ -381,15 +399,17 @@ save. On anything but power armor the game ignores it for damage, protection
 and price, so what is left behind does nothing there, except that identical
 items at different conditions stay in separate stacks in your inventory.
 
-To stop NEC without quitting, turn off All NEC features on its main MCM page.
-NEC then changes nothing until you turn it back on, and your items keep their
-condition, broken ones too, so repair them first.
+To stop NEC without quitting, turn off "All NEC features" on its main MCM page.
+NEC then changes nothing until you turn it back on. Your weapons and armor keep
+their condition, broken ones too, so repair them first. Food keeps aging, so it
+spoils on its usual day once NEC is on again. Loot that spawns while NEC is off
+stays at 100%.
 
 A save made without any mod calling NEC's Papyrus API holds no trace of it.
-Once a mod that uses NEC's Papyrus API has run in your save, keep NEC
-installed for that playthrough: without it that mod's calls fail on every
-load, and taking that mod's plugin, its ESP, ESM or ESL, out of a running
-playthrough is never safe.
+Once a mod that uses NEC's Papyrus API has run in your save, keep NEC installed
+for that playthrough. Without it that mod's calls fail on every load, and
+taking that mod's plugin, its ESP, ESM or ESL, out of a running playthrough is
+never safe.
 
 FOUND A BUG?
 If a feature seems to do nothing, another DLL mod may have taken it over. Load
@@ -399,8 +419,8 @@ For anything else, share NEC's logs:
 1. Turn on the full logs:
    * With MCM: on NEC's main page, under Log, set "Log detail" to debug and
      switch "Bug report logs" on.
-   * Without MCM: add these lines to NEC_custom.ini in Data\F4SE\Plugins,
-     then restart the game:
+   * Without MCM: add these lines to NEC_custom.ini in
+     Data\F4SE\Plugins\NEC\Config, then restart the game:
        [Log]
        sLogLevel=debug
        bTraceLogs=true

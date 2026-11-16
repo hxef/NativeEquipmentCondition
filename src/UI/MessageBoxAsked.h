@@ -24,9 +24,8 @@ namespace MessageBox
 		std::uint8_t last = 0;
 	};
 
-	// Whether NEC has a box up or waiting, the box a_callback belongs to, and
-	// setting the row it starts on, in MessageBox.cpp.
-	[[nodiscard]] bool                 AnyAsked();
+	// The box a_callback belongs to, and setting the row it starts on, in
+	// MessageBox.cpp.
 	[[nodiscard]] std::optional<Asked> Find(const RE::IMessageBoxCallback* a_callback);
 	void                               StartAt(const RE::IMessageBoxCallback* a_callback, std::uint32_t a_start, std::uint32_t a_buttons);
 }

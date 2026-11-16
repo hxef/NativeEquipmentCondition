@@ -26,7 +26,7 @@ namespace SelectedItem
 		// game takes the row's name from.
 		const auto  stack = a_entry.stackIndex.size() > 0 ? static_cast<std::uint32_t>(a_entry.stackIndex[0]) : 0U;
 		const auto* held = item->GetStackByID(stack);
-		const auto  percent = Condition::Percent(*item, held);
+		const auto  tenths = Condition::Tenths(*item, held);
 
 		out.item = item;
 		out.object = item->object;
@@ -34,8 +34,23 @@ namespace SelectedItem
 		out.handle = a_entry.invHandle.id;
 		out.stack = stack;
 		out.count = held ? held->GetCount() : 0U;
-		out.percent = percent ? static_cast<std::uint32_t>(*percent) : Repair::FULL;
+		out.SetTenths(tenths.value_or(Condition::FULL_TENTHS));
 		out.kind = Condition::KindOf(*item->object);
 		return out;
+	}
+
+	std::string RowName(const RE::InventoryUserUIInterfaceEntry& a_entry)
+	{
+		auto*       inventory = RE::BGSInventoryInterface::GetSingleton();
+		const auto* item = inventory ? inventory->RequestInventoryItem(a_entry.invHandle.id) : nullptr;
+		const auto  stack = a_entry.stackIndex.size() > 0 ? static_cast<std::uint32_t>(a_entry.stackIndex[0]) : 0U;
+		const auto* held = item ? item->GetStackByID(stack) : nullptr;
+
+		// Named as Item names it, from the same first stack as Read.
+		Item named;
+		named.item = item;
+		named.object = item ? item->object : nullptr;
+		named.extra = held ? held->extra.get() : nullptr;
+		return named.Name();
 	}
 }

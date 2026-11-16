@@ -41,8 +41,10 @@ namespace Workbench
 
 		// The bench's own inventory, rebuilt, see RefreshItemListHk. The
 		// inspect screen, for an item picked up or looked at from the Pip-Boy,
-		// is the same menu and repairs nothing, so its rows go as they are and
-		// a long inventory costs it no more time.
+		// is the same menu and lists nothing for repairs, so its rows go as
+		// they are and a long inventory costs it no more time. It asks
+		// Repairs, not BenchRepairs, since the rebuild also fades the rows
+		// the mod lock closes, which holds with workbench repairs off.
 		void UpdateItemListHk(RE::ExamineMenu* a_menu, std::int32_t a_selected)
 		{
 			if (!g_itemListLink.Runs() || !Repairs() || !a_menu || a_menu->inspectMode) {

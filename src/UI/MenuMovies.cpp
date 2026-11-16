@@ -2,8 +2,9 @@
 
 #include "Core/CallPatch/CallPatch.h"
 #include "Core/Feature.h"
-#include "Core/Settings.h"
+#include "Core/Settings/Settings.h"
 #include "UI/Hud/HudParts/HudParts.h"
+#include "UI/Mcm/Mcm.h"
 #include "UI/Repair/ConsoleRepair.h"
 #include "UI/Roles/Roles.h"
 
@@ -21,9 +22,9 @@ namespace MenuMovies
 		// -------------------------------------------------------------------
 
 		// F4SE calls this for every menu movie. The second argument is F4SE's
-		// object for this plugin inside the movie, for plugins that give
-		// ActionScript functions to call.
-		bool MovieLoaded(Scaleform::GFx::Movie* a_movie, Scaleform::GFx::Value*)
+		// object for this plugin inside the movie, which MCM's buttons call
+		// the functions of, see Mcm::AddPresetButtons.
+		bool MovieLoaded(Scaleform::GFx::Movie* a_movie, Scaleform::GFx::Value* a_plugin)
 		{
 			const auto* definition = a_movie ? a_movie->GetMovieDef() : nullptr;
 			if (!definition || !definition->GetFileURL()) {
@@ -51,6 +52,9 @@ namespace MenuMovies
 					Settings::ReportLine();
 				}
 				ConsoleRepair::Settle();
+				if (a_plugin) {
+					Mcm::AddPresetButtons(*a_movie, *a_plugin);
+				}
 			}
 
 			for (const auto& feature : Features()) {

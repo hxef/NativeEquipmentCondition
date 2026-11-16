@@ -1,5 +1,7 @@
 #include "Core/Text/FileText.h"
 
+#include "Core/Utf8.h"
+
 #include <algorithm>
 #include <charconv>
 #include <cstddef>
@@ -22,47 +24,6 @@ namespace Text
 		std::size_t LineAt(std::string_view a_text, std::size_t a_at)
 		{
 			return 1 + static_cast<std::size_t>(std::ranges::count(a_text.substr(0, a_at), '\n'));
-		}
-
-		// The bytes of a UTF-8 letter that starts with a_lead, or 0 for a byte
-		// no letter starts with.
-		std::size_t SizeOf(unsigned char a_lead)
-		{
-			if (a_lead < 0x80) {
-				return 1;
-			}
-			if (a_lead >= 0xC2 && a_lead <= 0xDF) {
-				return 2;
-			}
-			if (a_lead >= 0xE0 && a_lead <= 0xEF) {
-				return 3;
-			}
-			return a_lead >= 0xF0 && a_lead <= 0xF4 ? 4 : 0;
-		}
-
-		// Where a_text stops being UTF-8, or npos when all of it is. No
-		// overlong form, no half of a UTF-16 pair and nothing past U+10FFFF.
-		std::size_t BadUtf8(std::string_view a_text)
-		{
-			for (std::size_t i = 0; i < a_text.size();) {
-				const auto byte = static_cast<unsigned char>(a_text[i]);
-				const auto size = SizeOf(byte);
-				if (size == 0 || i + size > a_text.size()) {
-					return i;
-				}
-				for (std::size_t k = 1; k < size; k++) {
-					if ((static_cast<unsigned char>(a_text[i + k]) & 0xC0) != 0x80) {
-						return i;
-					}
-				}
-				const auto second = size > 1 ? static_cast<unsigned char>(a_text[i + 1]) : 0;
-				if ((byte == 0xE0 && second < 0xA0) || (byte == 0xED && second > 0x9F) ||
-					(byte == 0xF0 && second < 0x90) || (byte == 0xF4 && second > 0x8F)) {
-					return i;
-				}
-				i += size;
-			}
-			return std::string_view::npos;
 		}
 
 		// Whether a_wide holds half of a UTF-16 pair without its other half,
@@ -143,7 +104,7 @@ namespace Text
 			a_why = "holds NUL bytes, as a file saved as UTF-16 without a mark does";
 			return std::nullopt;
 		}
-		if (const auto bad = BadUtf8(text); bad != std::string::npos) {
+		if (const auto bad = Utf8::BadAt(text); bad != std::string_view::npos) {
 			a_why = std::format("is no UTF-8 at line {:d}, as a file saved as ANSI is", LineAt(text, bad));
 			return std::nullopt;
 		}

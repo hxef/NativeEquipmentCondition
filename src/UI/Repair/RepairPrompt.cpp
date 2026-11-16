@@ -1,5 +1,6 @@
 #include "UI/Repair/RepairPrompt.h"
 
+#include "Condition/Condition.h"
 #include "Core/Text/Text.h"
 #include "UI/MessageBox.h"
 
@@ -52,7 +53,7 @@ namespace RepairPrompt
 		};
 	}
 
-	void Ask(std::string_view a_over, std::string_view a_name, std::uint32_t a_percent,
+	void Ask(std::string_view a_over, std::string_view a_name, std::uint32_t a_tenths,
 		std::vector<std::string> a_buttons,
 		std::function<void(std::size_t)> a_chosen, std::function<void()> a_cancelled,
 		std::optional<Top> a_top, Start a_start)
@@ -77,7 +78,7 @@ namespace RepairPrompt
 			start = static_cast<std::uint32_t>(above + std::max<std::size_t>(offers, 1) - 1);
 			break;
 		}
-		AskRows(a_over, Text::RepairQuestion(a_name, a_percent), std::move(a_buttons),
+		AskRows(a_over, Text::RepairQuestion(a_name, Condition::CardText(a_tenths)), std::move(a_buttons),
 			[offers, above, chosen = std::move(a_chosen), top = a_top ? std::move(a_top->chosen) : std::function<void()>{}](std::size_t a_row) {
 				if (a_row < above) {
 					top();

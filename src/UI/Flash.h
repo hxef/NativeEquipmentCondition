@@ -140,6 +140,10 @@ namespace Flash
 	// A clip's colour, or nothing when it has none to read.
 	[[nodiscard]] std::optional<Tint> TintOf(const Value& a_clip);
 
+	// The tint that gives a white clip a_color, 0xRRGGBB: each multiplier
+	// is that part of the colour out of 255, with nothing added.
+	[[nodiscard]] Tint ColorTint(std::uint32_t a_color) noexcept;
+
 	// The colour a text field's letters show, as the tint that gives it to a
 	// white clip: the field's textColor under the field's own colour. A clip
 	// in the field's parent shows that colour, since both sit under the same

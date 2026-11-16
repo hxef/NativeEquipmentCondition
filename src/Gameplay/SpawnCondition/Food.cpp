@@ -2,7 +2,7 @@
 
 #include "Condition/Condition.h"
 #include "Condition/Provenance/Provenance.h"
-#include "Core/Settings.h"
+#include "Core/Settings/Settings.h"
 #include "Core/TraceLog/TraceLog.h"
 #include "Gameplay/FoodSpoil/FoodSpoil.h"
 #include "Gameplay/SpawnCondition/Band.h"

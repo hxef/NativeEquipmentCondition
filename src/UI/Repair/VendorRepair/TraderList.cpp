@@ -5,6 +5,7 @@
 #include "Core/ListFiles.h"
 #include "Core/Snapshot.h"
 #include "UI/Repair/VendorRepair/Stock.h"
+#include "UI/Repair/VendorRepair/VendorRepair.h"
 
 #include <algorithm>
 #include <array>
@@ -56,13 +57,8 @@ namespace VendorRepair::TraderList
 		// whose slot it carries, or nothing for a form the game made.
 		std::optional<std::string> Spelled(RE::TESFormID a_id)
 		{
-			if (!g_dataHandler || ListFiles::Made(a_id)) {
-				return std::nullopt;
-			}
-			for (const auto* plugin : g_dataHandler->files) {
-				if (plugin && plugin->IsActive() && plugin->GetLoadOrderFormID(a_id) == a_id) {
-					return ListFiles::Spelled(*plugin, ListFiles::LocalOf(*plugin, a_id));
-				}
+			if (const auto* plugin = ListFiles::PluginOf(a_id)) {
+				return ListFiles::Spelled(*plugin, ListFiles::LocalOf(*plugin, a_id));
 			}
 			return std::nullopt;
 		}
@@ -129,7 +125,7 @@ namespace VendorRepair::TraderList
 
 		// "armor 90" as the kind and its level, or nothing once a_faults says
 		// what is wrong with it.
-		std::optional<std::pair<Text::Trade, Set>> Parse(std::string_view a_word, std::string_view a_file, std::size_t a_line,
+		std::optional<std::pair<Trade, Set>> Parse(std::string_view a_word, std::string_view a_file, std::size_t a_line,
 			ListFiles::Faults& a_faults)
 		{
 			const auto gap = a_word.find_first_of(" \t");
@@ -140,7 +136,7 @@ namespace VendorRepair::TraderList
 					a_file, a_line, a_word));
 				return std::nullopt;
 			}
-			const auto trade = std::ranges::find_if(TRADES, [kind](Text::Trade a_trade) { return IniText::SameName(Named(a_trade), kind); });
+			const auto trade = std::ranges::find_if(TRADES, [kind](Trade a_trade) { return IniText::SameName(Named(a_trade), kind); });
 			if (trade == std::end(TRADES)) {
 				a_faults.Add(std::format("{:s} line {:d}: {:s} is not weapons, armor or clothing, so NEC skips it.", a_file, a_line, kind));
 				return std::nullopt;
@@ -164,7 +160,7 @@ namespace VendorRepair::TraderList
 		}
 
 		// "the faction [001679CE] sets armor to 90%", for the debug line.
-		std::string Sets(Tier a_tier, std::string_view a_who, Text::Trade a_trade, const std::optional<std::uint32_t>& a_level)
+		std::string Sets(Tier a_tier, std::string_view a_who, Trade a_trade, const std::optional<std::uint32_t>& a_level)
 		{
 			const auto who = std::format("the {:s} {:s}", TIER_NAMES[std::to_underlying(a_tier)], a_who);
 			if (!a_level) {
@@ -262,7 +258,7 @@ namespace VendorRepair::TraderList
 		g_table.Publish(nullptr);
 	}
 
-	std::optional<Set> Find(const RE::Actor& a_trader, Text::Trade a_trade)
+	std::optional<Set> Find(const RE::Actor& a_trader, Trade a_trade)
 	{
 		const auto table = g_table.Get();
 		if (!table) {

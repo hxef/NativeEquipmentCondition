@@ -63,7 +63,15 @@ namespace Restore
 	void Write(RE::PlayerCharacter& a_player, RE::TESBoundObject& a_object,
 		RE::BGSInventoryItem::StackDataCompareFunctor& a_find, std::uint32_t a_level, ScriptEvents::Cause a_cause)
 	{
-		SetHealth set{ Condition::FromPercent(a_level) };
+		// FromTenths gives FromPercent's float for a whole percent, so this
+		// writes what it always did.
+		WriteTenths(a_player, a_object, a_find, a_level * Condition::TENTHS_PER_PERCENT, a_cause);
+	}
+
+	void WriteTenths(RE::PlayerCharacter& a_player, RE::TESBoundObject& a_object,
+		RE::BGSInventoryItem::StackDataCompareFunctor& a_find, std::uint32_t a_tenths, ScriptEvents::Cause a_cause)
+	{
+		SetHealth set{ Condition::FromTenths(a_tenths) };
 		WriteWith(a_player, a_object, a_find, set, a_cause);
 	}
 

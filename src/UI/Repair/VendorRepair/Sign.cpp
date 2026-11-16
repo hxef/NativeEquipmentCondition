@@ -1,6 +1,6 @@
 #include "UI/Repair/VendorRepair/Sign.h"
 
-#include "Core/Settings.h"
+#include "Core/Settings/Settings.h"
 #include "Core/TraceLog/TraceLog.h"
 #include "UI/Flash.h"
 #include "UI/Repair/VendorRepair/SignBlock.h"
@@ -114,9 +114,11 @@ namespace VendorRepair::Sign
 		// Where the sign was last put on this screen, as the trace says it,
 		// so it says each change once.
 		constexpr auto SHOWS_UNDER = "shows under the trader's list"sv;
-		constexpr auto LEFT_OUT = "is left out, as it has no room under, above or left of the trader's list"sv;
+		constexpr auto LEFT_OUT = "is left out, as it has no room under or above the trader's list or left of its frame"sv;
 		// A screen with no line clip tries only the place under the list.
 		constexpr auto LEFT_OUT_UNDER = "is left out, as it has no room under the trader's list"sv;
+		// A screen with no block tries only the line's places.
+		constexpr auto LEFT_OUT_LINE = "is left out, as it has no room above the trader's list or left of its frame"sv;
 
 		std::optional<std::string_view> g_placed;
 
@@ -177,7 +179,8 @@ namespace VendorRepair::Sign
 
 		// The block needs the card's scale and rows, the line only the
 		// trader's title, so a movie that refuses the one still shows the
-		// other.
+		// other. When both fail, the trace names only the block's part, so 1
+		// line says no sign shows.
 		const auto* card = a_menu->itemCard_mc.get();
 		const auto  scale = card && card->IsDisplayObject() ? Flash::Number(*card, "scaleX"sv) : 0.0;
 		auto        missing = "item card"sv;
@@ -191,8 +194,8 @@ namespace VendorRepair::Sign
 		if (line) {
 			a_menu->menuObj.SetMember(LINE_MEMBER, line->field);
 			g_forms = std::move(line->forms);
-		} else {
-			Roles::Noted(movie, "trader's title"sv, sign.IsDisplayObject() ? ONLY_UNDER : NO_SIGN);
+		} else if (sign.IsDisplayObject()) {
+			Roles::Noted(movie, "trader's title"sv, ONLY_UNDER);
 		}
 		if (sign.IsDisplayObject() || line) {
 			TraceLog::Line("menu", "{:s}'s sign reads {:s}", Trader(a_menu), Reads(*ceilings));
@@ -264,7 +267,7 @@ namespace VendorRepair::Sign
 			Say(a_menu, pick->beside ? g_forms[pick->form].saidLeft : g_forms[pick->form].said);
 		} else {
 			Off(line);
-			Say(a_menu, LEFT_OUT);
+			Say(a_menu, sign.IsDisplayObject() ? LEFT_OUT : LEFT_OUT_LINE);
 		}
 		// Read after the line went in or out, as the side counts it, with each
 		// part's look while the place left of the frame is in play.

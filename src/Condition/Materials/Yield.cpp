@@ -59,14 +59,23 @@ namespace Materials
 
 		// The bench's walk, see Yield in Yield.h. ForEachRecipe prices an
 		// item and borrows a recipe and skips the legendary one, which this
-		// walk must not.
-		Tally TallyOf(const Index& a_index, const RE::TESBoundObject& a_object, const RE::ExtraDataList* a_extra)
+		// walk must not. Each form ID of a_kept passes over 1 enabled entry.
+		Tally TallyOf(const Index& a_index, const RE::TESBoundObject& a_object, const RE::ExtraDataList* a_extra,
+			std::span<const std::uint32_t> a_kept)
 		{
-			Tally tally;
-			const auto* mods = a_extra ? a_extra->GetByType<RE::BGSObjectInstanceExtra>() : nullptr;
+			Tally                      tally;
+			std::vector<std::uint32_t> kept{ a_kept.begin(), a_kept.end() };
+			const auto*                mods = a_extra ? a_extra->GetByType<RE::BGSObjectInstanceExtra>() : nullptr;
 			if (mods && mods->values) {
 				for (const auto& entry : mods->GetIndexData()) {
-					const auto* mod = entry.disabled ? nullptr : RE::TESForm::GetFormByID<RE::BGSMod::Attachment::Mod>(entry.objectID);
+					if (entry.disabled) {
+						continue;
+					}
+					if (const auto passed = std::ranges::find(kept, entry.objectID); passed != kept.end()) {
+						kept.erase(passed);
+						continue;
+					}
+					const auto* mod = RE::TESForm::GetFormByID<RE::BGSMod::Attachment::Mod>(entry.objectID);
 					const auto  found = mod ? a_index.mods.find(mod) : a_index.mods.end();
 					if (found != a_index.mods.end()) {
 						Add(tally, *found->second);
@@ -122,7 +131,7 @@ namespace Materials
 	}
 
 	std::vector<Part> Yield(const RE::TESBoundObject& a_object, const RE::ExtraDataList* a_extra,
-		std::uint32_t a_percent, std::uint32_t a_tenths, bool a_scrapper)
+		std::uint32_t a_percent, std::uint32_t a_tenths, bool a_scrapper, std::span<const std::uint32_t> a_kept)
 	{
 		std::vector<Part> out;
 		const auto        index = Current();
@@ -132,7 +141,7 @@ namespace Materials
 		const auto unranked = a_scrapper ? Scalars{} : ScrapperScalars();
 
 		std::vector<Tallied> tallied;
-		for (const auto& [form, count] : TallyOf(*index, a_object, a_extra)) {
+		for (const auto& [form, count] : TallyOf(*index, a_object, a_extra, a_kept)) {
 			// A line for a finished item says nothing about what the copy is
 			// made of, as in the bill.
 			const auto* component = PricedBy(*index, form);

@@ -1,6 +1,6 @@
 #include "UI/PerkChart.h"
 
-#include "Core/Settings.h"
+#include "Core/Settings/Settings.h"
 #include "Core/TraceLog/TraceLog.h"
 #include "UI/Flash.h"
 #include "UI/MenuMovies.h"

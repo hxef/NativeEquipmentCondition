@@ -1,7 +1,13 @@
 #include "UI/Repair/Workbench/Lock.h"
 
+#include "Condition/Condition.h"
 #include "Condition/Repair.h"
-#include "Core/Settings.h"
+#include "Core/Settings/Settings.h"
+#include "Core/Text/Text.h"
+#include "Core/TraceLog/TraceLog.h"
+#include "UI/Repair/RepairPrompt.h"
+#include "UI/Repair/Workbench/SpareBox.h"
+#include "UI/Repair/Workbench/Spares.h"
 #include "UI/Repair/Workbench/Supplies.h"
 
 #include <algorithm>
@@ -122,7 +128,41 @@ namespace Workbench
 		const auto asked = LockAsks(a_highest, a_ranks, mode);
 		const auto held = std::min(a_rank, a_ranks);
 		const auto from = asked > held ? LockFrom(asked - held, a_ranks) : 0U;
-		return std::min(from, SuppliesOnlyFrom());
+		return std::min(from * Condition::TENTHS_PER_PERCENT, SuppliesOnlyFromTenths());
+	}
+
+	// -------------------------------------------------------------------
+	// The press
+	// -------------------------------------------------------------------
+
+	bool LockStops(const Selection& a_selection, const Priced& a_priced)
+	{
+		if (const auto mode = LockNow(); mode != LockMode::kOff) {
+			const auto& standing = a_priced.standing;
+			TraceLog::Line("menu", "Workbench reads {:s} as asking {:s} {:d} by {:s}, the player {:d} of {:d} ranks in",
+				a_selection.Name(), standing.Name(), LockAsks(a_priced, mode), LockWord(mode), standing.rank, standing.ranks);
+		}
+		if (const auto held = HeldBack(a_selection, a_priced)) {
+			TraceLog::Line("menu", "Workbench holds back {:s} at {:s}%, which repairs from {:d}% with {:d} ranks short, {:s} {:d} would repair it now",
+				a_selection.Name(), Condition::CardText(a_selection.tenths), held->from, held->lacking, a_priced.standing.Name(), held->need);
+			const bool sparesFree = !Settings::bLockSpares.GetValue();
+			if (sparesFree && CarriesSpare(a_selection)) {
+				TraceLog::Line("menu", "Workbench opened the spares of {:s}, the repair lock holds it back", a_selection.Name());
+				AskWhichSpare(*a_selection.object, a_selection.extra, a_priced);
+				return true;
+			}
+			// The corner names a spare only where another copy could be one. A
+			// unique weapon such as the Cryolator is one only at
+			// iUnscrappableSpares 2.
+			const auto said = Text::RepairLocked(a_priced.standing.Name(), held->need, Condition::CardText(a_selection.tenths),
+				sparesFree && SpareCanExist(a_selection), Settings::bVendorRepair.GetValue());
+			RE::SendHUDMessage::ShowHUDMessage(said.c_str(), nullptr, true, true);
+			RE::UIUtils::PlayMenuSound(RepairPrompt::REFUSED_SOUND);
+			TraceLog::Line("menu", "Workbench said the repair lock holds {:s} back, {:s}", a_selection.Name(),
+				Settings::bSpareRepair.GetValue() && !sparesFree ? "spares too, since bLockSpares is on" : "with no spare");
+			return true;
+		}
+		return false;
 	}
 
 	// -------------------------------------------------------------------

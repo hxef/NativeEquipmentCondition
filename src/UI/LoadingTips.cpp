@@ -2,7 +2,7 @@
 
 #include "Core/CallPatch/CallPatch.h"
 #include "Core/Runtime.h"
-#include "Core/Settings.h"
+#include "Core/Settings/Settings.h"
 #include "Core/Text/Text.h"
 #include "Core/TraceLog/TraceLog.h"
 #include "Gameplay/BrokenEquip.h"
@@ -68,7 +68,7 @@ namespace LoadingTips
 			// Weapons1610mm, the 10mm pistol.
 			{ .words = &Text::WearTip, .picture = 0x001F6DBD, .in = &WearWorks },
 			// GeneralGameplay11WeaponsWorkbench, the weapons workbench.
-			{ .words = &BenchWords, .picture = 0x001F9609, .in = &Workbench::Repairs },
+			{ .words = &BenchWords, .picture = 0x001F9609, .in = &Workbench::BenchRepairs },
 			// GeneralGameplay22Shops, a shop counter.
 			{ .words = &Text::TraderTip, .picture = 0x001F9624, .on = &Settings::bVendorRepair },
 			// Armor06Metal, metal armor.

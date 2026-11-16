@@ -43,6 +43,7 @@ namespace Text
 			{ "Menus", MENUS_TITLE },
 			{ "CndBars", CND_BARS_TITLE },
 			{ "PenaltyMark", PENALTY_MARK_TITLE },
+			{ "Presets", PRESETS_TITLE },
 			{ "Log", LOG_TITLE },
 		};
 
@@ -91,15 +92,15 @@ namespace Text
 		return a_out == Out::kLog ? InEnglish(a_key) : Pick(a_key);
 	}
 
-	std::string PerkRepairs(std::uint32_t a_off, bool a_weapons, bool a_armor, std::optional<std::uint32_t> a_from)
+	std::string PerkRepairs(std::uint32_t a_off, bool a_weapons, bool a_armor, const std::optional<std::string>& a_from)
 	{
 		if (a_off == 0) {
-			return !a_from ? std::string{} : *a_from > 0 ? Say(PERK_PAGE_LOCK_FROM, *a_from) : std::string{ Pick(PERK_PAGE_LOCK_ANY) };
+			return !a_from ? std::string{} : !a_from->empty() ? Say(PERK_PAGE_LOCK_FROM, *a_from) : std::string{ Pick(PERK_PAGE_LOCK_ANY) };
 		}
 		// A perk pricing neither never gets a line, so the weapons wording it
 		// falls back to is never seen.
 		const auto& keys = a_weapons && a_armor ? DISCOUNT_BOTH : a_armor ? DISCOUNT_ARMOR : DISCOUNT_WEAPONS;
-		return !a_from ? Say(keys.alone, a_off) : *a_from > 0 ? Say(keys.from, a_off, *a_from) : Say(keys.any, a_off);
+		return !a_from ? Say(keys.alone, a_off) : !a_from->empty() ? Say(keys.from, a_off, *a_from) : Say(keys.any, a_off);
 	}
 
 	std::string PerkScrapper()
@@ -121,7 +122,7 @@ namespace Text
 	{
 		const auto help = a_id.ends_with(MENU_HELP);
 		const auto key = help ? a_id.substr(0, a_id.size() - MENU_HELP.size()) : a_id;
-		for (const auto rows : { MenuSwitches(), MenuWear(), MenuNumbers(), MenuHudLog() }) {
+		for (const auto rows : { MenuSwitches(), MenuWear(), MenuNumbers(), MenuHudLog(), MenuPresets() }) {
 			for (const auto& row : rows) {
 				if (row.setting->key != key) {
 					continue;

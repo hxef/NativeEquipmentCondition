@@ -4,7 +4,7 @@
 #include "Condition/Equipped.h"
 #include "Core/CallPatch/CallPatch.h"
 #include "Core/ScriptEvents.h"
-#include "Core/Settings.h"
+#include "Core/Settings/Settings.h"
 #include "Core/TraceLog/TraceLog.h"
 #include "Gameplay/WeaponEvents/WeaponEvents.h"
 

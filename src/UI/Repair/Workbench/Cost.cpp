@@ -1,7 +1,8 @@
 #include "UI/Repair/Workbench/Cost.h"
 
+#include "Condition/Condition.h"
 #include "Condition/Repair.h"
-#include "Core/Settings.h"
+#include "Core/Settings/Settings.h"
 #include "Core/TraceLog/TraceLog.h"
 #include "UI/Repair/Workbench/Lock.h"
 #include "UI/Repair/Workbench/Supplies.h"
@@ -17,6 +18,7 @@ namespace Workbench
 	namespace
 	{
 		using Repair::Debt;
+		using Repair::DebtTenths;
 		using Repair::Whole;
 
 		// The most fBenchCostMult counts for. The order lays a bill out one
@@ -24,12 +26,12 @@ namespace Workbench
 		// memory.
 		constexpr float MAX_COST_MULT = 10.0F;
 
-		// The whole number of units an item at a condition still owes, rounded
-		// once on the whole bill.
-		[[nodiscard]] std::uint32_t Owed(const Priced& a_priced, std::uint32_t a_percent)
+		// The whole number of units an item at a condition in tenths still
+		// owes, rounded once on the whole bill.
+		[[nodiscard]] std::uint32_t Owed(const Priced& a_priced, std::uint32_t a_tenths)
 		{
 			const auto units = static_cast<float>(a_priced.units);
-			return std::min<std::uint32_t>(Whole(units * Debt(a_percent, a_priced.multiple)),
+			return std::min<std::uint32_t>(Whole(units * DebtTenths(a_tenths, a_priced.multiple)),
 				static_cast<std::uint32_t>(a_priced.order.size()));
 		}
 	}
@@ -117,34 +119,37 @@ namespace Workbench
 		return out;
 	}
 
-	std::vector<Materials::Part> BillOf(const Priced& a_priced, const Selection& a_selection,
-		std::uint32_t a_from, std::uint32_t a_to)
+	std::vector<Materials::Part> BillOf(const Priced& a_priced, const Selection& a_selection, std::uint32_t a_to)
 	{
-		if (a_priced.order.empty() || a_to <= a_from) {
+		if (a_priced.order.empty() || a_to <= a_selection.percent) {
 			return {};
 		}
+		const auto from = a_selection.tenths;
+		const auto to = std::min(a_to, Repair::FULL) * Condition::TENTHS_PER_PERCENT;
 		// A repair at fBenchCostMult 0 stays free, supplies and all. With no
 		// supplies to take, off or missing from the load order, the whole way
 		// is paid in components, as Supplies::TakesComponents tells the lock.
 		if (FreeRepairs() || Supplies::Of(a_selection).empty()) {
-			return CostOf(a_priced, a_from, a_to);
+			return CostOf(a_priced, from, to);
 		}
 
-		const auto from = Supplies::From();
-		const auto components = a_from < from ? CostOf(a_priced, a_from, std::min(a_to, from))
-		                                      : std::vector<Materials::Part>{};
+		// The components stop at the first whole percent of fSuppliesOnlyFrom,
+		// 88 for 87.5, as the levels are whole.
+		const auto alone = Repair::PercentFrom(Supplies::FromTenths()) * Condition::TENTHS_PER_PERCENT;
+		const auto components = from < Supplies::FromTenths() ? CostOf(a_priced, from, std::min(to, alone))
+		                                                      : std::vector<Materials::Part>{};
 		return Supplies::Add(components, a_selection);
 	}
 
 	std::optional<std::vector<Materials::Part>> BillFor(RE::TESBoundObject& a_object, const RE::ExtraDataList* a_extra,
-		std::uint32_t a_from, std::uint32_t a_to)
+		std::uint32_t a_tenths, std::uint32_t a_to)
 	{
 		Selection selection;
 		selection.object = &a_object;
 		selection.extra = a_extra;
-		selection.percent = a_from;
+		selection.SetTenths(a_tenths);
 		selection.kind = Condition::KindOf(a_object);
-		if (!Repairs() || !selection.Worn() || a_to <= a_from) {
+		if (!Repairs() || !selection.Worn() || a_to <= selection.percent) {
 			return std::nullopt;
 		}
 		// MEND brings the item to full for nothing, whatever the level.
@@ -157,7 +162,7 @@ namespace Workbench
 		if (priced.units == 0 || HeldBack(selection, priced)) {
 			return std::nullopt;
 		}
-		return BillOf(priced, selection, a_from, std::min(a_to, Repair::FULL));
+		return BillOf(priced, selection, std::min(a_to, Repair::FULL));
 	}
 
 	std::vector<std::uint32_t> Above(const Selection& a_selection)
@@ -169,7 +174,7 @@ namespace Workbench
 	{
 		std::vector<Repair::Step<std::vector<Materials::Part>>> steps;
 		for (const auto level : Above(a_selection)) {
-			steps.push_back({ level, BillOf(a_priced, a_selection, a_selection.percent, level) });
+			steps.push_back({ level, BillOf(a_priced, a_selection, level) });
 		}
 
 		std::vector<std::uint32_t> out;

@@ -20,6 +20,19 @@ namespace Repair
 	// Full condition.
 	inline constexpr std::uint32_t FULL = 100;
 
+	// The point a card's number starts a setting from, in tenths, 0 to 1000,
+	// such as fFreeMendFrom. MCM snaps a slider to its step of 0.5, so a hand
+	// edit such as 97.2 counts as the 97 the slider shows, and 97.5 is 975.
+	// At CND decimals Off the card shows whole percents and rounds half up,
+	// so a half starts at the next one: 97.5 is 980, a card reading 98%. NaN
+	// reads 0.
+	[[nodiscard]] std::uint32_t CardTenthsFrom(float a_percent);
+
+	// The first whole percent at or above a_tenths, so 975 and 980 are both
+	// 98. A whole point W holds for a card at a_tenths exactly when a_tenths
+	// / 10 is W or more, so a whole compare needs no tenths.
+	[[nodiscard]] std::uint32_t PercentFrom(std::uint32_t a_tenths);
+
 	// The levels a worn item can be repaired to. Only the ones above its
 	// condition are offered, so a gun at 95 only gets 100 and a broken one gets
 	// all 10. Small steps let a player short of components pay for half a
@@ -42,6 +55,16 @@ namespace Repair
 	// minus k x, shifted and scaled so both ends land exactly, so a_multiple
 	// and FALL_OFF can be tuned separately.
 	[[nodiscard]] float Debt(std::uint32_t a_percent, float a_multiple);
+
+	// The same at a condition in tenths, 0 to 1000, so an item at 89.6 owes
+	// a little more than one at 90. Debt is this at a_percent times 10, the
+	// same float to the bit, as both divide 2 whole numbers to 1 quotient.
+	[[nodiscard]] float DebtTenths(std::uint32_t a_tenths, float a_multiple);
+
+	// The other way round: the condition, 0 to 100 with its fraction, at which
+	// an item owes a_debt against a_multiple. 100 for a debt of 0 or less, so
+	// at a_multiple 2 a debt of 0.59 is about 50 and 2 is 0.
+	[[nodiscard]] float Reached(float a_debt, float a_multiple);
 
 	// Components and caps come in whole units. Half of one rounds up.
 	[[nodiscard]] std::uint32_t Whole(float a_units);

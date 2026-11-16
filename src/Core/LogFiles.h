@@ -6,10 +6,10 @@
 #include <filesystem>
 #include <string>
 
-// NEC.log, NEC.papyrus.log and the 5 bug report logs keep the logs of the
-// 10 game starts before. As a log opens, the file of the start before moves to NEC.1.log,
-// NEC.trace.1.log and so on, so a restart after a crash still has the lines
-// that led to it.
+// NEC.log, NEC.papyrus.log and the 5 bug report logs keep the logs of the 10
+// game starts before. As a log opens, the file of the start before moves to
+// NEC.1.log, NEC.trace.1.log and so on, so a restart after a crash still has
+// the lines that led to it.
 //
 // The files are opened here by a file sink of NEC's own, which moves them
 // along the way the rotating file sink of spdlog, the library CommonLibF4

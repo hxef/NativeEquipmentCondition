@@ -1,7 +1,7 @@
 #include "UI/Repair/ConfirmScroll.h"
 
 #include "Core/CallPatch/CallPatch.h"
-#include "Core/Settings.h"
+#include "Core/Settings/Settings.h"
 #include "Core/TraceLog/TraceLog.h"
 #include "UI/Flash.h"
 #include "UI/Repair/Workbench/Workbench.h"

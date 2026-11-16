@@ -56,7 +56,9 @@ namespace Workbench
 
 	// Writes the chosen condition onto the stack the bench shows, pays
 	// experience, spends the components and brings the bench up to date. A free
-	// repair is announced in the corner.
+	// repair is announced in the corner. Begin, Finish and Mend work on
+	// Repairing, so also on the item a Pip-Boy inspect shows, which stays on
+	// show after the repair.
 	void Finish(RE::ExamineMenu* a_menu);
 
 	// Repairs a barely worn item on the spot for free: the same work a paid

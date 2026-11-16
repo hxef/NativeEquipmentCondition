@@ -1,9 +1,10 @@
 #include "UI/Repair/Workbench/Job.h"
 
+#include "Condition/Condition.h"
 #include "Condition/CraftingPerks/CraftingPerks.h"
 #include "Condition/Repair.h"
 #include "Core/ItemCards.h"
-#include "Core/Settings.h"
+#include "Core/Settings/Settings.h"
 #include "Core/Text/Text.h"
 #include "Core/TraceLog/TraceLog.h"
 #include "UI/Flash.h"
@@ -79,9 +80,9 @@ namespace Workbench
 		}
 
 		// An item no mod fits stays greyed once a repair lifts it to the mod
-		// lock, so the corner says why, after whatever the repair itself said. Told the
-		// item repaired, its name from before the repair, and the level it
-		// reached.
+		// lock, so the corner says why, after whatever the repair itself said.
+		// Told the item repaired, its name from before the repair, and the
+		// level it reached.
 		void SayCannotModify(const Selection& a_item, std::string_view a_name, std::uint32_t a_level)
 		{
 			if (a_level < ModifyFloor() || !NoModFits(a_item)) {
@@ -143,8 +144,8 @@ namespace Workbench
 		                      Text::RepairDiscount(standing.Name(), standing.rank, off) :
 		                      std::string{};
 		if (standing.perk && off > 0 && onlySupplies) {
-			TraceLog::Line("menu", "Workbench left the perk line off for {:s}, at {:d}% its repair takes only supplies",
-				a_selection.Name(), a_selection.percent);
+			TraceLog::Line("menu", "Workbench left the perk line off for {:s}, at {:s}% its repair takes only supplies",
+				a_selection.Name(), Condition::CardText(a_selection.tenths));
 		}
 
 		// Each level's row ends with what the item's card gains there.
@@ -163,8 +164,8 @@ namespace Workbench
 		                        std::format("{:s} {:d} for {:d}% fewer components", standing.Name(), standing.rank, off) :
 		                        std::string{ "nobody" };
 		TraceLog::Line("menu",
-			"Workbench asks how far to repair {:s} at {:d}%, offering {:s}{:s}, crediting {:s}",
-			a_selection.Name(), a_selection.percent, spelled, a_spare ? " under USE A SPARE" : "", credit);
+			"Workbench asks how far to repair {:s} at {:s}%, offering {:s}{:s}, crediting {:s}",
+			a_selection.Name(), Condition::CardText(a_selection.tenths), spelled, a_spare ? " under USE A SPARE" : "", credit);
 
 		// The item is found again by its stack's list, which keeps no
 		// number that moves.
@@ -179,7 +180,7 @@ namespace Workbench
 
 		// The bench is looked up again when the answer comes, in case the
 		// player walked away in between.
-		RepairPrompt::Ask(over, a_selection.Name(), a_selection.percent, std::move(buttons),
+		RepairPrompt::Ask(over, a_selection.Name(), a_selection.tenths, std::move(buttons),
 			[offered = a_offered, priced = a_priced](std::size_t a_index) {
 				TraceLog::Line("menu", "Workbench repair set to {:d}%", offered[a_index]);
 				Begin(OpenBench(), offered[a_index], priced);
@@ -189,18 +190,19 @@ namespace Workbench
 
 	void Begin(RE::ExamineMenu* a_menu, std::uint32_t a_level, const Priced& a_priced)
 	{
-		if (!Repairs()) {
+		// With the menu gone the test stays the bench's.
+		if (a_menu ? !RepairsIn(a_menu) : !Repairs()) {
 			TraceLog::Line("menu", "Workbench dropped the repair, repairs are off");
 			return;
 		}
 
-		const auto selection = Selected(a_menu);
+		const auto selection = Repairing(a_menu);
 		if (!a_menu || !selection.Worn() || a_level <= selection.percent) {
 			TraceLog::Line("menu", "Workbench dropped the repair, the bench or the item is gone");
 			return;
 		}
 
-		const auto bill = BillOf(a_priced, selection, selection.percent, a_level);
+		const auto bill = BillOf(a_priced, selection, a_level);
 
 		TraceLog::Line("menu", "Workbench reads {:s} as built from {:s}",
 			selection.Name(), Spell(a_priced.built));
@@ -226,8 +228,8 @@ namespace Workbench
 		}
 
 		if (Supplies::Count() > 0) {
-			TraceLog::Line("menu", "Workbench adds the supplies {:s} to the repair of {:s}, the supplies alone from {:d}% up",
-				Spell(Supplies::Of(selection)), selection.Name(), Supplies::From());
+			TraceLog::Line("menu", "Workbench adds the supplies {:s} to the repair of {:s}, the supplies alone from {:s}% up",
+				Spell(Supplies::Of(selection)), selection.Name(), Condition::PointText(Supplies::FromTenths()));
 		}
 
 		auto& job = InHand();
@@ -239,9 +241,9 @@ namespace Workbench
 		job.choice.requiredItems = &job.parts;
 
 		TraceLog::Line("menu",
-			"Workbench priced {:s} from {:d}% to {:d}% at {:s}, {:.2f} of what it is built from",
-			selection.Name(), selection.percent, a_level, Spell(bill),
-			Debt(selection.percent, a_priced.multiple) - Debt(a_level, a_priced.multiple));
+			"Workbench priced {:s} from {:s}% to {:d}% at {:s}, {:.2f} of what it is built from",
+			selection.Name(), Condition::CardText(selection.tenths), a_level, Spell(bill),
+			Repair::DebtTenths(selection.tenths, a_priced.multiple) - Debt(a_level, a_priced.multiple));
 
 		// A repair the bench cannot pay for shows what it lacks, see Missing.h.
 		if (ShowMissing(a_menu, job)) {
@@ -265,7 +267,7 @@ namespace Workbench
 
 	void Finish(RE::ExamineMenu* a_menu)
 	{
-		const auto selection = Selected(a_menu);
+		const auto selection = Repairing(a_menu);
 		const auto level = InHand().level;
 		auto*      player = RE::PlayerCharacter::GetSingleton();
 		if (!a_menu || !selection.Worn() || !player || level <= selection.percent) {
@@ -283,6 +285,12 @@ namespace Workbench
 		RE::BGSInventoryItem::CheckStackIDFunctor find{ selection.stack };
 		Restore::Write(*player, *selection.object, find, level, ScriptEvents::Cause::kRepair);
 
+		// A Pip-Boy inspect keeps the item on show, see RefreshKept. Written
+		// reads the old list only by address, so a list the write freed is
+		// never read.
+		const bool  inspect = PipboyInspect(a_menu);
+		const auto* written = inspect ? Written(*selection.object, selection.extra, selection.count > 1, level * Condition::TENTHS_PER_PERCENT, name) : nullptr;
+
 		const auto paid = PayExperience(*player);
 
 		// Spends the job's parts, but not for a job asking nothing, a repair
@@ -296,11 +304,15 @@ namespace Workbench
 		}
 
 		TraceLog::Line("menu",
-			"Workbench repaired {:s} from {:d}% to {:d}%, one of a stack of {:d}, worth {:d} for {:g} experience before Intelligence and perks",
-			name, selection.percent, level, selection.count, paid.worth, paid.experience);
+			"Workbench repaired {:s} from {:s}% to {:d}%, one of a stack of {:d}, worth {:d} for {:g} experience before Intelligence and perks",
+			name, Condition::CardText(selection.tenths), level, selection.count, paid.worth, paid.experience);
 
 		Drop();
-		Refresh(a_menu, selection.object->GetFormType());
+		if (inspect) {
+			RefreshKept(*a_menu, *selection.object, written);
+		} else {
+			Refresh(a_menu, selection.object->GetFormType());
+		}
 
 		// Nothing else on the screen says a free repair was made, with no
 		// confirmation, no components leaving and no experience. Then an item
@@ -350,15 +362,15 @@ namespace Workbench
 		} else {
 			TraceLog::Line("menu", "Workbench left the slot list to the next highlight, the viewer has no model yet");
 		}
-		const auto after = Selected(a_menu);
+		const auto after = PipboyInspect(a_menu) ? Inspected(a_menu) : Selected(a_menu);
 		Announce(a_menu, after);
 		Flash::Call(a_menu->menuObj, "UpdateButtons");
 
 		// A repair of one out of a stack of several splits the stack, and the
 		// row the list is left on holds one of the two.
 		if (TraceLog::IsOpen() && after.object) {
-			TraceLog::Line("menu", "Workbench now shows {:s} at {:d}%, a stack of {:d}",
-				after.Name(), after.percent, after.count);
+			TraceLog::Line("menu", "Workbench now shows {:s} at {:s}%, a stack of {:d}",
+				after.Name(), Condition::CardText(after.tenths), after.count);
 		}
 
 		// The Pip-Boy lists the repaired item again by itself, see
@@ -377,10 +389,10 @@ namespace Workbench
 		job.choice.requiredItems = &job.parts;
 
 		if (FreeRepairs()) {
-			TraceLog::Line("menu", "Workbench mended {:s} for nothing, fBenchCostMult is 0", Selected(a_menu).Name());
+			TraceLog::Line("menu", "Workbench mended {:s} for nothing, fBenchCostMult is 0", Repairing(a_menu).Name());
 		} else {
-			TraceLog::Line("menu", "Workbench mended {:s} for nothing, from {:d}% up",
-				Selected(a_menu).Name(), FreeFrom());
+			TraceLog::Line("menu", "Workbench mended {:s} for nothing, from {:s}% up",
+				Repairing(a_menu).Name(), Condition::PointText(FreeFromTenths()));
 		}
 		Finish(a_menu);
 	}

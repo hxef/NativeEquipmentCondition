@@ -2,7 +2,7 @@
 
 #include "Condition/Repair.h"
 #include "Core/CallPatch/CallPatch.h"
-#include "Core/Settings.h"
+#include "Core/Settings/Settings.h"
 #include "Core/TraceLog/TraceLog.h"
 #include "Gameplay/SpawnCondition/SpawnCondition.h"
 #include "UI/Repair/VendorRepair/Stock.h"

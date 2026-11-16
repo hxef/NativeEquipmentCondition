@@ -99,34 +99,60 @@ namespace MessageBox
 		constexpr auto PAUSE_KEY = "Pause"sv;
 
 		// On NEC's box the Cancel key and Escape press its last button as they
-		// are let go, as a click does, and go no further. So on AE the box's
-		// own Cancel press, which the box was handed the same button for,
-		// never answers it twice. On OG it has no such press. Every other key
-		// and every other box go as the game has them. NEC's box answers these
-		// keys while bNecOn is off too, so both hooks read Holds.
+		// are let go, as a click does, and go no further. So the box's own
+		// Cancel press on AE never answers it a second time. On OG it has no
+		// such press. Every other key and every other box go as the game has
+		// them. NEC's box answers these keys while bNecOn is off too, so both
+		// hooks read Holds.
+		void PressLast(RE::MessageBoxMenu& a_menu, const Asked& a_asked, const RE::BSFixedString& a_key)
+		{
+			TraceLog::Line("menu", "NEC's box {:d} heard {:s} let go and presses its last button", a_asked.number, a_key.c_str());
+			a_menu.OnButtonPress(a_asked.last);
+		}
+
+		// The box hears the keys here only when the pause key's handler did
+		// not take them first, see PauseShouldHandleEventHk.
 		bool OnButtonEventReleaseHk(RE::IMenu* a_this, const RE::BSFixedString& a_key)
 		{
 			if (g_keysLink.Holds() && (a_key == CANCEL_KEY || a_key == PAUSE_KEY)) {
 				auto* menu = static_cast<RE::MessageBoxMenu*>(a_this);
 				if (const auto asked = Shown(*menu)) {
-					TraceLog::Line("menu", "NEC's box {:d} heard {:s} let go and presses its last button", asked->number, a_key.c_str());
-					menu->OnButtonPress(asked->last);
+					PressLast(*menu, *asked, a_key);
 					return true;
 				}
 			}
 			return _OnButtonEventRelease(a_this, a_key);
 		}
 
-		// Escape passes the pause key's handler while NEC's box is on screen,
-		// so the box hears it.
+		// The pause key's handler hears a key before every menu and before the
+		// handlers other mods add after it. MCM's is one of those and hears
+		// every key while MCM is open, so the Cancel key and Escape on NEC's
+		// box would also take MCM back out of its page. So while NEC's box is
+		// on screen, this handler stops both keys for everything after it,
+		// press, hold and release, and the release presses the box's last
+		// button. Escape never reaches the pause menu that way either. The
+		// game hands the menus each key on the same thread right after this
+		// handler, and the box pauses the game, so the press runs where the
+		// box's own key handling would.
 		bool PauseShouldHandleEventHk(RE::BSInputEventUser* a_this, const RE::InputEvent* a_event)
 		{
 			const auto* button = a_event->As<RE::ButtonEvent>();
-			if (g_pauseLink.Holds() && g_keysLink.Holds() && button && button->QUserEvent() == PAUSE_KEY && AnyAsked()) {
-				const auto* ui = RE::UI::GetSingleton();
-				const auto  menu = ui ? ui->GetMenu<RE::MessageBoxMenu>() : nullptr;
-				if (menu && Shown(*menu)) {
-					return false;
+			if (g_pauseLink.Holds() && g_keysLink.Holds() && button && AnyAsked()) {
+				const auto& key = button->QUserEvent();
+				if (key == CANCEL_KEY || key == PAUSE_KEY) {
+					const auto* ui = RE::UI::GetSingleton();
+					const auto  menu = ui ? ui->GetMenu<RE::MessageBoxMenu>() : nullptr;
+					if (const auto asked = menu ? Shown(*menu) : std::nullopt) {
+						// The event is the game's own in its input queue, const
+						// only in this signature, and kStop tells every handler
+						// and menu after this one to skip it.
+						auto* stopped = const_cast<RE::InputEvent*>(a_event);
+						stopped->handled = RE::InputEvent::HANDLED_RESULT::kStop;
+						if (!button->QPressed() && button->QHeldDownSecs() >= 0.0F) {
+							PressLast(*menu, *asked, key);
+						}
+						return false;
+					}
 				}
 			}
 			return _PauseShouldHandleEvent(a_this, a_event);
@@ -146,9 +172,9 @@ namespace MessageBox
 		_OnButtonEventRelease = keys.value_or(0);
 		_PauseShouldHandleEvent = pause.value_or(0);
 		if (keys && pause) {
-			REX::INFO("Tab and Escape close NEC's repair boxes as their CANCEL button does.");
+			REX::INFO("Tab and Escape close NEC's boxes as their CANCEL button does.");
 		} else {
-			REX::WARN("Tab and Escape may leave NEC's repair boxes open, so close them with their CANCEL button.");
+			REX::WARN("Tab and Escape may leave NEC's boxes open, so close them with their CANCEL button.");
 		}
 	}
 

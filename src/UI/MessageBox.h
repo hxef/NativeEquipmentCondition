@@ -66,4 +66,8 @@ namespace MessageBox
 	// then, as the movie has it. A message box mod can keep it on the first.
 	void Ask(const char* a_title, const char* a_body,
 		const std::vector<std::string>& a_buttons, Callback* a_callback, std::uint32_t a_start = 0);
+
+	// Whether NEC has a box up or waiting. Ask counts nothing, so a button
+	// that asks checks this first, or a second press queues a second box.
+	[[nodiscard]] bool AnyAsked();
 }

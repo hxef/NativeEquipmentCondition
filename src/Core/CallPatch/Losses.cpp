@@ -228,7 +228,7 @@ namespace CallPatch
 		}
 
 		// The first sentence of a switch's line, the same in Say and OffLine:
-		// "Loot preview meters: off, left to A.dll.", or for a switch that
+		// "Quick container meters: off, left to A.dll.", or for a switch that
 		// went off with another part "Food spoils: off, since Worn loot is
 		// left to A.dll."
 		std::string SwitchLine(Part a_part, Part a_cause, std::span<const Owner> a_owners)

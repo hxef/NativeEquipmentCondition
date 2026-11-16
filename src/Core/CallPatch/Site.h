@@ -29,7 +29,8 @@ namespace CallPatch
 	{};
 	struct OG : At
 	{
-		// A constructor, so a table line reads OG{ id, offset } with no inner braces.
+		// A constructor, so a table line reads OG{ id, offset } with no inner
+		// braces.
 		constexpr OG(std::uint64_t a_id, std::uint32_t a_offset, bool a_jump = false, bool a_covered = false) :
 			At{ a_id, a_offset, a_jump },
 			covered(a_covered)

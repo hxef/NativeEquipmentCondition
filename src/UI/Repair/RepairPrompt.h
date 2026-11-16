@@ -47,7 +47,9 @@ namespace RepairPrompt
 	// a_chosen is handed the offer's number in a_buttons, and a_cancelled runs
 	// for cancel. Both run a moment later, from F4SE's task queue. a_top goes
 	// above the highest offer, and the highlight starts on a_start's row.
-	void Ask(std::string_view a_over, std::string_view a_name, std::uint32_t a_percent,
+	// a_tenths is the item's condition as its card shows it, see
+	// Condition::CardTenths.
+	void Ask(std::string_view a_over, std::string_view a_name, std::uint32_t a_tenths,
 		std::vector<std::string> a_buttons,
 		std::function<void(std::size_t)> a_chosen, std::function<void()> a_cancelled = {},
 		std::optional<Top> a_top = std::nullopt, Start a_start = Start::kHighest);

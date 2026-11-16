@@ -2,7 +2,7 @@
 
 // The settings under [Balance] and [HUD]: the numbers that tune each feature,
 // and where the CND bars sit and when they show. Included by Settings.h only,
-// after Live and the settings NEC.ini has before them.
+// after Live and the settings NEC.ini has before them. Private to this folder.
 namespace Settings
 {
 	// Balance. Each tunes a feature and is read where it is used. A floor at
@@ -104,16 +104,18 @@ namespace Settings
 	inline Live<float> fSpareWorthMult{ "Balance", "fSpareWorthMult", 1.0F };
 
 	// The condition from which a workbench mends an item for nothing, a
-	// whole percent, see Workbench/Bench.h.
-	inline Live<std::int32_t> iFreeMendFrom{ "Balance", "iFreeMendFrom", 95 };
+	// percent in steps of 0.5, counted from the number an item's card shows,
+	// see Repair::CardTenthsFrom and Workbench/Bench.h.
+	inline Live<float> fFreeMendFrom{ "Balance", "fFreeMendFrom", 97.5F };
 
 	// How many of each supply a paid workbench repair takes, 0 to 5, see
 	// Workbench/Supplies.h. 0 turns them off.
 	inline Live<std::int32_t> iRepairSupplies{ "Balance", "iRepairSupplies", 1 };
 
 	// The condition from which a workbench repair takes only its supplies, a
-	// whole percent, see Workbench/Supplies.h.
-	inline Live<std::int32_t> iSuppliesOnlyFrom{ "Balance", "iSuppliesOnlyFrom", 88 };
+	// percent in steps of 0.5, counted as fFreeMendFrom is, see
+	// Workbench/Supplies.h.
+	inline Live<float> fSuppliesOnlyFrom{ "Balance", "fSuppliesOnlyFrom", 87.5F };
 
 	// The condition from which a workbench opens mod slots, a whole percent,
 	// see Workbench/Bench.h.
@@ -245,7 +247,8 @@ namespace Settings
 	// its CND word sits on the bar's other side.
 	inline Live<bool> bCndBarsFlipped{ "HUD", "bCndBarsFlipped", false };
 
-	// How wide the mark where penalties start is on CND bars, 1 for its normal width.
+	// How wide the mark where penalties start is on CND bars, 1 for its normal
+	// width.
 	inline Live<float> fPenaltyMarkWidth{ "HUD", "fPenaltyMarkWidth", 1.0F };
 
 	// Draws that mark as a plain line instead of 2 notches.

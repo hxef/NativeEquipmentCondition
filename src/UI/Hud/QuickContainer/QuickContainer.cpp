@@ -1,6 +1,6 @@
 #include "UI/Hud/QuickContainer/QuickContainer.h"
 
-#include "Core/Settings.h"
+#include "Core/Settings/Settings.h"
 #include "UI/Hud/HudParts/HudParts.h"
 #include "UI/Hud/QuickContainer/FridgeIcon.h"
 #include "UI/Hud/QuickContainer/Meters.h"

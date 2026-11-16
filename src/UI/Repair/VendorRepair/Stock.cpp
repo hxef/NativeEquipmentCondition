@@ -2,7 +2,7 @@
 
 #include "Condition/ArmorWear/ArmorWear.h"
 #include "Condition/Condition.h"
-#include "Core/Settings.h"
+#include "Core/Settings/Settings.h"
 #include "Core/TraceLog/TraceLog.h"
 #include "Gameplay/ItemValue.h"
 #include "UI/Repair/VendorRepair/Restock.h"

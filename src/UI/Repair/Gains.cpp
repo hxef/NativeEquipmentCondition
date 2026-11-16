@@ -1,7 +1,7 @@
 #include "UI/Repair/Gains.h"
 
 #include "Condition/Condition.h"
-#include "Core/Settings.h"
+#include "Core/Settings/Settings.h"
 #include "Core/Text/Text.h"
 #include "Gameplay/ArmorRating.h"
 #include "Gameplay/HealthDamage/HealthDamage.h"
@@ -53,6 +53,16 @@ namespace Gains
 
 	Found Read(const SelectedItem::Item& a_item, const std::vector<std::uint32_t>& a_levels)
 	{
+		std::vector<std::uint32_t> tenths;
+		tenths.reserve(a_levels.size());
+		for (const auto level : a_levels) {
+			tenths.push_back(level * Condition::TENTHS_PER_PERCENT);
+		}
+		return ReadTenths(a_item, tenths);
+	}
+
+	Found ReadTenths(const SelectedItem::Item& a_item, const std::vector<std::uint32_t>& a_tenths)
+	{
 		Found found;
 		if (!Settings::bRepairBoxGains.GetValue()) {
 			found.off = true;
@@ -66,9 +76,9 @@ namespace Gains
 
 		const auto now = At(a_item, stack, Condition::HealthOf(stack));
 		std::vector<Numbers> after;
-		after.reserve(a_levels.size());
-		for (const auto level : a_levels) {
-			after.push_back(At(a_item, stack, Condition::FromPercent(level)));
+		after.reserve(a_tenths.size());
+		for (const auto tenths : a_tenths) {
+			after.push_back(At(a_item, stack, Condition::FromTenths(tenths)));
 		}
 
 		// The card shows a type while its number is above 0, so a type gets a

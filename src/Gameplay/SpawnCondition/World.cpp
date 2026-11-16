@@ -3,7 +3,7 @@
 #include "Condition/Condition.h"
 #include "Core/CallPatch/CallPatch.h"
 #include "Core/Runtime.h"
-#include "Core/Settings.h"
+#include "Core/Settings/Settings.h"
 #include "Core/TraceLog/TraceLog.h"
 #include "Gameplay/SpawnCondition/Guards.h"
 #include "Gameplay/SpawnCondition/Handover.h"

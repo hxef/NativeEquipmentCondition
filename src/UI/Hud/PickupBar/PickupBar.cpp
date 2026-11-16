@@ -1,6 +1,6 @@
 #include "UI/Hud/PickupBar/PickupBar.h"
 
-#include "Core/Settings.h"
+#include "Core/Settings/Settings.h"
 #include "UI/Hud/HudParts/HudParts.h"
 #include "UI/Hud/PickupBar/Bar.h"
 #include "UI/Hud/PickupBar/Look.h"

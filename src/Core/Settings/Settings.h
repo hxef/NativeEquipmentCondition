@@ -6,12 +6,14 @@
 #include <atomic>
 #include <cstddef>
 #include <cstdint>
+#include <filesystem>
+#include <optional>
 #include <span>
 #include <string>
 #include <string_view>
 #include <variant>
 
-// The plugin's settings, read from NEC.ini beside NEC.dll in Data\F4SE\Plugins.
+// The plugin's settings, read from NEC.ini in Data\F4SE\Plugins\NEC\Config.
 // NEC_custom.ini in the same folder holds the player's changes, so an update
 // writes over nothing of theirs. A key in neither file keeps the default
 // written here. A key not written here is never read, so a key an older NEC
@@ -21,11 +23,12 @@
 // nothing reads them again while the game runs. Read a setting where it is
 // used, never copy it out. Every bool, float and whole number is a Live one,
 // so the MCM page can change it while game threads read it. The page also keeps
-// the change in NEC_custom.ini, see UI/Mcm/Mcm.h.
+// the change in NEC_custom.ini, or in the picked preset's file for a gameplay
+// setting, see UI/Mcm/Mcm.h and Core/Presets/Presets.h.
 //
-// A setting added here, in SettingsFeatures.h or in SettingsTuning.h is added
+// A setting added here, in Features.h or in Tuning.h is added
 // to publish/NEC.ini too, with a line saying what it does, and to EVERY_SWITCH
-// or NUMBERS in SettingsLine.cpp in NEC.ini's order. A setting left out of
+// or NUMBERS in Line.cpp in NEC.ini's order. A setting left out of
 // those is missing from the Settings line, and neither the MCM page nor a
 // script can read or change it. A switch on a row of Features.cpp goes in
 // SWITCHES too, and any other switch gets its place on the Settings line in
@@ -72,8 +75,9 @@ namespace Settings
 		}
 	};
 
-	// Reads both files, once as the game starts. Runs before the log opens,
-	// so Report says what was read afterwards.
+	// Reads both files, once as the game starts, then the picked preset, see
+	// Presets::Load. Runs before the log opens, so Report says what was read
+	// afterwards.
 	void Load();
 
 	// Logs which files were read and a sLogLevel that is no level, then the
@@ -120,21 +124,41 @@ namespace Settings
 	// The word for the level NEC.ini gives, the same way.
 	[[nodiscard]] std::string_view LogLevelDefaultWord();
 
-	// Writes key=a_text under [a_section] in NEC_custom.ini, changing that
-	// key's line alone, see IniText.h, and makes the file where there is
-	// none. False when it cannot read the file it would change, the game
-	// would not read the edit, or it cannot write.
-	bool Keep(std::string_view a_section, std::string_view a_key, std::string_view a_text);
+	// NEC_custom.ini, where the MCM page keeps the player's changes.
+	[[nodiscard]] const std::filesystem::path& UserFile();
 
-	// Takes a_key's line out of [a_section] in NEC_custom.ini, so NEC.ini's
-	// value stands, and logs that. A file without the line, or no file, is
-	// left alone. False as for Keep.
-	bool Drop(std::string_view a_section, std::string_view a_key);
+	// NEC.ini, the values as the mod ships them.
+	[[nodiscard]] const std::filesystem::path& BaseFile();
+
+	// Writes key=a_text under [a_section] in a_file, changing that key's line
+	// alone, see IniText.h. A file that is not there yet is made, starting
+	// from a_first. a_file is NEC_custom.ini or a file in the presets' Custom
+	// folder, see Core/Presets/Presets.h. False when it cannot read the file
+	// it would change, the game would not read the edit, or it cannot write.
+	bool Keep(std::string_view a_section, std::string_view a_key, std::string_view a_text,
+		const std::filesystem::path& a_file = UserFile(), std::string_view a_first = {});
+
+	// Takes a_key's line out of [a_section] in a_file, so the value under it
+	// stands, and logs whose value stands as a_stands says, see
+	// Presets::Stands. A file without the line is left alone. A file that is
+	// not there is made from a_first only when a_first is not empty, which
+	// brings back an own preset removed by hand. False as for Keep.
+	bool Drop(std::string_view a_section, std::string_view a_key, const std::filesystem::path& a_file = UserFile(),
+		std::string_view a_first = {}, std::string_view a_stands = "NEC.ini's");
+
+	// Takes the lines of every key of a_keys out of a_file in 1 write. How
+	// many keys it took out, or nothing as for Keep.
+	std::optional<std::size_t> DropAll(const std::filesystem::path& a_file, std::span<const Named* const> a_keys);
+
+	// The whole text of a file Keep and Drop write, read under their lock, so
+	// a read never meets a rename. False when the file is there but cannot be
+	// read whole. No file gives an empty text.
+	bool ReadKept(const std::filesystem::path& a_file, std::string& a_text);
 }
 
 // [Features]. Each setting joins the setting store as it is made, so they are
 // included here, before [Loot], in NEC.ini's order.
-#include "Core/SettingsFeatures.h"
+#include "Core/Settings/Features.h"
 
 namespace Settings
 {
@@ -159,7 +183,7 @@ namespace Settings
 
 // [Balance] and [HUD]. Each setting joins the setting store as it is made, so
 // they are included here, between [Loot] and [Log], in NEC.ini's order.
-#include "Core/SettingsTuning.h"
+#include "Core/Settings/Tuning.h"
 
 namespace Settings
 {
@@ -172,19 +196,29 @@ namespace Settings
 	// finds nothing changed, and CommonLibF4's own lines.
 	inline REX::TIniSetting<std::string> sLogLevel{ "Log", "sLogLevel", "info" };
 
-	// Whether the 3 trace logs are written, see TraceLog.h. They grow fast, so
+	// Whether the 5 trace logs are written, see TraceLog.h. They grow fast, so
 	// they are off unless a bug is being reported.
 	inline Live<bool> bTraceLogs{ "Log", "bTraceLogs", false };
+
+	// Presets. The preset NEC's main MCM page picked, by its file name
+	// without .ini, such as NEC_New_Vegas, and empty for Default, see
+	// Core/Presets/Presets.h.
+	inline constexpr Named PRESET_KEY{ "Presets", "sPreset" };
+	inline REX::TIniSetting<std::string> sPreset{ PRESET_KEY.section, PRESET_KEY.key, "" };
 
 	// A number under [Features], [Loot], [Balance] or [HUD]: a float, or a
 	// whole number where the setting only takes whole steps.
 	using Number = std::variant<Live<float>*, Live<std::int32_t>*>;
 
-	// The 8 switches under [Features] and the 60 numbers under [Features],
+	// The 9 switches under [Features] and the 61 numbers under [Features],
 	// [Loot], [Balance] and [HUD], in NEC.ini's order, for Report and the MCM
 	// page.
 	[[nodiscard]] std::span<Live<bool>* const> Switches();
 	[[nodiscard]] std::span<const Number>      Numbers();
+
+	// Every switch in NEC.ini, the 9 of Switches and the 20 others, for the
+	// presets.
+	[[nodiscard]] std::span<Live<bool>* const> EverySwitch();
 
 	// Whether a_id names a_setting as the MCM page and the Papyrus API write
 	// it, key:section, such as bSpawnCondition:Features. In any case, since

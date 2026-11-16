@@ -3,7 +3,7 @@
 #include "Condition/Repair.h"
 #include "Core/CallPatch/CallPatch.h"
 #include "Core/ItemCards.h"
-#include "Core/Settings.h"
+#include "Core/Settings/Settings.h"
 #include "Core/Text/Text.h"
 #include "Core/TraceLog/TraceLog.h"
 #include "UI/Repair/VendorRepair/Button.h"
@@ -292,7 +292,7 @@ namespace VendorRepair
 				  "repair weapons for caps. The same counts of armor and power armor pieces buy armor repairs, "
 				  "and of clothing alone clothing repairs, each kind as far as its own rows go, keyed to {:s}.",
 			MANY_ROWS, MANY_SHARE, SOME_ROWS, SOME_SHARE, HINT_EVENT);
-		for (const auto trade : { Trade::kWeapons, Trade::kArmor, Trade::kClothing }) {
+		for (const auto trade : TRADES) {
 			std::string reach;
 			for (std::size_t rows = 1; rows <= FullRows(trade); rows++) {
 				reach += std::format("{:s}{:d}:{:d}%", reach.empty() ? "" : " ", rows, Reach(trade, rows));

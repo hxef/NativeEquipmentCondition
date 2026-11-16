@@ -2,7 +2,7 @@
 
 #include "Core/Plugin.h"
 
-#include "Core/Settings.h"
+#include "Core/Settings/Settings.h"
 #include "UI/Flash.h"
 #include "UI/Hud/HudParts/Readout.h"
 

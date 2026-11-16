@@ -1,7 +1,7 @@
 #include "Gameplay/SpawnCondition/SpawnCondition.h"
 
 #include "Condition/Condition.h"
-#include "Core/Settings.h"
+#include "Core/Settings/Settings.h"
 #include "Gameplay/FoodSpoil/FoodSpoil.h"
 #include "Gameplay/SpawnCondition/Food.h"
 #include "Gameplay/SpawnCondition/Guards.h"

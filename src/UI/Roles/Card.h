@@ -38,14 +38,15 @@ namespace Roles::Card
 		std::vector<Value> above;  // the rows CND goes above, nearest first
 	};
 
-	// The shown row printing a_label and a_percent, with or without %, the
-	// child at data order a_index first, found by its printed text since every
-	// entry declares Label_tf and Value_tf. The rows above are the shown rows
-	// above it up to the last combined row, or with none, up to the first with
-	// no Value_tf. Nothing when no row or 2 rows match, 2 matches warning at
+	// The shown row printing a_label and a_tenths as Condition::CardText
+	// writes it, with or without %, and 98.0 also as 98, the child at data
+	// order a_index first, found by its printed text since every entry
+	// declares Label_tf and Value_tf. The rows above are the shown rows above
+	// it up to the last combined row, or with none, up to the first with no
+	// Value_tf. Nothing when no row or 2 rows match, 2 matches warning at
 	// once and no match only when a_redrawn.
 	[[nodiscard]] std::optional<Row> ConditionRow(Scaleform::GFx::Movie& a_movie, Value& a_card, std::uint32_t a_index,
-		std::string_view a_label, double a_percent, bool a_redrawn);
+		std::string_view a_label, std::uint32_t a_tenths, bool a_redrawn);
 
 	// The field a row prints its number in, or a value that is not a display
 	// object when the row has none.

@@ -72,9 +72,10 @@ namespace CraftingPerks
 
 	// Takes the repair lock's rule for 1 rank, so each rank's line says where
 	// its repairs can start: the condition from which a repair that needs the
-	// perk can start with that rank held, 0 for any, or nothing while the
-	// lock holds nothing back. Workbench/Lock.h answers it, and
-	// Workbench::Install hands it over, since this layer cannot include UI.
+	// perk can start with that rank held, in tenths of the number an item's
+	// card shows, such as 875 for 87.5%, 0 for any, or nothing while the lock
+	// holds nothing back. Workbench/Lock.h answers it, and Workbench::Install
+	// hands it over, since this layer cannot include UI.
 	void SetLock(std::optional<std::uint32_t> (*a_opensFrom)(std::uint32_t a_rank, std::uint32_t a_ranks, std::uint32_t a_highest));
 
 	// Writes NEC's lines again into the descriptions the Pip-Boy keeps from

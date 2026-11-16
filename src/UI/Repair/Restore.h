@@ -19,6 +19,11 @@ namespace Restore
 	void Write(RE::PlayerCharacter& a_player, RE::TESBoundObject& a_object,
 		RE::BGSInventoryItem::StackDataCompareFunctor& a_find, std::uint32_t a_level, ScriptEvents::Cause a_cause);
 
+	// The same at a_tenths, 704 for 70.4%, where a spare lands, so the card
+	// reads it back. Write is this at a_level times 10.
+	void WriteTenths(RE::PlayerCharacter& a_player, RE::TESBoundObject& a_object,
+		RE::BGSInventoryItem::StackDataCompareFunctor& a_find, std::uint32_t a_tenths, ScriptEvents::Cause a_cause);
+
 	// Takes the health off the stack of a_object that a_find picks, so it
 	// reads as new and stacks with its copies again. Only the console does.
 	void Clear(RE::PlayerCharacter& a_player, RE::TESBoundObject& a_object,

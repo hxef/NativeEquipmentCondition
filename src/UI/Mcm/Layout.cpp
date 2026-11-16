@@ -5,6 +5,7 @@
 
 #include <atomic>
 #include <cstdint>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -18,10 +19,12 @@
 // while one of NEC's pages shows, NEC puts the list in None mode, and back in
 // Multi-Line once another page shows. Only a name would wrap differently, and
 // no name on NEC's pages is wider than 1 line. On NEC's pages it also writes
-// the HUD bar sliders' live ends, see HudBar.cpp. And while MCM asks for a
-// hide of HIDES in Bridge.h, such as whether the Jams start at row shows,
-// NEC keeps MCM's left list on the open page, see KeepOpenPage. While bNecOn
-// is off, NEC's pages leave the left list, see HidePages.
+// the HUD bar sliders' live ends, see HudBar.cpp, and the line under Preset,
+// see PresetRows.cpp. And while MCM asks for a hide of HIDES in Bridge.h,
+// such as whether the Jams start at row shows, NEC keeps MCM's left list on
+// the open page, see KeepOpenPage. While bNecOn is off, NEC's pages leave the
+// left list, see HidePages. After a preset's box is answered, NEC has MCM
+// draw the page again, see RefreshMcm.
 //
 // MCM's menu is a child of _root.Menu_mc, its list is configPanel_mc's
 // configList_mc, and the list holds the shown page's entries in entryList.
@@ -243,6 +246,9 @@ namespace Mcm
 			if (HudBarRanges(entries)) {
 				redraw = true;
 			}
+			if (AboutRow(entries)) {
+				redraw = true;
+			}
 		} else if (g_changed.load() && now == NONE) {
 			list.SetMember("textOption"sv, Value(MULTI_LINE));
 			g_changed.store(false);
@@ -264,24 +270,63 @@ namespace Mcm
 	// into the settings list. The first hide asked puts it back and the others
 	// find it there. Only on NEC's pages, and not while MCM builds its pages,
 	// when the highlight is below 0.
+	namespace
+	{
+		// Where the left list's highlight was, where the open page is, and
+		// whether the highlight went back there.
+		struct Highlight
+		{
+			Value  pages;
+			double lit = -1.0;
+			double page = -1.0;
+			bool   back = false;
+		};
+
+		// Puts the highlight back on the open page when that is one of NEC's,
+		// see KeepOpenPage. Nothing while MCM is not open.
+		std::optional<Highlight> PutBack(const Value& a_mcm)
+		{
+			auto       left = LeftList(a_mcm);
+			const auto pages = Flash::Member(left, "entryList"sv);
+			if (!pages.IsArray()) {
+				return std::nullopt;
+			}
+			const auto page = Flash::Number(a_mcm, "selectedPage"sv, -1.0);
+			const auto lit = Flash::Number(left, "selectedIndex"sv, -1.0);
+			const auto open = PageAt(pages, page);
+			const auto ours = open.IsObject() && Flash::String(open, "modName"sv) == MOD;
+			const auto back = lit >= 0.0 && lit != page && ours && Flash::Set(left, "selectedIndex"sv, Value(page));
+			return Highlight{ pages, lit, page, back };
+		}
+	}
+
 	void KeepOpenPage(Scaleform::GFx::Movie* a_movie, std::string_view a_id)
 	{
 		Value menus;
 		if (!a_movie || !a_movie->GetVariable(&menus, "_root.Menu_mc") || !menus.IsObject()) {
 			return;
 		}
-		const auto mcm = McmMenu(menus);
-		auto       left = LeftList(mcm);
-		const auto pages = Flash::Member(left, "entryList"sv);
-		if (!pages.IsArray()) {
+		if (const auto put = PutBack(McmMenu(menus))) {
+			TraceLog::Line("menu", "MCM asks for {:s} with the left list's highlight on {:g} ({:s}) and the open page {:g} ({:s}), put back {:s}",
+				a_id, put->lit, PageName(PageAt(put->pages, put->lit)), put->page, PageName(PageAt(put->pages, put->page)), put->back ? "yes" : "no");
+		}
+	}
+
+	// MCM's own refresh, RefreshMCM, takes the page's row filter from the
+	// highlight too, so it goes back first.
+	void RefreshMcm(Scaleform::GFx::Movie& a_movie)
+	{
+		Value menus;
+		if (!a_movie.GetVariable(&menus, "_root.Menu_mc") || !menus.IsObject()) {
 			return;
 		}
-		const auto page = Flash::Number(mcm, "selectedPage"sv, -1.0);
-		const auto lit = Flash::Number(left, "selectedIndex"sv, -1.0);
-		const auto open = PageAt(pages, page);
-		const auto ours = open.IsObject() && Flash::String(open, "modName"sv) == MOD;
-		const auto back = lit >= 0.0 && lit != page && ours && Flash::Set(left, "selectedIndex"sv, Value(page));
-		TraceLog::Line("menu", "MCM asks for {:s} with the left list's highlight on {:g} ({:s}) and the open page {:g} ({:s}), put back {:s}",
-			a_id, lit, PageName(PageAt(pages, lit)), page, PageName(open), back ? "yes" : "no");
+		auto mcm = McmMenu(menus);
+		if (!mcm.IsObject()) {
+			return;
+		}
+		const auto put = PutBack(mcm);
+		const auto done = mcm.Invoke("RefreshMCM");
+		TraceLog::Line("menu", "NEC has MCM refresh the page {:g} ({:s}), highlight put back {:s}, {:s}", put ? put->page : -1.0,
+			put ? PageName(PageAt(put->pages, put->page)) : std::string{ "(none)" }, put && put->back ? "yes" : "no", done ? "done" : "refused");
 	}
 }

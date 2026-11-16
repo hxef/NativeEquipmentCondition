@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Core/Settings.h"
+#include "Core/Settings/Settings.h"
 
 #include <bitset>
 #include <cstddef>
@@ -54,9 +54,10 @@ enum class Part : std::uint8_t
 	kSort,           // Inventory sorting
 	kHudBar,         // HUD condition bars
 	kPickup,         // Pickup CND bar
-	kQuick,          // Loot preview meters
+	kQuick,          // Quick container meters
 	kBench,          // Workbench repairs
 	kBenchLists,     // Worn items in workbench lists
+	kPipboyRepairs,  // Pip-Boy repairs
 	kScroll,         // Scrolling component lists
 	kTraderRepairs,  // Trader repairs
 	kStock,          // Trader stock condition

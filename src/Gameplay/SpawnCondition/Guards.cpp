@@ -3,7 +3,7 @@
 #include "Condition/Condition.h"
 #include "Core/CallPatch/CallPatch.h"
 #include "Core/ItemCards.h"
-#include "Core/Settings.h"
+#include "Core/Settings/Settings.h"
 
 #include <array>
 #include <cstdint>

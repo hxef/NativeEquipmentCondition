@@ -1,6 +1,6 @@
 #include "Core/Text/Lines.h"
 
-#include "Core/Settings.h"
+#include "Core/Settings/Settings.h"
 
 // The names and help lines of the HUD settings and the log level on the MCM
 // page, see MenuLine in Text.h, and the HUD bar sliders' Default sentence.

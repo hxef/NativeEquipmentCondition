@@ -1,6 +1,6 @@
 #include "Core/Text/Lines.h"
 
-#include "Core/Settings.h"
+#include "Core/Settings/Settings.h"
 
 // The names and help lines of the wear speeds, the first Balance numbers on
 // the MCM page, see MenuLine in Text.h. Each NPC row follows the player's,

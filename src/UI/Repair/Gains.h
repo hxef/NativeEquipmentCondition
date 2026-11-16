@@ -43,6 +43,10 @@ namespace Gains
 	// for every item while bRepairBoxGains is off.
 	[[nodiscard]] Found Read(const SelectedItem::Item& a_item, const std::vector<std::uint32_t>& a_levels);
 
+	// The same at conditions in tenths, 704 for 70.4%, where spares land.
+	// Read is this at its levels times 10.
+	[[nodiscard]] Found ReadTenths(const SelectedItem::Item& a_item, const std::vector<std::uint32_t>& a_tenths);
+
 	// Adds a row to a_table: a_kept, then the cell of each column of a_found
 	// for the level of a_row in its full words, "+2 Damage", and the same cells
 	// in their short words, "+2 DMG", to its shortGains.

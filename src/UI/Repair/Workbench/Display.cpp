@@ -3,6 +3,7 @@
 #include "Core/TraceLog/TraceLog.h"
 #include "UI/Flash.h"
 #include "UI/Repair/Workbench/Bench.h"
+#include "UI/Repair/Workbench/Inspect.h"
 #include "UI/Repair/Workbench/Label.h"
 
 #include <algorithm>
@@ -59,8 +60,8 @@ namespace Workbench
 		// Called by the bench every frame. The rows are walked, not watched,
 		// since a row redraws whenever it is scrolled past, picked or put down
 		// and sends no event. Only a name that should be faded and is not is
-		// written. The button's word is kept first, since the checks below
-		// can return.
+		// written. The button's word is kept first, and a Pip-Boy inspect's
+		// REPAIR decided, see Inspect.h, since the checks below can return.
 		class FrameListener final : public Scaleform::GFx::FunctionHandler
 		{
 		public:
@@ -68,6 +69,7 @@ namespace Workbench
 			{
 				if (a_params.movie) {
 					Relabel(*a_params.movie);
+					Inspect::OnFrame(*a_params.movie);
 				}
 
 				// The inventory answers what is picked only while it is the
@@ -189,11 +191,12 @@ namespace Workbench
 
 		// The flag the bench's own rows carry is the one its filter shows,
 		// weapons at the weapon bench and apparel at the armor bench. A row the
-		// bench left out carries 0, which the filter never shows.
+		// bench left out carries 0, which the filter never shows. Such a row
+		// is listed only for a repair, so not while the bench repairs nothing.
 		const auto kind = WorksOn(a_menu);
 		Value      filterer;
 		Value      shown;
-		const bool lists = kind && a_menu->itemList.GetMember("filterer"sv, &filterer) && filterer.IsObject() &&
+		const bool lists = BenchRepairs() && kind && a_menu->itemList.GetMember("filterer"sv, &filterer) && filterer.IsObject() &&
 		                   filterer.GetMember("itemFilter"sv, &shown) && Flash::AsNumber(shown) != 0.0;
 
 		const auto&   carried = a_menu->invInterface.stackedEntries;

@@ -1,6 +1,6 @@
 #include "UI/Mcm/Bridge.h"
 
-#include "Core/Settings.h"
+#include "Core/Settings/Settings.h"
 #include "Core/Text/Text.h"
 #include "Core/TraceLog/TraceLog.h"
 #include "UI/Flash.h"

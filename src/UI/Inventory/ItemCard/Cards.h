@@ -60,10 +60,15 @@ namespace ItemCard
 	bool PatchCards();
 
 	// The CND row of food that spoils, in Food.cpp: how much of its time
-	// a_stack has left as a whole percent, 100 before it is stamped and 0
-	// once spoiled. Nothing for anything else, and for all food while
-	// bFoodSpoils is off.
-	[[nodiscard]] std::optional<double> FoodPercent(const RE::BGSInventoryItem& a_item, const RE::BGSInventoryItem::Stack* a_stack);
+	// a_stack has left, in tenths as Condition::CardTenths counts them, 1000
+	// before it is stamped and 0 once spoiled. Nothing for anything else,
+	// and for all food while bFoodSpoils is off.
+	[[nodiscard]] std::optional<std::uint32_t> FoodTenths(const RE::BGSInventoryItem& a_item, const RE::BGSInventoryItem::Stack* a_stack);
+
+	// Whether a CND row gets precision 1, so the card prints the tenth that
+	// Condition::CardValue feeds it, in Hooks.cpp. Not at CND decimals Off,
+	// where a row gets it only with a rate change.
+	[[nodiscard]] bool PrintsTenth();
 
 	// Whether the CND row of a_stack's food gets the fridge icon, in
 	// Food.cpp: it sits in the fridge the container screen shows, see

@@ -42,6 +42,7 @@ namespace Mcm
 			{ "ru", 54, 17 },
 			{ "ja", 27, 20 },
 			{ "cn", 26, 20 },
+			{ "zhhans", 26, 20 },
 		};
 
 		// The player's language file's [Layout], else its row, else English's.

@@ -42,7 +42,7 @@ Your weapons and armor [b]wear down as you use them[/b], the way they did in Fal
 [b]All gear[/b]
 
 [list]
-[*]Price drops faster than condition, on the Fallout 3 and New Vegas curve: an item at half condition is worth 35% of its full price, whether you buy it or sell it.
+[*]Price drops faster than condition, on the Fallout 3 and New Vegas curve. An item at half condition is worth 35% of its full price, whether you buy it or sell it.
 [*]Worn gear [b]scraps into fewer components[/b] at a workbench and in workshop mode, down to 1 component for a broken item, its most common one.
 [*]The weapons and armor that companions and other essential NPCs come with never wear on them, since some of it can never be handed to you to repair. Once an item has passed through your hands, it wears like any other item you own, on you or on them.
 [/list]
@@ -54,17 +54,19 @@ Your weapons and armor [b]wear down as you use them[/b], the way they did in Fal
 [*]The condition is a roll, weighted by where the item came from and who carried it. A raider's pipe gun has seen better days, while a well equipped faction like the Brotherhood or the Gunners keeps its gear in better shape. Gear outside containers, on shelves, tables and the ground, lands at around 35 to 80%, depending on how well stocked its area is.
 [*][b]Most quest rewards arrive new[/b], and so does everything companions and other essential NPCs start with.
 [*]Legendary gear you find in chests or buy from traders arrives [b]new[/b]. Legendaries dropped by enemies still turn up worn.
-[*]About 1 item in 100 ignores all that: a raider can drop a pristine rifle, and a Courser a beaten one.
+[*]About 1 item in 100 ignores all that, so a raider can drop a pristine rifle, and a Courser a beaten one.
 [/list]
 
 [size=3][b][font=Georgia][color=#1AFF80]Repair at the workbench[/color][/font][/b][/size]
 
 [list]
 [*]At the weapon or armor workbench, select a worn item and a REPAIR button takes RENAME's place until it is back at full. Press it, choose how far to repair it in steps of 10%, and pay in supplies, plus the components it is built from for deeper wear. Beside each step the box shows what it adds to the item's damage or resistances by type, and the box of spares does the same for each spare, in columns unless [b]Repair rows in columns[/b] is off. Gear with no scrap recipe, like Grognak's Axe, costs what gear of its kind most often scraps into, and wears at the same rate. Short of components, you get the power armor station's list of what the repair takes, with the ones you lack faded.
-[*]Carrying a spare of the same item? [b]USE A SPARE[/b] in the repair box takes it apart for the repair: it restores as much condition as its scrap is worth, and the components left over go to your inventory. [b]Spare worth[/b] sets how much condition a spare restores and Scrapper raises it, but you never get back more components than it holds.
-[*]Barely worn gear, from 95% up, gets a MEND button instead, which fixes it on the spot [b]for free[/b]. The 95% is the [b]Free mend from[/b] setting. 100 turns MEND off, and 0 mends everything for free.
+[*]Carrying a spare of the same item? [b]USE A SPARE[/b] in the repair box takes it apart for the repair. It restores as much condition as its scrap is worth, and the components left over go to your inventory. [b]Spare worth[/b] sets how much condition a spare restores and Scrapper raises it, but you never get back more components than it holds.
+[*][b]Keep spare mods[/b] in MCM, off by default, hands back the mods of a spare that a repair does not need as loose mods, the cheapest or priciest used first, or lets you pick in a box which to scrap or keep.
+[*][b]Pip-Boy repairs[/b] in MCM, off by default, lets you repair from the Pip-Boy as in Fallout 3 and New Vegas. Inspect a worn weapon or armor piece and press REPAIR to use up a spare, or to repair it as at a workbench.
+[*]Barely worn gear, from 97.5%, gets a MEND button instead, which fixes it on the spot [b]for free[/b]. The 97.5% is the [b]Free mend from[/b] setting. 100 turns MEND off, and 0 mends everything for free.
 [*][b]Crafting perks[/b] like Gun Nut, Science!, Blacksmith and Armorer make repairs take fewer components, down to half at the top rank. The perk behind most of an item's components sets the discount, and each rank's description says how much. The perks count too when a skill mod like Classic NV Skill System grants them from your skills.
-[*]Every repair also takes [b]supplies[/b] (oil and cloth for a gun or a powered melee weapon such as the Ripper or a Heated Super Sledge, adhesive for other melee weapons, and adhesive and cloth for armor and clothing). From 88% up that is all it takes. MEND, a spare and a trader take none, and [b]Servicing supplies[/b] at 0 turns them off.
+[*]Every repair also takes [b]supplies[/b] (oil and cloth for a gun or a powered melee weapon such as the Ripper or a Heated Super Sledge, adhesive for other melee weapons, and adhesive and cloth for armor and clothing). From 87.5% that is all it takes. MEND, a spare and a trader take none, and [b]Servicing supplies[/b] at 0 turns them off.
 [*]When a repair takes components, the [b]repair lock[/b] asks for the crafting perk rank the gear's mods need. Gear whose mods ask Gun Nut 3 repairs from 25% with Gun Nut 2, from 50% with Gun Nut 1 and from 75% with no rank. Most gear on standard parts repairs at any rank, and a spare or a trader repairs anything. [b]Lock repairs[/b] turns it off or asks every item for the last rank.
 [*]A repair [b]earns the same XP[/b] as crafting a mod from those components.
 [*]With [b]Workbench repair cost[/b] at 0, every repair is free and done on the spot, broken gear included.
@@ -94,15 +96,16 @@ Your weapons and armor [b]wear down as you use them[/b], the way they did in Fal
 [size=3][b][font=Georgia][color=#1AFF80]Make it yours[/color][/font][/b][/size]
 
 [list]
-[*]With MCM, every setting changes on the spot. The main page shows NEC's version, Log and any part another mod took over. The Weapons, Armor, Loot, Repairs, UI and Little extras pages hold the rest: switch features off, or tune wear, penalties, loot condition, prices and repair costs.
-[*]Without MCM, [b]NEC.ini[/b] in Data\F4SE\Plugins explains every setting. Copy a line into [b]NEC_custom.ini[/b] beside it, under the same section heading, change the value and restart the game.
-[*]Either way your changes go in NEC_custom.ini, and NEC.ini stays as it ships. The mod comes without a NEC_custom.ini, so an update never wipes your settings. With Mod Organizer 2, keep NEC_custom.ini in its own mod or in overwrite.
+[*]With MCM, every setting changes on the spot. The main page shows NEC's version, [b]All NEC features[/b], the presets, Log and any part another mod took over. The Weapons, Armor, Loot, Repairs, UI and Little extras pages hold the rest, where you switch features off or tune wear, penalties, loot condition, prices and repair costs.
+[*]Without MCM, [b]NEC.ini[/b] in Data\F4SE\Plugins\NEC\Config explains every setting. Copy a line into [b]NEC_custom.ini[/b] beside it, under the same section heading, change the value and restart the game.
+[*]Either way your changes go in NEC_custom.ini, or into the presets' Custom folder while a preset other than Default is picked, and NEC.ini stays as it ships. The mod comes without a NEC_custom.ini, so an update never wipes your settings. With Mod Organizer 2, keep NEC_custom.ini and the Custom folder in their own mod or in overwrite.
+[*][b]Presets[/b]. The [b]Preset[/b] row on NEC's main MCM page picks Default (NEC.ini's values), Casual (gear wears half as fast and repairs cost half), Hardcore (gear wears 1.5 times as fast, repairs cost more, and those that take components ask crafting perk ranks), New Vegas (repairs from a spare in the Pip-Boy and none at the workbench, as in Fallout: New Vegas) or a preset you downloaded or saved. Your changes to Default, a shipped or a downloaded preset show as (Custom) and never touch its file. [b]Save as new preset[/b] writes a preset of your own you can share. [b]Reset preset[/b] drops your changes and [b]Delete preset[/b] removes your own preset, each after you confirm. A preset leaves the UI page and the log as you set them. Presets you download go in Data\F4SE\Plugins\NEC\Config\MCM_Presets, and a preset you save goes in its Custom folder.
 [/list]
 
 [size=3][b][font=Georgia][color=#1AFF80]Little extras[/color][/font][/b][/size]
 
 [list]
-[*][b]Food spoiling[/b], off until you switch it on: food you carry and food on the dead spoils over game days, slower in coolers and fridges, as in Fallout 76. Spoiled food is its own row at 0 condition, heals less and gives more rads. Cooking stations won't use it, and a chemistry station turns it into Fertilizer.
+[*][b]Food spoiling[/b], off until you switch it on, makes food you carry and food on the dead spoil over game days, slower in coolers and fridges, as in Fallout 76. Spoiled food is its own row at 0 condition, heals less and gives more rads. Cooking stations won't use it, and a chemistry station turns it into Fertilizer.
 [spoiler]
 [list]
 [*]Food you or a companion carry, and food on the dead, spoils. Coolers and unbroken fridges slow it down and mark their food with a frost icon.
@@ -213,9 +216,9 @@ Installing it to a playthrough in progress? What you carry and store stays at 10
 
 After that, [b]removing the mod is safe.[/b] It has no ESP and keeps no save data of its own. NEC keeps each item's condition in its health, one of the small tags, called extra data, that Fallout 4 already saves on an item, like its custom name. Power armor pieces use health too. That health is all that stays in your save. On anything but power armor the game ignores it for damage, protection and price, so what is left behind does nothing there, except that identical items at different conditions stay in separate stacks in your inventory.
 
-To stop NEC without quitting, turn off [b]All NEC features[/b] on its main MCM page. NEC then changes nothing until you turn it back on, and your items keep their condition, broken ones too, so repair them first.
+To stop NEC without quitting, turn off [b]All NEC features[/b] on its main MCM page. NEC then changes nothing until you turn it back on. Your weapons and armor keep their condition, broken ones too, so repair them first. Food keeps aging, so it spoils on its usual day once NEC is on again. Loot that spawns while NEC is off stays at 100%.
 
-A save made without any mod calling NEC's Papyrus API holds no trace of it. Once a mod that uses NEC's Papyrus API has run in your save, keep NEC installed for that playthrough: without it that mod's calls fail on every load, and taking that mod's plugin, its ESP, ESM or ESL, out of a running playthrough is never safe.
+A save made without any mod calling NEC's Papyrus API holds no trace of it. Once a mod that uses NEC's Papyrus API has run in your save, keep NEC installed for that playthrough. Without it that mod's calls fail on every load, and taking that mod's plugin, its ESP, ESM or ESL, out of a running playthrough is never safe.
 
 [size=3][b][font=Georgia][color=#1AFF80]Under the hood[/color][/font][/b][/size]
 
@@ -277,7 +280,7 @@ A save made without any mod calling NEC's Papyrus API holds no trace of it. Once
 [*]Loot rolls its condition once, when the game first spawns the item. Loading a save never rolls anything.
 [*]When the game spawns a loose item in the world, NEC marks it as not rolled yet with an ExtraHealth of 0.99999994. Whoever first picks it up rolls its condition.
 [*]With the [b]Pickup CND bar[/b] on, a loose item gets its condition the first time you look at it, the same roll the pickup would make, and the save keeps it. A loose item with a faction owner (ExtraOwnership) rolls on the barter screen as the trader's stock. Vanilla places none. NEC reads the item from the pickup prompt as the game fills it (HUDRolloverModel::Update), so it is the same item E picks up.
-[*]A loose item with no ExtraHealth at all spawned before you installed or updated NEC, or while Worn loot was off. It comes out at 100%.
+[*]A loose item with no ExtraHealth at all spawned before you installed or updated NEC, or while Worn loot or All NEC features was off. It comes out at 100%.
 [*]The roll uses the leveled list the item came from (ExtraLeveledItem), ranked against every other list of its kind, or the cell a loose item lies in when it has no list. It also uses the armor the item's owner was given.
 [*]Items of an NPC whose base record is essential start at 100%.
 [*]The barter screen lists the trader's stock, plus loose items nearby that the trader's faction owns. NEC rolls such an item once, when the barter screen first lists it. The one you buy keeps that roll.
@@ -301,13 +304,13 @@ A save made without any mod calling NEC's Papyrus API holds no trace of it. Once
 
 [list]
 [*]At every save load and new game, NEC reads these again: what each recipe builds, what each crafting perk unlocks, what each leveled list hands out and the armor each NPC is given. It reads them after any DLL mod that patches them as the game loads.
-[*]What a script adds to a leveled list at run time is left out: NEC reads the lists as the plugins ship them.
+[*]What a script adds to a leveled list at run time is left out, since NEC reads the lists as the plugins ship them.
 [/list]
 
 [b]Settings and other mods[/b]
 
 [list]
-[*]NEC's MCM page and its sub pages are only a config.json. NEC answers MCM's GetModSetting, SetModSetting and GetFullName calls from its own settings and translations.
+[*]NEC's MCM page and its sub pages are only a config.json. NEC answers MCM's GetModSetting, SetModSetting, GetFullName and GetListFromForm calls from its own settings, translations and preset files, and the [b]Reset preset[/b] and [b]Delete preset[/b] buttons reach NEC through MCM's CallExternalFunction.
 [*]While one of NEC's pages is open, NEC switches MCM's settings list from Multi-Line text mode to None, so each note is only as tall as its words. It switches back once another mod's page opens.
 [*]NEC patches call sites and function table slots at F4SE's PostPostLoad, with no detours.
 [*]It reads them back once every file has loaded, at each save load and new game, and whenever the main or pause menu opens.
@@ -327,7 +330,7 @@ For anything else, share NEC's logs:
 [*]Turn on the full logs:
 [list]
 [*]With MCM: on NEC's main page, under Log, set [b]Log detail[/b] to debug and switch [b]Bug report logs[/b] on.
-[*]Without MCM: add these lines to NEC_custom.ini in Data\F4SE\Plugins, then restart the game:
+[*]Without MCM: add these lines to NEC_custom.ini in Data\F4SE\Plugins\NEC\Config, then restart the game:
 [code][Log]
 sLogLevel=debug
 bTraceLogs=true[/code]

@@ -4,8 +4,8 @@ Native Equipment Condition is one DLL that gives Fallout 4 weapons and armor a
 condition that wears down with use. It patches about 120 places in the
 engine's code, reads what the load order says about weapons, armor, recipes,
 perks and leveled lists, and draws its readouts into Fallout 4's own menus. It
-ships no ESP and no assets, only the DLL, `NEC.ini` beside it, 1 language file
-per language in `NEC/Translations`, a page for the Mod Configuration Menu,
+ships no ESP and no assets, only the DLL, `NEC.ini` in `NEC/Config`, 1 language
+file per language in `NEC/Translations`, a page for the Mod Configuration Menu,
 the Papyrus API script `NEC.pex` for other mods, and `README.txt` and
 `NEC_Papyrus_API.txt` in `NEC/Docs`.
 
@@ -64,19 +64,28 @@ src/
     Pieces.h/.cpp            the pieces of every part, and what each piece needs
     Places.cpp               which pieces each patched place is
     Plugin.h                 the data handler the load order is read through
+    Presets/
+      Presets.h/.cpp         the presets NEC's main MCM page picks, the pick at the game start, and where a change goes
+      Shared.h               what the files here share
+      Files.cpp              the 2 folders, MCM_Presets and its Custom folder, and what each file is
+      Read.cpp               reading a preset's file, each value checked first
+      Values.cpp             the settings a preset holds, set by a preset's stack
+      Actions.cpp            a pick, Reset preset, Delete preset and Save as new preset
+      About.cpp              a preset's description, cleaned and cut for the line under Preset, and Describe preset
     Runtime.h/.cpp           the game version NEC runs on, 1.11.240 or OG, and NEC.log's line about it
     ScriptEvents.h/.cpp      the events other mods' scripts hear, as every place that changes an item notes them, and the gate of a save load
-    Settings.h/.cpp          every setting, read from NEC.ini, and a change kept in NEC_custom.ini
-    SettingsFeatures.h       the settings under [Features], which Settings.h includes
-    SettingsLine.cpp         NEC.log's Settings line, and every switch and number in NEC.ini's order
-    SettingsTuning.h         the settings under [Balance] and [HUD], which Settings.h includes
+    Settings/
+      Settings.h/.cpp        every setting, read from NEC.ini, and a change kept in NEC_custom.ini or a preset's file
+      Features.h             the settings under [Features], which Settings.h includes
+      Line.cpp               NEC.log's Settings line, and every switch and number in NEC.ini's order
+      Tuning.h               the settings under [Balance] and [HUD], which Settings.h includes
     Snapshot.h               a table other threads read while it is measured again, swapped in whole, and how 2 readings differ
     Text/
       Text.h/.cpp            the plugin's own sentences, 1 function each
       Translations.cpp       reading the player's language file, and the line each key gives
       FileText.h/.cpp        what a language file must be: its encoding and the {n} slots of each line
       Lines.h                what the files here and in Names and Menu share, and the keys the build writes from en.ini
-      Repair.cpp             the repair question and the bench's sentences
+      Repair.h/.cpp          the repair question and the bench's sentences, which Text.h includes
       Trader.cpp             what a trader says about a repair, in the barter screen's word for caps
       Tips.cpp               the loading screen's tips
       Names/
@@ -92,12 +101,14 @@ src/
         MenuWear.cpp         the MCM page's wear speeds, yours, NPCs' and automatic weapons': names and help
         MenuNumbers.cpp      the MCM page's other Balance numbers: names and help
         MenuHudLog.cpp       the MCM page's HUD settings and log level: names and help, and the HUD bar sliders' default
+        MenuPresets.h/.cpp   the presets rows of the main page: names and help, the list's words and the boxes' bodies
         MenuNotes.cpp        the MCM page's grey lines about parts left to other mods
         MenuPieces.cpp       a part with its pieces in brackets, what still works, and a setting's sentence with pieces off
     TraceLog/
       TraceLog.h/.cpp        the trace logs, for lines that arrive in floods
       Hold.h/.cpp            a script call's Papyrus trace lines, held until the call knows which try counts
       Words.h/.cpp           how a trace line names an actor and a damage type, which TraceLog.h includes
+    Utf8.h/.cpp              reading UTF-8 text 1 letter at a time, for the language files and a typed preset name
 
   Condition/
     Condition.h/.cpp         the reading, its bounds, the share a stat keeps, what takes part, the write
@@ -114,9 +125,10 @@ src/
       Index.h                the index, for this folder
       Bill.cpp               the bill of parts and the order it is charged in
       Components.cpp         which component prices a form, a junk item by its own Components list
+      Loose.h/.cpp           the mods a copy hands back as loose mods, as a mod swap at the bench does
       Scrap.cpp              the scrap recipes the bench reads and the lists they name, read at Load, again at every save load, new game and coc from the main menu, and where a script can add to one
       Yield.h/.cpp           how many of a component a worn copy's scrap count goes in as, and what a spare is worth
-    Repair.h/.cpp            what a worn item owes
+    Repair.h/.cpp            what a worn item owes, and the card percent a repair slider counts from
     WeaponWear/
       WeaponWear.h/.cpp      which weapons take part, wearing the copy in hand
       Rate.h/.cpp            how fast a weapon wears
@@ -234,8 +246,10 @@ src/
       Notes.cpp              the page's grey rows: each block's note, and what MCM asks of them
       TopList.cpp            the list at the top of the main page, of the parts no note names
       Fit.cpp                how tall a grey row may be, and a row cut to fit
-      Layout.cpp             MCM's list in None mode while one of NEC's pages shows, the HUD bar sliders' live ends, and NEC's pages out of the left list while bNecOn is off
+      Layout.cpp             MCM's list in None mode while one of NEC's pages shows, the HUD bar sliders' live ends, NEC's pages out of the left list while bNecOn is off, and MCM's refresh of the page
       HudBar.cpp             the HUD bar sliders: the bar's place in HUD units from the screen's top left, with the screen as their range
+      PresetRows.cpp         the presets rows of the main page: the Preset list, its pick, the line under it, Save as new preset and Describe preset
+      PresetButtons.cpp      the Reset preset and Delete preset buttons, the box each opens and the box after a failed save, delete or description
     Hud/
       HudParts/
         HudParts.h/.cpp      what the HUD readouts share
@@ -291,8 +305,8 @@ src/
       ConsoleRepair.h/.cpp   setting the weapon in hand or the armor worn from the console
       ConfirmScroll.h/.cpp   the box the bench puts up, grown and scrolled
       Columns/               the repair boxes' rows in columns: the cells measured, the rows fitted to the box's room and sent as html
-      Workbench/             repairing at the weapon and armor benches
-      VendorRepair/          paying a trader to repair weapons, armor or clothing, their stock, the trader list and the sign under their caps, above their list or left of it
+      Workbench/             repairing at the weapon and armor benches and from the Pip-Boy's inspect screen
+      VendorRepair/          paying a trader to repair weapons, armor or clothing, their stock, the trader list from NEC/Traders and the sign under their caps, above their list or left of it
 
   Papyrus/
     Papyrus.h                the script NEC that other mods call
@@ -377,7 +391,7 @@ switch on every call and leave the game as it is while it is off. Every hook
 does the same while bNecOn is off, see `src/Core/CallPatch/Sets.cpp`. A row
 whose switch is left to another mod is not installed and adds nothing to a
 movie, see `src/Core/Feature.h`. Every setting is read once, as the game starts, see
-`src/Core/Settings.h`, and the MCM page changes any of them on the spot, see
+`src/Core/Settings/Settings.h`, and the MCM page changes any of them on the spot, see
 `src/UI/Mcm/Mcm.h`.
 
 Every place NEC patches belongs to a part, see `src/Core/Parts.h`, the name

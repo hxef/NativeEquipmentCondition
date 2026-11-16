@@ -60,21 +60,23 @@ namespace Workbench
 	// may change a list meanwhile, see Materials::ReadScrapLists.
 	[[nodiscard]] Priced PriceAsLastRead(const Selection& a_selection);
 
-	// The components one repair takes, from one condition to another: the part
-	// of the order between what is owed at each end, so a repair in steps adds
-	// up to one in one go. Never empty while fBenchCostMult is above 0: where
-	// both ends owe the same count the next unit is charged. Empty at 0, where
-	// the bench mends instead, see FreeRepairs in Bench.h.
+	// The components one repair takes, from one condition to another, both in
+	// tenths of the card's number: the part of the order between what is owed
+	// at each end, so a repair in steps adds up to one in one go. Never empty
+	// while fBenchCostMult is above 0: where both ends owe the same count the
+	// next unit is charged. Empty at 0, where the bench mends instead, see
+	// FreeRepairs in Bench.h.
 	[[nodiscard]] std::vector<Materials::Part> CostOf(const Priced& a_priced, std::uint32_t a_from, std::uint32_t a_to);
 
-	// What one repair takes from the player, the bill every box lists: the
-	// supplies of the item, see Supplies.h, plus CostOf for the part of the
-	// way below Supplies::From(). With the supplies at 0 it is CostOf itself.
-	// A 10mm Pistol from 90% to 100% takes 1 Oil and 1 Cloth, and from 40% to
-	// 100% those plus CostOf from 40% to 88%. Where the load order has none of
-	// the supplies, it falls back to CostOf, so a paid repair is never free.
-	[[nodiscard]] std::vector<Materials::Part> BillOf(const Priced& a_priced, const Selection& a_selection,
-		std::uint32_t a_from, std::uint32_t a_to);
+	// What one repair takes from the player to bring a_selection from the
+	// number its card shows to a_to, a whole percent, the bill every box
+	// lists: the supplies of the item, see Supplies.h, plus CostOf for the
+	// part of the way below Supplies::FromTenths(). With the supplies at 0 it
+	// is CostOf itself. A 10mm Pistol from 90% to 100% takes 1 Oil and 1
+	// Cloth, and from 40.4% to 100% those plus CostOf from 40.4% to 88%, the
+	// first whole percent from 87.5. Where the load order has none of the
+	// supplies, it falls back to CostOf, so a paid repair is never free.
+	[[nodiscard]] std::vector<Materials::Part> BillOf(const Priced& a_priced, const Selection& a_selection, std::uint32_t a_to);
 
 	// The condition levels above the one the item already has.
 	[[nodiscard]] std::vector<std::uint32_t> Above(const Selection& a_selection);
@@ -82,8 +84,8 @@ namespace Workbench
 	// The levels worth offering: the ones above the current condition, minus
 	// any costing exactly what the next level up costs, by BillOf. A board is
 	// 2 wood in all, so every level from 60 up costs the same 1 unit. Every
-	// level from Supplies::From() up costs the same too, since the components
-	// stop there and only the supplies go on.
+	// level from Supplies::FromTenths() up costs the same too, since the
+	// components stop there and only the supplies go on.
 	[[nodiscard]] std::vector<std::uint32_t> Offered(const Selection& a_selection, const Priced& a_priced);
 
 	// What the trace file calls a bill of components.

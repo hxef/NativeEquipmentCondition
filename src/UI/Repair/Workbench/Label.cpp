@@ -1,9 +1,12 @@
 #include "UI/Repair/Workbench/Label.h"
 
+#include "Condition/Condition.h"
+#include "Core/Settings/Settings.h"
 #include "Core/Text/Text.h"
 #include "Core/TraceLog/TraceLog.h"
 #include "UI/Flash.h"
 #include "UI/Repair/Workbench/Display.h"
+#include "UI/Repair/Workbench/Inspect.h"
 #include "UI/Repair/Workbench/Workbench.h"
 #include "UI/Roles/Bars.h"
 
@@ -76,7 +79,20 @@ namespace Workbench
 		if (!a_menu || !a_menu->menuObj.IsObject()) {
 			return;
 		}
-		a_menu->menuObj.SetMember("allowRepair"sv, Value(a_selection.Worn()));
+		// The raw key, so the decision can say bSpareRepair is false.
+		const auto pipboy = Settings::iPipboyRepair.GetValue();
+		if ((pipboy == 1 || pipboy == 2) && PipboyInspect(a_menu)) {
+			Inspect::Decide(*a_menu);
+			return;
+		}
+		// With workbench repairs off the flag stays down, so vanilla's RENAME
+		// shows, and the mod lock still closes the slots.
+		const bool repairs = BenchRepairs();
+		a_menu->menuObj.SetMember("allowRepair"sv, Value(repairs && a_selection.Worn()));
+		if (!repairs && a_selection.Worn() && !a_menu->inspectMode) {
+			TraceLog::Line("menu", "Workbench leaves {:s} at {:s}% to RENAME, since workbench repairs are off",
+				a_selection.Name(), Condition::CardText(a_selection.tenths));
+		}
 		ShowModsLabel(a_menu, !a_selection.TooWorn() && !NoModFits(a_selection));
 	}
 
@@ -93,8 +109,8 @@ namespace Workbench
 		Roles::Bars::ForEach(*a_menu, g_wording);
 
 		if (g_wording.changed) {
-			TraceLog::Line("menu", "Workbench button reads {:s} for {:s} at {:d}%",
-				trifling ? "MEND" : "REPAIR", a_selection.Name(), a_selection.percent);
+			TraceLog::Line("menu", "Workbench button reads {:s} for {:s} at {:s}%",
+				trifling ? "MEND" : "REPAIR", a_selection.Name(), Condition::CardText(a_selection.tenths));
 		}
 	}
 
@@ -104,7 +120,7 @@ namespace Workbench
 
 	void Relabel(Scaleform::GFx::Movie& a_movie)
 	{
-		if (g_wording.word.empty() || !Repairs()) {
+		if (g_wording.word.empty() || !BenchRepairs()) {
 			return;
 		}
 		auto* const menu = OpenBench();

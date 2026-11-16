@@ -1,7 +1,7 @@
 #include "UI/Hud/HudParts/Readout.h"
 
 #include "Condition/Condition.h"
-#include "Core/Settings.h"
+#include "Core/Settings/Settings.h"
 #include "Core/TraceLog/TraceLog.h"
 #include "UI/Flash.h"
 #include "UI/Hud/HudParts/HudParts.h"

@@ -55,10 +55,25 @@ namespace VendorRepair
 	// wear or a trader's markup, see ItemValue.h. Under the inventory lock.
 	[[nodiscard]] std::uint32_t SoundWorth(const RE::BGSInventoryItem& a_item, std::uint32_t a_stack);
 
-	// The caps a_trader asks to bring a copy of a_object at a_percent, worth
-	// a_worth, to a_to, as the barter screen's question prices it: the first
-	// step it offers at a_to or above. Nothing above the trader's limit, at
-	// or below a_percent, or for an item with no price.
-	[[nodiscard]] std::optional<std::uint32_t> PriceFor(RE::Actor& a_trader, RE::TESBoundObject& a_object, std::uint32_t a_percent,
+	// The caps a_trader asks to bring a copy of a_object whose card reads
+	// a_tenths, the number in tenths, worth a_worth, to a_to, a whole percent,
+	// as the barter screen's question prices it: the first step it offers at
+	// a_to or above. Nothing above the trader's limit, at or below the card's
+	// whole percent, or for an item with no price.
+	[[nodiscard]] std::optional<std::uint32_t> PriceFor(RE::Actor& a_trader, RE::TESBoundObject& a_object, std::uint32_t a_tenths,
 		std::uint32_t a_worth, std::uint32_t a_to);
+}
+
+// The trader list's Load and Unload, which Features.cpp runs. The rest of the
+// list is in TraderList.h.
+namespace VendorRepair::TraderList
+{
+	// Reads every .ini file in Data/F4SE/Plugins/NEC/Traders/ and says in
+	// NEC.log what each line sets and why it skipped one. Keeps form IDs only,
+	// so Unload lets them go. Read whatever Trader repairs says, so the switch
+	// turned on later finds it read.
+	void Load();
+
+	// Forgets the list, so every trader is measured until Load runs.
+	void Unload();
 }

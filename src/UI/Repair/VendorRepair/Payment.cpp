@@ -1,5 +1,6 @@
 #include "UI/Repair/VendorRepair/Payment.h"
 
+#include "Condition/Condition.h"
 #include "Core/Text/Text.h"
 #include "Core/TraceLog/TraceLog.h"
 #include "UI/Flash.h"
@@ -122,8 +123,8 @@ namespace VendorRepair
 		Restore::Write(*player, *selection.object, find, a_quote.level, ScriptEvents::Cause::kRepair);
 
 		const auto said = Text::RepairPaid(a_quote.level, a_quote.price);
-		TraceLog::Line("menu", "{:s} repaired {:s} from {:d}% to {:d}%, one of a stack of {:d}, for {:d} of the {:d} caps the player had, saying \"{:s}\"",
-			Trader(menu), name, selection.percent, a_quote.level, selection.count, a_quote.price, pocketHeld, said);
+		TraceLog::Line("menu", "{:s} repaired {:s} from {:s}% to {:d}%, one of a stack of {:d}, for {:d} of the {:d} caps the player had, saying \"{:s}\"",
+			Trader(menu), name, Condition::CardText(selection.tenths), a_quote.level, selection.count, a_quote.price, pocketHeld, said);
 		TraceLog::Line("menu", "{:s} was paid into {:08X}, which held {:d} caps and now holds {:d}",
 			Trader(menu), purse->GetFormID(), purseHeld, purse->GetGoldAmount());
 

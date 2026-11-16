@@ -1,12 +1,12 @@
 #include "UI/Hud/HudCondition/HudCondition.h"
 
+#include "Core/Settings/Settings.h"
+#include "Core/TraceLog/TraceLog.h"
 #include "UI/Hud/HudCondition/Frame.h"
 #include "UI/Hud/HudCondition/Place.h"
 #include "UI/Hud/HudParts/HudParts.h"
 #include "UI/MenuMovies.h"
 #include "UI/Roles/Hud.h"
-#include "Core/Settings.h"
-#include "Core/TraceLog/TraceLog.h"
 
 #include <array>
 #include <string_view>

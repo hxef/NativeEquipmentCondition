@@ -112,6 +112,11 @@ namespace ListFiles
 	// for a bare ID. A loaded form asks its own IsCreated().
 	[[nodiscard]] bool Made(RE::TESFormID a_id);
 
+	// The plugin in the load order that adds the record a_id names, by the
+	// slot a_id carries. nullptr for a form the game made, or before the game
+	// data has loaded.
+	[[nodiscard]] const RE::TESFile* PluginOf(RE::TESFormID a_id);
+
 	// a_id inside a_plugin, its last 3 digits for a light plugin, 6 for any other.
 	[[nodiscard]] std::uint32_t LocalOf(const RE::TESFile& a_plugin, RE::TESFormID a_id);
 

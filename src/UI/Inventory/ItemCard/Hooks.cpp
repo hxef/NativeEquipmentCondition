@@ -2,7 +2,7 @@
 
 #include "Condition/Condition.h"
 #include "Core/CallPatch/CallPatch.h"
-#include "Core/Settings.h"
+#include "Core/Settings/Settings.h"
 #include "Core/TraceLog/TraceLog.h"
 #include "UI/Inventory/Pipboy.h"
 
@@ -80,12 +80,12 @@ namespace ItemCard
 			MoveLastTo(a_entries, 0);
 		}
 
-		// The number on the CND row: a weapon's or armor's condition, or how
-		// fresh a food is.
-		std::optional<double> RowPercent(const RE::BGSInventoryItem& a_item, const RE::BGSInventoryItem::Stack* a_stack)
+		// The number on the CND row in tenths, see Condition::CardTenths: a
+		// weapon's or armor's condition, or how fresh a food is.
+		std::optional<std::uint32_t> RowTenths(const RE::BGSInventoryItem& a_item, const RE::BGSInventoryItem::Stack* a_stack)
 		{
-			const auto gear = Condition::Percent(a_item, a_stack);
-			return gear ? gear : FoodPercent(a_item, a_stack);
+			const auto gear = Condition::Tenths(a_item, a_stack);
+			return gear ? gear : FoodTenths(a_item, a_stack);
 		}
 
 		// Stands in for InventoryUserUIUtils::PopulateItemCardInfo_Helper. A
@@ -110,9 +110,9 @@ namespace ItemCard
 				ShowPowerArmorCnd(a_target, a_item, stack, HELPER_SITES[I].what);
 			}
 
-			const auto percent = live ? RowPercent(a_item, stack) : std::nullopt;
+			const auto tenths = live ? RowTenths(a_item, stack) : std::nullopt;
 			const auto rads = RadsRow(food);
-			if (!percent && !rads) {
+			if (!tenths && !rads) {
 				return;
 			}
 
@@ -127,7 +127,7 @@ namespace ItemCard
 				const auto size = entries.GetArraySize();
 				MoveLastTo(entries, size > CLOSING_ROWS ? size - 1 - CLOSING_ROWS : size - 1);
 			}
-			if (!percent) {
+			if (!tenths) {
 				return;
 			}
 
@@ -149,19 +149,24 @@ namespace ItemCard
 			const auto change = rate && own && Settings::bCardWearRate.GetValue() ? WearRateChange(*own, *rate) : 0.0F;
 
 			// The engine's own entry builder, so the row carries every field
-			// the card reads. showAsPercent prints 91 as 91%.
-			Value entry;
+			// the card reads. showAsPercent prints 91 as 91%, and precision 1
+			// prints 91.505 as 91.5.
+			const Value value{ Condition::CardValue(*tenths) };
+			Value       entry;
 			if (change != 0.0F) {
 				// As vanilla adds Weight: the change is the item's own printed
 				// rate less the copy's, so less wear counts as better, and
 				// vanilla rates the 2 rates by its own steps into 1 to 3 marks
 				// right of the row.
 				const auto [total, compare] = MARKS_SAY_BETTER ? std::pair{ *own, *rate } : std::pair{ *rate, *own };
-				RE::InventoryUserUIUtils::AddItemCardInfoEntry(entries, entry, CND_TEXT, Value(*percent), change, total, compare);
-				// As vanilla's Weight: a change of 0.1 draws a mark, not only 1.
-				entry.SetMember("precision"sv, Value(std::uint32_t{ 1 }));
+				RE::InventoryUserUIUtils::AddItemCardInfoEntry(entries, entry, CND_TEXT, value, change, total, compare);
 			} else {
-				RE::InventoryUserUIUtils::AddItemCardInfoEntry(entries, entry, CND_TEXT, Value(*percent));
+				RE::InventoryUserUIUtils::AddItemCardInfoEntry(entries, entry, CND_TEXT, value);
+			}
+			// As vanilla's Weight: a change of 0.1 draws a mark, not only 1.
+			// While CND decimals is not Off every row gets it, see PrintsTenth.
+			if (change != 0.0F || PrintsTenth()) {
+				entry.SetMember("precision"sv, Value(std::uint32_t{ 1 }));
 			}
 			entry.SetMember("showAsPercent"sv, Value(true));
 			if (InFridge(a_item, stack)) {
@@ -223,8 +228,8 @@ namespace ItemCard
 			if (const auto rads = a_data ? RadsRow(food) : std::nullopt) {
 				AddRadsRow(*a_this, *a_data, *rads);
 			}
-			const auto percent = live && a_item && a_data ? RowPercent(*a_item, a_stack) : std::nullopt;
-			if (!percent) {
+			const auto tenths = live && a_item && a_data ? RowTenths(*a_item, a_stack) : std::nullopt;
+			if (!tenths) {
 				return;
 			}
 
@@ -234,7 +239,7 @@ namespace ItemCard
 			// its card shows, since no member of NEC's own reaches the card. It
 			// runs either way, since a repaired item needs its number
 			// forgotten.
-			const auto spent = Condition::WearsOut(*a_item->object) ? a_stack && a_stack->extra && a_stack->extra->IsItemBroken() : *percent == 0.0;
+			const auto spent = Condition::WearsOut(*a_item->object) ? a_stack && a_stack->extra && a_stack->extra->IsItemBroken() : *tenths == 0;
 			Pipboy::MarkEntry(*a_data, a_stack, spent, WearRateOf(*a_item, a_stack));
 
 			// The call above created this array from scratch, so its order is
@@ -245,7 +250,7 @@ namespace ItemCard
 			}
 
 			const RE::BSFixedStringCS text{ CND_TEXT };
-			a_this->AddItemCardInfoEntry(&text, static_cast<float>(*percent), entries);
+			a_this->AddItemCardInfoEntry(&text, static_cast<float>(Condition::CardValue(*tenths)), entries);
 
 			// The helper appends the entry without handing it back.
 			auto& elements = entries->elements;
@@ -256,6 +261,14 @@ namespace ItemCard
 
 			const RE::BSFixedString showAsPercent{ "showAsPercent" };
 			entry->AddMember(&showAsPercent, new RE::PipboyPrimitiveValue<bool>(true, entry));
+
+			// The Pip-Boy copies a row's member named precision to the card by
+			// its name, as a whole number, the way vanilla's own Weight row
+			// prints 21.6 there, so the card prints the tenth.
+			if (PrintsTenth()) {
+				const RE::BSFixedString precision{ "precision" };
+				entry->AddMember(&precision, new RE::PipboyPrimitiveValue<std::uint32_t>(1, entry));
+			}
 
 			std::rotate(elements.begin(), elements.end() - 1, elements.end());
 		}
@@ -271,14 +284,14 @@ namespace ItemCard
 			if (!TraceLog::IsOpen() || !a_item || !a_item->object || !a_stack) {
 				return;
 			}
-			const auto percent = Condition::Percent(*a_item, a_stack);
-			if (percent) {
+			const auto tenths = Condition::Tenths(*a_item, a_stack);
+			if (tenths) {
 				// The extra data list, to match against the one the spawn roll
 				// wrote to, see SpawnCondition/Roll.cpp.
 				auto* const extra = a_stack->extra.get();
 				const auto* legendary = extra ? extra->GetLegendaryMod() : nullptr;
-				TraceLog::Line("menu", "Pip-Boy lists {:s} [{:08X}] x{:d} at {:.0f}% from extra data {:p}, {:s}",
-					RE::TESFullName::GetFullName(*a_item->object), a_item->object->formID, a_stack->GetCount(), *percent,
+				TraceLog::Line("menu", "Pip-Boy lists {:s} [{:08X}] x{:d} at {:s}% from extra data {:p}, {:s}",
+					RE::TESFullName::GetFullName(*a_item->object), a_item->object->formID, a_stack->GetCount(), Condition::CardText(*tenths),
 					static_cast<const void*>(extra), legendary ? std::format("legendary {}", TraceLog::Who{ legendary }) : "no legendary");
 			}
 		}
@@ -289,6 +302,11 @@ namespace ItemCard
 		{
 			PopulatePipboy(a_this, a_item, a_stack, a_data, 1);
 		}
+	}
+
+	bool PrintsTenth()
+	{
+		return Condition::Decimals() != Condition::CardDecimals::kOff;
 	}
 
 	bool CardEntries(Value& a_target, Value& a_out)

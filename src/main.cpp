@@ -7,7 +7,7 @@
 #include "Core/Plugin.h"
 #include "Core/Runtime.h"
 #include "Core/ScriptEvents.h"
-#include "Core/Settings.h"
+#include "Core/Settings/Settings.h"
 #include "Core/Text/Text.h"
 #include "Core/TraceLog/TraceLog.h"
 #include "Gameplay/FoodSpoil/FoodSpoil.h"

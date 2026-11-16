@@ -128,6 +128,7 @@ enum class Piece : std::uint8_t
 	kLootMeters,
 	kBenchItemList,
 	kBenchModLists,
+	kPipboyRepairs,
 	kConfirmScroll,
 	kTraderRepairs,
 	kStockMerchant,

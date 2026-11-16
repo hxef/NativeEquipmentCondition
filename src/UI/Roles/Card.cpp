@@ -1,11 +1,12 @@
 #include "UI/Roles/Card.h"
 
+#include "Condition/Condition.h"
 #include "UI/Flash.h"
 #include "UI/MenuMovies.h"
 
 #include <algorithm>
 #include <cctype>
-#include <format>
+#include <string>
 
 namespace Roles::Card
 {
@@ -73,16 +74,30 @@ namespace Roles::Card
 			});
 		}
 
-		// Whether a row prints a_label beside a_number, 91, 91% or 91% (x1.3)
-		// once NEC wrote its wear rate there.
-		[[nodiscard]] bool Prints(Value& a_row, std::string_view a_label, const std::string& a_number)
+		// Whether a_value is a_number, 91, 91% or 91% (x1.3) once NEC wrote
+		// its wear rate there.
+		[[nodiscard]] bool Reads(const std::string& a_value, std::string_view a_number)
+		{
+			const std::string number{ a_number };
+			return a_value == number || a_value == number + "%" || a_value.starts_with(number + "% (x");
+		}
+
+		// Whether a row prints a_label beside a_number as Reads takes it. A
+		// number with a tenth of 0, such as 98.0, also matches its whole form,
+		// 98, since a card may drop the ".0" by itself.
+		[[nodiscard]] bool Prints(Value& a_row, std::string_view a_label, std::string_view a_number)
 		{
 			const auto label = Printed(a_row, "Label_tf"sv);
 			if (!label || !SameWord(*label, a_label)) {
 				return false;
 			}
 			const auto value = Printed(a_row, "Value_tf"sv);
-			return value && (*value == a_number || *value == a_number + "%" || value->starts_with(a_number + "% (x"));
+			if (!value) {
+				return false;
+			}
+			constexpr auto NO_TENTH = ".0"sv;
+			return Reads(*value, a_number) ||
+			       (a_number.ends_with(NO_TENTH) && Reads(*value, a_number.substr(0, a_number.size() - NO_TENTH.size())));
 		}
 
 		// -------------------------------------------------------------------
@@ -161,11 +176,11 @@ namespace Roles::Card
 	// -------------------------------------------------------------------
 
 	std::optional<Row> ConditionRow(Scaleform::GFx::Movie& a_movie, Value& a_card, std::uint32_t a_index,
-		std::string_view a_label, double a_percent, bool a_redrawn)
+		std::string_view a_label, std::uint32_t a_tenths, bool a_redrawn)
 	{
 		const auto children = Flash::Number(a_card, "numChildren"sv);
 		const auto label = Trimmed(a_label);
-		const auto number = std::format("{:.0f}", a_percent);
+		const auto number = Condition::CardText(a_tenths);
 
 		// The data order child first, then every other child, so a second
 		// row printing the same is seen too.

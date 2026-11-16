@@ -3,7 +3,7 @@
 #include "Core/Plugin.h"
 
 #include "Condition/Condition.h"
-#include "Core/Settings.h"
+#include "Core/Settings/Settings.h"
 #include "UI/Flash.h"
 
 #include <cstdint>

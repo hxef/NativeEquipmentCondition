@@ -112,7 +112,7 @@ namespace VendorRepair::Sign
 		};
 		const auto wide = [](const Form& a_form) { return a_form.own.right - a_form.own.left; };
 
-		auto one = measured("shows as 1 line above the trader's list"sv, "shows as 1 line left of the trader's list"sv, 0);
+		auto one = measured("shows as 1 line above the trader's list"sv, "shows as 1 line left of the trader's frame"sv, 0);
 		if (!one) {
 			return std::nullopt;
 		}
@@ -121,13 +121,13 @@ namespace VendorRepair::Sign
 			return line;
 		}
 		if (auto over = measured("shows as 2 rows above the trader's list, its title alone on the upper row"sv,
-				"shows as 2 rows left of the trader's list, its title alone on the upper row"sv, 1)) {
+				"shows as 2 rows left of the trader's frame, its title alone on the upper row"sv, 1)) {
 			line.forms.push_back(std::move(*over));
 		}
 		// The break that leaves the wider row narrowest, if not the title's.
 		std::optional<Form> shared;
 		for (std::size_t at = 2; at < parts.size(); at++) {
-			if (auto form = measured("shows as 2 rows above the trader's list, its kinds on both rows"sv, "shows as 2 rows left of the trader's list, its kinds on both rows"sv, at);
+			if (auto form = measured("shows as 2 rows above the trader's list, its kinds on both rows"sv, "shows as 2 rows left of the trader's frame, its kinds on both rows"sv, at);
 				form && (!shared || wide(*form) < wide(*shared))) {
 				shared = std::move(form);
 			}
@@ -153,14 +153,13 @@ namespace VendorRepair::Sign
 		}
 		const auto held = Flash::Member(format, "color"sv);
 		const auto color = static_cast<std::uint32_t>(Flash::IsAnyNumber(held) ? Flash::AsNumber(held) : Flash::Number(title, "textColor"sv, WHITE)) & WHITE;
-		const auto part = [&](int a_shift) { return static_cast<double>((color >> a_shift) & 0xFF) / 255.0; };
 
 		// The title shows that colour under its own clip's and its header's,
 		// and the line sits beside the header, so it takes all 3.
 		const auto tint = Flash::TintOf(Flash::Member(title, "parent"sv))
 		                      .value_or(Flash::Tint{})
 		                      .Over(Flash::TintOf(title).value_or(Flash::Tint{}))
-		                      .Over(Flash::Tint{ part(16), part(8), part(0) });
+		                      .Over(Flash::ColorTint(color));
 		if (const auto now = Flash::TintOf(a_line); !now || !now->Near(tint)) {
 			Flash::SetTint(a_line, tint);
 		}

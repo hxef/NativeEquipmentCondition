@@ -2,7 +2,7 @@
 
 #include "Condition/Condition.h"
 #include "Core/CallPatch/CallPatch.h"
-#include "Core/Settings.h"
+#include "Core/Settings/Settings.h"
 #include "Gameplay/SpawnCondition/Guards.h"
 #include "Gameplay/SpawnCondition/Owners.h"
 #include "Gameplay/SpawnCondition/Roll.h"

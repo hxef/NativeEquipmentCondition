@@ -1,7 +1,7 @@
 #include "Core/TraceLog/TraceLog.h"
 
 #include "Core/LogFiles.h"
-#include "Core/Settings.h"
+#include "Core/Settings/Settings.h"
 #include "Core/TraceLog/Hold.h"
 
 #include <spdlog/details/os.h>

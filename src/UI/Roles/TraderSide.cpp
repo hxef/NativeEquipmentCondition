@@ -198,12 +198,15 @@ namespace Roles::TraderSide
 			return Flash::Opacity(a_part) > 0.0 && !Flash::String(a_part, "name"sv).starts_with(OWN_PREFIX);
 		};
 		for (auto& child : Flash::Children(parent)) {
-			// The side holds itself, and taken counts it already.
-			Value holds;
-			if (!drawn(child) || (child.IsDisplayObject() && child.Invoke("contains", &holds, &side, 1) && holds.IsBoolean() && holds.GetBoolean())) {
+			// The side holds itself, and taken counts it already. Only a clip
+			// with children can hold it, so a text field or a shape is not
+			// asked.
+			const bool clip = child.IsDisplayObject() && !IsText(child) && Flash::Number(child, "numChildren"sv) > 0.0;
+			Value      holds;
+			if (!drawn(child) || (clip && child.Invoke("contains", &holds, &side, 1) && holds.IsBoolean() && holds.GetBoolean())) {
 				continue;
 			}
-			if (IsText(child) || !(Flash::Number(child, "numChildren"sv) > 0.0)) {
+			if (!clip) {
 				Add(a_room.around, child, side);
 				continue;
 			}

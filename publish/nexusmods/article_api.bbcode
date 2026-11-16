@@ -17,8 +17,12 @@ Every item function takes an ObjectReference akItem, and 3 things fit in it:
 [list=1]
 [*]An item lying in the world, as any reference to it.
 [*]A persistent item inside a container or an inventory, such as a quest item or Self in a script on the item.
-[*]A handle NEC gives you for 1 stack inside a container or an inventory, from GetItems, GetEquippedWeapon, GetWornItem or GetWornItems. Papyrus prints one as [ObjectReference <Item 2 in container  (00000014)>].
+[*]A handle NEC gives you for 1 stack inside a container or an inventory, from GetItems, GetEquippedWeapon, GetWornItem or GetWornItems.
 [/list]
+
+Papyrus prints a handle as:
+
+[code][ObjectReference <Item 2 in container  (00000014)>][/code]
 
 A handle names 1 stack while a script variable holds it. It follows its stack into another container and back, out into the world as that world item, and across a save and a load.
 
@@ -34,13 +38,13 @@ A function that takes a Form asks about a kind of item, and one that takes an Ob
 
 [size=3][b][font=Georgia][color=#1AFF80]Units[/color][/font][/b][/size]
 
-Condition and freshness are a percent from 0 to 100, with decimals: the API gives 85.3 where the item card shows 85. A new item reads 100. -1 means NEC gives this item no condition, or akItem is None or no longer exists. The curve functions below, GetDamageShare to GetJamChance, answer a fraction from 0 to 1: the share of its damage a weapon keeps, or the chance a magazine jams. Vanilla's GetItemHealthPercent is a fraction from 0 to 1 too, not a percent.
+Condition and freshness are a percent from 0 to 100, with decimals: the API gives 85.27 where the item card shows 85.3, or 85 while GetSettingInt("iCndDecimals:Features") is 0. A new item reads 100. -1 means NEC gives this item no condition, or akItem is None or no longer exists. The curve functions below, GetDamageShare to GetJamChance, answer a fraction from 0 to 1: the share of its damage a weapon keeps, or the chance a magazine jams. Vanilla's GetItemHealthPercent is a fraction from 0 to 1 too, not a percent.
 
 [size=3][b][font=Georgia][color=#1AFF80]Writes[/color][/font][/b][/size]
 
 A write works on gear NEC gives a condition, see IsTracked, and returns false for anything else. A write costs the player nothing: no perk, workbench, component or caps are needed. If your mod should charge for a repair, work the price out with the repair economics functions below.
 
-A write goes through even when the player turned wear off in MCM. Wear scales by NEC's wear rate sliders, the other writes apply the value as given. An item on a list in NEC/Exclude is never written.
+A write goes through even when the player turned wear off in MCM, but not while GetSettingBool("bNecOn:Features") is false, see Features and settings. Wear scales by NEC's wear rate sliders, the other writes apply the value as given. An item on a list in NEC/Exclude is never written.
 
 After a write, the item card, the Pip-Boy row and a worn piece's protection follow, and the player's weapon brought to 0 is put away as wear puts it away. An open bench or barter screen shows the change once it lists the item again.
 
@@ -67,7 +71,7 @@ The version this NEC.pex belongs to, equal to GetVersion when the DLL and NEC.pe
 
 [b]Features and settings[/b]
 
-While the player turned NEC off on its main MCM page, GetSettingBool("bNecOn:Features") answers false, IsFeatureOn answers false for every name, the writes change nothing and answer false, and no event comes. The condition and food reads answer as before, since every item keeps its condition, and the share, trader and scrap reads answer as with their feature off.
+While the player turned NEC off on its main MCM page, GetSettingBool("bNecOn:Features") answers false, IsFeatureOn answers false for every name, the writes change nothing and answer false, and NEC raises no new event, though one waiting from before still comes. The other reads answer as before, since weapons and armor keep their condition, but GetAccuracyShare, GetRangeShare and GetFireRateShare answer 1, GetRepairCost None and GetSpareGain -1, and the trader and scrap reads answer as with their feature off.
 
 [list]
 [*][font=Courier New]bool Function IsFeatureOn(string asFeature)[/font]
@@ -77,7 +81,7 @@ True when another DLL took some or all of this feature, as NEC's main MCM page a
 [*][font=Courier New]float Function GetSettingFloat(string asId)[/font]
 A decimal setting by its MCM id, key:section, such as "fWearRateMult:Balance". 0.0 for an id NEC does not know.
 [*][font=Courier New]int Function GetSettingInt(string asId)[/font]
-A whole number setting by its MCM id, such as "iFreeMendFrom:Balance". 0 for an id NEC does not know.
+A whole number setting by its MCM id, such as "iRepairSupplies:Balance". 0 for an id NEC does not know.
 [*][font=Courier New]bool Function GetSettingBool(string asId)[/font]
 A switch by its MCM id, such as "bFoodSpoils:Features". False for an id NEC does not know.
 [/list]
@@ -86,7 +90,7 @@ A switch by its MCM id, such as "bFoodSpoils:Features". False for an id NEC does
 
 [list]
 [*][font=Courier New]ObjectReference[] Function GetItems(ObjectReference akHolder, Form akBase)[/font]
-1 handle per stack of akBase akHolder carries, akBase None for every weapon, armor and food NEC tracks. None for a None holder or one whose inventory the game has not loaded.
+1 handle per stack of akBase akHolder carries, akBase None for every weapon, armor and food NEC tracks. None for a None holder, for an akBase that is no base object, such as a FormList or a Keyword, or for a holder whose inventory the game has not loaded.
 [*][font=Courier New]ObjectReference Function GetEquippedWeapon(Actor akActor)[/font]
 A handle to the weapon in akActor's hands, None when they hold none NEC tracks.
 [*][font=Courier New]ObjectReference Function GetWornItem(Actor akActor, int aiSlot)[/font]
@@ -160,9 +164,9 @@ The condition points 1 Wear takes off akItem at its holder's wear speed, -1 for 
 
 [list]
 [*][font=Courier New]int Function GetFreeMendFrom()[/font]
-The first percent from which the workbench mends an item for free. MEND puts it back to full at no cost. 100 means MEND is off. While GetSettingFloat("fBenchCostMult:Balance") is 0, every repair is a free MEND, whatever this answers.
+The first whole percent, as an item's card shows it, from which the workbench mends an item for free. MEND puts it back to full at no cost. 100 means MEND is off. GetSettingFloat("fFreeMendFrom:Balance") gives the MCM slider's own value, which can end in .5, and while GetSettingInt("iCndDecimals:Features") is 1 or 2 a card reading that value mends too, such as 97.5%. While GetSettingFloat("fBenchCostMult:Balance") is 0, every repair is a free MEND, whatever this answers.
 [*][font=Courier New]int Function GetSuppliesOnlyFrom()[/font]
-The first percent from which a workbench repair takes only its supplies and no components, at any perk rank. It is GetFreeMendFrom's number when no repair does, such as while GetSettingInt("iRepairSupplies:Balance") is 0.
+The first whole percent, as an item's card shows it, from which a workbench repair takes only its supplies and no components, at any perk rank. While GetSettingInt("iCndDecimals:Features") is 1 or 2 it starts at GetSettingFloat("fSuppliesOnlyFrom:Balance") itself, such as a card reading 87.5%. It is GetFreeMendFrom's number when no repair does, such as while GetSettingInt("iRepairSupplies:Balance") is 0.
 [*][font=Courier New]int Function GetModdingFrom()[/font]
 The first percent from which the workbench lets you modify an item. 100 means only at full condition.
 [*][font=Courier New]int Function GetRepairDiscount(Form akBase)[/font]
@@ -175,11 +179,11 @@ The same for 1 copy wherever it is, in the world or in an inventory, its mods in
 EndStruct[/code]
 1 component of a bill and how many of it.
 [*][font=Courier New]Cost[] Function GetRepairCost(ObjectReference akItem, int aiToPercent)[/font]
-The components the bench would take from the player to bring akItem to aiToPercent, its supplies among them, empty for a free mend, None when the bench would not repair it, as when the repair lock holds it back.
+The components a workbench repair takes from the player to bring akItem to aiToPercent, its supplies among them, empty for a free mend, None when no such repair is possible, as when the repair lock holds akItem back. It answers the same whatever GetSettingBool("bWorkbenchRepair:Features") says, since a Pip-Boy repair takes this bill while GetSettingInt("iPipboyRepair:Features") is 2.
 [*][font=Courier New]Cost[] Function GetScrapYield(ObjectReference akItem)[/font]
 The components akItem scraps into at the bench at its condition, with the player's perks, None for an item NEC gives no condition.
 [*][font=Courier New]int Function GetSpareGain(ObjectReference akItem, ObjectReference akSpare)[/font]
-The condition points the player's spare akSpare restores to the player's akItem, -1 when it is no spare for it, or while GetSettingBool("bLockSpares:Features") is true and the repair lock holds akItem back.
+The condition points the player's spare akSpare restores to the player's akItem, whole and rounded down, so 10 where the box of spares shows +10.4%, -1 when it is no spare for it, while GetSettingBool("bSpareRepair:Features") is false, or while GetSettingBool("bLockSpares:Features") is true and the repair lock holds akItem back.
 [*][font=Courier New]int Function GetTraderRepairLevel(Actor akTrader, Form akBase)[/font]
 How far akTrader repairs akBase's kind of gear, a percent, 0 for gear NEC gives no condition or a trader who repairs nothing.
 [*][font=Courier New]int Function GetTraderRepairPrice(Actor akTrader, ObjectReference akItem, int aiToPercent)[/font]
@@ -198,7 +202,7 @@ akItem's freshness, a percent, 0 once spoiled, -1 for food that never spoils or 
 [*][font=Courier New]float Function GetDaysLeft(ObjectReference akItem)[/font]
 The game days until akItem spoils outside a fridge, 0 once spoiled, -1 where GetFreshness answers -1.
 [*][font=Courier New]bool Function SetFreshness(ObjectReference akItem, float afPercent)[/font]
-Sets the freshness of akItem's whole stack to afPercent, above 0 and up to 100. True once written.
+Sets the freshness of akItem's whole stack to afPercent, up to 100. True once written. False for an afPercent of 0 or less, since Spoil does that, and where GetFreshness answers -1.
 [*][font=Courier New]bool Function Spoil(ObjectReference akItem)[/font]
 Turns akItem's whole stack spoiled, as running out of time does. True once written.
 [*][font=Courier New]bool Function IsSpoiled(ObjectReference akItem)[/font]
@@ -240,7 +244,7 @@ The spoiled food in akContainer.
 
 [size=3][b][font=Georgia][color=#1AFF80]Feature names[/color][/font][/b][/size]
 
-IsFeatureOn and IsFeatureTakenOver take the name of a feature that another DLL can take over, and NEC_Papyrus_API.txt lists them. Armor wear has none: ask GetSettingFloat("fArmorWearRateMult:Balance"), 0 when the player's armor never wears.
+IsFeatureOn and IsFeatureTakenOver take the name of a feature that another DLL can take over, and NEC_Papyrus_API.txt in Data\F4SE\Plugins\NEC\Docs lists them. Armor wear has none, so ask GetSettingFloat("fArmorWearRateMult:Balance"), 0 when the player's armor never wears.
 
 The names: CraftingPerks, WeaponEvents, HealthDamage, ArmorRating, BrokenEquip, ItemValue, Scrapping, FireRate, CritMeter, Accuracy, Range, Jam, SpawnCondition, FoodSpoil, ItemCard, HudParts, PickupBar, QuickContainer, Workbench, ConfirmScroll, VendorRepair, InspectPrice, ConsoleRepair and LoadingTips.
 

@@ -94,6 +94,7 @@ namespace
 	constexpr auto WEAPON_PENALTIES_SIDE = Joined<FIRE_RATE_SIDE, ACCURACY_SIDE, RANGE_SIDE>();
 
 	constexpr Piece BENCH[]{ kBench };
+	constexpr Piece PIPBOY_REPAIRS[]{ kPipboyRepairs };
 	// The repair boxes' rows are laid at the bench and at a trader alike.
 	constexpr Piece REPAIR_BOXES[]{ kBench, kTraderRepairs };
 	// The perk pages tell of a discount on a bench repair, and the bench's
@@ -117,7 +118,7 @@ namespace
 	// it, and in Survival its hunger and sickness through Survival's read too.
 	constexpr Piece FOOD_BITE[]{ kFoodBite };
 	constexpr Piece FOOD_HUNGER[]{ kFoodHunger };
-	// The fridge icon beside a fridge's name rides on the loot preview's
+	// The fridge icon beside a fridge's name rides on the quick container's
 	// rows, and the one on a food's card on the container screen's CND row.
 	constexpr Piece FRIDGE_ICON_SIDE[]{ kLootMeters, kCndContainers };
 
@@ -129,11 +130,18 @@ namespace
 
 	constexpr SettingLink SETTINGS[]{
 		{ &Settings::bSpawnCondition, nullptr, WORN_LOOT, WORN_LOOT_SIDE, WORN_LOOT_EXCEPTIONS },
+		// The switch turns off the bench's REPAIR and NEC's perk lines.
+		{ &Settings::bWorkbenchRepair, &Settings::fBenchCostMult, BENCH, PERK_PAGES },
 		{ &Settings::bVendorRepair, nullptr, TRADER_REPAIRS, TRADER_REPAIRS_SIDE },
 		{ &Settings::bTraderSign, &Settings::bVendorRepair, TRADER_REPAIRS },
 		// Spare repair rides on the bench's REPAIR press.
 		{ &Settings::bSpareRepair, &Settings::fBenchCostMult, BENCH, PERK_PAGES },
+		// Pip-Boy repairs change nothing at a bench. Their piece needs the
+		// bench's, see Core/Pieces.cpp, so a bench cut turns it off too.
+		{ &Settings::iPipboyRepair, &Settings::fBenchCostMult, PIPBOY_REPAIRS },
 		{ &Settings::iUnscrappableSpares, &Settings::fBenchCostMult, BENCH },
+		{ &Settings::iKeepSpareMods, &Settings::fBenchCostMult, BENCH },
+		{ &Settings::iSpareModRows, &Settings::fBenchCostMult, BENCH },
 		{ &Settings::iRepairBoxRow, &Settings::fBenchCostMult, BENCH },
 		{ &Settings::iRepairLock, &Settings::fBenchCostMult, BENCH, PERK_PAGES },
 		{ &Settings::bLockSpares, &Settings::fBenchCostMult, BENCH },
@@ -185,9 +193,9 @@ namespace
 		{ &Settings::fBenchCostMult, nullptr, BENCH, {}, BENCH_EXCEPTIONS },
 		{ &Settings::iPerkComponentDiscount, &Settings::fBenchCostMult, BENCH, PERK_PAGES },
 		{ &Settings::fSpareWorthMult, &Settings::fBenchCostMult, BENCH },
-		{ &Settings::iFreeMendFrom, &Settings::fBenchCostMult, BENCH },
+		{ &Settings::fFreeMendFrom, &Settings::fBenchCostMult, BENCH },
 		{ &Settings::iRepairSupplies, &Settings::fBenchCostMult, BENCH },
-		{ &Settings::iSuppliesOnlyFrom, &Settings::fBenchCostMult, BENCH },
+		{ &Settings::fSuppliesOnlyFrom, &Settings::fBenchCostMult, BENCH },
 		{ &Settings::iModdingFrom, &Settings::fBenchCostMult, BENCH, MOD_LOCK_SIDE },
 		{ &Settings::iPerkLock, &Settings::fBenchCostMult, BENCH, PERK_PAGES },
 		{ &Settings::fTraderPriceMult, &Settings::bVendorRepair, TRADER_REPAIRS, TRADER_PRICE_SIDE },

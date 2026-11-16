@@ -5,7 +5,7 @@
 #include "Condition/CraftingPerks/Perks.h"
 #include "Core/CallPatch/CallPatch.h"
 #include "Core/ScriptEvents.h"
-#include "Core/Settings.h"
+#include "Core/Settings/Settings.h"
 #include "Core/Text/Text.h"
 #include "Core/TraceLog/TraceLog.h"
 
@@ -88,7 +88,7 @@ namespace CraftingPerks
 				const auto off = Discount(ours->rank, ours->ranks);
 				const auto from = g_rankLock ? g_rankLock(ours->rank, ours->ranks, ours->highest) : std::nullopt;
 				if (off > 0 || from) {
-					Join(added, Text::PerkRepairs(off, ours->weapons, ours->armor, from));
+					Join(added, Text::PerkRepairs(off, ours->weapons, ours->armor, from ? std::optional{ *from > 0 ? Condition::PointText(*from) : "" } : std::nullopt));
 				}
 			}
 			if (Settings::bSpareRepair.GetValue() && ScrapperRank(a_perks, a_description) > 0) {

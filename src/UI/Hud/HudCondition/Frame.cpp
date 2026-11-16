@@ -1,14 +1,14 @@
 #include "UI/Hud/HudCondition/Frame.h"
 
+#include "Condition/Condition.h"
+#include "Core/Settings/Settings.h"
+#include "Core/TraceLog/TraceLog.h"
 #include "UI/Flash.h"
 #include "UI/Hud/HudCondition/Listener.h"
 #include "UI/Hud/HudCondition/Place.h"
 #include "UI/Hud/HudCondition/Spot.h"
 #include "UI/Hud/HudParts/HudParts.h"
 #include "UI/Roles/Hud.h"
-#include "Condition/Condition.h"
-#include "Core/Settings.h"
-#include "Core/TraceLog/TraceLog.h"
 
 #include <algorithm>
 #include <chrono>
@@ -114,7 +114,8 @@ namespace HudCondition
 			shipped.flipped = flipped;
 			shipped.wordX = Home(flipped, shipped.line.width, label.letters);
 			// A reading that measures nothing keeps the last spot, turned
-			// at once by a flip, since a flip moves no bar.
+			// at once by a flip to the spot its measure gave the other way
+			// round, see Turned.
 			if (choice) {
 				Follow(choice);
 			} else if (!chosen) {

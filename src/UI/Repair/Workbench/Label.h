@@ -10,7 +10,10 @@ namespace Workbench
 {
 	// Says what the bench is looking at: whether the button offers REPAIR or
 	// RENAME, and whether the CURRENT MODS heading still applies. Both follow
-	// the item, so both are written wherever it or its condition changes.
+	// the item, so both are written wherever it or its condition changes. In
+	// a Pip-Boy inspect while iPipboyRepair is 1 or 2 it hands over to
+	// Inspect::Decide, see Inspect.h. While workbench repairs are off, see
+	// BenchRepairs, every item gets RENAME.
 	void Announce(RE::ExamineMenu* a_menu, const Selection& a_selection);
 
 	// Gives the bench's REPAIR button its word on every bar the menu has:

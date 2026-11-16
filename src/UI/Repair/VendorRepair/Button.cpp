@@ -1,6 +1,6 @@
 #include "UI/Repair/VendorRepair/Button.h"
 
-#include "Core/Settings.h"
+#include "Core/Settings/Settings.h"
 #include "Core/Text/Text.h"
 #include "Core/TraceLog/TraceLog.h"
 #include "UI/Repair/RepairPrompt.h"
@@ -145,24 +145,24 @@ namespace VendorRepair
 			const auto trade = Named(a_selection.trade);
 			switch (a_stand) {
 			case Stand::kOff:
-				TraceLog::First("menu", "{:s} repairs no {:s}, so REPAIR stays off {:s} at {:d}%",
-					trader, trade, name, a_selection.percent);
+				TraceLog::First("menu", "{:s} repairs no {:s}, so REPAIR stays off {:s} at {:s}%",
+					trader, trade, name, Condition::CardText(a_selection.tenths));
 				break;
 			case Stand::kPastCeiling:
-				TraceLog::First("menu", "{:s} greys REPAIR on {:s} at {:d}%, since they take {:s} no further than {:d}%",
-					trader, name, a_selection.percent, trade, a_ceiling);
+				TraceLog::First("menu", "{:s} greys REPAIR on {:s} at {:s}%, since they take {:s} no further than {:d}%",
+					trader, name, Condition::CardText(a_selection.tenths), trade, a_ceiling);
 				break;
 			case Stand::kTradePending:
-				TraceLog::First("menu", "{:s} greys REPAIR on {:s} at {:d}%, as {:s}, since a trade is pending",
-					trader, name, a_selection.percent, trade);
+				TraceLog::First("menu", "{:s} greys REPAIR on {:s} at {:s}%, as {:s}, since a trade is pending",
+					trader, name, Condition::CardText(a_selection.tenths), trade);
 				break;
 			case Stand::kUnaffordable:
-				TraceLog::First("menu", "{:s} greys REPAIR on {:s} at {:d}%, as {:s}, since the player cannot pay the smallest step",
-					trader, name, a_selection.percent, trade);
+				TraceLog::First("menu", "{:s} greys REPAIR on {:s} at {:s}%, as {:s}, since the player cannot pay the smallest step",
+					trader, name, Condition::CardText(a_selection.tenths), trade);
 				break;
 			case Stand::kLive:
-				TraceLog::First("menu", "{:s} shows REPAIR on {:s} at {:d}%, as {:s}, up to {:d}%",
-					trader, name, a_selection.percent, trade, a_ceiling);
+				TraceLog::First("menu", "{:s} shows REPAIR on {:s} at {:s}%, as {:s}, up to {:d}%",
+					trader, name, Condition::CardText(a_selection.tenths), trade, a_ceiling);
 				break;
 			}
 		}
@@ -335,27 +335,27 @@ namespace VendorRepair
 		if (stand == Stand::kPastCeiling) {
 			const auto said = Text::RepairCeiling(ceiling, selection.trade);
 			Refuse(said);
-			TraceLog::Line("menu", "{:s} can take {:s} no further than {:d}%, and it is at {:d}%, saying \"{:s}\"",
-				Trader(menu), selection.Name(), ceiling, selection.percent, said);
+			TraceLog::Line("menu", "{:s} can take {:s} no further than {:d}%, and it is at {:s}%, saying \"{:s}\"",
+				Trader(menu), selection.Name(), ceiling, Condition::CardText(selection.tenths), said);
 			return true;
 		}
 
 		if (stand == Stand::kTradePending) {
 			const auto said = Text::RepairTradePending();
 			Refuse(said);
-			TraceLog::Line("menu", "{:s} waits for the pending trade before repairing {:s} at {:d}%, saying \"{:s}\"",
-				Trader(menu), selection.Name(), selection.percent, said);
+			TraceLog::Line("menu", "{:s} waits for the pending trade before repairing {:s} at {:s}%, saying \"{:s}\"",
+				Trader(menu), selection.Name(), Condition::CardText(selection.tenths), said);
 			return true;
 		}
 
-		TraceLog::Line("menu", "{:s} was asked to repair {:s} at {:d}%, as {:s}, and will go to {:d}%",
-			Trader(menu), selection.Name(), selection.percent, Named(selection.trade), ceiling);
+		TraceLog::Line("menu", "{:s} was asked to repair {:s} at {:s}%, as {:s}, and will go to {:d}%",
+			Trader(menu), selection.Name(), Condition::CardText(selection.tenths), Named(selection.trade), ceiling);
 
 		if (stand == Stand::kUnaffordable) {
 			const auto said = Text::RepairUnaffordable();
 			Refuse(said);
-			TraceLog::Line("menu", "{:s} asked for more than the player has for {:s} at {:d}%, saying \"{:s}\"",
-				Trader(menu), selection.Name(), selection.percent, said);
+			TraceLog::Line("menu", "{:s} asked for more than the player has for {:s} at {:s}%, saying \"{:s}\"",
+				Trader(menu), selection.Name(), Condition::CardText(selection.tenths), said);
 			return true;
 		}
 
@@ -370,11 +370,11 @@ namespace VendorRepair
 		// the buttons stop at the limit. Left out while the sign shows it, and
 		// said where the sign is switched off or has no room.
 		const auto over = Sign::Shown(menu) ? std::string{} : Text::RepairUpTo(ceiling, selection.trade);
-		TraceLog::Line("menu", "{:s} asks how far to repair {:s} at {:d}%, a stack of {:d}, worth {:d}, under \"{:s}\", offering {:s}",
-			Trader(menu), selection.Name(), selection.percent, selection.count, selection.worth, over, spelled);
+		TraceLog::Line("menu", "{:s} asks how far to repair {:s} at {:s}%, a stack of {:d}, worth {:d}, under \"{:s}\", offering {:s}",
+			Trader(menu), selection.Name(), Condition::CardText(selection.tenths), selection.count, selection.worth, over, spelled);
 
 		Hold(menu, true);
-		RepairPrompt::Ask(over, selection.Name(), selection.percent, std::move(buttons),
+		RepairPrompt::Ask(over, selection.Name(), selection.tenths, std::move(buttons),
 			[quotes, handle = selection.handle, stack = selection.stack](std::size_t a_index) {
 				const auto& quote = quotes[a_index];
 				TraceLog::Line("menu", "The repair was set to {:d}% for {:d} caps", quote.level, quote.price);

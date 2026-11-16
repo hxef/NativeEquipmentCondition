@@ -52,14 +52,16 @@ namespace Workbench
 
 	// What a perk page says of the lock for 1 rank of a perk of a_ranks: the
 	// condition from which a player holding a_rank can start a repair that
-	// takes components and asks the highest rank such a repair can ask, 0 for
-	// any. By its mods that rank is a_highest, the highest rank any recipe of
-	// the load order asks of the perk. Every item asks the last rank. Nothing
-	// while the lock holds nothing back: off, free repairs or iPerkLock 0.
-	// The number stops at SuppliesOnlyFrom, since from there no repair takes
-	// components and HeldBack holds nothing (its Trifling and TakesComponents
-	// tests). That is wrong only for an item whose supply bill is empty while
-	// supplies exist, which needs a load order without its supply forms.
+	// takes components and asks the highest rank such a repair can ask, in
+	// tenths of the card's number, 0 for any. By its mods that rank is
+	// a_highest, the highest rank any recipe of the load order asks of the
+	// perk. Every item asks the last rank. Nothing while the lock holds
+	// nothing back: off, free repairs or iPerkLock 0. The number stops at
+	// SuppliesOnlyFromTenths, such as 875 for a page that says 87.5%, since
+	// from there no repair takes components and HeldBack holds nothing (its
+	// Trifling and TakesComponents tests). That is wrong only for an item
+	// whose supply bill is empty while supplies exist, which needs a load
+	// order without its supply forms.
 	[[nodiscard]] std::optional<std::uint32_t> RankOpensFrom(std::uint32_t a_rank, std::uint32_t a_ranks, std::uint32_t a_highest);
 
 	// Why the lock turns a repair away, for the trace and the bench's words.
@@ -83,6 +85,14 @@ namespace Workbench
 	// an item no perk prices, and for a player with the rank or the
 	// condition.
 	[[nodiscard]] std::optional<LockHold> HeldBack(const Selection& a_selection, const Priced& a_priced);
+
+	// The lock at a REPAIR press on a_selection, priced by a_priced, before
+	// any box opens, so nothing is spent. While bLockSpares is off a spare
+	// still repairs, so the box of spares opens at once, with the lock's line
+	// over it where a repair takes components, see SpareBox.h. Else the
+	// corner says which rank would repair it and what else still can. True
+	// when the lock took the press, false when it holds nothing back.
+	bool LockStops(const Selection& a_selection, const Priced& a_priced);
 
 	// Writes the lock's line in NEC.log, as the settings stand at the start.
 	void SayLock();

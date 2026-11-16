@@ -21,10 +21,10 @@ namespace PowerArmorCondition
 	// and D to the width of its letters.
 	inline constexpr double LABEL_WIDE = 0.9;
 
-	// How deep the bar is at its own size, in rows. The lit digits of the 2 rows leave 0.3 of
-	// a row between them at the least, a 2, 3 or 4 over a 4. The bar and the
-	// dark shadow the HUD draws under it, 0.05 of a row, keep about 0.04 clear
-	// of each. It covers the ends of the tubes' glass.
+	// How deep the bar is at its own size, in rows. The lit digits of the 2
+	// rows leave 0.3 of a row between them at the least, a 2, 3 or 4 over a 4.
+	// The bar and the dark shadow the HUD draws under it, 0.05 of a row, keep
+	// about 0.04 clear of each. It covers the ends of the tubes' glass.
 	inline constexpr double BAR_DEEP = 0.17;
 
 	// Degrees in a radian. The turn is worked out in radians and Flash turns a

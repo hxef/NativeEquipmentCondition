@@ -4,7 +4,7 @@
 #include "Core/CallPatch/Site.h"
 #include "Core/Parts.h"
 #include "Core/Pieces.h"
-#include "Core/Settings.h"
+#include "Core/Settings/Settings.h"
 
 #include <cstdint>
 #include <initializer_list>
@@ -259,8 +259,8 @@ namespace CallPatch
 
 	[[nodiscard]] Effect EffectOf(const Settings::Named& a_setting);
 
-	// The log line of a switch left to another mod, "Loot preview meters:
-	// off, left to NECClashTest.dll.", empty while it is free.
+	// The log line of a switch left to another mod, "Quick container
+	// meters: off, left to NECClashTest.dll.", empty while it is free.
 	[[nodiscard]] std::string OffLine(const Settings::Live<bool>& a_switch);
 
 	// The NEC.log line of every part whose own places another mod took:
@@ -292,6 +292,7 @@ namespace CallPatch
 	// the place is shared, except in a set that has to run on every call, see
 	// EVERY_CALL. Else NEC's change there is off from now on, or at a place
 	// MenuWait.h lists once its menu opens with no call reaching NEC. a_moment
-	// says when, for the log. True when the Summary changes or a wait ends in a cut.
+	// says when, for the log. True when the Summary changes or a wait ends in a
+	// cut.
 	bool Recheck(std::string_view a_moment);
 }

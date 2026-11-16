@@ -2,14 +2,14 @@
 
 // The settings under [Features]: All of NEC, the switch on each row of
 // Features.cpp and the choices that go with them. Included by Settings.h
-// only, after Live.
+// only, after Live. Private to this folder.
 namespace Settings
 {
 	// Features. Each is the switch on a row of Features.cpp.
 
 	// All of NEC, switched on NEC's main MCM page. While it is off every hook
-	// gives the vanilla result, see Core/CallPatch/Sets.cpp, and every item
-	// keeps its condition. No feature's row. On by default.
+	// gives the vanilla result, see Core/CallPatch/Sets.cpp, and weapons and
+	// armor keep their condition. No feature's row. On by default.
 	inline Live<bool> bNecOn{ "Features", "bNecOn", true };
 
 	// What code outside a hook asks before it changes or shows anything.
@@ -25,6 +25,11 @@ namespace Settings
 	// says, so it works as soon as it is switched on in play.
 	inline Live<bool> bSpawnCondition{ "Features", "bSpawnCondition", true };
 
+	// Weapons and armor workbenches repair, see Workbench::BenchRepairs. When
+	// off they only modify, scrap and rename. No feature's row: the mod lock
+	// still holds. On by default.
+	inline Live<bool> bWorkbenchRepair{ "Features", "bWorkbenchRepair", true };
+
 	// Traders who deal in weapons, armor or clothing repair them for caps.
 	inline Live<bool> bVendorRepair{ "Features", "bVendorRepair", true };
 
@@ -39,10 +44,29 @@ namespace Settings
 	// by default.
 	inline Live<bool> bSpareRepair{ "Features", "bSpareRepair", true };
 
+	// REPAIR on the Pip-Boy's inspect screen, see Workbench/Inspect.h: 0 off,
+	// 1 with a spare, 2 as at a workbench. Other numbers read as 0, the
+	// default.
+	inline Live<std::int32_t> iPipboyRepair{ "Features", "iPipboyRepair", 0 };
+
 	// Which gear with UnscrappableObject can still be a spare, see
 	// Workbench/Spares.cpp: 0 none, 1 legendaries and 2 all. Any other number
 	// reads as 1, the default.
 	inline Live<std::int32_t> iUnscrappableSpares{ "Features", "iUnscrappableSpares", 1 };
+
+	// What a spare repair does with the spare's mods, see
+	// Workbench/SpareMods.cpp: 0 scraps them, 1 and 2 hand back those the
+	// repair does not need, 3 and 4 ask in a box. Any other number reads as 0.
+	inline Live<std::int32_t> iKeepSpareMods{ "Features", "iKeepSpareMods", 0 };
+
+	// Whether iKeepSpareMods at a_value asks in a box which of a spare's mods
+	// to scrap or keep, 3 and 4.
+	[[nodiscard]] constexpr bool KeepSpareModsAsks(std::int32_t a_value) { return a_value == 3 || a_value == 4; }
+
+	// What a mod's row shows in the boxes of iKeepSpareMods 3 and 4: 0 what
+	// scrapping the mod adds or keeping it costs, +3.7% or -4.2%, 1 the
+	// condition the repair reaches, 64.2%. Any other number reads as 0.
+	inline Live<std::int32_t> iSpareModRows{ "Features", "iSpareModRows", 0 };
 
 	// The row a workbench's repair box highlights as it opens, see
 	// Workbench/Job.cpp: 0 none, 1 USE A SPARE, 2 the highest level and 3 the
@@ -91,6 +115,11 @@ namespace Settings
 	// A power armor piece's Health on its item card shown as CND in percent,
 	// display only, see UI/Inventory/ItemCard/PowerArmor.cpp.
 	inline Live<bool> bPowerArmorCardCnd{ "Features", "bPowerArmorCardCnd", false };
+
+	// How a card writes an item's condition: 0 whole numbers, 1 a tenth only
+	// when it is not 0, 2 always a tenth. Any other number reads as 2, see
+	// Condition::Decimals.
+	inline Live<std::int32_t> iCndDecimals{ "Features", "iCndDecimals", 2 };
 
 	// A workbench's confirmation box shows more of a long list and scrolls it,
 	// see ConfirmScroll.h.

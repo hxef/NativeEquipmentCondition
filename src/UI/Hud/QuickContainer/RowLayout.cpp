@@ -1,6 +1,6 @@
 #include "UI/Hud/QuickContainer/RowLayout.h"
 
-#include "Core/Settings.h"
+#include "Core/Settings/Settings.h"
 #include "Core/TraceLog/TraceLog.h"
 #include "UI/Hud/HudParts/HudParts.h"
 #include "UI/Hud/QuickContainer/Draw.h"

@@ -171,6 +171,12 @@ namespace Flash
 		return tint;
 	}
 
+	Tint ColorTint(std::uint32_t a_color) noexcept
+	{
+		const auto part = [&](int a_shift) { return static_cast<double>((a_color >> a_shift) & 0xFF) / 255.0; };
+		return Tint{ part(16), part(8), part(0) };
+	}
+
 	Tint LetterTint(const Value& a_field)
 	{
 		// A text field shows white unless it is given a colour. Its
@@ -179,8 +185,7 @@ namespace Flash
 		constexpr std::uint32_t WHITE = 0xFFFFFF;
 
 		const auto color = static_cast<std::uint32_t>(Number(a_field, "textColor"sv, WHITE)) & WHITE;
-		const auto part = [&](int a_shift) { return static_cast<double>((color >> a_shift) & 0xFF) / 255.0; };
-		return TintOf(a_field).value_or(Tint{}).Over(Tint{ part(16), part(8), part(0) });
+		return TintOf(a_field).value_or(Tint{}).Over(ColorTint(color));
 	}
 
 	bool SetTint(Value& a_clip, const Tint& a_tint)

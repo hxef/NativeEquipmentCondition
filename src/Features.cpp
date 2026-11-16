@@ -7,7 +7,7 @@
 #include "Condition/Provenance/Provenance.h"
 #include "Condition/WeaponWear/WeaponWear.h"
 #include "Condition/WearList/WearList.h"
-#include "Core/Settings.h"
+#include "Core/Settings/Settings.h"
 #include "Gameplay/Aim/Aim.h"
 #include "Gameplay/ArmorEvents.h"
 #include "Gameplay/ArmorRating.h"
@@ -38,7 +38,6 @@
 #include "UI/PerkChart.h"
 #include "UI/Repair/ConfirmScroll.h"
 #include "UI/Repair/ConsoleRepair.h"
-#include "UI/Repair/VendorRepair/TraderList.h"
 #include "UI/Repair/VendorRepair/VendorRepair.h"
 #include "UI/Repair/Workbench/Workbench.h"
 

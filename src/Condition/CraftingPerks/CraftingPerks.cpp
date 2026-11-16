@@ -5,7 +5,7 @@
 #include "Condition/CraftingPerks/Ladder.h"
 #include "Condition/CraftingPerks/Perks.h"
 #include "Condition/CraftingPerks/Recipes.h"
-#include "Core/Settings.h"
+#include "Core/Settings/Settings.h"
 #include "Core/Snapshot.h"
 
 #include <algorithm>

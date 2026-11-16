@@ -1,6 +1,6 @@
 #include "Gameplay/FoodSpoil/Food.h"
 
-#include "Core/Settings.h"
+#include "Core/Settings/Settings.h"
 #include "Core/Snapshot.h"
 #include "Gameplay/FoodSpoil/FoodSpoil.h"
 #include "Gameplay/FoodSpoil/Kinds.h"

@@ -1,17 +1,21 @@
-#include "Core/Text/Text.h"
+#include "Core/Text/Repair.h"
 
 #include "Core/Text/Lines.h"
+#include "Core/Text/Text.h"
 
 #include <array>
+#include <cstdint>
+#include <format>
 
 // The question both repair menus ask, the title of the bench's repair box and
-// what the bench says around it, its spare box too, the [Repair] lines of the
-// language files. A trader's own words are in Trader.cpp.
+// what the bench says around it, its spare box and the box of a spare's mods
+// too, the [Repair] lines of the language files. A trader's own words are in
+// Trader.cpp.
 namespace Text
 {
-	std::string RepairQuestion(std::string_view a_name, std::uint32_t a_percent)
+	std::string RepairQuestion(std::string_view a_name, std::string_view a_condition)
 	{
-		return Say(REPAIR_QUESTION, a_name, a_percent);
+		return Say(REPAIR_QUESTION, a_name, a_condition);
 	}
 
 	std::string RepairBoxTitle(std::string_view a_name, std::uint32_t a_percent)
@@ -49,9 +53,9 @@ namespace Text
 		return Say(SPARE_SCRAPPER, a_perk, a_rank);
 	}
 
-	std::string SpareQuestion(std::string_view a_name, std::uint32_t a_percent)
+	std::string SpareQuestion(std::string_view a_name, std::string_view a_condition)
 	{
-		return Say(SPARE_QUESTION, a_name, a_percent);
+		return Say(SPARE_QUESTION, a_name, a_condition);
 	}
 
 	std::string SparePerks(std::string_view a_pricing, std::uint32_t a_pricingRank,
@@ -71,12 +75,12 @@ namespace Text
 		return a_legendary ? Pick(SPARE_LEGENDARY) : std::string{};
 	}
 
-	std::string SpareCondition(std::uint32_t a_percent)
+	std::string SpareCondition(std::string_view a_condition)
 	{
-		return Say(SPARE_CONDITION, a_percent);
+		return Say(SPARE_CONDITION, a_condition);
 	}
 
-	std::string SpareRestores(std::uint32_t a_gain)
+	std::string SpareRestores(std::string_view a_gain)
 	{
 		return Say(SPARE_RESTORES, a_gain);
 	}
@@ -105,15 +109,63 @@ namespace Text
 		return Say(SPARE_SALVAGED, parts);
 	}
 
+	std::string SpareKept(std::span<const std::string> a_mods, std::size_t a_more)
+	{
+		// With some left unnamed the list goes on past these names, so commas
+		// join them all and no LIST_AND.
+		if (a_more > 0) {
+			const auto mods = Commas(a_mods, Out::kPage);
+			return Say(SPARE_KEPT_MORE, mods, a_more);
+		}
+		const auto mods = List(a_mods);
+		return Say(SPARE_KEPT, mods);
+	}
+
+	std::string SpareModQuestion(std::string_view a_name, std::string_view a_from)
+	{
+		return Say(SPARE_MOD_QUESTION, a_name, a_from);
+	}
+
+	std::string SpareModFull(std::string_view a_name)
+	{
+		return Say(SPARE_MOD_FULL, a_name);
+	}
+
+	std::string SpareModKeepQuestion(std::string_view a_name, std::string_view a_to)
+	{
+		return Say(SPARE_MOD_KEEP_QUESTION, a_name, a_to);
+	}
+
+	std::string SpareScrapRest()
+	{
+		return Pick(SPARE_SCRAP_REST);
+	}
+
+	std::string SpareKeepRest()
+	{
+		return Pick(SPARE_KEEP_REST);
+	}
+
+	std::string SpareModValue(std::uint32_t a_caps)
+	{
+		const auto caps = RepairCaps(a_caps);
+		return Say(SPARE_MOD_VALUE, caps);
+	}
+
+	std::string SpareModGain(std::string_view a_number)
+	{
+		return Say(SPARE_MOD_GAIN, a_number);
+	}
+
 	std::string BenchCannotRepair(bool a_trader)
 	{
 		const auto* cannot = Pick(BENCH_CANNOT_REPAIR);
 		return a_trader ? Say(SENTENCES, cannot, Pick(REPAIR_LOCKED_TRADER)) : std::string{ cannot };
 	}
 
-	std::string RepairLocked(std::string_view a_perk, std::uint32_t a_rank, std::uint32_t a_percent, bool a_spare, bool a_trader)
+	std::string RepairLocked(std::string_view a_perk, std::uint32_t a_rank, std::string_view a_condition, bool a_spare, bool a_trader)
 	{
-		const auto needs = Say(REPAIR_LOCKED, a_perk, a_rank, a_percent);
+		const auto needs = Say(REPAIR_LOCKED, a_perk, a_rank, a_condition);
 		if (!a_spare && !a_trader) {
 			return needs;
 		}

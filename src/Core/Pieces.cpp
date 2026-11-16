@@ -131,6 +131,9 @@ namespace
 		// The mod slots and the mod choices each work by themselves.
 		{ kBenchItemList, Part::kBenchLists, Shown::kName, { kBench } },
 		{ kBenchModLists, Part::kBenchLists, Shown::kName, { kBench }, true },
+		// Pip-Boy repairs ride on the bench's places, see
+		// UI/Repair/Workbench/Inspect.cpp.
+		{ kPipboyRepairs, Part::kPipboyRepairs, Shown::kPart, { kBench } },
 		{ kConfirmScroll, Part::kScroll, Shown::kPart },
 		{ kTraderRepairs, Part::kTraderRepairs, Shown::kPart },
 		// A trader's stock is rolled in their band only while both switches

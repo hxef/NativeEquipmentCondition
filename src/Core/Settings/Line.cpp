@@ -1,6 +1,7 @@
-#include "Core/Settings.h"
+#include "Core/Settings/Settings.h"
 
 #include "Core/CallPatch/CallPatch.h"
+#include "Core/Presets/Presets.h"
 #include "Core/Runtime.h"
 
 #include <algorithm>
@@ -27,6 +28,7 @@ namespace Settings
 
 		Live<bool>* const SWITCHES[]{
 			&bSpawnCondition,
+			&bWorkbenchRepair,
 			&bVendorRepair,
 			&bLoadingTips,
 			&bHudCondition,
@@ -37,9 +39,13 @@ namespace Settings
 		};
 
 		const Number NUMBERS[]{
+			&iPipboyRepair,
 			&iUnscrappableSpares,
+			&iKeepSpareMods,
+			&iSpareModRows,
 			&iRepairBoxRow,
 			&iRepairLock,
+			&iCndDecimals,
 			&iLootShift,
 			&iLootSurpriseOdds,
 			&fLootAreaEffect,
@@ -67,9 +73,9 @@ namespace Settings
 			&fBenchCostMult,
 			&iPerkComponentDiscount,
 			&fSpareWorthMult,
-			&iFreeMendFrom,
+			&fFreeMendFrom,
 			&iRepairSupplies,
-			&iSuppliesOnlyFrom,
+			&fSuppliesOnlyFrom,
 			&iModdingFrom,
 			&iPerkLock,
 			&fTraderPriceMult,
@@ -104,6 +110,7 @@ namespace Settings
 			&bNecOn,
 			&bPlainApparelNeverWears,
 			&bSpawnCondition,
+			&bWorkbenchRepair,
 			&bVendorRepair,
 			&bTraderSign,
 			&bSpareRepair,
@@ -146,12 +153,16 @@ namespace Settings
 
 		// The numbers under [Features], which the Settings line puts after the
 		// switch NEC.ini has them after.
-		Live<std::int32_t>* const AFTER_SPARE_REPAIR[]{ &iUnscrappableSpares, &iRepairBoxRow, &iRepairLock };
+		Live<std::int32_t>* const AFTER_SPARE_REPAIR[]{ &iPipboyRepair, &iUnscrappableSpares, &iKeepSpareMods, &iSpareModRows, &iRepairBoxRow, &iRepairLock };
+		Live<std::int32_t>* const AFTER_POWER_ARMOR_CARD_CND[]{ &iCndDecimals };
 
 		[[nodiscard]] std::span<Live<std::int32_t>* const> NumbersAfter(const Named& a_setting)
 		{
 			if (&a_setting == &bSpareRepair) {
 				return AFTER_SPARE_REPAIR;
+			}
+			if (&a_setting == &bPowerArmorCardCnd) {
+				return AFTER_POWER_ARMOR_CARD_CND;
 			}
 			return {};
 		}
@@ -259,6 +270,11 @@ namespace Settings
 		return NUMBERS;
 	}
 
+	std::span<Live<bool>* const> EverySwitch()
+	{
+		return EVERY_SWITCH;
+	}
+
 	bool IsIdOf(const Named& a_setting, std::string_view a_id)
 	{
 		const auto same = [](std::string_view a_lhs, std::string_view a_rhs) {
@@ -322,6 +338,7 @@ namespace Settings
 			}, entry);
 		}
 		std::format_to(std::back_inserter(line), " [Log] sLogLevel={:s} bTraceLogs={}", LogLevelWord(), bTraceLogs.GetValue());
+		std::format_to(std::back_inserter(line), " [Presets] sPreset={:s}", Presets::PickedStem());
 		REX::INFO("{:s}", line);
 		// Above info NEC.log drops these lines, so no summary is kept and the
 		// next one at info is written in full.

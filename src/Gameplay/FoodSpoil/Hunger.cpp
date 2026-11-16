@@ -1,7 +1,7 @@
 #include "Gameplay/FoodSpoil/Food.h"
 
 #include "Core/CallPatch/CallPatch.h"
-#include "Core/Settings.h"
+#include "Core/Settings/Settings.h"
 #include "Core/TraceLog/TraceLog.h"
 
 #include <chrono>

@@ -36,10 +36,10 @@ namespace VendorRepair
 	// One condition the item can be brought back to, and the caps wanted.
 	using Quote = Repair::Step<std::uint32_t>;
 
-	// Every step worth offering, up to the trader's limit. What is owed now and
-	// after are each rounded to whole caps before one is taken from the other,
-	// so a repair in steps costs what one in one go costs. Never free, 1 cap at
-	// least.
+	// Every step worth offering, up to the trader's limit, priced from the
+	// number the item's card shows. What is owed now and after are each
+	// rounded to whole caps before one is taken from the other, so a repair in
+	// steps costs what one in one go costs. Never free, 1 cap at least.
 	[[nodiscard]] std::vector<Quote> Quotes(const Selection& a_selection, std::uint32_t a_ceiling);
 
 	// The steps the player can pay for. The price rises with the condition

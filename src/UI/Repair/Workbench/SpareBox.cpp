@@ -3,8 +3,7 @@
 #include "Condition/Condition.h"
 #include "Condition/CraftingPerks/CraftingPerks.h"
 #include "Condition/Equipped.h"
-#include "Condition/Repair.h"
-#include "Core/Settings.h"
+#include "Core/Settings/Settings.h"
 #include "Core/Text/Text.h"
 #include "Core/TraceLog/TraceLog.h"
 #include "UI/Repair/Columns/Columns.h"
@@ -14,6 +13,8 @@
 #include "UI/Repair/Workbench/Box.h"
 #include "UI/Repair/Workbench/Job.h"
 #include "UI/Repair/Workbench/Lock.h"
+#include "UI/Repair/Workbench/SpareModBox.h"
+#include "UI/Repair/Workbench/SpareMods.h"
 #include "UI/Repair/Workbench/Spares.h"
 
 #include <algorithm>
@@ -30,7 +31,7 @@ namespace Workbench
 {
 	namespace
 	{
-		using Repair::FULL;
+		using Condition::FULL_TENTHS;
 
 		// -------------------------------------------------------------------
 		// Finding the stacks again
@@ -50,75 +51,6 @@ namespace Workbench
 			take.stackData.push_back(held->stack);
 			a_player.RemoveItem(take);
 			return true;
-		}
-
-		// The list of the stack the item was written on. A stack of 1 is
-		// written in place. A bigger one splits 1 copy off right after
-		// itself, with a list of its own. A written copy that matches another
-		// stack merges into it, so the first stack at a_level with the item's
-		// name is the fallback. Nothing when none is found.
-		const RE::ExtraDataList* Written(const RE::TESBoundObject& a_object, const RE::ExtraDataList* a_was, bool a_split,
-			std::uint32_t a_level, std::string_view a_name)
-		{
-			auto* player = RE::PlayerCharacter::GetSingleton();
-			auto* list = player ? player->inventoryList : nullptr;
-			if (!list) {
-				return nullptr;
-			}
-
-			const RE::BSAutoReadLock l{ list->rwLock };
-			for (const auto& entry : list->data) {
-				if (entry.object != &a_object) {
-					continue;
-				}
-				const auto at = [&entry](const RE::BGSInventoryItem::Stack* a_stack) {
-					const auto percent = Condition::Percent(entry, a_stack);
-					return percent ? static_cast<std::uint32_t>(*percent) : FULL;
-				};
-				const RE::ExtraDataList* before = nullptr;
-				for (const auto* stack = entry.stackData.get(); stack; stack = stack->nextStack.get()) {
-					const auto* extra = stack->extra.get();
-					if ((!a_split && extra == a_was) || (a_split && before == a_was && at(stack) == a_level)) {
-						return extra;
-					}
-					before = extra;
-				}
-				for (const auto* stack = entry.stackData.get(); stack; stack = stack->nextStack.get()) {
-					const auto* shown = entry.GetDisplayFullName(stack->extra.get());
-					if (at(stack) == a_level && shown && a_name == shown) {
-						return stack->extra.get();
-					}
-				}
-			}
-			return nullptr;
-		}
-
-		// Keeps the bench's highlight on the item. The list's rebuild puts it
-		// on the row whose item handle and stack number match the menu's own
-		// record, which the bench writes only on a rename or a mod build. So
-		// the record gets the item's handle from the item's row of the list
-		// before the rebuild, swapped with the record's own, and the item's
-		// stack number. Each handle keeps the 1 hold it had, and the rebuild
-		// lets go of that row's as it lets go of every row's. Returns true
-		// when it wrote the record.
-		bool KeepHighlight(RE::ExamineMenu& a_menu, const RE::TESBoundObject& a_object, const RE::ExtraDataList* a_extra)
-		{
-			auto*      inventory = RE::BGSInventoryInterface::GetSingleton();
-			const auto held = a_extra ? Held(a_object, a_extra) : std::nullopt;
-			if (!inventory || !held) {
-				TraceLog::Line("menu", "Workbench left the highlight to the list, it found no stack of the item repaired");
-				return false;
-			}
-			for (auto& row : a_menu.invInterface.stackedEntries) {
-				const auto* item = inventory->RequestInventoryItem(row.invHandle.id);
-				if (item && item->object == &a_object) {
-					std::swap(a_menu.modItem.id, row.invHandle.id);
-					a_menu.modStack = held->stack;
-					return true;
-				}
-			}
-			TraceLog::Line("menu", "Workbench left the highlight to the list, no row of it holds the item repaired");
-			return false;
 		}
 
 		// -------------------------------------------------------------------
@@ -163,94 +95,97 @@ namespace Workbench
 			}
 			PlayRepairSound(&a_menu);
 		}
+	}
 
-		// -------------------------------------------------------------------
-		// The pick
-		// -------------------------------------------------------------------
+	// -----------------------------------------------------------------------
+	// The pick
+	// -----------------------------------------------------------------------
 
-		// Uses up the spare on a_spare's stack on the item on a_item's stack,
-		// from the task queue, see SpareBox.h. The spare goes before the item
-		// is written, so a spare that cannot be taken repairs nothing. A
-		// spare in the item's own stack goes after, from what is left of that
-		// stack once the item has split off it.
-		void Pick(RE::TESBoundObject& a_object, const RE::ExtraDataList* a_item, const RE::ExtraDataList* a_spare,
-			const Priced& a_priced)
-		{
-			auto* menu = OpenBench();
-			auto* player = RE::PlayerCharacter::GetSingleton();
-			if (!menu || !player || !Repairs()) {
-				TraceLog::Line("menu", "Workbench dropped the spare, the bench is gone or repairs are off");
-				return;
-			}
-
-			const auto item = Held(a_object, a_item);
-			const auto spare = item && item->Worn() ? SpareOn(*item, a_priced, a_spare) : std::nullopt;
-			if (!spare) {
-				TraceLog::Line("menu", "Workbench found the item or the spare gone, so it asks again with nothing used");
-				AskWhichSpare(a_object, a_item, a_priced);
-				return;
-			}
-
-			// Read before anything moves, since a write can merge the item's
-			// stack away and an add can move the whole inventory.
-			const auto name = item->Name();
-			const auto from = item->percent;
-			const auto payment = Pay(*spare, *item, a_priced);
-			auto       level = std::min(from + spare->gain, FULL);
-			const auto mended = level < FULL && level >= FreeFrom();
-			if (mended) {
-				level = FULL;
-			}
-
-			{
-				const RE::PlayerCharacter::ScopedInventoryChangeMessageContext quiet{ true, true };
-				if (!spare->withItem && !RemoveOne(*player, a_object, a_spare)) {
-					TraceLog::Line("menu", "Workbench could not take the spare {:s}, so it repaired nothing", spare->name);
-					return;
-				}
-			}
-
-			Equipped::ListStack find{ a_item };
-			Restore::Write(*player, a_object, find, level, ScriptEvents::Cause::kRepair);
-			const auto* written = Written(a_object, a_item, item->count > 1, level, name);
-			if (spare->withItem) {
-				const RE::PlayerCharacter::ScopedInventoryChangeMessageContext quiet{ true, true };
-				RemoveOne(*player, a_object, a_item);
-			}
-
-			GiveBack(*player, payment.back);
-			SetParts(payment.taken);
-			const auto paid = PayExperience(*player);
-			PlaySound(*menu, a_object, payment.taken);
-
-			TraceLog::Line("menu",
-				"Workbench used up {:s}{:s} at {:d}% on {:s}, from {:d}% to {:d}%{:s}, taking {:s} and giving back {:s}, worth {:d} for {:g} experience before Intelligence and perks",
-				spare->equipped ? "the equipped " : "", spare->name, spare->percent, name, from, level,
-				mended ? std::format(", mended for nothing from {:d}% up", FreeFrom()) : std::string{},
-				Spell(payment.taken), Spell(payment.back), paid.worth, paid.experience);
-
-			const bool kept = KeepHighlight(*menu, a_object, written);
-			Refresh(menu, a_object.GetFormType());
-			if (kept) {
-				// The record is left on no stack so later rebuilds keep the row
-				// the player picks. The handle keeps its hold until the bench closes.
-				menu->modStack = std::numeric_limits<std::uint32_t>::max();
-			}
-
-			if (const auto said = Salvaged(payment.back); !said.empty()) {
-				RE::SendHUDMessage::ShowHUDMessage(said.c_str(), nullptr, true, true);
-			}
-			if (level >= FULL || !written) {
-				TraceLog::Line("menu", "Workbench asks no more, {:s} is at {:d}%", name, level);
-				return;
-			}
-			AskWhichSpare(a_object, written, a_priced);
+	void Pick(RE::TESBoundObject& a_object, const RE::ExtraDataList* a_item, const RE::ExtraDataList* a_spare,
+		const Priced& a_priced, const std::optional<std::vector<std::uint32_t>>& a_plan)
+	{
+		auto* menu = OpenBench();
+		auto* player = RE::PlayerCharacter::GetSingleton();
+		if (!menu || !player || !RepairsIn(menu)) {
+			TraceLog::Line("menu", "Workbench dropped the spare, the bench is gone or repairs are off");
+			return;
 		}
+
+		// The spare is worked out for its plan here, before anything
+		// moves. Off keeps nothing, so it stays the whole spare.
+		const auto item = Held(a_object, a_item);
+		auto       spare = item && item->Worn() ? SpareOn(*item, a_priced, a_spare) : std::nullopt;
+		if (spare) {
+			TraceSplit(*spare);
+			const auto plan = a_plan ? *a_plan : AutoKept(*item, a_priced, *spare, KeepModsNow());
+			if (!plan.empty()) {
+				spare = SpareOn(*item, a_priced, a_spare, plan);
+			}
+		}
+		if (!spare) {
+			TraceLog::Line("menu", "Workbench found the item or the spare gone, so it asks again with nothing used");
+			AskWhichSpare(a_object, a_item, a_priced);
+			return;
+		}
+
+		// Read before anything moves, since a write can merge the item's
+		// stack away and an add can move the whole inventory.
+		const auto name = item->Name();
+		const auto from = item->tenths;
+		const auto payment = Pay(*spare, *item, a_priced);
+		bool       mended = false;
+		const auto level = LandingOf(*spare, *item, a_priced, &mended);
+
+		{
+			const RE::PlayerCharacter::ScopedInventoryChangeMessageContext quiet{ true, true };
+			if (!spare->withItem && !RemoveOne(*player, a_object, a_spare)) {
+				TraceLog::Line("menu", "Workbench could not take the spare {:s}, so it repaired nothing", spare->name);
+				return;
+			}
+		}
+
+		Equipped::ListStack find{ a_item };
+		Restore::WriteTenths(*player, a_object, find, level, ScriptEvents::Cause::kRepair);
+		const auto* written = Written(a_object, a_item, item->count > 1, level, name);
+		if (spare->withItem) {
+			const RE::PlayerCharacter::ScopedInventoryChangeMessageContext quiet{ true, true };
+			RemoveOne(*player, a_object, a_item);
+		}
+
+		GiveBack(*player, payment.back);
+		Materials::Give(*player, spare->kept);
+		// The bench counts from a copy it made as it opened, made again here
+		// so a repair right after counts the components given back.
+		menu->UpdateOptimizedAutoBuildInv();
+		SetParts(payment.taken);
+		const auto paid = PayExperience(*player);
+		PlaySound(*menu, a_object, payment.taken);
+
+		TraceLog::Line("menu",
+			"Workbench used up {:s}{:s} at {:s}% on {:s}, from {:s}% to {:s}%{:s}, taking {:s} and giving back {:s}, worth {:d} for {:g} experience before Intelligence and perks",
+			spare->equipped ? "the equipped " : "", spare->name, Condition::CardText(spare->tenths), name, Condition::CardText(from), Condition::CardText(level),
+			mended ? std::format(", mended for nothing from {:s}% up", Condition::PointText(FreeFromTenths())) : std::string{},
+			Spell(payment.taken), Spell(payment.back), paid.worth, paid.experience);
+		TraceHandedBack(*spare);
+
+		RefreshKept(*menu, a_object, written);
+
+		if (const auto kept = KeptLine(spare->kept); !kept.empty()) {
+			RE::SendHUDMessage::ShowHUDMessage(kept.c_str(), nullptr, true, true);
+		}
+		if (const auto said = Salvaged(payment.back); !said.empty()) {
+			RE::SendHUDMessage::ShowHUDMessage(said.c_str(), nullptr, true, true);
+		}
+		if (level >= FULL_TENTHS || !written) {
+			TraceLog::Line("menu", "Workbench asks no more, {:s} is at {:s}%", name, Condition::CardText(level));
+			return;
+		}
+		AskWhichSpare(a_object, written, a_priced);
 	}
 
 	void AskWhichSpare(RE::TESBoundObject& a_object, const RE::ExtraDataList* a_extra, const Priced& a_priced)
 	{
-		const auto item = OpenBench() && Repairs() ? Held(a_object, a_extra) : std::nullopt;
+		const auto item = RepairsIn(OpenBench()) ? Held(a_object, a_extra) : std::nullopt;
 		const auto spares = item ? Spares(*item, a_priced) : std::vector<Spare>{};
 		if (spares.empty()) {
 			TraceLog::Line("menu", "Workbench asks nothing, the item is gone, at full or has no spare left");
@@ -258,19 +193,22 @@ namespace Workbench
 		}
 
 		// Each row ends with what the item's card gains at the condition the
-		// spare brings it to, the condition its percent column names.
+		// spare brings it to, the condition its percent column names, in
+		// tenths.
 		std::vector<std::uint32_t>            levels;
 		std::vector<const RE::ExtraDataList*> lists;
+		std::vector<bool>                     withMods;
 		for (const auto& spare : spares) {
-			levels.push_back(std::min(item->percent + spare.gain, FULL));
+			levels.push_back(std::min(item->tenths + spare.restores, FULL_TENTHS));
 			lists.push_back(spare.extra);
+			withMods.push_back(!spare.mods.empty());
 		}
-		const auto     gains = Gains::Read(*item, levels);
+		const auto     gains = Gains::ReadTenths(*item, levels);
 		Columns::Table table;
 		table.name = NAME_CELL;
 		for (std::size_t i = 0; i < spares.size(); i++) {
 			Gains::AddRow(table, CellsOf(spares[i]), gains, i);
-			TraceLog::Line("menu", "Workbench spare {:d} brings {:s} to {:d}%, its card {:s}", i + 1, item->Name(), levels[i],
+			TraceLog::Line("menu", "Workbench spare {:d} brings {:s} to {:s}%, its card {:s}", i + 1, item->Name(), Condition::CardText(levels[i]),
 				Gains::Spelled(gains, i));
 		}
 		auto* bench = OpenBench();
@@ -283,8 +221,8 @@ namespace Workbench
 		// is not on the list.
 		const auto& pricing = a_priced.standing;
 		const auto  scrapper = CraftingPerks::Scrapper();
-		const auto  byPrice = std::ranges::count_if(spares, [](const Spare& a_spare) { return a_spare.unpriced < a_spare.gain; });
-		const auto  byScrapper = std::ranges::count_if(spares, [](const Spare& a_spare) { return a_spare.unranked < a_spare.gain; });
+		const auto  byPrice = std::ranges::count_if(spares, [](const Spare& a_spare) { return a_spare.unpriced < a_spare.restores; });
+		const auto  byScrapper = std::ranges::count_if(spares, [](const Spare& a_spare) { return a_spare.unranked < a_spare.restores; });
 		std::string perks;
 		if (byPrice > 0 && byScrapper > 0) {
 			perks = Text::SparePerks(pricing.Name(), pricing.rank, scrapper.Name(), scrapper.rank);
@@ -298,11 +236,17 @@ namespace Workbench
 		// naming the rank the bench asks for. It is asked again each time the
 		// box opens, so it is gone once a spare lifts the item clear. The line
 		// names no trader, since the spares below restore the item right here.
-		// NAME_TRADER true adds the trader's sentence while traders repair.
+		// It is left out where no repair takes components, in a Pip-Boy
+		// inspect at iPipboyRepair 1, Spares only, since a spare repairs the
+		// item there either way. Repairs at a bench and at iPipboyRepair 2
+		// take components, so the line stays there. While bLockSpares is on
+		// the lock opens no box for such an item, see LockStops. NAME_TRADER
+		// true adds the trader's sentence while traders repair.
 		constexpr bool NAME_TRADER = false;
 		std::string over;
-		if (const auto held = HeldBack(*item, a_priced)) {
-			over = Text::RepairLocked(pricing.Name(), held->need, item->percent, false, NAME_TRADER && Settings::bVendorRepair.GetValue());
+		const bool componentRepairs = !PipboyInspect(bench) || PipboyRepair() == 2;
+		if (const auto held = componentRepairs ? HeldBack(*item, a_priced) : std::nullopt) {
+			over = Text::RepairLocked(pricing.Name(), held->need, Condition::CardText(item->tenths), false, NAME_TRADER && Settings::bVendorRepair.GetValue());
 		}
 		if (!over.empty() && !perks.empty()) {
 			over += '\n';
@@ -313,19 +257,113 @@ namespace Workbench
 			credit = byScrapper > 0 ? std::format("{:s} {:d}, which raises {:d} of them", scrapper.Name(), scrapper.rank, byScrapper) :
 			                          std::format("nobody, as {:s} {:d} raises none of them", scrapper.Name(), scrapper.rank);
 		}
-		TraceLog::Line("menu", "Workbench asks which of {:d} spares to use up on {:s} at {:d}%, crediting {:s}",
-			spares.size(), item->Name(), item->percent, credit);
+		TraceLog::Line("menu", "Workbench asks which of {:d} spares to use up on {:s} at {:s}%, crediting {:s}",
+			spares.size(), item->Name(), Condition::CardText(item->tenths), credit);
 		if (pricing.perk && pricing.rank > 0) {
 			TraceLog::Line("menu", "Workbench credits {:s} {:d}, the perk pricing {:s}, which raises {:d} of them", pricing.Name(),
 				pricing.rank, item->Name(), byPrice);
 		}
 
 		// The bench, the item and the spare are looked up again when the
-		// answer comes, in case anything moved in between.
-		RepairPrompt::AskRows(over, Text::SpareQuestion(item->Name(), item->percent), std::move(rows),
-			[object = &a_object, a_extra, lists = std::move(lists), priced = a_priced](std::size_t a_row) {
-				Pick(*object, a_extra, lists[a_row], priced);
+		// answer comes, in case anything moved in between. At Choose mods to
+		// use or to keep a spare with a mod that comes off asks which mods
+		// to scrap or keep first.
+		RepairPrompt::AskRows(over, Text::SpareQuestion(item->Name(), Condition::CardText(item->tenths)), std::move(rows),
+			[object = &a_object, a_extra, lists = std::move(lists), withMods = std::move(withMods), priced = a_priced](std::size_t a_row) {
+				const auto setting = KeepModsNow();
+				if (Settings::KeepSpareModsAsks(std::to_underlying(setting)) && withMods[a_row]) {
+					AskMods(*object, a_extra, lists[a_row], priced, {}, setting);
+					return;
+				}
+				Pick(*object, a_extra, lists[a_row], priced, std::nullopt);
 			},
 			[] { TraceLog::Line("menu", "Workbench spare box closed with nothing used"); });
+	}
+
+	// -------------------------------------------------------------------
+	// Keeping the item on show
+	// -------------------------------------------------------------------
+
+	const RE::ExtraDataList* Written(const RE::TESBoundObject& a_object, const RE::ExtraDataList* a_was, bool a_split,
+		std::uint32_t a_tenths, std::string_view a_name)
+	{
+		auto* player = RE::PlayerCharacter::GetSingleton();
+		auto* list = player ? player->inventoryList : nullptr;
+		if (!list) {
+			return nullptr;
+		}
+
+		const RE::BSAutoReadLock l{ list->rwLock };
+		for (const auto& entry : list->data) {
+			if (entry.object != &a_object) {
+				continue;
+			}
+			const auto at = [&entry](const RE::BGSInventoryItem::Stack* a_stack) {
+				return Condition::Tenths(entry, a_stack).value_or(FULL_TENTHS);
+			};
+			const RE::ExtraDataList* before = nullptr;
+			for (const auto* stack = entry.stackData.get(); stack; stack = stack->nextStack.get()) {
+				const auto* extra = stack->extra.get();
+				if ((!a_split && extra == a_was) || (a_split && before == a_was && at(stack) == a_tenths)) {
+					return extra;
+				}
+				before = extra;
+			}
+			for (const auto* stack = entry.stackData.get(); stack; stack = stack->nextStack.get()) {
+				const auto* shown = entry.GetDisplayFullName(stack->extra.get());
+				if (at(stack) == a_tenths && shown && a_name == shown) {
+					return stack->extra.get();
+				}
+			}
+		}
+		return nullptr;
+	}
+
+	namespace
+	{
+		// Keeps the bench's highlight on the item. The list's rebuild puts it
+		// on the row whose item handle and stack number match the menu's own
+		// record, which the bench writes only on a rename or a mod build. So
+		// the record gets the item's handle from the item's row of the list
+		// before the rebuild, swapped with the record's own, and the item's
+		// stack number. Each handle keeps the 1 hold it had, and the rebuild
+		// lets go of that row's as it lets go of every row's. Returns true
+		// when it wrote the record.
+		bool KeepHighlight(RE::ExamineMenu& a_menu, const RE::TESBoundObject& a_object, const RE::ExtraDataList* a_extra)
+		{
+			auto*      inventory = RE::BGSInventoryInterface::GetSingleton();
+			const auto held = a_extra ? Held(a_object, a_extra) : std::nullopt;
+			if (!inventory || !held) {
+				TraceLog::Line("menu", "Workbench left the highlight to the list, it found no stack of the item repaired");
+				return false;
+			}
+			for (auto& row : a_menu.invInterface.stackedEntries) {
+				const auto* item = inventory->RequestInventoryItem(row.invHandle.id);
+				if (item && item->object == &a_object) {
+					std::swap(a_menu.modItem.id, row.invHandle.id);
+					a_menu.modStack = held->stack;
+					return true;
+				}
+			}
+			TraceLog::Line("menu", "Workbench left the highlight to the list, no row of it holds the item repaired");
+			return false;
+		}
+	}
+
+	void RefreshKept(RE::ExamineMenu& a_menu, const RE::TESBoundObject& a_object, const RE::ExtraDataList* a_written)
+	{
+		const bool kept = KeepHighlight(a_menu, a_object, a_written);
+		if (!kept && PipboyInspect(&a_menu)) {
+			// The record still names the item the Pip-Boy first asked to
+			// inspect, which a rebuild would go back to. On no stack the
+			// list keeps the row it is on by its number.
+			a_menu.modStack = std::numeric_limits<std::uint32_t>::max();
+		}
+		Refresh(&a_menu, a_object.GetFormType());
+		if (kept) {
+			// The record is left on no stack so later rebuilds keep the row
+			// the player picks. The handle keeps its hold until the bench closes.
+			a_menu.modStack = std::numeric_limits<std::uint32_t>::max();
+		}
 	}
 }

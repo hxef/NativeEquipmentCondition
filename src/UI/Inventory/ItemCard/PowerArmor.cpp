@@ -2,7 +2,7 @@
 
 #include "Condition/ArmorWear/ArmorWear.h"
 #include "Condition/Condition.h"
-#include "Core/Settings.h"
+#include "Core/Settings/Settings.h"
 #include "Core/TraceLog/TraceLog.h"
 #include "UI/Flash.h"
 
@@ -31,11 +31,12 @@ namespace ItemCard
 		// The number
 		// -------------------------------------------------------------------
 
-		// The percent the row shows for a_stack of a_item. Nothing while the
-		// switch is off or for anything but a power armor piece, which keeps
-		// the card exactly as the game builds it. The game wears and repairs
-		// these pieces itself, so this only reads their health.
-		std::optional<double> PowerArmorPercent(const RE::BGSInventoryItem& a_item, const RE::BGSInventoryItem::Stack* a_stack)
+		// The number the row shows for a_stack of a_item, in tenths, see
+		// Condition::CardTenths. Nothing while the switch is off or for
+		// anything but a power armor piece, which keeps the card exactly as
+		// the game builds it. The game wears and repairs these pieces itself,
+		// so this only reads their health.
+		std::optional<std::uint32_t> PowerArmorTenths(const RE::BGSInventoryItem& a_item, const RE::BGSInventoryItem::Stack* a_stack)
 		{
 			if (!Settings::bPowerArmorCardCnd.GetValue()) {
 				return std::nullopt;
@@ -47,15 +48,15 @@ namespace ItemCard
 
 			// A piece with no health extra data reads 100, as vanilla shows it
 			// at full, 50/50.
-			return Condition::ShownPercent(Condition::HealthOf(a_stack));
+			return Condition::CardTenths(Condition::HealthOf(a_stack), true);
 		}
 
 		// Called only while the trace log is open, so its texts are read only
 		// then.
-		void Trace(std::string_view a_site, const RE::BGSInventoryItem& a_item, std::string_view a_health, double a_percent)
+		void Trace(std::string_view a_site, const RE::BGSInventoryItem& a_item, std::string_view a_health, std::uint32_t a_tenths)
 		{
-			TraceLog::First("menu", "{:s} shows power armor {:s} [{:08X}] Health {:s} as CND {:.0f}%", a_site,
-				RE::TESFullName::GetFullName(*a_item.object), a_item.object->formID, a_health, a_percent);
+			TraceLog::First("menu", "{:s} shows power armor {:s} [{:08X}] Health {:s} as CND {:s}%", a_site,
+				RE::TESFullName::GetFullName(*a_item.object), a_item.object->formID, a_health, Condition::CardText(a_tenths));
 		}
 
 		// -------------------------------------------------------------------
@@ -104,9 +105,9 @@ namespace ItemCard
 
 	void ShowPowerArmorCnd(Value& a_target, const RE::BGSInventoryItem& a_item, const RE::BGSInventoryItem::Stack* a_stack, std::string_view a_site)
 	{
-		const auto percent = PowerArmorPercent(a_item, a_stack);
+		const auto tenths = PowerArmorTenths(a_item, a_stack);
 		Value      entries;
-		if (!percent || !CardEntries(a_target, entries)) {
+		if (!tenths || !CardEntries(a_target, entries)) {
 			return;
 		}
 
@@ -119,11 +120,14 @@ namespace ItemCard
 			}
 			// Traced first, while vanilla's text is still there.
 			if (TraceLog::IsOpen()) {
-				Trace(a_site, a_item, Flash::Member(entry, "value"sv).GetString(), *percent);
+				Trace(a_site, a_item, Flash::Member(entry, "value"sv).GetString(), *tenths);
 			}
 			Flash::Set(entry, "text"sv, Value(CND_TEXT));
-			Flash::Set(entry, "value"sv, Value(*percent));
+			Flash::Set(entry, "value"sv, Value(Condition::CardValue(*tenths)));
 			Flash::Set(entry, "showAsPercent"sv, Value(true));
+			if (PrintsTenth()) {
+				Flash::Set(entry, "precision"sv, Value(std::uint32_t{ 1 }));
+			}
 
 			// The card turns entries into rows from last to first, so the
 			// first entry becomes the highest plain row, where CND sits on
@@ -136,8 +140,8 @@ namespace ItemCard
 	void ShowPowerArmorCnd(RE::PipboyObject& a_data, const RE::BGSInventoryItem& a_item, const RE::BGSInventoryItem::Stack* a_stack,
 		std::string_view a_site)
 	{
-		const auto percent = PowerArmorPercent(a_item, a_stack);
-		auto*      entries = percent ? a_data.GetMember<RE::PipboyArray*>(RE::BSFixedString("itemCardInfoList")) : nullptr;
+		const auto tenths = PowerArmorTenths(a_item, a_stack);
+		auto*      entries = tenths ? a_data.GetMember<RE::PipboyArray*>(RE::BSFixedString("itemCardInfoList")) : nullptr;
 		if (!entries) {
 			return;
 		}
@@ -163,15 +167,19 @@ namespace ItemCard
 				return;
 			}
 			if (TraceLog::IsOpen()) {
-				Trace(a_site, a_item, std::string_view{ shown->m_value }, *percent);
+				Trace(a_site, a_item, std::string_view{ shown->m_value }, *tenths);
 			}
 
 			// The members the engine's own number entry has, written as it
 			// writes them, so the Pip-Boy copies them to the card the same way.
 			PutMember(*entry, "text", new RE::PipboyPrimitiveValue<RE::BSFixedStringCS>(RE::BSFixedStringCS{ CND_TEXT }, entry));
-			PutMember(*entry, "value", new RE::PipboyPrimitiveValue<float>(static_cast<float>(*percent), entry));
+			PutMember(*entry, "value", new RE::PipboyPrimitiveValue<float>(static_cast<float>(Condition::CardValue(*tenths)), entry));
 			PutMember(*entry, "ValueType", new RE::PipboyPrimitiveValue<std::uint32_t>(NUMBER_VALUE, entry));
 			PutMember(*entry, "showAsPercent", new RE::PipboyPrimitiveValue<bool>(true, entry));
+			// Copied to the card by its name, as Hooks.cpp gives CND its tenth.
+			if (PrintsTenth()) {
+				PutMember(*entry, "precision", new RE::PipboyPrimitiveValue<std::uint32_t>(1, entry));
+			}
 			std::rotate(elements.begin(), elements.begin() + i, elements.begin() + i + 1);
 			return;
 		}

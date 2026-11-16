@@ -237,6 +237,16 @@ namespace HudCondition
 			return turned;
 		}
 		turned.flipped = a_flipped;
+		if (a_spot.turn) {
+			const auto& turn = *a_spot.turn;
+			turned.line = turn.line;
+			turned.onDivider = turn.onDivider;
+			turned.wordX = turn.wordX;
+			turned.wordY = turn.wordY;
+			turned.clear = turn.clear;
+			turned.turn = Turn{ a_spot.line, a_spot.onDivider, a_spot.wordX, a_spot.wordY, a_spot.clear };
+			return turned;
+		}
 		const auto width = a_spot.line.width;
 		const auto own = a_spot.wordY == 0.0 && (a_spot.flipped ? a_spot.wordX <= Home(true, width, a_letters) : a_spot.wordX == 0.0);
 		if (own) {
@@ -280,7 +290,7 @@ namespace HudCondition
 		std::erase_if(inside, [&](const Part& a_part) {
 			return !numbers.empty() && std::ranges::all_of(numbers, [&](const Part& a_number) { return a_part.box.Holds(a_number.box); });
 		});
-		const Around around{ *shape, std::move(numbers), std::move(inside), Roles::Hud::Beside(a_counter, a_readout, frame), a_label.letters, WholeLine(a_label),
+		Around around{ *shape, std::move(numbers), std::move(inside), Roles::Hud::Beside(a_counter, a_readout, frame), a_label.letters, WholeLine(a_label),
 			DEEP_PER_THICK * shape->thick, frame, a_flipped };
 
 		std::vector<Part> others{ around.inside };
@@ -288,13 +298,24 @@ namespace HudCondition
 		std::vector<Part> keepOff{ around.numbers };
 		keepOff.insert(keepOff.end(), others.begin(), others.end());
 		const auto why = Unfit(around, others);
-		if (!why) {
-			return WithWord(around, around.divider.place, keepOff, {}, {});
-		}
-		if (auto nearest = Nearest(around, *why, others)) {
-			return nearest;
-		}
-		return Kept(around, *why, keepOff);
+		const auto chosen = [&] {
+			if (!why) {
+				return WithWord(around, around.divider.place, keepOff, {}, {});
+			}
+			if (auto nearest = Nearest(around, *why, others)) {
+				return std::move(*nearest);
+			}
+			return Kept(around, *why, keepOff);
+		};
+
+		// The spot the other way round comes from the same boxes, so a flip
+		// while the divider cannot be measured, or while MCM is open, gives
+		// the spot the next measure gives. Unfit reads no flip.
+		auto choice = chosen();
+		around.flipped = !a_flipped;
+		const auto other = chosen().spot;
+		choice.spot.turn = Turn{ other.line, other.onDivider, other.wordX, other.wordY, other.clear };
+		return choice;
 	}
 
 	Box Filled(const Spot& a_spot, const HudParts::Readout::LabelPlace& a_label)

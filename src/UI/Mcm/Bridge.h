@@ -1,11 +1,11 @@
 #pragma once
 
-#include "Core/Plugin.h"
 #include "Condition/Condition.h"
 #include "Core/CallPatch/CallPatch.h"
 #include "Core/Parts.h"
 #include "Core/Pieces.h"
-#include "Core/Settings.h"
+#include "Core/Plugin.h"
+#include "Core/Settings/Settings.h"
 
 #include <algorithm>
 #include <array>
@@ -18,7 +18,7 @@
 #include <string_view>
 #include <vector>
 
-// What the 7 files of the folder share. Private to this folder.
+// What the files of the folder share. Private to this folder.
 namespace Mcm
 {
 	using Params = Scaleform::GFx::FunctionHandler::Params;
@@ -27,11 +27,11 @@ namespace Mcm
 	inline constexpr std::string_view MOD = "NEC"sv;
 
 	// A hidden switch that hides rows while a number is at its off value, as a
-	// switch that is off hides the rows under it. The number has config.json's
-	// refreshMenu, so the rows hide and come back as it moves. rows are the
-	// settings of the rows it hides, which their block's note leaves out too,
-	// and nullptr after the last. A row on 2 hides shows only while both do,
-	// as config.json joins their numbers with AND.
+	// switch that is off hides the rows under it, or while a few settings are.
+	// Each has config.json's refreshMenu, so the rows hide and come back as it
+	// moves. rows are the settings of the rows it hides, which their block's
+	// note leaves out too, and nullptr after the last. A row on 2 hides shows
+	// only while both do, as config.json joins their numbers with AND.
 	struct Hide
 	{
 		std::string_view                      id;
@@ -39,24 +39,46 @@ namespace Mcm
 		std::array<const Settings::Named*, 8> rows;
 	};
 
+	// Whether anything repairs as a workbench does: the bench itself, or
+	// REPAIR on the Pip-Boy's inspect screen, iPipboyRepair 1 or 2 as set.
+	// When neither does, only traders repair.
+	[[nodiscard]] inline bool BenchWayRepairs()
+	{
+		const auto pipboy = Settings::iPipboyRepair.GetValue();
+		return Settings::bWorkbenchRepair.GetValue() || pipboy == 1 || pipboy == 2;
+	}
+
 	// Jams start at shows while the jam chance is above 0, Perk lock and Lock
 	// spares too while Lock repairs is not Off, and Supplies only from while
 	// Servicing supplies is above 0. An iRepairLock of 3 or -1 locks as By
 	// its mods does, so only 0 hides them. The 8 rows that tune paid repairs
 	// show while Workbench repair cost is above 0, since at 0 every repair is
 	// a free MEND and no repair box opens, see FreeRepairs in
-	// UI/Repair/Workbench/Bench.h. The Maintenance header hides with them, as
-	// no row is left under it. Lock spares too also hides while Spare repair
-	// is off, by its config.json row. The Penalty mark section shows while
-	// either penalty point marks a bar, from 0.01 to 0.99. Its 2 points sit on
-	// the Weapons and the Armor page, so its id names the first, and both
-	// sliders refresh the menu.
+	// UI/Repair/Workbench/Bench.h, and while something repairs as a workbench
+	// does. The Maintenance header hides with them, as no row is left under
+	// it. Workbench repair cost and the Repair with spares section show only
+	// while something repairs so too, and Repair box opens on only while a
+	// levels box can open, at the bench or as Workbench in the Pip-Boy. Lock
+	// spares too also hides while Spare repair is off, by its config.json
+	// row, and so do Keep spare mods and Spare mod rows. Spare mod rows shows
+	// only while Keep spare mods opens a box, at Choose mods to use or Choose
+	// mods to keep. The Penalty mark section shows while either penalty point
+	// marks a bar, from 0.01 to 0.99. Its 2 points sit on the Weapons and the
+	// Armor page, so its id names the first, and both sliders refresh the
+	// menu.
 	inline constexpr Hide HIDES[]{
 		{ "fJamChance:Jams"sv, [] { return Settings::fJamChance.GetValue() > 0.0F; }, { &Settings::fJamStart } },
 		{ "iRepairLock:Lock"sv, [] { return Settings::iRepairLock.GetValue() != 0; }, { &Settings::iPerkLock, &Settings::bLockSpares } },
-		{ "iRepairSupplies:Supplies"sv, [] { return Settings::iRepairSupplies.GetValue() > 0; }, { &Settings::iSuppliesOnlyFrom } },
-		{ "fBenchCostMult:Paid"sv, [] { return Settings::fBenchCostMult.GetValue() > 0.0F; },
-			{ &Settings::iFreeMendFrom, &Settings::iRepairSupplies, &Settings::iSuppliesOnlyFrom, &Settings::iRepairLock,
+		{ "iRepairSupplies:Supplies"sv, [] { return Settings::iRepairSupplies.GetValue() > 0; }, { &Settings::fSuppliesOnlyFrom } },
+		{ "bWorkbenchRepair:Levels"sv, [] { return Settings::bWorkbenchRepair.GetValue() || Settings::iPipboyRepair.GetValue() == 2; },
+			{ &Settings::iRepairBoxRow } },
+		{ "bWorkbenchRepair:Repairs"sv, BenchWayRepairs,
+			{ &Settings::fBenchCostMult, &Settings::bSpareRepair, &Settings::fSpareWorthMult, &Settings::iUnscrappableSpares,
+				&Settings::iKeepSpareMods, &Settings::iSpareModRows } },
+		{ "iKeepSpareMods:Choose"sv, [] { return Settings::KeepSpareModsAsks(Settings::iKeepSpareMods.GetValue()); },
+			{ &Settings::iSpareModRows } },
+		{ "fBenchCostMult:Paid"sv, [] { return Settings::fBenchCostMult.GetValue() > 0.0F && BenchWayRepairs(); },
+			{ &Settings::fFreeMendFrom, &Settings::iRepairSupplies, &Settings::fSuppliesOnlyFrom, &Settings::iRepairLock,
 				&Settings::iPerkLock, &Settings::iPerkComponentDiscount, &Settings::bLockSpares, &Settings::iRepairBoxRow } },
 		{ "fWeaponPenaltyStart:Marks"sv, [] { return Condition::StartPercent(Condition::Kind::kWeapon) != 0 || Condition::StartPercent(Condition::Kind::kArmor) != 0; },
 			{ &Settings::fPenaltyMarkWidth, &Settings::bPenaltyMarkAsLine } },
@@ -81,12 +103,76 @@ namespace Mcm
 	void SetFloat(const Params& a_params, std::string_view a_id);
 	void GetFullName(const Params& a_params, std::string_view a_id);
 
+	// How an answer is handed back, in Bridge.cpp: a value, a text, which the
+	// movie gets a copy of, and the warning for an id NEC does not know,
+	// said once for each.
+	template <class T>
+	void Answer(const Params& a_params, T a_value)
+	{
+		if (a_params.retVal) {
+			*a_params.retVal = a_value;
+		}
+	}
+
+	void AnswerText(const Params& a_params, const std::string& a_text);
+	void Unknown(std::string_view a_id);
+
+	// The presets rows of NEC's main page, see Core/Presets/Presets.h. The
+	// Preset list picks by its place in PRESET_LIST, the Save as new preset
+	// text field saves a new preset, the Describe preset text field writes
+	// the picked own preset's description, and the 2 hidden switches show
+	// Reset preset while the picked preset has changes and Delete preset and
+	// Describe preset while it is the player's own. A 3rd shows the grey line
+	// under Preset while the pick has a description, and PRESET_ABOUT_NOTE is
+	// that line's id and the id of its words.
+	// Their answers are in PresetRows.cpp, and a_id of GetList is the id of a
+	// list, presets. PickPreset answers SetInt for PRESET_ID.
+	void GetString(const Params& a_params, std::string_view a_id);
+	void SetString(const Params& a_params, std::string_view a_id);
+	void GetList(const Params& a_params, std::string_view a_id);
+	void PickPreset(const Params& a_params);
+
+	inline constexpr std::string_view PRESET_ID = "iPreset:Presets"sv;
+	inline constexpr std::string_view PRESET_LIST = "presets"sv;
+	inline constexpr std::string_view PRESET_SAVE_ID = "sSavePreset:Presets"sv;
+	inline constexpr std::string_view PRESET_DESCRIBE_ID = "sDescribePreset:Presets"sv;
+	inline constexpr std::string_view PRESET_CHANGES_ID = "changes:Presets"sv;
+	inline constexpr std::string_view PRESET_OWN_ID = "own:Presets"sv;
+	inline constexpr std::string_view PRESET_ABOUT_ID = "about:Presets"sv;
+	inline constexpr std::string_view PRESET_ABOUT_NOTE = "preset.about"sv;
+
+	// MCM draws a noTint text entry white, so this colour shows as is.
+	// The tag quotes it with " as MCM's own html does.
+	inline constexpr std::string_view GREY = "#808080"sv;
+
+	// The grey html of the line under Preset, empty for none, in
+	// PresetRows.cpp.
+	[[nodiscard]] std::string AboutLine();
+
+	// AboutLine as the row's words: 1 space for no line, since MCM keeps the
+	// id as the words of an empty answer. The row hides then anyway.
+	[[nodiscard]] std::string AboutWords();
+
+	// Writes that line on the row while NEC's main page shows, true when it
+	// wrote, see Layout.cpp.
+	bool AboutRow(Scaleform::GFx::Value& a_entries);
+
+	// NEC's box with vanilla's OK, saying a_body, after a save, a delete or a
+	// description of a preset that failed and so changed nothing, in
+	// PresetButtons.cpp.
+	void SayFailed(const std::string& a_body);
+
+	// Asks the game to work out again what it keeps from a_setting, whose
+	// value just changed, by the page or by a pick, a reset or a delete of a
+	// preset, in Bridge.cpp.
+	void Followed(const Settings::Named& a_setting);
+
 	// What the hidden switches of the page's grey rows and of HIDES say, and
 	// what those grey rows read, in Notes.cpp. a_id is parts:Note,
-	// bSpawnCondition:Free, bSpawnCondition:Note, fDamageFloor:Note or an id
-	// of HIDES such as fJamChance:Jams for Shows, and parts.note,
-	// bSpawnCondition.note, fDamageFloor.note or parts.help for Note. Nothing
-	// for any other id.
+	// bSpawnCondition:Free, bSpawnCondition:Note, fDamageFloor:Note, an id of
+	// HIDES such as fJamChance:Jams or a preset switch for Shows, and
+	// parts.note, bSpawnCondition.note, fDamageFloor.note, parts.help or
+	// preset.about for Note. Nothing for any other id.
 	[[nodiscard]] std::optional<bool>        Shows(std::string_view a_id);
 	[[nodiscard]] std::optional<std::string> Note(std::string_view a_id);
 
@@ -127,11 +213,22 @@ namespace Mcm
 	[[nodiscard]] std::size_t LinesOf(std::string_view a_line);
 	[[nodiscard]] Kept        Capped(std::vector<std::string> a_lines, const Shorter& a_shorter = {});
 
-	// Notes a change from the page that NEC_custom.ini does not have yet, in
-	// Mcm.cpp. a_before is kept from the first change still owed, so a dragged
-	// slider is 1 write and 1 change line. a_default is NEC.ini's value, which
-	// takes the key's line out of NEC_custom.ini instead.
+	// Notes a change from the page that its file does not have yet, in
+	// Mcm.cpp. The file is NEC_custom.ini or the picked preset's, see
+	// Presets::Target. a_before is kept from the first change still owed, so
+	// a dragged slider is 1 write and 1 change line. a_default is the value
+	// at which the key's line goes from the file instead, see Presets::Base.
 	void Owe(std::string_view a_section, std::string_view a_key, std::string_view a_before, std::string_view a_now, std::string_view a_default);
+
+	// Writes every change still owed at once, before a pick, a save, a reset,
+	// a delete or a description, so a setting made a moment before lands in
+	// the file it was made for. a_what names the action in the trace line,
+	// such as pick.
+	void WriteOwed(std::string_view a_what);
+
+	// Has the frame listener ask MCM to draw its page again on the next
+	// frame, see RefreshMcm.
+	void RefreshSoon();
 
 	// What the game keeps worked out from a setting, done again on the engine's
 	// task queue after a change, in FollowUps.cpp.
@@ -172,6 +269,11 @@ namespace Mcm
 
 	// Puts MCM's left list highlight back on the open page of NEC's when the
 	// mouse left it on another page name, in Layout.cpp. Called as MCM asks
-	// for a_id, an id of HIDES.
+	// for a_id, an id of HIDES or a preset switch.
 	void KeepOpenPage(Scaleform::GFx::Movie* a_movie, std::string_view a_id);
+
+	// Has MCM read every row again and draw the open page, as a row with
+	// refreshMenu does, with the highlight put back first as above. Nothing
+	// while MCM is not open, in Layout.cpp.
+	void RefreshMcm(Scaleform::GFx::Movie& a_movie);
 }

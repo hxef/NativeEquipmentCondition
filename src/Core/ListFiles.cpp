@@ -338,6 +338,19 @@ namespace ListFiles
 		return (a_id >> 24) == 0xFF;
 	}
 
+	const RE::TESFile* PluginOf(RE::TESFormID a_id)
+	{
+		if (!g_dataHandler || Made(a_id)) {
+			return nullptr;
+		}
+		for (const auto* plugin : g_dataHandler->files) {
+			if (plugin && plugin->IsActive() && plugin->GetLoadOrderFormID(a_id) == a_id) {
+				return plugin;
+			}
+		}
+		return nullptr;
+	}
+
 	std::uint32_t LocalOf(const RE::TESFile& a_plugin, RE::TESFormID a_id)
 	{
 		return a_plugin.IsLight() ? a_id & 0xFFF : a_id & 0xFFFFFF;

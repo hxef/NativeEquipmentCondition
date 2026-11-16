@@ -2,7 +2,7 @@
 
 #include "Core/CallPatch/Write.h"
 #include "Core/Feature.h"
-#include "Core/Settings.h"
+#include "Core/Settings/Settings.h"
 
 #include <algorithm>
 #include <array>

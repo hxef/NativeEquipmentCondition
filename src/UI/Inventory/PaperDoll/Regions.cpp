@@ -2,7 +2,7 @@
 
 #include "Condition/Condition.h"
 #include "Condition/Equipped.h"
-#include "Core/Settings.h"
+#include "Core/Settings/Settings.h"
 #include "Core/TraceLog/TraceLog.h"
 
 #include <algorithm>

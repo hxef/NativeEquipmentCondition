@@ -4,7 +4,7 @@
 
 #include "Core/Parts.h"
 #include "Core/Pieces.h"
-#include "Core/Settings.h"
+#include "Core/Settings/Settings.h"
 #include "Core/Text/Text.h"
 
 #include <cstddef>
@@ -50,6 +50,9 @@ namespace Text
 	// The line in English, for NEC.log, which never reads a language file.
 	[[nodiscard]] constexpr const char* InEnglish(Key a_key) { return ENGLISH[a_key.index].text; }
 
+	// The key en.ini names a_name, in any case, or none.
+	[[nodiscard]] std::optional<Key> KeyOf(std::string_view a_name);
+
 	// That line with a_args filled into its {0} {1} slots. The arguments are
 	// taken by reference because std::make_format_args wants lvalues. A
 	// language file's line has the English slots or is not used, so this
@@ -73,18 +76,21 @@ namespace Text
 		Key                    help;
 	};
 
-	// The 16 switches, bNecOn, bPlainApparelNeverWears, bTraderSign,
-	// bSpareRepair, iUnscrappableSpares, iRepairBoxRow, iRepairLock,
-	// bLockSpares, bRepairBoxColumns, bRepairBoxGains, bHudCondition,
-	// bPowerArmorBar, bCardWearRate, bPowerArmorCardCnd, bFridgeIcon and
-	// bTraceLogs, in MenuSwitches.cpp, the 10 wear speeds, in MenuWear.cpp, the
-	// 3 Loot numbers and the 30 Balance numbers, in MenuNumbers.cpp, and the 14
-	// HUD numbers, the 8 HUD switches and sLogLevel, in MenuHudLog.cpp, each
-	// in NEC.ini's order.
+	// The 21 switches, bNecOn, bPlainApparelNeverWears, bWorkbenchRepair,
+	// bTraderSign, bSpareRepair, iPipboyRepair, iUnscrappableSpares,
+	// iKeepSpareMods, iSpareModRows, iRepairBoxRow, iRepairLock, bLockSpares,
+	// bRepairBoxColumns, bRepairBoxGains, bHudCondition, bPowerArmorBar,
+	// bCardWearRate, bPowerArmorCardCnd, iCndDecimals, bFridgeIcon and
+	// bTraceLogs, in MenuSwitches.cpp,
+	// the 10 wear speeds, in MenuWear.cpp, the 3 Loot numbers and the 30
+	// Balance numbers, in MenuNumbers.cpp, and the 14 HUD numbers, the 8 HUD
+	// switches and sLogLevel, in MenuHudLog.cpp, each in NEC.ini's order,
+	// and the 4 presets rows of NEC's main page, in MenuPresets.cpp.
 	[[nodiscard]] std::span<const MenuRow> MenuSwitches();
 	[[nodiscard]] std::span<const MenuRow> MenuWear();
 	[[nodiscard]] std::span<const MenuRow> MenuNumbers();
 	[[nodiscard]] std::span<const MenuRow> MenuHudLog();
+	[[nodiscard]] std::span<const MenuRow> MenuPresets();
 
 	// One part's name, see Core/Parts.h. Each table keeps the enum's order. A
 	// name has no comma, since it goes into lists.

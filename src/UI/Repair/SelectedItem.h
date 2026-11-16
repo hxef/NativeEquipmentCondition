@@ -22,8 +22,21 @@ namespace SelectedItem
 		std::uint32_t               handle{ 0 };
 		std::uint32_t               stack{ 0 };
 		std::uint32_t               count{ 0 };
+		// The number its card shows, in tenths, see Condition::CardTenths.
+		std::uint32_t               tenths{ Condition::FULL_TENTHS };
+		// tenths / 10, rounded down, so 97.5 is 97. Every compare with a
+		// whole point uses it, since tenths is 10 W or more exactly when
+		// percent is W or more. At CND decimals Off it is the whole number
+		// the card shows.
 		std::uint32_t               percent{ Repair::FULL };
 		Condition::Kind             kind{ Condition::Kind::kWeapon };
+
+		// Sets tenths, and percent from it.
+		void SetTenths(std::uint32_t a_tenths)
+		{
+			tenths = a_tenths;
+			percent = a_tenths / Condition::TENTHS_PER_PERCENT;
+		}
 
 		// True for an item below full condition.
 		[[nodiscard]] bool Worn() const { return object && percent < Repair::FULL; }
@@ -40,4 +53,8 @@ namespace SelectedItem
 
 	// One row of a menu's inventory list, turned back into an item.
 	[[nodiscard]] Item Read(const RE::InventoryUserUIInterfaceEntry& a_entry);
+
+	// The name a row of a menu's inventory list shows, of any item, also one
+	// that never wears, such as a Stimpak.
+	[[nodiscard]] std::string RowName(const RE::InventoryUserUIInterfaceEntry& a_entry);
 }

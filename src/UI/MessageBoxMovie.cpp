@@ -139,8 +139,10 @@ namespace MessageBox
 
 				// The box on screen is the one the menu shows, and its
 				// callback says whose it is. The game frees an answered box and
-				// clears or replaces this pointer in one step, under the lock
-				// this listener runs under, so it never points at a freed box.
+				// clears or replaces this pointer in one step, on the thread
+				// that hands the menus their input and then moves their movies
+				// on, so never while this listener runs, and it never points at
+				// a freed box.
 				const auto* ui = RE::UI::GetSingleton();
 				const auto  menu = ui ? ui->GetMenu<RE::MessageBoxMenu>() : nullptr;
 				if (!menu || menu->uiMovie.get() != a_params.movie || !menu->GetRuntimeData().currentMessage) {

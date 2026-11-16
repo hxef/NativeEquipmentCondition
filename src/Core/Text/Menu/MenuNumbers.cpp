@@ -1,6 +1,6 @@
 #include "Core/Text/Lines.h"
 
-#include "Core/Settings.h"
+#include "Core/Settings/Settings.h"
 
 // The names and help lines of the numbers on the MCM page other than the
 // wear speeds, which are in MenuWear.cpp, see MenuLine in Text.h.
@@ -26,9 +26,9 @@ namespace Text
 			{ &Settings::fBenchCostMult, BENCH_COST_NAME, BENCH_COST_HELP },
 			{ &Settings::iPerkComponentDiscount, PERK_COMPONENT_DISCOUNT_NAME, PERK_COMPONENT_DISCOUNT_HELP },
 			{ &Settings::fSpareWorthMult, SPARE_WORTH_NAME, SPARE_WORTH_HELP },
-			{ &Settings::iFreeMendFrom, FREE_MEND_NAME, FREE_MEND_HELP },
+			{ &Settings::fFreeMendFrom, FREE_MEND_NAME, FREE_MEND_HELP },
 			{ &Settings::iRepairSupplies, REPAIR_SUPPLIES_NAME, REPAIR_SUPPLIES_HELP },
-			{ &Settings::iSuppliesOnlyFrom, SUPPLIES_ONLY_NAME, SUPPLIES_ONLY_HELP },
+			{ &Settings::fSuppliesOnlyFrom, SUPPLIES_ONLY_NAME, SUPPLIES_ONLY_HELP },
 			// Workbench modifications from. Its keys keep the old mod lock name.
 			{ &Settings::iModdingFrom, MOD_LOCK_NAME, MOD_LOCK_HELP },
 			{ &Settings::iPerkLock, PERK_LOCK_NAME, PERK_LOCK_HELP },

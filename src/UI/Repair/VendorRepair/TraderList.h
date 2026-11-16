@@ -9,8 +9,7 @@
 #include <string>
 
 // The trader list, for a player or a patch that sets by hand how far a trader
-// repairs a kind of gear. Private to this folder, but for Load and Unload,
-// which Features.cpp runs. A file in Data/F4SE/Plugins/NEC/Traders/, such as
+// repairs a kind of gear. A file in Data/F4SE/Plugins/NEC/Traders/, such as
 // MyTraders.ini, has 1 kind a line in the form Core/ListFiles.h gives, with
 // the kind and how far after it:
 //
@@ -27,17 +26,11 @@
 // loads them with their cell, so a line whose form is not loaded is taken for
 // a trader's ref ID, by its ID in the load order. A settler the game spawned
 // lasts 1 save, so a line names their base ID or faction instead.
+//
+// Load and Unload are in VendorRepair.h, since Features.cpp runs them. Private
+// to this folder.
 namespace VendorRepair::TraderList
 {
-	// Reads every .ini file in the folder and says in NEC.log what each line
-	// sets and why it skipped one. Keeps form IDs only, so Unload lets them go.
-	// Read whatever Trader repairs says, so the switch turned on later finds
-	// it read.
-	void Load();
-
-	// Forgets the list, so every trader is measured until Load runs.
-	void Unload();
-
 	// What 1 line sets, and where.
 	struct Set
 	{

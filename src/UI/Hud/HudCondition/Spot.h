@@ -16,33 +16,50 @@ namespace HudCondition
 	// vanilla's divider, which is 2 thick.
 	inline constexpr double DEEP_PER_THICK = 3.0;
 
+	// A Spot as a measure gives it the other way round, all but its depth,
+	// which a flip never changes.
+	struct Turn
+	{
+		Roles::Hud::Line line;
+		bool             onDivider = true;
+		double           wordX = 0.0;
+		double           wordY = 0.0;
+		double           clear = 0.0;
+
+		bool operator==(const Turn&) const = default;
+	};
+
 	// Where the bar sits. line.x and line.y are the right end of the bar and
 	// its middle, line.width its length. wordX and wordY are how far the
 	// word moved from its place past the bar's end. A flipped bar fills from
 	// its left end and its word's own place is before the bar's start, the
 	// mirror of the place past the end, or further left to keep its gap from
 	// the counter's numbers, so its wordX is never 0. clear is how far
-	// further left that is, worked out either way round, so Turned turns
-	// a word at its own place to the other one with no new measure.
+	// further left that is, worked out either way round. turn is the spot
+	// the same measure gives the other way round, empty for a spot no
+	// measure made. Turned reads the 2, so a flip needs no new measure.
 	struct Spot
 	{
-		Roles::Hud::Line line;
-		double           deep = 0.0;
-		bool             onDivider = true;
-		double           wordX = 0.0;
-		double           wordY = 0.0;
-		bool             flipped = false;
-		double           clear = 0.0;
+		Roles::Hud::Line    line;
+		double              deep = 0.0;
+		bool                onDivider = true;
+		double              wordX = 0.0;
+		double              wordY = 0.0;
+		bool                flipped = false;
+		double              clear = 0.0;
+		std::optional<Turn> turn = std::nullopt;
 
 		bool operator==(const Spot&) const = default;
 
 		// True when a_other sits as this spot does, the same or different
-		// by clear alone, so the bar and its word do not move. clear changes
-		// as a number is shown or hidden, and only a turn reads it.
+		// by clear and turn alone, so the bar and its word do not move.
+		// The 2 change as a number is shown or hidden, and only Turned
+		// reads them.
 		[[nodiscard]] bool SitsAs(const Spot& a_other) const
 		{
 			auto same = a_other;
 			same.clear = clear;
+			same.turn = turn;
 			return same == *this;
 		}
 	};
@@ -63,11 +80,12 @@ namespace HudCondition
 	// about the bar's middle, before the bar's start.
 	[[nodiscard]] double Home(bool a_flipped, double a_length, const Roles::Box& a_letters);
 
-	// a_spot the way round a_flipped says, where it sits, for a flip while
-	// Choose answers nothing. A word in the bar's row on its own side goes
-	// to its own place on the other side, see Home and the spot's clear,
-	// and any other word stays where it is. a_letters are the word's, as
-	// for Home.
+	// a_spot the way round a_flipped says, for a flip while Choose answers
+	// nothing. A spot a measure made takes its turn, the spot that measure
+	// gives the other way round. Otherwise it stays where it sits, a word
+	// in the bar's row on its own side goes to its own place on the other
+	// side, see Home and the spot's clear, and any other word stays where
+	// it is. a_letters are the word's, as for Home.
 	[[nodiscard]] Spot Turned(const Spot& a_spot, bool a_flipped, const Roles::Box& a_letters);
 
 	// Writes the word with a_first, once a movie since it never changes,
@@ -78,7 +96,8 @@ namespace HudCondition
 	// first try and the one that measures.
 	[[nodiscard]] HudParts::Readout::LabelPlace Label(Roles::Value& a_readout, bool a_first, const Flash::Point& a_moved);
 
-	// Measures the HUD around the counter now and chooses the spot. Nothing
+	// Measures the HUD around the counter now and chooses the spot, and the
+	// one the other way round as its turn. Nothing
 	// while the divider is hidden or off screen, so the bar keeps its last
 	// spot. a_ownVisible is the divider's own visible while NEC covers it,
 	// and a_label where the word sits from the bar's right end.

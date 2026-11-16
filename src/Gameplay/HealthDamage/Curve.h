@@ -4,7 +4,7 @@
 
 #include "Condition/Condition.h"
 #include "Condition/WearList/WearList.h"
-#include "Core/Settings.h"
+#include "Core/Settings/Settings.h"
 
 #include <algorithm>
 #include <optional>

@@ -1,6 +1,7 @@
 #include "UI/Mcm/Mcm.h"
 
-#include "Core/Settings.h"
+#include "Core/Presets/Presets.h"
+#include "Core/Settings/Settings.h"
 #include "Core/TraceLog/TraceLog.h"
 #include "UI/Flash.h"
 #include "UI/Mcm/Bridge.h"
@@ -10,7 +11,9 @@
 #include <array>
 #include <atomic>
 #include <chrono>
+#include <cstddef>
 #include <cstdint>
+#include <filesystem>
 #include <format>
 #include <iterator>
 #include <mutex>
@@ -33,16 +36,17 @@ namespace Mcm
 		constexpr auto WAIT = std::chrono::milliseconds{ 500 };
 
 		// -------------------------------------------------------------------
-		// Changes NEC_custom.ini does not have yet
+		// Changes their file does not have yet
 		// -------------------------------------------------------------------
 
 		struct Change
 		{
-			std::string section;
-			std::string key;
-			std::string before;
-			std::string now;
-			std::string fallback;  // NEC.ini's value
+			std::string           section;
+			std::string           key;
+			std::string           before;
+			std::string           now;
+			std::string           fallback;  // where the line goes, see Presets::Base
+			std::filesystem::path file;      // NEC_custom.ini or the picked preset's, see Presets::Target
 		};
 
 		// Noted by the page and taken by the frame listener.
@@ -52,42 +56,60 @@ namespace Mcm
 		// When the last change still owed was made, 0 when none is.
 		std::atomic<Clock::rep> g_changedAt{ 0 };
 
+		// Held while owed changes are written, so a pick or a box's answer
+		// waits for a write the frame listener began and never lands before
+		// it.
+		std::mutex g_writeLock;
+
+		// Set when the page has to be drawn again, and spent by the frame
+		// listener.
+		std::atomic<bool> g_refresh{ false };
+
 		bool Due()
 		{
 			const auto at = g_changedAt.load();
 			return at != 0 && Clock::now() - Clock::time_point{ Clock::duration{ at } } >= WAIT;
 		}
 
-		// Writes every change owed into NEC_custom.ini and logs a line for
-		// each, then the Settings line, and the summary when a change made it
-		// read differently.
-		void Write()
+		// Writes every change owed into its file and logs a line for each,
+		// then the Settings line, and the summary when a change made it read
+		// differently. Returns how many it wrote.
+		std::size_t Write()
 		{
-			std::vector<Change> owed;
+			const std::scoped_lock w{ g_writeLock };
+			std::vector<Change>    owed;
 			{
 				const std::scoped_lock l{ g_owedLock };
 				owed.swap(g_owed);
 				g_changedAt.store(0);
 			}
 
-			bool changed = false;
-			for (const auto& [section, key, before, now, fallback] : owed) {
+			std::size_t written = 0;
+			for (const auto& [section, key, before, now, fallback, file] : owed) {
 				// Changed and changed back.
 				if (before == now) {
 					continue;
 				}
-				changed = true;
+				written++;
 				Settings::LogChange(key, before, now, "from the MCM page");
-				// Back at NEC.ini's value, the key's line goes, so
-				// NEC_custom.ini holds only what the player changed.
-				const auto saved = now == fallback ? Settings::Drop(section, key) : Settings::Keep(section, key, now);
+				// Back at the fallback, the key's line goes, so each file holds
+				// only what the player changed. A file that is not there yet
+				// starts from Presets::NewText.
+				const auto saved = now == fallback ? Settings::Drop(section, key, file, Presets::NewText(file, true), Presets::Stands(file)) :
+				                                     Settings::Keep(section, key, now, file, Presets::NewText(file));
 				if (!saved) {
 					REX::WARN("{:s} stays {:s} only until the game restarts.", key, now);
 				}
+				// A first change or the last one undone adds or takes away
+				// the picked preset's (Custom), so the page draws again.
+				if (Presets::Wrote(file)) {
+					g_refresh.store(true);
+				}
 			}
-			if (changed) {
+			if (written > 0) {
 				Settings::ReportLine(false);
 			}
+			return written;
 		}
 
 		// -------------------------------------------------------------------
@@ -97,7 +119,7 @@ namespace Mcm
 		// The start of every line of text config.json asks NEC for.
 		constexpr std::string_view LINE = "NEC|"sv;
 
-		// The 7 members of root.mcm NEC answers for, in the order of MEMBERS.
+		// The 10 members of root.mcm NEC answers for, in the order of MEMBERS.
 		enum class Member : std::uint32_t
 		{
 			kGetModSettingBool,
@@ -107,6 +129,9 @@ namespace Mcm
 			kSetModSettingInt,
 			kSetModSettingFloat,
 			kGetFullName,
+			kGetModSettingString,
+			kSetModSettingString,
+			kGetListFromForm,
 			kTotal,
 		};
 
@@ -125,6 +150,9 @@ namespace Mcm
 			{ "SetModSettingInt", false, SetInt },
 			{ "SetModSettingFloat", false, SetFloat },
 			{ "GetFullName", true, GetFullName },
+			{ "GetModSettingString", false, GetString },
+			{ "SetModSettingString", false, SetString },
+			{ "GetListFromForm", true, GetList },
 		};
 		static_assert(std::size(MEMBERS) == std::to_underlying(Member::kTotal));
 
@@ -177,6 +205,15 @@ namespace Mcm
 			if (Flash::IsAnyNumber(a_value)) {
 				return std::format("{}", Flash::AsNumber(a_value));
 			}
+			if (a_value.IsArray()) {
+				std::string list;
+				for (std::uint32_t i = 0; i < a_value.GetArraySize(); i++) {
+					Value element;
+					a_value.GetElement(i, &element);
+					list += (i == 0 ? "" : ", ") + Shown(element);
+				}
+				return std::format("[{:s}]", list);
+			}
 			return "nothing";
 		}
 
@@ -192,7 +229,7 @@ namespace Mcm
 		// Set by every call that reaches NEC's GetModSettingBool, see Ours.
 		std::atomic<bool> g_heard{ false };
 
-		// One handler for all 7. CreateFunction gives each its place in
+		// One handler for all 10. CreateFunction gives each its place in
 		// MEMBERS as userData.
 		class Bridge final : public Scaleform::GFx::FunctionHandler
 		{
@@ -224,7 +261,7 @@ namespace Mcm
 		// GetModSettingBool is wrapped.
 		std::atomic<bool> g_warned{ false };
 
-		// Moves MCM's 7 functions on a_mcm to NEC_<name> and puts NEC's in
+		// Moves MCM's 10 functions on a_mcm to NEC_<name> and puts NEC's in
 		// their place. False when a_mcm already has NEC's.
 		bool Wrap(Scaleform::GFx::Movie& a_movie, Value& a_mcm)
 		{
@@ -280,6 +317,9 @@ namespace Mcm
 				}
 				if (a_params.movie) {
 					Layout(*a_params.movie);
+					if (g_refresh.exchange(false)) {
+						RefreshMcm(*a_params.movie);
+					}
 				}
 
 				Value mcm;
@@ -296,16 +336,30 @@ namespace Mcm
 		FrameListener g_frameListener;
 	}
 
+	// A key changed again for another file, as after a pick, is a change of
+	// its own.
 	void Owe(std::string_view a_section, std::string_view a_key, std::string_view a_before, std::string_view a_now, std::string_view a_default)
 	{
+		auto                   file = Presets::Target(a_section, a_key);
 		const std::scoped_lock l{ g_owedLock };
-		const auto             it = std::ranges::find(g_owed, a_key, &Change::key);
+		const auto             it = std::ranges::find_if(g_owed, [&](const Change& a_change) { return a_change.key == a_key && a_change.file == file; });
 		if (it == g_owed.end()) {
-			g_owed.push_back({ std::string{ a_section }, std::string{ a_key }, std::string{ a_before }, std::string{ a_now }, std::string{ a_default } });
+			g_owed.push_back({ std::string{ a_section }, std::string{ a_key }, std::string{ a_before }, std::string{ a_now }, std::string{ a_default }, std::move(file) });
 		} else {
 			it->now = a_now;
 		}
 		g_changedAt.store(Clock::now().time_since_epoch().count());
+	}
+
+	void WriteOwed(std::string_view a_what)
+	{
+		const auto written = Write();
+		TraceLog::Line("menu", "MCM owed {:d} {:s}, written before the {:s}.", written, written == 1 ? "change" : "changes", a_what);
+	}
+
+	void RefreshSoon()
+	{
+		g_refresh.store(true);
 	}
 
 	void OnMovieLoaded(Scaleform::GFx::Movie& a_movie, std::string_view a_file)

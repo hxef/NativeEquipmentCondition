@@ -3,7 +3,7 @@
 #include "Condition/ArmorWear/Health.h"
 #include "Condition/Materials/Materials.h"
 #include "Condition/WeaponWear/WeaponWear.h"
-#include "Core/Settings.h"
+#include "Core/Settings/Settings.h"
 #include "Core/TraceLog/TraceLog.h"
 
 #include <algorithm>

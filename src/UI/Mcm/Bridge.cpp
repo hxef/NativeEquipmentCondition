@@ -2,7 +2,8 @@
 
 #include "Condition/Provenance/Provenance.h"
 #include "Core/CallPatch/CallPatch.h"
-#include "Core/Settings.h"
+#include "Core/Presets/Presets.h"
+#include "Core/Settings/Settings.h"
 #include "Core/Text/Text.h"
 #include "Core/TraceLog/TraceLog.h"
 #include "UI/Flash.h"
@@ -25,7 +26,8 @@
 // new value as a third argument, and asks for a line of text as
 // GetFullName("NEC|bSpawnCondition"). These answer the calls Mcm.cpp finds are
 // NEC's, from Settings, Core/Text, through Notes.cpp what CallPatch left to
-// other mods, and through HudBar.cpp the HUD bar's place on screen.
+// other mods, through HudBar.cpp the HUD bar's place on screen, and through
+// PresetRows.cpp the presets rows.
 namespace Mcm
 {
 	namespace
@@ -64,47 +66,22 @@ namespace Mcm
 			{ &Settings::fAutoWearRateMult, FollowUp::kCards },
 			{ &Settings::fSuppressedWearRateMult, FollowUp::kCards },
 			{ &Settings::bPowerArmorCardCnd, FollowUp::kCards },
+			// iCndDecimals changes every CND row and a perk line's start point.
+			{ &Settings::iCndDecimals, FollowUp::kCards },
+			{ &Settings::iCndDecimals, FollowUp::kFoodCards },
+			{ &Settings::iCndDecimals, FollowUp::kPerks },
 			// These change a line NEC adds to a perk description. bLockSpares
 			// changes none.
+			{ &Settings::bWorkbenchRepair, FollowUp::kPerks },
 			{ &Settings::bSpareRepair, FollowUp::kPerks },
 			{ &Settings::iPerkComponentDiscount, FollowUp::kPerks },
 			{ &Settings::iRepairLock, FollowUp::kPerks },
 			{ &Settings::iPerkLock, FollowUp::kPerks },
 			{ &Settings::fBenchCostMult, FollowUp::kPerks },
-			{ &Settings::iSuppliesOnlyFrom, FollowUp::kPerks },
+			{ &Settings::fSuppliesOnlyFrom, FollowUp::kPerks },
 			{ &Settings::iRepairSupplies, FollowUp::kPerks },
-			{ &Settings::iFreeMendFrom, FollowUp::kPerks },
+			{ &Settings::fFreeMendFrom, FollowUp::kPerks },
 		};
-
-		// Said once for each id, since the page asks again every time it is
-		// drawn. An unknown id means config.json and NEC.dll are from different
-		// versions.
-		void Unknown(std::string_view a_id)
-		{
-			static std::mutex                      lock;
-			static std::unordered_set<std::string> said;
-			const std::scoped_lock                 l{ lock };
-			if (said.emplace(a_id).second) {
-				REX::WARN("The MCM page asks for {:s}, which NEC does not know.", a_id);
-			}
-		}
-
-		template <class T>
-		void Answer(const Params& a_params, T a_value)
-		{
-			if (a_params.retVal) {
-				*a_params.retVal = a_value;
-			}
-		}
-
-		void QueueFollowUps(const Settings::Named& a_setting)
-		{
-			for (const auto& [setting, followUp] : OWES) {
-				if (setting == &a_setting) {
-					Queue(followUp);
-				}
-			}
-		}
 
 		std::string_view Word(bool a_value)
 		{
@@ -112,13 +89,68 @@ namespace Mcm
 		}
 	}
 
+	// Said once for each id, since the page asks again every time it is
+	// drawn. An unknown id means config.json and NEC.dll are from different
+	// versions.
+	void Unknown(std::string_view a_id)
+	{
+		static std::mutex                      lock;
+		static std::unordered_set<std::string> said;
+		const std::scoped_lock                 l{ lock };
+		if (said.emplace(a_id).second) {
+			REX::WARN("The MCM page asks for {:s}, which NEC does not know.", a_id);
+		}
+	}
+
+	// A plain Value keeps only a pointer to the text, so the movie is handed
+	// a copy of its own.
+	void AnswerText(const Params& a_params, const std::string& a_text)
+	{
+		if (a_params.retVal && a_params.movie && a_params.movie->asMovieRoot) {
+			a_params.movie->asMovieRoot->CreateString(a_params.retVal, a_text.c_str());
+		}
+	}
+
 	// -------------------------------------------------------------------
 	// The answers
 	// -------------------------------------------------------------------
 
+	void Followed(const Settings::Named& a_setting)
+	{
+		for (const auto& [setting, followUp] : OWES) {
+			if (setting == &a_setting) {
+				Queue(followUp);
+			}
+		}
+		// What arrived while Worn loot was off has no condition, so it goes
+		// to full now and not only at the next load.
+		if (&a_setting == &Settings::bSpawnCondition && Settings::bSpawnCondition.GetValue()) {
+			Queue(FollowUp::kCarried);
+		}
+		// Food carried while food spoiling was off starts fresh now.
+		if (&a_setting == &Settings::bFoodSpoils && Settings::bFoodSpoils.GetValue()) {
+			Queue(FollowUp::kFood);
+		}
+		// bNecOn back on does what Worn loot and food spoiling each do as they
+		// turn on. No preset holds bNecOn, so only its switch gets here.
+		if (&a_setting == &Settings::bNecOn && Settings::bNecOn.GetValue()) {
+			if (Settings::bSpawnCondition.GetValue()) {
+				Queue(FollowUp::kCarried);
+			}
+			if (Settings::bFoodSpoils.GetValue()) {
+				Queue(FollowUp::kFood);
+			}
+		}
+		// Built or dropped at once, so the next roll finds the areas the
+		// slider says. Only a move to or from off changes them.
+		if (&a_setting == &Settings::fLootAreaEffect) {
+			Provenance::FollowAreaEffect();
+		}
+	}
+
 	void GetBool(const Params& a_params, std::string_view a_id)
 	{
-		if (HideOf(a_id)) {
+		if (HideOf(a_id) || a_id == PRESET_CHANGES_ID || a_id == PRESET_OWN_ID || a_id == PRESET_ABOUT_ID) {
 			KeepOpenPage(a_params.movie, a_id);
 		}
 		if (const auto shows = Shows(a_id)) {
@@ -138,6 +170,10 @@ namespace Mcm
 
 	void GetInt(const Params& a_params, std::string_view a_id)
 	{
+		if (a_id == PRESET_ID) {
+			Answer(a_params, static_cast<std::int32_t>(Presets::Picked()));
+			return;
+		}
 		if (const auto* whole = Settings::NumberById<std::int32_t>(a_id)) {
 			Answer(a_params, whole->GetValue());
 			return;
@@ -188,35 +224,19 @@ namespace Mcm
 		if (on == &Settings::bTraceLogs) {
 			TraceLog::Switch(value);
 		}
-		Owe(on->section, on->key, Word(before), Word(value), Word(on->GetValueDefault()));
-
+		Owe(on->section, on->key, Word(before), Word(value), Presets::Base(*on));
 		if (value != before) {
-			QueueFollowUps(*on);
-			// What arrived while Worn loot was off has no condition, so it
-			// goes to full now and not only at the next load.
-			if (on == &Settings::bSpawnCondition && value) {
-				Queue(FollowUp::kCarried);
-			}
-			// Food carried while food spoiling was off starts fresh now.
-			if (on == &Settings::bFoodSpoils && value) {
-				Queue(FollowUp::kFood);
-			}
-			// bNecOn back on does what Worn loot and food spoiling each do as
-			// they turn on.
-			if (on == &Settings::bNecOn && value) {
-				if (Settings::bSpawnCondition.GetValue()) {
-					Queue(FollowUp::kCarried);
-				}
-				if (Settings::bFoodSpoils.GetValue()) {
-					Queue(FollowUp::kFood);
-				}
-			}
+			Followed(*on);
 		}
 		Answer(a_params, true);
 	}
 
 	void SetInt(const Params& a_params, std::string_view a_id)
 	{
+		if (a_id == PRESET_ID) {
+			PickPreset(a_params);
+			return;
+		}
 		auto* whole = Settings::NumberById<std::int32_t>(a_id);
 		if (!whole && a_id != LOG_LEVEL_ID) {
 			Unknown(a_id);
@@ -236,9 +256,9 @@ namespace Mcm
 			const auto value = static_cast<std::int32_t>(std::lround(place));
 			const auto before = whole->GetValue();
 			whole->SetValue(value);
-			Owe(whole->section, whole->key, std::format("{:d}", before), std::format("{:d}", value), std::format("{:d}", whole->GetValueDefault()));
+			Owe(whole->section, whole->key, std::format("{:d}", before), std::format("{:d}", value), Presets::Base(*whole));
 			if (value != before) {
-				QueueFollowUps(*whole);
+				Followed(*whole);
 			}
 			Answer(a_params, true);
 			return;
@@ -286,14 +306,9 @@ namespace Mcm
 
 		const auto before = number->GetValue();
 		number->SetValue(value);
-		Owe(number->section, number->key, std::format("{:g}", before), std::format("{:g}", value), std::format("{:g}", number->GetValueDefault()));
+		Owe(number->section, number->key, std::format("{:g}", before), std::format("{:g}", value), Presets::Base(*number));
 		if (value != before) {
-			QueueFollowUps(*number);
-			// Built or dropped at once, so the next roll finds the areas the
-			// slider says. Only a move to or from off changes them.
-			if (number == &Settings::fLootAreaEffect) {
-				Provenance::FollowAreaEffect();
-			}
+			Followed(*number);
 		}
 		Answer(a_params, true);
 	}
@@ -316,10 +331,6 @@ namespace Mcm
 				Unknown(std::format("NEC|{:s}", a_id));
 			}
 		}
-		// A plain Value keeps only a pointer to the text, so the movie is
-		// handed a copy of its own.
-		if (a_params.retVal && a_params.movie && a_params.movie->asMovieRoot) {
-			a_params.movie->asMovieRoot->CreateString(a_params.retVal, text.c_str());
-		}
+		AnswerText(a_params, text);
 	}
 }

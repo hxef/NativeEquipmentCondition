@@ -15,10 +15,12 @@
 // the Ripper, or when one of its mods is built from Circuitry or Nuclear
 // Material, such as a Heated Super Sledge. Private to this folder.
 //
-// From iSuppliesOnlyFrom up, 88 by default, a repair takes the supplies alone.
-// Below it, it also takes the components for the stretch up to that
-// condition, see BillOf in Cost.h. So a 10mm Pistol at 90% costs 1 Oil and 1
-// Cloth, and at 40% the components from 40% to 88% on top. A Baseball Bat at
+// From fSuppliesOnlyFrom, 87.5 by default, so from a card reading 87.5%, or
+// 88% at CND decimals Off, a repair takes the supplies alone.
+// Below it, it also takes the components for the stretch up to the first
+// whole percent of that condition, see BillOf in Cost.h. So a 10mm Pistol at
+// 90% costs 1 Oil and 1 Cloth, and at 40% the components from 40% to 88% on
+// top. A Baseball Bat at
 // 90% costs 1 Adhesive, and a Combat Armor Chest Piece at 90% 1 Adhesive and
 // 1 Cloth. The crafting perks take nothing off the supplies. MEND, a spare and
 // a trader take none.
@@ -34,18 +36,19 @@ namespace Workbench::Supplies
 	// components the item is built from, as before supplies.
 	[[nodiscard]] std::uint32_t Count();
 
-	// iSuppliesOnlyFrom kept between 0 and 100: the condition from which a
-	// repair takes only its supplies.
-	[[nodiscard]] std::uint32_t From();
+	// fSuppliesOnlyFrom in tenths of the number an item's card shows, 0 to
+	// 1000, see Repair::CardTenthsFrom: the condition from which a repair
+	// takes only its supplies. 875 by default, or 880 at CND decimals Off.
+	[[nodiscard]] std::uint32_t FromTenths();
 
 	// Whether the load order holds at least 1 of the 3 supplies, so at least
 	// 1 set has something for Of to take. Workbench::SuppliesAlone asks it.
 	[[nodiscard]] bool AnyHeld();
 
-	// Whether a repair of a_item from its percent takes components: always
-	// while the supplies are off or the load order has none of a_item's, else
-	// only below From(). BillOf bills the same way. The repair lock holds back
-	// only such a repair, see Lock.h.
+	// Whether a repair of a_item from its card's number takes components:
+	// always while the supplies are off or the load order has none of
+	// a_item's, else only below FromTenths(). BillOf bills the same way. The
+	// repair lock holds back only such a repair, see Lock.h.
 	[[nodiscard]] bool TakesComponents(const SelectedItem::Item& a_item);
 
 	// The supplies of a_item, Count() of each, the oil or the adhesive first

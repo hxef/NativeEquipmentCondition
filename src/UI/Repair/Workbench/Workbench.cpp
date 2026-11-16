@@ -1,9 +1,10 @@
 #include "UI/Repair/Workbench/Workbench.h"
 
+#include "Condition/Condition.h"
 #include "Condition/CraftingPerks/CraftingPerks.h"
 #include "Condition/Repair.h"
 #include "Core/CallPatch/CallPatch.h"
-#include "Core/Settings.h"
+#include "Core/Settings/Settings.h"
 #include "Core/Text/Text.h"
 #include "Core/TraceLog/TraceLog.h"
 #include "UI/MenuMovies.h"
@@ -12,11 +13,11 @@
 #include "UI/Repair/Workbench/Bench.h"
 #include "UI/Repair/Workbench/Cost.h"
 #include "UI/Repair/Workbench/Display.h"
+#include "UI/Repair/Workbench/Inspect.h"
 #include "UI/Repair/Workbench/Job.h"
 #include "UI/Repair/Workbench/Label.h"
 #include "UI/Repair/Workbench/Lists.h"
 #include "UI/Repair/Workbench/Lock.h"
-#include "UI/Repair/Workbench/SpareBox.h"
 #include "UI/Repair/Workbench/Spares.h"
 #include "UI/Repair/Workbench/Supplies.h"
 
@@ -83,9 +84,9 @@ namespace Workbench
 			Announce(a_menu, selection);
 
 			if (selection.object) {
-				TraceLog::Line("menu", "Workbench highlighted {:s} at {:d}%, a stack of {:d}, offering {:s}",
-					selection.Name(), selection.percent, selection.count,
-					selection.Trifling() ? "MEND" : (selection.Worn() ? "REPAIR" : "RENAME"));
+				const auto* offer = !selection.Worn() || !BenchRepairs() ? "RENAME" : (selection.Trifling() ? "MEND" : "REPAIR");
+				TraceLog::Line("menu", "Workbench highlighted {:s} at {:s}%, a stack of {:d}, offering {:s}",
+					selection.Name(), Condition::CardText(selection.tenths), selection.count, offer);
 			}
 		}
 
@@ -93,10 +94,11 @@ namespace Workbench
 		// redraw over an item the flag offers REPAIR for, so it asks the cheap
 		// question. Which levels are worth offering waits for the press. The
 		// redraw has just handed the bar its buttons, so this is also where
-		// REPAIR learns to read MEND.
+		// REPAIR learns to read MEND. While the bench does not repair the
+		// call goes on as it came, see BenchRepairs.
 		bool GetCanRepairSelectedItemHk(RE::ExamineMenu* a_menu)
 		{
-			if (!Repairs()) {
+			if (!BenchRepairs()) {
 				return _GetCanRepairSelectedItem(a_menu);
 			}
 			const auto selection = Selected(a_menu);
@@ -104,92 +106,15 @@ namespace Workbench
 			return !Above(selection).empty();
 		}
 
-		// The button, and the only way into a repair. A barely worn item is
-		// repaired on the spot. One the bench has nothing to rebuild from is
-		// refused, with a trader named while trader repairs are on, see
-		// Cost.h, and one the repair lock holds back is turned away or shown
-		// its spares, see Lock.h. One with a single level worth offering goes
-		// straight to the confirmation, through the task queue like the
-		// prompt, unless the player carries a spare for it, see Spares.h,
-		// which only the question offers.
+		// The button, and the bench's only way into a repair, see
+		// BenchPress.
 		void RepairSelectedItemHk(RE::ExamineMenu* a_menu)
 		{
-			if (!Repairs()) {
+			if (!BenchRepairs()) {
 				_RepairSelectedItem(a_menu);
 				return;
 			}
-			const auto selection = Selected(a_menu);
-			TraceLog::Line("menu", "Workbench {:s} pressed on {:s} at {:d}%",
-				selection.Trifling() ? "MEND" : "REPAIR", selection.Name(), selection.percent);
-
-			if (selection.Trifling()) {
-				Mend(a_menu);
-				return;
-			}
-			if (!selection.Worn()) {
-				return;
-			}
-
-			const auto priced = PriceOf(selection);
-			if (priced.units == 0) {
-				// Read once, so the HUD message and the trace agree on naming a trader.
-				const bool trader = Settings::bVendorRepair.GetValue();
-				const auto said = Text::BenchCannotRepair(trader);
-				RE::SendHUDMessage::ShowHUDMessage(said.c_str(), nullptr, true, true);
-				RE::UIUtils::PlayMenuSound(RepairPrompt::REFUSED_SOUND);
-				TraceLog::Line("menu", "Workbench has nothing to rebuild {:s} from, so it {:s}", selection.Name(),
-					trader ? "sent the player to a trader" : "refused the repair and named no trader");
-				return;
-			}
-
-			// The repair lock, see Lock.h, turns the press away before any box
-			// opens, so nothing is spent. While bLockSpares is off a spare
-			// still repairs, so its box opens at once with the lock's line over
-			// it. Else the corner says which rank would repair it and what else
-			// still can.
-			if (const auto mode = LockNow(); mode != LockMode::kOff) {
-				const auto& standing = priced.standing;
-				TraceLog::Line("menu", "Workbench reads {:s} as asking {:s} {:d} by {:s}, the player {:d} of {:d} ranks in",
-					selection.Name(), standing.Name(), LockAsks(priced, mode), LockWord(mode), standing.rank, standing.ranks);
-			}
-			if (const auto held = HeldBack(selection, priced)) {
-				TraceLog::Line("menu", "Workbench holds back {:s} at {:d}%, which repairs from {:d}% with {:d} ranks short, {:s} {:d} would repair it now",
-					selection.Name(), selection.percent, held->from, held->lacking, priced.standing.Name(), held->need);
-				const bool sparesFree = !Settings::bLockSpares.GetValue();
-				if (sparesFree && CarriesSpare(selection)) {
-					TraceLog::Line("menu", "Workbench opened the spares of {:s}, the repair lock holds it back", selection.Name());
-					AskWhichSpare(*selection.object, selection.extra, priced);
-					return;
-				}
-				const auto said = Text::RepairLocked(priced.standing.Name(), held->need, selection.percent,
-					Settings::bSpareRepair.GetValue() && sparesFree, Settings::bVendorRepair.GetValue());
-				RE::SendHUDMessage::ShowHUDMessage(said.c_str(), nullptr, true, true);
-				RE::UIUtils::PlayMenuSound(RepairPrompt::REFUSED_SOUND);
-				TraceLog::Line("menu", "Workbench said the repair lock holds {:s} back, {:s}", selection.Name(),
-					Settings::bSpareRepair.GetValue() && !sparesFree ? "spares too, since bLockSpares is on" : "with no spare");
-				return;
-			}
-
-			const auto above = Above(selection);
-			const auto offered = Offered(selection, priced);
-			if (offered.size() < above.size()) {
-				TraceLog::Line("menu",
-					"Workbench dropped {:d} of {:d} levels for {:s}, each costing what the level above it costs",
-					above.size() - offered.size(), above.size(), selection.Name());
-			}
-
-			const auto spare = CarriesSpare(selection);
-			if (offered.size() != 1 || spare) {
-				AskWhichLevel(selection, priced, offered, spare);
-				return;
-			}
-
-			const auto* tasks = F4SE::GetTaskInterface();
-			const auto  level = offered.front();
-			TraceLog::Line("menu", "Workbench had only {:d}% worth offering, so it did not ask", level);
-			if (tasks) {
-				tasks->AddTask([level, priced] { Begin(OpenBench(), level, priced); });
-			}
+			BenchPress(a_menu, Selected(a_menu));
 		}
 
 		// -------------------------------------------------------------------
@@ -233,8 +158,8 @@ namespace Workbench
 			}
 			const auto selection = Selected(a_menu);
 			if (selection.TooWorn()) {
-				TraceLog::Line("menu", "Workbench refused to build on {:s} at {:d}%, below the {:d}% floor",
-					selection.Name(), selection.percent, ModifyFloor());
+				TraceLog::Line("menu", "Workbench refused to build on {:s} at {:s}%, below the {:d}% floor",
+					selection.Name(), Condition::CardText(selection.tenths), ModifyFloor());
 				return false;
 			}
 			return _TryCreate(a_menu);
@@ -280,8 +205,8 @@ namespace Workbench
 			if (NoModFits(selection)) {
 				const auto said = Text::CannotModify();
 				RE::SendHUDMessage::ShowHUDMessage(said.c_str(), nullptr, true, true);
-				TraceLog::Line("menu", "Workbench turned {:s} at {:d}% away from the mod slots, no mod fits it",
-					selection.Name(), selection.percent);
+				TraceLog::Line("menu", "Workbench turned {:s} at {:s}% away from the mod slots, no mod fits it",
+					selection.Name(), Condition::CardText(selection.tenths));
 				return;
 			}
 			if (!selection.TooWorn()) {
@@ -291,8 +216,65 @@ namespace Workbench
 			const auto floor = ModifyFloor();
 			const auto said = Text::TooDamaged(floor);
 			RE::SendHUDMessage::ShowHUDMessage(said.c_str(), nullptr, true, true);
-			TraceLog::Line("menu", "Workbench turned {:s} at {:d}% away from the mod slots, below the {:d}% floor",
-				selection.Name(), selection.percent, floor);
+			TraceLog::Line("menu", "Workbench turned {:s} at {:s}% away from the mod slots, below the {:d}% floor",
+				selection.Name(), Condition::CardText(selection.tenths), floor);
+		}
+	}
+
+	// -------------------------------------------------------------------
+	// The press
+	// -------------------------------------------------------------------
+
+	void BenchPress(RE::ExamineMenu* a_menu, const Selection& a_selection)
+	{
+		TraceLog::Line("menu", "Workbench {:s} pressed on {:s} at {:s}%",
+			a_selection.Trifling() ? "MEND" : "REPAIR", a_selection.Name(), Condition::CardText(a_selection.tenths));
+
+		if (a_selection.Trifling()) {
+			Mend(a_menu);
+			return;
+		}
+		if (!a_selection.Worn()) {
+			return;
+		}
+
+		const auto priced = PriceOf(a_selection);
+		if (priced.units == 0) {
+			// Read once, so the HUD message and the trace agree on naming a trader.
+			const bool trader = Settings::bVendorRepair.GetValue();
+			const auto said = Text::BenchCannotRepair(trader);
+			RE::SendHUDMessage::ShowHUDMessage(said.c_str(), nullptr, true, true);
+			RE::UIUtils::PlayMenuSound(RepairPrompt::REFUSED_SOUND);
+			TraceLog::Line("menu", "Workbench has nothing to rebuild {:s} from, so it {:s}", a_selection.Name(),
+				trader ? "sent the player to a trader" : "refused the repair and named no trader");
+			return;
+		}
+
+		// The repair lock, see Lock.h, turns the press away before any box
+		// opens, or opens the box of spares.
+		if (LockStops(a_selection, priced)) {
+			return;
+		}
+
+		const auto above = Above(a_selection);
+		const auto offered = Offered(a_selection, priced);
+		if (offered.size() < above.size()) {
+			TraceLog::Line("menu",
+				"Workbench dropped {:d} of {:d} levels for {:s}, each costing what the level above it costs",
+				above.size() - offered.size(), above.size(), a_selection.Name());
+		}
+
+		const auto spare = CarriesSpare(a_selection);
+		if (offered.size() != 1 || spare) {
+			AskWhichLevel(a_selection, priced, offered, spare);
+			return;
+		}
+
+		const auto* tasks = F4SE::GetTaskInterface();
+		const auto  level = offered.front();
+		TraceLog::Line("menu", "Workbench had only {:d}% worth offering, so it did not ask", level);
+		if (tasks) {
+			tasks->AddTask([level, priced] { Begin(OpenBench(), level, priced); });
 		}
 	}
 
@@ -308,8 +290,10 @@ namespace Workbench
 		// press. A repair runs through no other place of the bench's, since NEC
 		// puts its box up itself, see Box.h. A cut at any of them turns the
 		// repair and its mod lock off together, see Repairs. NEC owns the
-		// REPAIR button and never hands the call on at 2 of them while repairs
-		// run, see CallPatch::NEVER_HANDS_ON.
+		// REPAIR button and never hands the call on at 2 of them while the
+		// bench repairs, see BenchRepairs. While bWorkbenchRepair is false
+		// they hand it on, always to vanilla, since NEC never patches over
+		// another DLL there, see CallPatch::NEVER_HANDS_ON.
 		const auto canRepair = CallPatch::PatchSlot(menu, { 0x32, 0x32 }, GetCanRepairSelectedItemHk, "bench can repair", Part::kNone,
 			CallPatch::NEVER_HANDS_ON, &g_canRepairLink);
 		const auto switchItem = CallPatch::PatchSlot(menu, { 0x37, 0x37 }, OnSwitchBaseItemHk, "bench switch item", Part::kNone, true, &g_switchLink);
@@ -334,23 +318,36 @@ namespace Workbench
 		// 1 list as the game draws it.
 		InstallLists();
 
+		// REPAIR on the Pip-Boy's inspect screen, see Inspect.h. It rides on
+		// the 3 places behind the REPAIR button, so it says its line before
+		// a cut there returns below.
+		Inspect::Install(canRepair && switchItem && repair);
+
 		// Tab and Escape on every repair box, a trader's too, alone as well. A
 		// cut leaves each box its CANCEL button.
 		MessageBox::Install();
 
-		CraftingPerks::SetBench(&Repairs);
+		CraftingPerks::SetBench(&BenchRepairs);
 		CraftingPerks::SetLock(&RankOpensFrom);
 		if (!canRepair || !switchItem || !repair) {
 			REX::WARN("Workbenches stay as they were, with no repairs from NEC.");
 			return;
 		}
+		if (!Settings::bWorkbenchRepair.GetValue()) {
+			REX::INFO("Workbenches repair nothing, since bWorkbenchRepair is false.");
+		}
 
 		// As the settings stand at the start. The Settings line gives every
-		// change from the MCM page. Any wear reads 99% at most, so only 100
-		// mends nothing for free.
-		const auto mend = FreeRepairs()             ? std::string{ "Every repair is put right on the spot for nothing, since fBenchCostMult is 0." } :
-		                  FreeFrom() < Repair::FULL ? std::format("Condition from {:d}% up is put right on the spot for nothing.", FreeFrom()) :
-		                                              std::string{ "MEND is off, since iFreeMendFrom is 100." };
+		// change from the MCM page. Worn gear reads 99.9% at most, or 99% at
+		// CND decimals Off, so from 100 nothing is mended for free, and at Off
+		// from 99.5 too.
+		const auto freeFrom = FreeFromTenths();
+		const auto mends = Condition::Decimals() == Condition::CardDecimals::kOff ?
+		                       std::format("Condition from {:g}% is put right on the spot for nothing, so from {:d}% on an item's card.", Settings::fFreeMendFrom.GetValue(), Repair::PercentFrom(freeFrom)) :
+		                       std::format("Condition from {:s}% on an item's card is put right on the spot for nothing.", Condition::PointText(freeFrom));
+		const auto mend = FreeRepairs()                     ? std::string{ "Every repair is put right on the spot for nothing, since fBenchCostMult is 0." } :
+		                  freeFrom < Condition::FULL_TENTHS ? mends :
+		                                                      std::format("MEND is off, since fFreeMendFrom is {:g}.", Settings::fFreeMendFrom.GetValue());
 		if (const auto floor = ModifyFloor(); floor > 0) {
 			REX::INFO("The workbench modifies an item from {:d}% condition up. {:s}", floor, mend);
 		} else {
@@ -381,11 +378,17 @@ namespace Workbench
 		return g_switchLink.Live() && g_canRepairLink.Live() && g_repairLink.Live();
 	}
 
+	bool BenchRepairs()
+	{
+		return Repairs() && Settings::bWorkbenchRepair.GetValue();
+	}
+
 	void OnMovieLoaded(Scaleform::GFx::Movie& a_movie, std::string_view a_file)
 	{
 		if (MenuMovies::IsMovie(a_file, "ExamineMenu.swf"sv)) {
 			ForgetListed();
 			ForgetWord();
+			Inspect::Forget();
 			WatchEquipped(a_movie);
 		}
 	}

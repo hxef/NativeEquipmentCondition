@@ -32,6 +32,27 @@ namespace HudCondition
 			return a_line.bottom - (DIGITS_OF_ASCENT * (a_line.bottom - a_line.top));
 		}
 
+		// Where the game draws a_number's baseline, in the counter's units:
+		// the top of its line as Numbers measures it, moved down by the
+		// line's ascent and by how far the game draws the line lower. The
+		// box Numbers gives runs on to the lowest the baseline could sit,
+		// which in a field taller than its text, as vanilla's are, is under
+		// the digits. Never lower than that bottom, which a turned or
+		// mirrored field or a line that cannot be measured keeps. Nothing
+		// for a field with no text, since no probe finds where an empty
+		// line is drawn, so the word keeps its place.
+		[[nodiscard]] std::optional<double> Baseline(Value& a_counter, const Roles::Hud::Part& a_number)
+		{
+			auto field = Flash::Child(a_counter, a_number.name.c_str());
+			if (Flash::String(field, "text"sv).empty()) {
+				return std::nullopt;
+			}
+			const auto line = Flash::Number(field, "rotation"sv) == 0.0 ? Flash::DrawnLine(field) : std::nullopt;
+			const auto down = Flash::Number(field, "scaleY"sv, 1.0);
+			const auto baseline = line ? a_number.box.top + ((line->drop + line->baseline - line->top) * down) : a_number.box.bottom;
+			return down > 0.0 && baseline < a_number.box.bottom ? baseline : a_number.box.bottom;
+		}
+
 		// a_place with its field's top left corner at 0,0.
 		[[nodiscard]] Readout::LabelPlace FromCorner(const Readout::LabelPlace& a_place)
 		{
@@ -70,21 +91,24 @@ namespace HudCondition
 		// The nearest number over the line's middle and the nearest under
 		// it, shown or not, so a number that drops out for a moment moves
 		// nothing. A number the movie does not draw on either side keeps
-		// its last gap from the line.
-		const auto              middle = (line.top + line.bottom) / 2.0;
-		std::optional<Flash::Box> over;
-		std::optional<Flash::Box> under;
+		// its last gap from the line, as an empty one over it does. The word
+		// stands on the baseline the number over the line is drawn on, see
+		// Baseline.
+		const auto                      middle = (line.top + line.bottom) / 2.0;
+		std::optional<Roles::Hud::Part> over;
+		std::optional<Flash::Box>       under;
 		for (const auto& number : Roles::Hud::Numbers(a_counter)) {
 			const auto& box = number.box;
 			const auto  own = (box.top + box.bottom) / 2.0;
-			if (own < middle && (!over || box.bottom > over->bottom)) {
-				over = box;
+			if (own < middle && (!over || box.bottom > over->box.bottom)) {
+				over = number;
 			}
 			if (own > middle && (!under || box.top < under->top)) {
 				under = box;
 			}
 		}
-		rows.foot = over ? over->bottom - place.y : rows.top - (a_last.top - a_last.foot);
+		const auto foot = over ? Baseline(a_counter, *over) : std::nullopt;
+		rows.foot = foot ? *foot - place.y : rows.top - (a_last.top - a_last.foot);
 		rows.head = under ? DigitsTop(*under) - place.y : rows.bottom + (a_last.head - a_last.bottom);
 		return rows;
 	}

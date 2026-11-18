@@ -7,6 +7,7 @@
 #include "Core/TraceLog/TraceLog.h"
 #include "Gameplay/SpawnCondition/Guards.h"
 #include "Gameplay/SpawnCondition/Handover.h"
+#include "Gameplay/SpawnCondition/SpawnCondition.h"
 #include "Gameplay/SpawnCondition/Trace.h"
 
 #include <array>
@@ -205,16 +206,6 @@ namespace SpawnCondition
 			return g_rerollModsLink[0](a_extra, a_type);
 		}
 
-		// Enable writes only into a loaded cell, as Enable itself asks. A
-		// reference whose saved changes the game has not read yet records
-		// nothing, though AddChange says it did.
-		[[nodiscard]] bool CellLoaded(const RE::TESObjectREFR& a_ref)
-		{
-			const auto* tes = RE::TES::GetSingleton();
-			auto*       cell = a_ref.GetParentCell();
-			return tes && cell && tes->IsCellLoaded(cell, false);
-		}
-
 		// What a world item gets after the call. a_before is its health before
 		// it, and a_rerolled says whether the game really picked it again. A
 		// rerolled item is a new item, even as the same weapon, so it rolls
@@ -270,7 +261,8 @@ namespace SpawnCondition
 
 		// The vanilla result while off or while a save is applied, since
 		// the load puts back what the save holds. A created reference has
-		// its mark from set 1.
+		// its mark from set 1. Enable writes only into a loaded cell, as
+		// Enable itself asks.
 		template <std::size_t I>
 		void RerollHk(RE::TESObjectREFR* a_ref)
 		{
@@ -380,6 +372,13 @@ namespace SpawnCondition
 				REX::WARN("Scripts and the console read a loose weapon or piece of armor nobody has rolled yet as full.");
 			}
 		}
+	}
+
+	bool CellLoaded(const RE::TESObjectREFR& a_ref)
+	{
+		const auto* tes = RE::TES::GetSingleton();
+		auto*       cell = a_ref.GetParentCell();
+		return tes && cell && tes->IsCellLoaded(cell, false);
 	}
 
 	// Each set works whole or not at all, and a lost set leaves the rest

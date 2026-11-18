@@ -92,6 +92,7 @@ namespace Papyrus
 			bind("Spoil"sv, Spoil);
 			bind("IsSpoiled"sv, IsSpoiled);
 			bind("IsFridge"sv, IsFridge);
+			bind("SetFridge"sv, SetFridge);
 			Log::Bound(bound, tasklets);
 			return true;
 		}

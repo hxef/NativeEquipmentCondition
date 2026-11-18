@@ -9,9 +9,12 @@
 
 // The stamp: the game day a food started to spoil, kept on its inventory
 // stack in the vanilla time left extra data (type 0x27), which the game itself
-// only puts on equipped and placed lights. Every move, copy and save keeps it,
-// and the Pip-Boy's rows ignore it, so the fresh stacks of a food show as 1
-// row while stacks of different days never merge.
+// only puts on equipped and placed lights, and NEC puts on a container that
+// SetFridge switched, as 1 of 2 values of its own between -1 and 0, see
+// FridgeSwitch.cpp.
+// Every move, copy and save keeps it, and the Pip-Boy's rows ignore it, so
+// the fresh stacks of a food show as 1 row while stacks of different days
+// never merge.
 //
 // The day is stored as minus (the day plus 10000) minus 1. A light's time
 // left is never below 0, so one a mod puts on food never reads as a stamp,

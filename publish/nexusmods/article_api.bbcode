@@ -208,7 +208,9 @@ Turns akItem's whole stack spoiled, as running out of time does. True once writt
 [*][font=Courier New]bool Function IsSpoiled(ObjectReference akItem)[/font]
 True when akItem has spoiled or its time ran out.
 [*][font=Courier New]bool Function IsFridge(ObjectReference akContainer)[/font]
-True when food in akContainer keeps as in a fridge.
+True when food in akContainer keeps as in a fridge, which is while SetFridge has switched its cooling on, or while its base form is on a list in NEC/Fridge and SetFridge has not switched it off.
+[*][font=Courier New]bool Function SetFridge(ObjectReference akContainer, bool abOn)[/font]
+Switches fridge cooling on for akContainer when abOn is true and off when it is false, for that 1 reference alone, so every other reference of its base form stays as it is. Any container works, on a list in NEC/Fridge or not. Food inside keeps its freshness at the switch, then spoils at the fridge speed while on and as outside a fridge while off. The save keeps the switch. A call that brings akContainer back to what NEC/Fridge says drops the switch, so the container follows the list again. True once akContainer is in that state, false for None, anything that is no container, or a container whose cell is not loaded.
 [/list]
 
 [b]Helpers[/b]
@@ -268,7 +270,7 @@ A weapon or a piece of armor reached 0 condition, anybody's. akHolder is None fo
 The player's gun jammed.
 [*][b]NEC:FoodSpoiled[/b]
 [font=Courier New]Function OnFoodSpoiled(ObjectReference akHolder, Form akFood, int aiCount)[/font]
-aiCount pieces of akFood were turned spoiled, in anybody's inventory or container, or by a script's Spoil, with akHolder None for food lying in the world. NEC turns food spoiled as a menu shows it or it changes hands, so IsSpoiled can answer true before the event comes.
+aiCount pieces of akFood were turned spoiled, in anybody's inventory or container, or by a script's Spoil, with akHolder None for food lying in the world. NEC turns food spoiled as a menu shows it, as it changes hands or as SetFridge switches its fridge, so IsSpoiled can answer true before the event comes.
 [/list]
 
 [size=3][b][font=Georgia][color=#1AFF80]Examples[/color][/font][/b][/size]
@@ -312,3 +314,19 @@ Function OnNECBroke(ObjectReference akHolder, Form akBase, ObjectReference akIte
         Debug.Notification("Something you carry broke")
     EndIf
 EndFunction[/code]
+
+Make a container of your mod cool as a fridge only while it has power, in a script on its base form, which needs no line in NEC/Fridge:
+
+[code]Scriptname MyPoweredFridge extends ObjectReference
+
+Event OnWorkshopObjectPlaced(ObjectReference akReference)
+    NEC.SetFridge(Self, IsPowered())
+EndEvent
+
+Event OnPowerOn(ObjectReference akPowerGenerator)
+    NEC.SetFridge(Self, true)
+EndEvent
+
+Event OnPowerOff()
+    NEC.SetFridge(Self, false)
+EndEvent[/code]

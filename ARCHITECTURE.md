@@ -176,6 +176,7 @@ src/
       FridgeList.cpp         the containers that keep food as a fridge does, from NEC/Fridge
       FoodLog.cpp            NEC.food.log: the settings in force, what each list file does, and every food's kind
       Fridge.cpp             food going into or out of a fridge keeps its days spent at the fridge speed
+      FridgeSwitch.cpp       a script's fridge switch on 1 container, and whether a container is a fridge now
       Stamp.h/.cpp           the day food started to spoil, how fresh it is, found food's start, and the door that stamps it
       Order.cpp              the stack closest to spoiling first
       Eat.cpp                spoiled food heals a tenth, nothing in Survival, and gives more rads

@@ -90,34 +90,33 @@ namespace FoodSpoil
 			}
 			return found;
 		}
+	}
 
-		// Turns every stack in a_ref's inventory whose time ran out spoiled,
-		// and returns the foods it wrote. The engine writes each stack, folds
-		// the spoiled ones into 1 and, for the player, has the Pip-Boy list the
-		// food again.
-		std::vector<RE::TESBoundObject*> Sweep(RE::TESObjectREFR& a_ref, float a_today)
-		{
-			std::vector<RE::TESBoundObject*> written;
-			const auto                       fridge = IsFridgeRef(&a_ref);
-			for (const auto& [object, stacks] : RanOut(a_ref, a_today, fridge)) {
-				RanOutStack ranOut{ KindOf(*object), a_today, fridge };
-				for (std::size_t i = 0; i < stacks; i++) {
-					SpoilStack spoil;
-					a_ref.FindAndWriteStackDataForInventoryItem(object, ranOut, spoil);
-					if (spoil.pieces == 0) {
-						break;
-					}
-					if (i == 0) {
-						written.push_back(object);
-					}
-					ScriptEvents::Spoiled(&a_ref, *object, spoil.pieces);
-					TraceLog::Line("food", "{:s} [{:08X}] x{:d} spoiled in the inventory of [{:08X}]",
-						RE::TESFullName::GetFullName(*object), object->formID, spoil.pieces, a_ref.formID);
+	std::vector<RE::TESBoundObject*> SweepRanOut(RE::TESObjectREFR& a_ref, float a_today)
+	{
+		std::vector<RE::TESBoundObject*> written;
+		const auto                       fridge = IsFridgeRef(&a_ref);
+		for (const auto& [object, stacks] : RanOut(a_ref, a_today, fridge)) {
+			RanOutStack ranOut{ KindOf(*object), a_today, fridge };
+			for (std::size_t i = 0; i < stacks; i++) {
+				SpoilStack spoil;
+				a_ref.FindAndWriteStackDataForInventoryItem(object, ranOut, spoil);
+				if (spoil.pieces == 0) {
+					break;
 				}
+				if (i == 0) {
+					written.push_back(object);
+				}
+				ScriptEvents::Spoiled(&a_ref, *object, spoil.pieces);
+				TraceLog::Line("food", "{:s} [{:08X}] x{:d} spoiled in the inventory of [{:08X}]",
+					RE::TESFullName::GetFullName(*object), object->formID, spoil.pieces, a_ref.formID);
 			}
-			return written;
 		}
+		return written;
+	}
 
+	namespace
+	{
 		// The Pip-Boy keeps the player's rows built at all times, so a fresh
 		// food's row keeps the CND it had when it was last listed. As the
 		// Pip-Boy opens, each food with a stamped stack is listed again,
@@ -206,12 +205,12 @@ namespace FoodSpoil
 						if (!today || !player || !Settings::NecOn() || !Settings::bFoodSpoils.GetValue()) {
 							return;
 						}
-						const auto written = Sweep(*player, *today);
+						const auto written = SweepRanOut(*player, *today);
 						if (screen == Screen::kPipboy) {
 							Refresh(*player, written);
 						}
 						if (const auto other = OtherSide(screen)) {
-							Sweep(*other, *today);
+							SweepRanOut(*other, *today);
 						}
 						ScriptEvents::KickIfWaiting();
 					});

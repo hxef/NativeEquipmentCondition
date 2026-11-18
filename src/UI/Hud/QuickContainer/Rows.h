@@ -42,7 +42,7 @@ namespace QuickContainer
 	// rows read the same, or nothing when none of them does.
 	std::optional<std::array<Reading, MAX_ROWS>> FindConditions(const std::array<Shown, MAX_ROWS>& a_shown, std::size_t a_size);
 
-	// Whether the container of the newest build is on the fridge list. The
-	// HUD shows that build a frame or so later.
+	// Whether the container of the newest build is a fridge, see
+	// FoodSpoil::IsFridgeRef. The HUD shows that build a frame or so later.
 	[[nodiscard]] bool ShowsFridge();
 }

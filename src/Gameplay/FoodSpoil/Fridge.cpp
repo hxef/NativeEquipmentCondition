@@ -55,12 +55,6 @@ namespace FoodSpoil
 	// The stamp in a fridge
 	// -------------------------------------------------------------------
 
-	bool IsFridgeRef(const RE::TESObjectREFR* a_ref)
-	{
-		const auto* base = a_ref ? a_ref->GetObjectReference() : nullptr;
-		return base && IsFridge(*base);
-	}
-
 	// At the slowest speed the stamp can fall up to 3000 days back, which
 	// Stamp.h stores as it does any day.
 	float Chill(float a_start, float a_today)

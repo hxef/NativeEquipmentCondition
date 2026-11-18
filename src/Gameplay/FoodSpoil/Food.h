@@ -30,7 +30,10 @@ namespace FoodSpoil
 	// day as far back as makes its days spent so far read the same at
 	// fFridgeSpoilSpeed. A store writes it and a take writes the plain stamp
 	// back, so the days spent carry over both ways. A slider change makes
-	// stored food read more or fewer days spent. IsFridgeRef and InOpenFridge
+	// stored food read more or fewer days spent. A script can switch 1
+	// container's cooling on or off with SetFridge, whatever the list says,
+	// and the switch rewrites the stamps inside as a store or a take would,
+	// so every reader reads them by IsFridgeRef. IsFridgeRef and InOpenFridge
 	// are in FoodSpoil.h, since the fridge icon asks them too.
 
 	// Whether a_extra's stack is in a_holder and a_holder is a fridge. A
@@ -62,6 +65,12 @@ namespace FoodSpoil
 	// Turns food whose time ran out spoiled as the Pip-Boy, a container or a
 	// trade opens, in Sweep.cpp. Once, since UI lasts as long as the game.
 	void WatchMenus();
+
+	// Turns every stack in a_ref's inventory whose time ran out spoiled,
+	// and returns the foods it wrote. The engine writes each stack, folds
+	// the spoiled ones into 1 and, for the player, has the Pip-Boy list the
+	// food again.
+	std::vector<RE::TESBoundObject*> SweepRanOut(RE::TESObjectREFR& a_ref, float a_today);
 
 	// a_percent as a share from 0 to 1, kept from 0 to 100 first. For
 	// iSpoiledHealing and iSpoiledHunger.

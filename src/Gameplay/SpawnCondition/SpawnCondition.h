@@ -95,6 +95,11 @@ namespace SpawnCondition
 	// rolls on the first look.
 	[[nodiscard]] bool WaitsForTaker(const RE::TESObjectREFR& a_ref);
 
+	// Whether a_ref stands in a loaded cell, in World.cpp. A reference whose
+	// saved changes the game has not read yet records nothing, though
+	// AddChange says it did.
+	[[nodiscard]] bool CellLoaded(const RE::TESObjectREFR& a_ref);
+
 	// Gives the loose items the trade on this thread bought their mark back,
 	// so a respawn puts each back to roll again, see NoteBought in
 	// Handover.cpp. Called once the trade has bought every stack, before the

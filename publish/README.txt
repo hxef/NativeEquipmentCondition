@@ -253,6 +253,10 @@ COMPATIBILITY
 * NEC works alongside other DLL mods that change the same things. When one
   takes over one of NEC's features, NEC lets it, and NEC's main MCM page and
   NEC.log name that mod and what is off.
+* NEC uses 2 vanilla extra data types the game saves itself. ExtraHealth,
+  which vanilla's Papyrus function GetItemHealthPercent reads, holds
+  condition and marks spoiled food. ExtraTimeLeft holds a food's start day
+  and a container's fridge switch. Mods that also write them can conflict.
 * The plugin's own text comes in every language the game ships in. The rest is
   vanilla text. Every language but English was translated by AI, not
   by a person, so some lines may read a little off. To fix a line or add a
@@ -312,6 +316,9 @@ NEC.food.log lists what each file sets and any line it skips. NEC ships
 Fridge\NEC_Default.ini with the vanilla coolers and unbroken fridges.
 Food\NEC_Example.ini and Fridge\NEC_Example.ini are examples that change
 nothing as they are.
+
+A mod can switch fridge cooling on and off for any single container, such
+as while it has power, through SetFridge in NEC's Papyrus API.
 
 TRADER LIST
 To set by hand how far a trader repairs a kind of gear, add a line to a file in

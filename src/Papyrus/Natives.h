@@ -104,4 +104,5 @@ namespace Papyrus
 	bool                       Spoil(std::monostate, Item a_item);
 	[[nodiscard]] bool         IsSpoiled(std::monostate, Item a_item);
 	[[nodiscard]] bool         IsFridge(std::monostate, RE::TESObjectREFR* a_container);
+	bool                       SetFridge(std::monostate, RE::TESObjectREFR* a_container, bool a_on);
 }

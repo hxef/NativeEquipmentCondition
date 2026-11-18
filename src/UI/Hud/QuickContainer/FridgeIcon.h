@@ -3,8 +3,8 @@
 #include "Core/Plugin.h"
 
 // The fridge icon beside the container's name at the top of the quick
-// container, while the crosshair rests on a container on the fridge list and
-// FoodSpoil::FridgeIconOn says so. It is Fallout 4's cryo damage icon, a
+// container, while the crosshair rests on a fridge, see FoodSpoil::IsFridgeRef,
+// and FoodSpoil::FridgeIconOn says so. It is Fallout 4's cryo damage icon, a
 // snowflake, made at run time from a file the game ships it in. Private to
 // this folder.
 namespace QuickContainer

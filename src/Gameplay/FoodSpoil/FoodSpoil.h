@@ -9,8 +9,8 @@
 // default. Food the player or a companion carried spoils, and so does food on
 // the dead. Food never carried never spoils. How long a food keeps depends on
 // its kind, see Kinds.h: raw food and crops keep fRawFoodDays, cooked food
-// fCookedFoodDays, and drinks and packaged food never spoil. In a container
-// on the fridge list, food spoils at fFridgeSpoilSpeed, see Fridge.cpp. While
+// fCookedFoodDays, and drinks and packaged food never spoil. In a fridge,
+// see IsFridgeRef, food spoils at fFridgeSpoilSpeed, see Fridge.cpp. While
 // bNecOn is off nothing is stamped or turns spoiled, and a stamp keeps its
 // day, so the food spoils on its usual day once bNecOn is on again.
 //
@@ -146,6 +146,38 @@ namespace FoodSpoil
 	// stamp alone says how fresh it is. False before the game has a calendar.
 	bool SetFreshness(RE::ExtraDataList& a_extra, const RE::TESBoundObject& a_object, float a_share, bool a_fridge);
 
+	// What SwitchFridge did. kBusy names the holder to wait for: its
+	// inventory or the container's own list was locked, or a stack the switch
+	// rewrites is shared with it.
+	enum class Switched : std::uint8_t
+	{
+		kDone,          // switched, the stamps inside rewritten
+		kAlready,       // in the asked state already, nothing written
+		kNotContainer,  // no base form, or one that is no container
+		kGone,          // the reference is deleted
+		kNotLoaded,     // its cell is not loaded, or it has no extra data list
+		kNoCalendar,    // the game has no calendar yet
+		kNotRecorded,   // the game records no change right now
+		kTaken,         // another mod's time left is on the container
+		kBusy,          // a lock was held or a stack is shared, see busy
+	};
+
+	struct FridgeSwitch
+	{
+		Switched                 result{ Switched::kNotContainer };
+		const RE::TESObjectREFR* busy{ nullptr };
+		std::uint32_t            stacks{ 0 };
+	};
+
+	// Switches a_fridge's cooling on when a_on is true and off when it is
+	// false, for that 1 container, on the fridge list or not, and rewrites
+	// the stamp of each food inside as a store or a take would today, so no
+	// freshness jumps. A switch back to what the list says drops the mark.
+	// Tries each lock once and never waits, so a script's call runs again
+	// while one is held. The game saves the mark with the reference, see
+	// FridgeSwitch.cpp.
+	[[nodiscard]] FridgeSwitch SwitchFridge(RE::TESObjectREFR& a_fridge, bool a_on);
+
 	// Whether a_extra's food has spoiled, not only run out of time.
 	[[nodiscard]] bool IsSpoiled(RE::ExtraDataList* a_extra);
 
@@ -207,8 +239,13 @@ namespace FoodSpoil
 	// and eats.
 	void Order(RE::BGSInventoryList& a_list, const RE::TESBoundObject& a_object);
 
-	// Whether a_ref is a container whose base is on the fridge list, in
-	// Fridge.cpp. Safe from any thread.
+	// Whether a_ref is a fridge now, in FridgeSwitch.cpp: a container
+	// SetFridge switched on, or a container whose base is on the fridge list
+	// and that SetFridge has not switched off. Safe from any thread. For a
+	// container it reads a_ref's own extra data list as a reader for a
+	// moment, by tries for up to MARK_WAIT, and a caller may hold that list
+	// already. A read that cannot get the lock answers by the list. The
+	// player and an NPC take no lock.
 	[[nodiscard]] bool IsFridgeRef(const RE::TESObjectREFR* a_ref);
 
 	// Whether a_extra's stack is in the fridge the container screen shows.

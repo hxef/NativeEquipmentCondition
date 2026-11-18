@@ -7,6 +7,7 @@
 #include "Gameplay/FoodSpoil/FoodSpoil.h"
 #include "Papyrus/Events.h"
 #include "Papyrus/Items.h"
+#include "Papyrus/Waiting.h"
 
 #include <cmath>
 #include <cstdint>
@@ -18,7 +19,7 @@
 // The food functions. A food's freshness is the stamp FoodSpoil keeps on its
 // stack, and a write changes the whole stack, as running out of time does,
 // never 1 piece split off. Only food NEC spoils is read or written, and a
-// write is free.
+// write is free. SetFridge switches 1 container, see FoodSpoil::SwitchFridge.
 namespace Papyrus
 {
 	namespace
@@ -247,7 +248,7 @@ namespace Papyrus
 	}
 
 	// -------------------------------------------------------------------
-	// The 8 functions
+	// The 9 functions
 	// -------------------------------------------------------------------
 
 	std::int32_t GetFoodKind(std::monostate, RE::TESForm* a_food)
@@ -326,5 +327,68 @@ namespace Papyrus
 		Log::Calling("IsFridge");
 		TraceLog::Papyrus::Begin("CALL", "NEC.IsFridge container={:s}", Hex(a_container));
 		return Answer(FoodSpoil::IsFridgeRef(a_container));
+	}
+
+	// Every warning goes out once SwitchFridge let go of its locks.
+	bool SetFridge(std::monostate, RE::TESObjectREFR* a_container, bool a_on)
+	{
+		using FoodSpoil::Switched;
+		Log::Calling("SetFridge");
+		TraceLog::Papyrus::Begin("CALL", "NEC.SetFridge container={:s} on={:s}", Hex(a_container), a_on ? "yes" : "no");
+		if (!Settings::NecOn()) {
+			TraceLog::Papyrus::Line("refused", "all of NEC is off");
+			return Answer(false);
+		}
+		if (!Answering()) {
+			return Answer(false);
+		}
+		if (!a_container) {
+			TraceLog::Papyrus::Line("none", "no container");
+			Log::Warn(Log::Warning::kNone);
+			return Answer(false);
+		}
+		const auto  done = FoodSpoil::SwitchFridge(*a_container, a_on);
+		const auto* base = a_container->GetObjectReference();
+		const auto  id = a_container->GetFormID();
+		const auto* state = a_on ? "on" : "off";
+		ScriptEvents::KickIfWaiting();
+		switch (done.result) {
+		case Switched::kDone:
+			TraceLog::Papyrus::Line("write", "switched {:s}, {:d} stacks restamped", state, done.stacks);
+			return Answer(true);
+		case Switched::kAlready:
+			TraceLog::Papyrus::Line("write", "none, it is {:s} already", state);
+			return Answer(true);
+		case Switched::kNotContainer:
+			if (base) {
+				TraceLog::Papyrus::Line("untracked", "{:s} is no container", FormName(*base));
+				Log::Warn(Log::Warning::kUntracked, std::format("ref {:08X} of {:s}, which is no container", id, FormName(*base)));
+			} else {
+				TraceLog::Papyrus::Line("untracked", "ref {:08X} has no base form", id);
+				Log::Warn(Log::Warning::kUntracked, std::format("ref {:08X}, which has no base form", id));
+			}
+			break;
+		case Switched::kGone:
+			TraceLog::Papyrus::Line("gone", "ref {:08X} is deleted", id);
+			Log::Warn(Log::Warning::kGone, std::format("ref {:08X}", id));
+			break;
+		case Switched::kNotLoaded:
+			TraceLog::Papyrus::Line("gone", "its cell is not loaded");
+			break;
+		case Switched::kNoCalendar:
+			TraceLog::Papyrus::Line("refused", "the game has no calendar yet");
+			break;
+		case Switched::kNotRecorded:
+			TraceLog::Papyrus::Line("refused", "the game records no change right now");
+			break;
+		case Switched::kTaken:
+			TraceLog::Papyrus::Line("refused", "the container carries a time left that is not NEC's");
+			Log::Warn(Log::Warning::kRefused, std::format("ref {:08X} of {:s} with a time left that is not NEC's", id, FormName(*base)));
+			break;
+		case Switched::kBusy:
+			Waiting::Locked(*done.busy);
+			break;
+		}
+		return Answer(false);
 	}
 }

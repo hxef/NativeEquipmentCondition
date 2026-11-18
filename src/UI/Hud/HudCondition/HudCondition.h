@@ -10,7 +10,7 @@
 // rounds in reserve and a divider line between them. The bar replaces the
 // divider, 3 times as thick so its level is easy to read, shrinks from the
 // left as the weapon wears, and the word CND follows past its end. With
-// bCndBarsFlipped on it shrinks from the right instead, and the word sits
+// bHudBarFlipped on it shrinks from the right instead, and the word sits
 // before its start. The drawing is in HudParts.h, since the power armor
 // readout is the same one at another size.
 //
@@ -55,6 +55,12 @@
 // divider is drawn in, so a HUD mod that colours the counter or the divider
 // colours the bar too. It is updated from the HUD's own frames, which check
 // the condition again every few frames, see HudParts::Weapon.
+//
+// At Weapon CND Percent the bar hides and the divider shows. CND stays where
+// the bar's word stands and the percent stands under it, with the divider run
+// on between them by a line box of NEC's, see Table.h. The 2 lines take the
+// bar's spot and hold as 1 box, and the length, thickness and flip of the bar
+// leave them as they are.
 namespace HudCondition
 {
 	// Adds the bar to the HUD movie through HudParts::Waiter. Ignores every
@@ -84,8 +90,8 @@ namespace HudCondition
 	[[nodiscard]] double Finite(double a_value);
 
 	// The bar's place for the MCM page, in HUD units: the box the bar and its
-	// word fill on their spot before the shift, and the visible frame, the
-	// part of the HUD's stage the screen shows.
+	// word fill on their spot before the shift, or the 2 lines at Percent,
+	// and the visible frame, the part of the HUD's stage the screen shows.
 	struct Measure
 	{
 		Flash::Box box;

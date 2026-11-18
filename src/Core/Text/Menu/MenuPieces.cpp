@@ -80,10 +80,9 @@ namespace Text
 			return names;
 		}
 
-		bool IsSwitch(const Settings::Named& a_setting)
+		bool IsGate(const Settings::Named& a_setting)
 		{
-			return std::ranges::any_of(Settings::Switches(),
-				[&](const auto* a_on) { return static_cast<const Settings::Named*>(a_on) == &a_setting; });
+			return std::ranges::any_of(Settings::Gates(), [&](const Settings::Gate& a_gate) { return a_gate.Setting() == &a_setting; });
 		}
 	}
 
@@ -142,7 +141,7 @@ namespace Text
 			const auto some = SayFor(a_out, SETTING_SOME, name, Commas(SettingNames(lost, first, a_out), a_out));
 			const auto rest = a_out == Out::kPage && a_effect.works.size() > MOST_NAMED ?
 			                      std::string{ PickFor(REST_WORKS, a_out) } :
-			                      SayFor(a_out, IsSwitch(*a_link.setting) ? STILL_WORKS_FOR : STILL_CHANGES,
+			                      SayFor(a_out, IsGate(*a_link.setting) ? STILL_WORKS_FOR : STILL_CHANGES,
 									  Commas(SettingNames(a_effect.works, first, a_out), a_out));
 			lines.push_back(Sentences(some, rest, a_out));
 		}

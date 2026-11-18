@@ -20,6 +20,17 @@ namespace QuickContainer
 	// Patches the calls that build the rows. Returns whether both succeeded.
 	bool PatchRows();
 
+	// The condition behind a row: a whole percent, or NO_CONDITION, and the
+	// tenths its card writes, see Condition::CardTenths, 0 with no
+	// condition.
+	struct Reading
+	{
+		std::int32_t  percent{ NO_CONDITION };
+		std::uint32_t tenths{ 0 };
+
+		bool operator==(const Reading&) const = default;
+	};
+
 	// What one row on screen shows.
 	struct Shown
 	{
@@ -29,7 +40,7 @@ namespace QuickContainer
 
 	// The conditions for the rows on screen, from the newest kept build whose
 	// rows read the same, or nothing when none of them does.
-	std::optional<std::array<std::int32_t, MAX_ROWS>> FindConditions(const std::array<Shown, MAX_ROWS>& a_shown, std::size_t a_size);
+	std::optional<std::array<Reading, MAX_ROWS>> FindConditions(const std::array<Shown, MAX_ROWS>& a_shown, std::size_t a_size);
 
 	// Whether the container of the newest build is on the fridge list. The
 	// HUD shows that build a frame or so later.

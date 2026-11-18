@@ -114,9 +114,10 @@ REPAIR AT THE WORKBENCH
   and the components left over go to your inventory. "Spare worth" sets how
   much condition a spare restores and Scrapper raises it, but you never get
   back more components than it holds.
-* "Keep spare mods" in MCM, off by default, hands back the mods of a spare
-  that a repair does not need as loose mods, the cheapest or priciest used
-  first, or lets you pick in a box which to scrap or keep.
+* "Keep spare mods" in MCM hands back the mods of a spare that a repair does
+  not need as loose mods. By default you pick from a list which ones the
+  repair uses up. You can pick the ones to keep instead, let the cheapest or
+  priciest be used up first, or turn it Off to use up the whole spare.
 * "Pip-Boy repairs" in MCM, off by default, lets you repair from the Pip-Boy
   as in Fallout 3 and New Vegas. Inspect a worn weapon or armor piece and
   press REPAIR to use up a spare, or to repair it as at a workbench.
@@ -173,9 +174,11 @@ SEE IT AT A GLANCE
 * CND bars on the HUD ammo counter, the power armor dash, the pickup prompt and
   the Pip-Boy apparel figure, and condition meters on the quick container rows
   and a food's freshness. When you set "Weapon penalties start at" or
-  "Armor penalties start at" from 0.01 to 0.99 in MCM, the bars mark that
-  point with 2 small notches, as in New Vegas. Each HUD bar has its own
-  switch, place and size in MCM.
+  "Armor penalties start at" from 0.01 to 0.99 in MCM, the bars by the ammo
+  counter, on the dash and on the apparel figure mark that point with 2 small
+  notches, as in New Vegas. Each of these places and the item cards can show
+  CND as a bar, a percent or not at all, and each HUD bar has its own place and
+  size in MCM.
 * Broken items fade out in the Pip-Boy lists.
 
 MAKE IT YOURS
@@ -242,10 +245,11 @@ LITTLE EXTRAS
 COMPATIBILITY
 * Runs on Fallout 4 1.11.240 (AE) and 1.10.163 (OG).
 * No ESP, so it takes no plugin slot.
-* Works with UI replacers like FallUI and DEF_UI. The Weapon CND bar finds a
-  free spot by the ammo counter on any HUD layout and stays on screen at any
-  resolution. A part NEC can't find is skipped and named in NEC.log or the bug
-  report logs, while wear, damage and prices work as ever.
+* Works with UI replacers like FallUI and DEF_UI. FallUI's item lists get a
+  CND column. The Weapon CND bar finds a free spot by the ammo counter on any
+  HUD layout and stays on screen at any resolution. A part NEC can't find is
+  skipped and named in NEC.log or the bug report logs, while wear, damage and
+  prices work as ever.
 * NEC works alongside other DLL mods that change the same things. When one
   takes over one of NEC's features, NEC lets it, and NEC's main MCM page and
   NEC.log name that mod and what is off.

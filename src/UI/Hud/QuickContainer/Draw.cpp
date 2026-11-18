@@ -1,8 +1,12 @@
 #include "UI/Hud/QuickContainer/Draw.h"
 
+#include "UI/Flash.h"
+
 #include <algorithm>
 #include <array>
+#include <cmath>
 #include <cstdint>
+#include <format>
 
 namespace QuickContainer
 {
@@ -51,5 +55,36 @@ namespace QuickContainer
 		}
 
 		graphics.Invoke("endFill");
+	}
+	// -------------------------------------------------------------------
+	// Writing one number
+	// -------------------------------------------------------------------
+
+	std::optional<Letters> LettersOf(const Value& a_name)
+	{
+		const auto format = Flash::Member(a_name, "defaultTextFormat"sv);
+		const auto font = Flash::Member(format, "font"sv);
+		const auto size = Flash::Number(format, "size"sv);
+		if (!font.IsString() || !*font.GetString() || !std::isfinite(size) || !(size > 0.0)) {
+			return std::nullopt;
+		}
+		return Letters{ font.GetString(), size };
+	}
+
+	std::optional<double> Write(Value& a_field, std::string_view a_text, const Letters& a_letters, bool a_selected)
+	{
+		// A font tag takes a whole size only, so the field is scaled to the
+		// size asked for, see HudParts::SetStyledText.
+		const auto written = std::max(1L, std::lround(a_letters.size));
+		const auto scale = NUMBER_SHARE * a_letters.size / static_cast<double>(written);
+		const auto html = std::format(R"(<font face="{:s}" size="{:d}" color="#{:06X}">{:s}</font>)", Flash::HtmlEscaped(a_letters.font), written,
+			a_selected ? BLACK : WHITE, Flash::HtmlEscaped(a_text));
+		if (!Flash::Set(a_field, "htmlText"sv, Value(std::string_view{ html }))) {
+			return std::nullopt;
+		}
+		Flash::Set(a_field, "scaleX"sv, Value(scale));
+		Flash::Set(a_field, "scaleY"sv, Value(scale));
+		const auto line = Flash::FirstLine(a_field);
+		return line ? std::optional{ (line->right - line->left) * scale } : std::nullopt;
 	}
 }

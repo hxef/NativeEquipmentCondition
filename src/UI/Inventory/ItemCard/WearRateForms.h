@@ -7,9 +7,23 @@
 
 // The 2 forms of WriteWearRate in WearRate.cpp that measure the CND row: the
 // rate in the number's own field, and in the cell beside it, and the write
-// that turns a change the movie printed beside it. Private to this folder.
+// that turns a change the movie printed beside it. The CND row's bar takes
+// its measures from here too. Private to this folder.
 namespace ItemCard
 {
+	// At least this much stays clear between the label's last letter and
+	// the number's field, in the row's units, about a space and a half on
+	// the vanilla card.
+	inline constexpr double LABEL_GAP = 8.0;
+
+	// The size a_field's text has, from its text format. Nothing when it
+	// has none to read.
+	[[nodiscard]] std::optional<double> FontSize(Scaleform::GFx::Value& a_field);
+
+	// How wide a_text is in a_field's text format at its natural size, in
+	// the field's own units. Nothing when the movie refuses to measure it.
+	[[nodiscard]] std::optional<double> NaturalWidth(Scaleform::GFx::Movie& a_movie, Scaleform::GFx::Value& a_field, const std::string& a_text);
+
 	// Form A: a_text, the percent and the rate, in the number's own field
 	// at its natural size. The field grows left with its right edge kept,
 	// only while the row shows nothing but its background in that stretch,

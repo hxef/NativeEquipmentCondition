@@ -52,11 +52,12 @@ namespace ItemCard
 
 		struct Entry
 		{
-			std::uint32_t        index;             // the child vanilla's card draws CND as
-			std::uint32_t        tenths;            // the number the row prints, see Condition::CardTenths
-			bool                 fridge;            // the row gets the fridge icon
-			std::optional<float> wearRate;          // the item's wear rate, see WearRate.cpp
-			std::optional<float> wearRateCompared;  // the rate of the item a workbench compares its copy with
+			std::uint32_t                  index;             // the child vanilla's card draws CND as
+			std::uint32_t                  tenths;            // the number the row prints, see Condition::CardTenths
+			bool                           fridge;            // the row gets the fridge icon
+			std::optional<float>           wearRate;          // the item's wear rate, see WearRate.cpp
+			std::optional<float>           wearRateCompared;  // the rate of the item a workbench compares its copy with
+			std::optional<Condition::Kind> kind;              // whose penalty point the row's bar marks
 		};
 
 		// A rate a CND entry carries under a_mark, which only a card outside
@@ -65,6 +66,21 @@ namespace ItemCard
 		{
 			const auto rate = Flash::Member(a_entry, a_mark);
 			return Flash::IsAnyNumber(rate) ? std::optional{ static_cast<float>(Flash::AsNumber(rate)) } : std::nullopt;
+		}
+
+		// The kind a CND entry carries under PENALTY_KIND_MARK, which only a
+		// card outside the Pip-Boy keeps.
+		std::optional<Condition::Kind> KindIn(const Value& a_entry)
+		{
+			const auto kind = Flash::Member(a_entry, PENALTY_KIND_MARK);
+			if (!Flash::IsAnyNumber(kind)) {
+				return std::nullopt;
+			}
+			const auto number = Flash::AsNumber(kind);
+			if (number == static_cast<double>(Condition::Kind::kWeapon)) {
+				return Condition::Kind::kWeapon;
+			}
+			return number == static_cast<double>(Condition::Kind::kArmor) ? std::optional{ Condition::Kind::kArmor } : std::nullopt;
 		}
 
 		// The tenths a CND entry's value stands for. NEC fed it as
@@ -96,7 +112,7 @@ namespace ItemCard
 				}
 				if (HasText(entry, CND_TEXT)) {
 					return Entry{ plainRows, TenthsIn(entry), Flash::Bool(entry, FRIDGE_MARK), WearRateIn(entry, WEAR_RATE_MARK),
-						WearRateIn(entry, WEAR_RATE_COMPARED_MARK) };
+						WearRateIn(entry, WEAR_RATE_COMPARED_MARK), KindIn(entry) };
 				}
 				plainRows++;
 			}
@@ -170,6 +186,9 @@ namespace ItemCard
 		void RaiseConditionRow(Scaleform::GFx::Movie& a_movie, const Place& a_place, Value& a_card)
 		{
 			const auto look = LookAt(a_movie, a_place, a_card);
+			// Before the CND row is looked for, so a card with no CND row,
+			// such as a holotape's, loses a bar its clips kept too.
+			Roles::Card::HideOnOtherRows(a_card, look.label, CONDITION_BAR_NAME);
 			const auto entry = ConditionEntry(a_card);
 			if (!entry) {
 				return;
@@ -179,19 +198,33 @@ namespace ItemCard
 				return;
 			}
 
-			auto row = Roles::Card::ConditionRow(a_movie, a_card, entry->index, look.label, entry->tenths, look.redrawn);
+			auto row = Roles::Card::ConditionRow(a_movie, a_card, entry->index, look.label, entry->tenths, look.redrawn, CONDITION_BAR_NAME);
 			if (!row) {
 				return;
 			}
 
-			// The rate goes in before the fridge icon, which sits left of the
-			// whole text. Read at every render, so the switch needs no new card.
-			if (Settings::bCardWearRate.GetValue()) {
-				const auto pipboy = a_place.movie == PIPBOY_MOVIE;
-				const auto rate = pipboy ? Pipboy::SelectedWearRate(a_movie) : entry->wearRate;
-				WriteWearRate(a_movie, a_place.movie, row->clip, rate, pipboy ? std::nullopt : entry->wearRateCompared);
+			const auto pipboy = a_place.movie == PIPBOY_MOVIE;
+			if (row->drawn) {
+				// A row showing the bar keeps it until the card draws it anew.
+				// Only a change the movie prints beside it is signed again, as
+				// WriteWearRate does at every render.
+				if (Settings::bCardWearRate.GetValue() && !pipboy) {
+					TurnWearRateChange(a_place.movie, row->clip, entry->wearRate, entry->wearRateCompared);
+				}
+			} else {
+				// The rate goes in before the bar and the fridge icon, which sit
+				// left of it. Read at every render, so the switch needs no new
+				// card.
+				if (Settings::bCardWearRate.GetValue()) {
+					const auto rate = pipboy ? Pipboy::SelectedWearRate(a_movie) : entry->wearRate;
+					WriteWearRate(a_movie, a_place.movie, row->clip, rate, pipboy ? std::nullopt : entry->wearRateCompared);
+				}
+				const auto bar = Settings::iItemCardCnd.Form() == Settings::Cnd::kBar;
+				if (!bar || !DrawConditionBar(a_movie, a_place.movie, row->clip,
+								BarReading{ entry->tenths, pipboy ? Pipboy::SelectedPenaltyKind(a_movie) : entry->kind, entry->fridge })) {
+					MarkFridge(a_movie, a_place.movie, row->clip, entry->fridge);
+				}
 			}
-			MarkFridge(a_movie, a_place.movie, row->clip, entry->fridge);
 			if (row->above.empty()) {
 				return;
 			}

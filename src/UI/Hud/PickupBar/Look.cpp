@@ -41,11 +41,12 @@ namespace PickupBar
 		// What the prompt's item reads
 		// -------------------------------------------------------------------
 
-		// A whole percent, whether the item still waits for its first roll,
-		// and its kind, empty for a food.
+		// A whole percent and the card's tenths, whether the item still
+		// waits for its first roll, and its kind, empty for a food.
 		struct Reading
 		{
 			std::int32_t                   percent{ 0 };
+			std::uint32_t                  tenths{ 0 };
 			bool                           unrolled{ false };
 			std::optional<Condition::Kind> kind;
 		};
@@ -65,12 +66,15 @@ namespace PickupBar
 			}
 			std::optional<Reading> reading;
 			if (base->IsWeapon() || base->Is(RE::ENUM_FORM_ID::kARMO)) {
-				if (const auto percent = Condition::Percent(*base, extra)) {
+				const auto percent = Condition::Percent(*base, extra);
+				const auto tenths = Condition::Tenths(*base, extra);
+				if (percent && tenths) {
 					const auto kind = base->IsWeapon() ? Condition::Kind::kWeapon : Condition::Kind::kArmor;
-					reading = Reading{ static_cast<std::int32_t>(*percent), extra && Condition::IsUnrolled(extra->GetHealthPerc()), kind };
+					reading = Reading{ static_cast<std::int32_t>(*percent), *tenths, extra && Condition::IsUnrolled(extra->GetHealthPerc()), kind };
 				}
 			} else if (const auto fresh = FoodSpoil::FreshnessOf(*base, extra)) {
-				reading = Reading{ static_cast<std::int32_t>(std::lround(*fresh * 100.0F)), extra && FoodSpoil::Unrolled(*extra), std::nullopt };
+				reading = Reading{ static_cast<std::int32_t>(std::lround(*fresh * 100.0F)), Condition::CardTenths(*fresh, false), extra && FoodSpoil::Unrolled(*extra),
+					std::nullopt };
 			}
 			if (reading && reading->unrolled && Settings::bSpawnCondition.GetValue() && SpawnCondition::WaitsForTaker(a_ref)) {
 				return std::nullopt;
@@ -117,6 +121,7 @@ namespace PickupBar
 				const std::scoped_lock l{ g_keptLock };
 				if (g_kept && g_kept->item == a_item) {
 					g_kept->percent = reading->percent;
+					g_kept->tenths = reading->tenths;
 					TraceLog::Line("cnd", "Pickup prompt's {:s} rolled on the first look, now {:d}%", g_kept->name, reading->percent);
 				}
 			});
@@ -128,7 +133,7 @@ namespace PickupBar
 		{
 			g_lookLink[0](a_model);
 
-			if (!g_lookLink[0].Live() || !Settings::bPickupBar.GetValue()) {
+			if (!g_lookLink[0].Live() || Settings::iPickupCnd.Form() == Settings::Cnd::kOff) {
 				Keep(std::nullopt);
 				return;
 			}
@@ -141,7 +146,7 @@ namespace PickupBar
 				Keep(std::nullopt);
 				return;
 			}
-			Keep(Looked{ name, reading->percent, item, reading->kind });
+			Keep(Looked{ name, reading->percent, reading->tenths, item, reading->kind });
 			if (reading->unrolled) {
 				QueueRoll(item);
 			}

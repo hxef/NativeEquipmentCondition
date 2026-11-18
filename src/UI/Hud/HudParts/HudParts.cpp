@@ -11,6 +11,7 @@
 #include <atomic>
 #include <memory>
 #include <mutex>
+#include <optional>
 #include <vector>
 
 namespace HudParts
@@ -203,9 +204,11 @@ namespace HudParts
 	{
 		namespace
 		{
-			// The latest condition, and whether a weapon is drawn, written by
-			// the task and read by the HUD's frames.
+			// The latest condition as a whole percent and in tenths, and
+			// whether a weapon is drawn, written by the task and read by the
+			// HUD's frames. The 2 numbers come from 1 health read.
 			std::atomic<std::int32_t> g_percent{ NONE };
+			std::atomic<std::int32_t> g_tenths{ NONE };
 			std::atomic<bool>         g_drawn{ false };
 
 			// Set while a check waits in the task queue.
@@ -219,9 +222,10 @@ namespace HudParts
 			// the bars wait for a fresh one and never show a weapon put away.
 			if (!Settings::NecOn()) {
 				g_percent = NONE;
+				g_tenths = NONE;
 				return;
 			}
-			if ((!Settings::bHudCondition.GetValue() && !Settings::bPowerArmorBar.GetValue()) || g_queued.exchange(true)) {
+			if ((Settings::iWeaponCnd.Form() == Settings::Cnd::kOff && Settings::iPowerArmorCnd.Form() == Settings::Cnd::kOff) || g_queued.exchange(true)) {
 				return;
 			}
 
@@ -241,6 +245,7 @@ namespace HudParts
 				const auto health = Equipped::TryWeaponHealth(player);
 				if (health) {
 					g_percent = *health < 0.0F ? NONE : static_cast<std::int32_t>(Condition::WholePercent(*health));
+					g_tenths = *health < 0.0F ? NONE : static_cast<std::int32_t>(Condition::CardTenths(*health, true));
 				} else {
 					TraceLog::Once("menu", "HUD CND kept its last reading, another thread had the player's inventory");
 				}
@@ -249,9 +254,15 @@ namespace HudParts
 			});
 		}
 
-		std::int32_t Percent(const Settings::Live<bool>& a_on)
+		std::int32_t Percent(Settings::Gate a_on)
 		{
-			return Settings::NecOn() && a_on.GetValue() ? g_percent.load() : NONE;
+			return Settings::NecOn() && a_on.On() ? g_percent.load() : NONE;
+		}
+
+		std::optional<std::uint32_t> Tenths(Settings::Gate a_on)
+		{
+			const auto tenths = Settings::NecOn() && a_on.On() ? g_tenths.load() : NONE;
+			return tenths >= 0 ? std::optional{ static_cast<std::uint32_t>(tenths) } : std::nullopt;
 		}
 
 		bool Drawn()
@@ -262,6 +273,7 @@ namespace HudParts
 		void Forget()
 		{
 			g_percent = NONE;
+			g_tenths = NONE;
 			g_drawn = false;
 		}
 	}
@@ -339,7 +351,7 @@ namespace HudParts
 	void Waiter::Watch(Scaleform::GFx::Movie& a_movie, const char* a_what)
 	{
 		waiting = nullptr;
-		if (on->GetValue()) {
+		if (on.On()) {
 			build(a_movie);
 			return;
 		}
@@ -362,7 +374,7 @@ namespace HudParts
 
 	void Waiter::Call(const Params& a_params)
 	{
-		if (!waiting || a_params.movie != waiting || !on->GetValue()) {
+		if (!waiting || a_params.movie != waiting || !on.On()) {
 			return;
 		}
 		waiting = nullptr;

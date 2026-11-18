@@ -7,6 +7,7 @@
 #include "UI/Hud/HudParts/HudParts.h"
 #include "UI/Hud/PowerArmorCondition/Dash.h"
 #include "UI/Hud/PowerArmorCondition/Layout.h"
+#include "UI/Hud/PowerArmorCondition/Lines.h"
 #include "UI/MenuMovies.h"
 
 #include <algorithm>
@@ -74,21 +75,42 @@ namespace PowerArmorCondition
 					lastReading = now;
 					HudParts::Weapon::Queue();
 				}
-				QueueAnchor(Settings::bCndBarsFlipped.GetValue());
+				QueueAnchor(Settings::bPowerArmorBarFlipped.GetValue());
 
 				const auto anchor = CurrentAnchor();
 				const auto measured = anchor.miss == Miss::kNone;
-				const auto percent = HudParts::Weapon::Percent(Settings::bPowerArmorBar);
+				const auto percent = HudParts::Weapon::Percent(&Settings::iPowerArmorCnd);
+				const auto tenths = HudParts::Weapon::Tenths(&Settings::iPowerArmorCnd);
 				const auto frame = FrameOf(*a_params.movie);
 				auto       box = measured ? Place(frame, anchor) : Box{};
 
 				// The MCM page can move the bar off the digits. It still sways
 				// with the dash, and only its place changes. The movie's y
 				// runs down, so above 0 is taken off to go up. A nan typed
-				// into the ini counts as 0, as for the HUD's bar.
+				// into the ini counts as 0, as for the HUD's bar. The 2 lines
+				// of Percent move the same way.
 				const auto offset = [](float a_value) { return std::isfinite(a_value) ? a_value : 0.0F; };
+				const auto moved = [&](const Point& a_screen) {
+					auto at = frame.Stage(a_screen);
+					at.x += offset(Settings::fPowerArmorBarX.GetValue());
+					at.y -= offset(Settings::fPowerArmorBarY.GetValue());
+					return at;
+				};
 				box.x += offset(Settings::fPowerArmorBarX.GetValue());
 				box.y -= offset(Settings::fPowerArmorBarY.GetValue());
+
+				// A change of form lays everything out and draws it again.
+				const auto form = Settings::iPowerArmorCnd.Form();
+				HudParts::Readout::TellForm(form, saidForm, "Power armor CND"sv);
+				const auto asNumber = form == Settings::Cnd::kPercent;
+				if (asNumber != linesShown) {
+					linesShown = asNumber;
+					lines.Show(readout, asNumber);
+					laidOutFor = Box{};
+					shownPercent = NOT_DRAWN;
+					shownMark = HudParts::Readout::Mark{};
+					wordShown.reset();
+				}
 
 				// Laying out again means measuring text, so it waits for the
 				// dash to be drawn at a different size, or for the player to
@@ -108,8 +130,14 @@ namespace PowerArmorCondition
 					laidOutFlipped = flipped;
 					shownPercent = NOT_DRAWN;
 					shownMark = HudParts::Readout::Mark{};
-					TraceLog::Line("menu", "Power armor CND bar is {:.0f} across and {:.1f} deep, its word at size {:.1f} and ending {:.1f} {:s} it of the {:.1f} the box leaves, a row of the dash being {:.1f}, turned {:.2f} degrees from level",
-						bar.width, bar.deep, bar.size, bar.reach, flipped ? "before" : "past", flipped ? box.roomBefore : box.room, box.row, box.turn * DEGREES);
+					if (!asNumber) {
+						TraceLog::Line("menu", "Power armor CND bar is {:.0f} across and {:.1f} deep, its word at size {:.1f} and ending {:.1f} {:s} it of the {:.1f} the box leaves, a row of the dash being {:.1f}, turned {:.2f} degrees from level",
+							bar.width, bar.deep, bar.size, bar.reach, flipped ? "before" : "past", flipped ? box.roomBefore : box.room, box.row, box.turn * DEGREES);
+					}
+					if (asNumber && lines.Lay(*a_params.movie, readout, box)) {
+						lines.Show(readout, true);
+						TraceLog::Line("menu", "Power armor CND laid out as a percent right of the dash's ammo box, at size {:.1f}", lines.Size());
+					}
 				}
 
 				// Everything has to hold: the dash on screen and measured, a
@@ -121,19 +149,30 @@ namespace PowerArmorCondition
 				const auto from = laidOutFlipped ? -bar.reach : box.width - bar.width;
 				const auto to = laidOutFlipped ? bar.width : box.width + bar.reach;
 				const auto half = std::max(bar.size, bar.deep) / 2.0;
-				const auto fits = measured &&
-				                  frame.Holds(box.At(from, -half)) &&
-				                  frame.Holds(box.At(from, half)) &&
-				                  frame.Holds(box.At(to, -half)) &&
-				                  frame.Holds(box.At(to, half));
+				const auto barFits = measured &&
+				                     frame.Holds(box.At(from, -half)) &&
+				                     frame.Holds(box.At(from, half)) &&
+				                     frame.Holds(box.At(to, -half)) &&
+				                     frame.Holds(box.At(to, half));
+
+				// The readout's origin is the right end of its bar, which
+				// stays at the box's right end whatever the bar's length,
+				// turned the way the bar runs. A flipped bar keeps the box's
+				// left end, so its word stays inside the printed box. At
+				// Percent nothing is flipped, and the 2 lines are put through
+				// that origin and turn on their own points.
+				const auto origin = box.At(laidOutFlipped && !asNumber ? bar.width : box.width, 0.0);
+				auto       fits = barFits;
+				if (asNumber) {
+					const auto drawn = measured && tenths ? lines.Write(*a_params.movie, readout, *tenths) : std::nullopt;
+					if (drawn) {
+						TraceLog::Line("menu", "Power armor CND drawn as {:s}", *drawn);
+					}
+					fits = measured && lines.Place(readout, frame, origin, box.turn, moved(anchor.upper), moved(anchor.lower));
+				}
 				const auto wanted = InPowerArmor() && DashAllowed() && percent >= 0 && fits;
 
 				if (fits) {
-					// The readout's origin is the right end of its bar, which
-					// stays at the box's right end whatever the bar's length,
-					// turned the way the bar runs. A flipped bar keeps the
-					// box's left end, so its word stays inside the printed box.
-					const auto origin = box.At(laidOutFlipped ? bar.width : box.width, 0.0);
 					readout.SetMember("x"sv, Value(origin.x));
 					readout.SetMember("y"sv, Value(origin.y));
 					readout.SetMember("rotation"sv, Value(box.turn * DEGREES));
@@ -160,7 +199,9 @@ namespace PowerArmorCondition
 						to - from, half * 2.0, box.x, box.y, frame.width, frame.height, frame.left, frame.top);
 				}
 
-				HudParts::Readout::FollowWordSwitch(readout, Settings::bPowerArmorBarShowsWord, wordShown, "Power armor"sv);
+				if (!asNumber) {
+					HudParts::Readout::FollowWordSwitch(readout, Settings::bPowerArmorBarShowsWord, wordShown, "Power armor"sv);
+				}
 
 				// The mark is as wide as half the bar's depth before its
 				// thickness slider. It is sized from laidOutFor, the box the
@@ -171,7 +212,7 @@ namespace PowerArmorCondition
 				// which reads no mark.
 				const auto deep = laidOutFor.row * BAR_DEEP;
 				const auto mark = deep > 0.0 ? HudParts::Readout::PenaltyMark(Condition::Kind::kWeapon, deep, deep / 2.0) : HudParts::Readout::Mark{};
-				if (wanted && (percent != shownPercent || mark != shownMark)) {
+				if (wanted && !asNumber && (percent != shownPercent || mark != shownMark)) {
 					const auto still = HudParts::Readout::StillEnd(HudParts::Readout::Still::kRightEnd, laidOutFlipped);
 					HudParts::Readout::SetPercent(readout, bar.width, bar.deep, percent, still, mark);
 					HudParts::Readout::TellFlipped(laidOutFlipped, saidFlipped, "Power armor CND bar"sv);
@@ -196,7 +237,8 @@ namespace PowerArmorCondition
 
 				if (fade != shownOpacity) {
 					if ((fade > 0.0) != (shownOpacity > 0.0)) {
-						TraceLog::Line("menu", "Power armor CND {:s}, percent {}", fade > 0.0 ? "shows between the dash's ammo digits" : "hides", percent);
+						TraceLog::Line("menu", "Power armor CND {:s}, percent {}", fade > 0.0 ? (asNumber ? "shows right of the dash's ammo box" : "shows between the dash's ammo digits") : "hides",
+							percent);
 					}
 					readout.SetMember("alpha"sv, Value(fade));
 					readout.SetMember("visible"sv, Value(fade > 0.0));
@@ -222,6 +264,9 @@ namespace PowerArmorCondition
 				colored = false;
 				saidOffScreen = false;
 				saidScaled = false;
+				saidForm.reset();
+				linesShown = false;
+				lines.Reset();
 			}
 
 		private:
@@ -248,6 +293,12 @@ namespace PowerArmorCondition
 			// trace last named it, forgotten only in Reset.
 			HudParts::Readout::Mark shownMark;
 			HudParts::Readout::Mark saidMark;
+
+			// The form last seen, whether the 2 lines of Percent show, and
+			// the lines, see Lines.h.
+			std::optional<Settings::Cnd> saidForm;
+			bool                         linesShown = false;
+			Lines                        lines;
 		};
 
 		// Lives as long as the plugin, see Flash.h.
@@ -312,11 +363,11 @@ namespace PowerArmorCondition
 			}
 
 			HudParts::Weapon::Queue();
-			QueueAnchor(Settings::bCndBarsFlipped.GetValue());
+			QueueAnchor(Settings::bPowerArmorBarFlipped.GetValue());
 			TraceLog::Line("menu", "HUDMenu.swf loaded, power armor CND will follow the dash's ammo box");
 		}
 
-		HudParts::Waiter g_waiter{ Settings::bPowerArmorBar, &Build };
+		HudParts::Waiter g_waiter{ &Settings::iPowerArmorCnd, &Build };
 	}
 
 	void Load()

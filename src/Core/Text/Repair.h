@@ -79,21 +79,21 @@ namespace Text
 	// spare handed back, and with a_more not named "... Suppressor and 2 more.".
 	[[nodiscard]] std::string SpareKept(std::span<const std::string> a_mods, std::size_t a_more);
 
-	// "Scrap a mod to repair Combat Rifle from 60.5% condition:", the
+	// "Use up a mod to repair Combat Rifle from 60.5% condition:", the
 	// question of the box that picks a spare's mods, a_from "60.5". Once the
-	// mods picked fill the item: "Scrap a mod or keep the rest, repairing
+	// mods picked fill the item: "Use up a mod or keep the rest, repairing
 	// Combat Rifle to 100% condition:"
 	[[nodiscard]] std::string SpareModQuestion(std::string_view a_name, std::string_view a_from);
 	[[nodiscard]] std::string SpareModFull(std::string_view a_name);
 
-	// "Keep a mod, or scrap the rest to repair Combat Rifle to 100%
+	// "Keep a mod, or use up the rest to repair Combat Rifle to 100%
 	// condition:", the question of the box that picks the mods to keep,
 	// a_to "100".
 	[[nodiscard]] std::string SpareModKeepQuestion(std::string_view a_name, std::string_view a_to);
 
-	// "SCRAP THE REST" and "KEEP THE REST", the first row of that box and
+	// "USE UP THE REST" and "KEEP THE REST", the first row of that box and
 	// the one before CANCEL.
-	[[nodiscard]] std::string SpareScrapRest();
+	[[nodiscard]] std::string SpareUseUpRest();
 	[[nodiscard]] std::string SpareKeepRest();
 
 	// "(30 caps)", a mod's value as a loose mod, in the words of RepairCaps.

@@ -18,11 +18,11 @@ namespace Papyrus
 	bool FeatureRuns(std::string_view a_feature)
 	{
 		const auto* row = FeatureNamed(a_feature);
-		if (!Settings::NecOn() || !row || (row->on && !row->on->GetValue()) || !row->Runs()) {
+		if (!Settings::NecOn() || !row || (row->on && !row->on.On()) || !row->Runs()) {
 			return false;
 		}
-		// With its switch on, a loss that leaves no piece working means another
-		// DLL took all of it.
+		// With its switch or stepper on, a loss that leaves no piece working
+		// means another DLL took all of it.
 		const auto loss = CallPatch::LossOf(row->part);
 		return !loss || !loss->works.empty();
 	}

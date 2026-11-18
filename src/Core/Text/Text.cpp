@@ -41,7 +41,6 @@ namespace Text
 			{ "Extras", EXTRAS_TITLE },
 			{ "Food", FOOD_TITLE },
 			{ "Menus", MENUS_TITLE },
-			{ "CndBars", CND_BARS_TITLE },
 			{ "PenaltyMark", PENALTY_MARK_TITLE },
 			{ "Presets", PRESETS_TITLE },
 			{ "Log", LOG_TITLE },

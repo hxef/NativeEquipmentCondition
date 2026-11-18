@@ -122,7 +122,7 @@ namespace
 	// rows, and the one on a food's card on the container screen's CND row.
 	constexpr Piece FRIDGE_ICON_SIDE[]{ kLootMeters, kCndContainers };
 
-	// The wear rate sits on the CND row of every card that has one.
+	// The CND row and the wear rate on it, on every card that has one.
 	constexpr Piece CARD_CND[]{ kCndContainers, kCndWorkbench, kCndCooking, kCndPipboy };
 	// A power armor piece's CND shows on the cards it has: containers and
 	// trading, the workbench and the power armor station, and the Pip-Boy.
@@ -148,12 +148,16 @@ namespace
 		{ &Settings::bRepairBoxColumns, &Settings::fBenchCostMult, REPAIR_BOXES },
 		{ &Settings::bRepairBoxGains, &Settings::fBenchCostMult, REPAIR_BOXES },
 		{ &Settings::bLoadingTips, nullptr, TIPS },
-		{ &Settings::bHudCondition, nullptr, HUD_BARS },
-		// The power armor bar's switch rides on HUD condition bars as the
-		// rows below do, so it sits in bHudCondition's block.
-		{ &Settings::bPowerArmorBar, &Settings::bHudCondition, HUD_BARS },
-		{ &Settings::bQuickContainer, nullptr, LOOT_METERS },
-		{ &Settings::bCardWearRate, nullptr, CARD_CND },
+		{ &Settings::iWeaponCnd, nullptr, HUD_BARS },
+		// The power armor dash's stepper rides on HUD condition bars as the
+		// rows below do, so it sits in iWeaponCnd's block.
+		{ &Settings::iPowerArmorCnd, &Settings::iWeaponCnd, HUD_BARS },
+		{ &Settings::iQuickContainerCnd, nullptr, LOOT_METERS },
+		{ &Settings::iItemCardCnd, nullptr, CARD_CND },
+		{ &Settings::bCardWearRate, &Settings::iItemCardCnd, CARD_CND },
+		// The CND column rides on the card's CND row, so it sits in the
+		// card's block.
+		{ &Settings::bCndColumn, &Settings::iItemCardCnd, CARD_CND },
 		{ &Settings::bPowerArmorCardCnd, nullptr, POWER_ARMOR_CND },
 		{ &Settings::bConfirmScroll, nullptr, CONFIRM_SCROLL },
 		{ &Settings::bInspectPrice, nullptr, INSPECT_PRICE },
@@ -209,29 +213,38 @@ namespace
 		{ &Settings::iSpoiledHunger, &Settings::bFoodSpoils, FOOD_HUNGER, FOOD_BITE },
 		{ &Settings::fSpoiledRadsMult, &Settings::bFoodSpoils, FOOD_BITE },
 		{ &Settings::iSpoiledSicknessMult, &Settings::bFoodSpoils, FOOD_HUNGER, FOOD_BITE },
-		// Both CND bars' rows share bHudCondition, so they never run once HUD
-		// condition bars is left to another mod.
-		{ &Settings::fHudBarX, &Settings::bHudCondition, HUD_BARS },
-		{ &Settings::fHudBarY, &Settings::bHudCondition, HUD_BARS },
-		{ &Settings::fHudBarLength, &Settings::bHudCondition, HUD_BARS },
-		{ &Settings::fHudBarThickness, &Settings::bHudCondition, HUD_BARS },
-		{ &Settings::bHudBarHidesWithCounter, &Settings::bHudCondition, HUD_BARS },
-		{ &Settings::bHudBarStandsAlone, &Settings::bHudCondition, HUD_BARS },
-		{ &Settings::bHudBarShowsWord, &Settings::bHudCondition, HUD_BARS },
-		{ &Settings::fPowerArmorBarX, &Settings::bHudCondition, HUD_BARS },
-		{ &Settings::fPowerArmorBarY, &Settings::bHudCondition, HUD_BARS },
-		{ &Settings::fPowerArmorBarLength, &Settings::bHudCondition, HUD_BARS },
-		{ &Settings::fPowerArmorBarThickness, &Settings::bHudCondition, HUD_BARS },
-		{ &Settings::bPowerArmorBarShowsWord, &Settings::bHudCondition, HUD_BARS },
-		// The Pickup CND bar works through a place of its own and runs
-		// whatever HUD condition bars does. Its rows sit in bHudCondition's
-		// block, since MCM has no group left for a note of its own.
-		{ &Settings::bPickupBar, &Settings::bHudCondition, PICKUP_BAR },
-		{ &Settings::fPickupBarX, &Settings::bHudCondition, PICKUP_BAR },
-		{ &Settings::fPickupBarY, &Settings::bHudCondition, PICKUP_BAR },
-		{ &Settings::fPickupBarLength, &Settings::bHudCondition, PICKUP_BAR },
-		{ &Settings::fPickupBarThickness, &Settings::bHudCondition, PICKUP_BAR },
-		{ &Settings::bPickupBarShowsWord, &Settings::bHudCondition, PICKUP_BAR },
+		// The rows of both HUD readouts share iWeaponCnd, so they never run
+		// once HUD condition bars is left to another mod.
+		{ &Settings::fHudBarX, &Settings::iWeaponCnd, HUD_BARS },
+		{ &Settings::fHudBarY, &Settings::iWeaponCnd, HUD_BARS },
+		{ &Settings::fHudBarLength, &Settings::iWeaponCnd, HUD_BARS },
+		{ &Settings::fHudBarThickness, &Settings::iWeaponCnd, HUD_BARS },
+		{ &Settings::bHudBarHidesWithCounter, &Settings::iWeaponCnd, HUD_BARS },
+		{ &Settings::bHudBarStandsAlone, &Settings::iWeaponCnd, HUD_BARS },
+		{ &Settings::bHudBarShowsWord, &Settings::iWeaponCnd, HUD_BARS },
+		{ &Settings::bHudBarFlipped, &Settings::iWeaponCnd, HUD_BARS },
+		{ &Settings::fPowerArmorBarX, &Settings::iWeaponCnd, HUD_BARS },
+		{ &Settings::fPowerArmorBarY, &Settings::iWeaponCnd, HUD_BARS },
+		{ &Settings::fPowerArmorBarLength, &Settings::iWeaponCnd, HUD_BARS },
+		{ &Settings::fPowerArmorBarThickness, &Settings::iWeaponCnd, HUD_BARS },
+		{ &Settings::bPowerArmorBarShowsWord, &Settings::iWeaponCnd, HUD_BARS },
+		{ &Settings::bPowerArmorBarFlipped, &Settings::iWeaponCnd, HUD_BARS },
+		// The Pickup CND works through a place of its own and runs whatever
+		// HUD condition bars does. Its rows sit in iWeaponCnd's block, since
+		// MCM has no group left for a note of its own.
+		{ &Settings::iPickupCnd, &Settings::iWeaponCnd, PICKUP_BAR },
+		{ &Settings::fPickupBarX, &Settings::iWeaponCnd, PICKUP_BAR },
+		{ &Settings::fPickupBarY, &Settings::iWeaponCnd, PICKUP_BAR },
+		{ &Settings::fPickupBarLength, &Settings::iWeaponCnd, PICKUP_BAR },
+		{ &Settings::fPickupBarThickness, &Settings::iWeaponCnd, PICKUP_BAR },
+		{ &Settings::bPickupBarShowsWord, &Settings::iWeaponCnd, PICKUP_BAR },
+		{ &Settings::bPickupBarFlipped, &Settings::iWeaponCnd, PICKUP_BAR },
+		{ &Settings::bPickupPenaltyMark, &Settings::iWeaponCnd, PICKUP_BAR },
+		// The quick container's and the item card's rows ride on their own
+		// stepper's block.
+		{ &Settings::bQuickContainerBarFlipped, &Settings::iQuickContainerCnd, LOOT_METERS },
+		{ &Settings::fItemCardBarThickness, &Settings::iItemCardCnd, CARD_CND },
+		{ &Settings::bItemCardBarFlipped, &Settings::iItemCardCnd, CARD_CND },
 	};
 
 	// Every setting changes something, no list names kNone or a piece twice,

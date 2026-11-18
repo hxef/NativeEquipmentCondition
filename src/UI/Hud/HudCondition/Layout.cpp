@@ -28,7 +28,7 @@ namespace HudCondition
 	{
 		const auto counterIn = Roles::InFrame(a_movie, a_counter);
 		const auto standing = !counterIn && Settings::bHudBarStandsAlone.GetValue();
-		const auto filled = Filled(a_drawn, label);
+		const auto filled = Filled(a_drawn, Words(), !tabled);
 		std::optional<Placed> placed;
 		if (counterIn) {
 			placed = Place(a_movie, a_meters, a_basis, a_drawn.line, filled);
@@ -48,7 +48,7 @@ namespace HudCondition
 			Put(a_readout, placed->at);
 			placedAt = placed->at;
 		}
-		Keep(*placed, spot, a_size, label, a_basis.frame);
+		Keep(*placed, spot, a_size, Words(), a_basis.frame, tabled);
 		if (placed->held != held) {
 			held = placed->held;
 			if (held) {
@@ -104,11 +104,19 @@ namespace HudCondition
 	}
 
 	// Draws the track and moves the word for a_drawn, the spot at
-	// a_size, then draws the level and places the bar again.
+	// a_size, then draws the level and places the bar again. At Percent
+	// it moves the 2 lines instead, see Table.h.
 	void FrameListener::LayOut(Value& a_readout, const Spot& a_drawn, const HudParts::Readout::Size& a_size)
 	{
 		HudParts::Readout::SetTrack(a_readout, a_drawn.line.width, a_drawn.deep);
-		HudParts::Readout::MoveLabel(a_readout, label.field.left + a_drawn.wordX, label.field.top + a_drawn.wordY);
+		if (tabled && table) {
+			PutTable(a_readout, label, *table, a_drawn.wordX, a_drawn.wordY);
+			laidRise = table->rise;
+			lined.reset();
+		} else {
+			HudParts::Readout::MoveLabel(a_readout, label.field.left + a_drawn.wordX, label.field.top + a_drawn.wordY);
+			laidRise = 0.0;
+		}
 		laidOut = a_drawn;
 		shownPercent = NOT_DRAWN;
 		shownMark = HudParts::Readout::Mark{};

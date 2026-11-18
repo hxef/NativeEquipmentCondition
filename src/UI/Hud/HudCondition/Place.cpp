@@ -42,6 +42,7 @@ namespace HudCondition
 			HudParts::Readout::Size       size;
 			HudParts::Readout::LabelPlace label;
 			bool                          alone = false;
+			bool                          number = false;
 		};
 
 		// The place kept for the MCM page, and the whole HUD units the trace
@@ -153,9 +154,19 @@ namespace HudCondition
 		return Shift{ Finite(Settings::fHudBarX.GetValue()), Finite(Settings::fHudBarY.GetValue()) };
 	}
 
+	bool AsNumber()
+	{
+		return Settings::iWeaponCnd.Form() == Settings::Cnd::kPercent;
+	}
+
 	HudParts::Readout::Size SizeNow()
 	{
-		return HudParts::Readout::SizeFrom(Settings::fHudBarLength, Settings::fHudBarThickness);
+		return AsNumber() ? HudParts::Readout::Size{} : HudParts::Readout::SizeFrom(Settings::fHudBarLength, Settings::fHudBarThickness);
+	}
+
+	bool FlippedNow()
+	{
+		return !AsNumber() && Settings::bHudBarFlipped.GetValue();
 	}
 
 	Transform TransformOf(const Value& a_clip)
@@ -257,14 +268,14 @@ namespace HudCondition
 	// -------------------------------------------------------------------
 
 	void Keep(const Placed& a_placed, const Spot& a_spot, const HudParts::Readout::Size& a_size, const HudParts::Readout::LabelPlace& a_label,
-		const Flash::Box& a_frame)
+		const Flash::Box& a_frame, bool a_number)
 	{
 		const Measure now{ a_placed.box, a_frame };
 		const auto    whole = Whole(now);
 		bool          tell = false;
 		{
 			const std::scoped_lock lock{ g_lock };
-			g_kept = Kept{ now, a_placed.staging, a_spot, a_size, a_label, a_placed.alone };
+			g_kept = Kept{ now, a_placed.staging, a_spot, a_size, a_label, a_placed.alone, a_number };
 			tell = whole != g_told;
 			g_told = whole;
 		}
@@ -295,15 +306,18 @@ namespace HudCondition
 		// flip on the page is worked out here, the flip as Turned turns the
 		// bar. The staging is the readout's as placed, its origin the bar's
 		// right end then, so the box moves by how far that end moved since.
+		// A change between Bar and Percent on the page keeps the box kept,
+		// since the other form's lines are measured only once the HUD
+		// draws them.
 		const auto size = SizeNow();
-		const auto flipped = Settings::bCndBarsFlipped.GetValue();
-		if ((size == kept->size && flipped == kept->spot.flipped) || !kept->staging) {
+		const auto flipped = FlippedNow();
+		if ((size == kept->size && flipped == kept->spot.flipped) || !kept->staging || kept->number != AsNumber()) {
 			return kept->measure;
 		}
 		const auto& label = kept->label;
 		const auto  was = Sized(kept->spot, kept->size, label);
 		const auto  now = Sized(Turned(kept->spot, flipped, label.letters), size, label);
-		const auto  box = kept->staging->Holding(Filled(now, label).Moved(now.line.x - was.line.x, now.line.y - was.line.y));
+		const auto  box = kept->staging->Holding(Filled(now, label, !kept->number).Moved(now.line.x - was.line.x, now.line.y - was.line.y));
 		if (!kept->alone) {
 			return Measure{ box, kept->measure.frame };
 		}

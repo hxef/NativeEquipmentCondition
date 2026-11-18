@@ -50,12 +50,7 @@ namespace CallPatch
 
 	// What losing a place costs, from its part: main for the row's own,
 	// alone for any other, nothing from kTrace on.
-	enum class Use
-	{
-		kMain,
-		kDetail,
-		kTraceOnly,
-	};
+	enum class Use { kMain, kDetail, kTraceOnly };
 
 	// What stands on a place, for the page and NEC.log. Never read by a hook.
 	// NEC's hook runs at a written place while it is kOwn, kOnTop, kShared or
@@ -109,13 +104,15 @@ namespace CallPatch
 	// to another mod never reads as patched.
 	void SayPatched(Part a_part, std::string a_line);
 
-	// A log line gathered under the lock and written after it. off names the
-	// key of a switch turned off, and the line says why, see LogChange.
+	// A log line gathered under the lock and written after it, and for a
+	// switch or stepper turned off its key, old and new value, see LogChange.
 	struct Line
 	{
 		REX::ELogLevel   level;
 		std::string      text;
 		std::string_view off{};
+		std::string      from{};
+		std::string_view to{};
 	};
 
 	using Lines = std::vector<Line>;
@@ -195,11 +192,11 @@ namespace CallPatch
 		return a_place.share == Share::kCut || a_place.share == Share::kLeft;
 	}
 
-	// A switch left to another mod and the part it went off with.
+	// A switch or stepper left to another mod and the part it went off with.
 	struct Yielded
 	{
-		const Settings::Live<bool>* on;
-		Part                        cause;
+		Settings::Gate on;
+		Part           cause;
 	};
 
 	// What 1 End or 1 recheck changed, said once it is over, so a part with
@@ -210,7 +207,8 @@ namespace CallPatch
 		{
 			const Feature* row;
 			Part           cause;
-			bool           was;  // the switch was on
+			bool           was;   // the switch or stepper was on
+			std::string    from;  // its value then, as NEC.ini writes it
 		};
 
 		std::bitset<PART_COUNT> parts;  // parts that lost a place in it, for good or for now
@@ -219,9 +217,9 @@ namespace CallPatch
 
 	[[nodiscard]] std::vector<Place>& Places();
 
-	// The record of a switch left to another mod, nullptr while it is free.
-	[[nodiscard]] const Yielded* YieldLocked(const Settings::Live<bool>* a_switch);
-	[[nodiscard]] bool           YieldedLocked(const Settings::Live<bool>* a_switch);
+	// The record of a switch or stepper left to another mod, or nullptr.
+	[[nodiscard]] const Yielded* YieldLocked(const Settings::Named* a_setting);
+	[[nodiscard]] bool           YieldedLocked(const Settings::Named* a_setting);
 
 	// Its set stops for good, and the place is a_share, kCut or kLeft.
 	void Lose(Place& a_place, Pass& a_pass, Share a_share);

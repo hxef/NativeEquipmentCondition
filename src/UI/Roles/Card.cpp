@@ -100,6 +100,18 @@ namespace Roles::Card
 			       (a_number.ends_with(NO_TENTH) && Reads(*value, a_number.substr(0, a_number.size() - NO_TENTH.size())));
 		}
 
+		// Whether a row prints a_label and shows a_drawing, the clip NEC drew
+		// in place of its number.
+		[[nodiscard]] bool Draws(Value& a_row, std::string_view a_label, const char* a_drawing)
+		{
+			const auto label = Printed(a_row, "Label_tf"sv);
+			if (!label || !SameWord(*label, a_label)) {
+				return false;
+			}
+			const auto drawing = Flash::Child(a_row, a_drawing);
+			return drawing.IsDisplayObject() && Flash::Opacity(drawing) > 0.0;
+		}
+
 		// -------------------------------------------------------------------
 		// A row's other children
 		// -------------------------------------------------------------------
@@ -112,6 +124,13 @@ namespace Roles::Card
 		{
 			const auto name = Flash::String(a_child, "name"sv);
 			return name == "Label_tf"sv || name == "Value_tf"sv;
+		}
+
+		// Every part NEC adds to a row is named NEC_..., the fridge icon and
+		// the CND bar, and none takes room from the row's text.
+		[[nodiscard]] bool IsNecPart(const Value& a_child)
+		{
+			return Flash::String(a_child, "name"sv).starts_with("NEC_"sv);
 		}
 
 		// Whether a child is a text field, by the text it holds.
@@ -176,7 +195,7 @@ namespace Roles::Card
 	// -------------------------------------------------------------------
 
 	std::optional<Row> ConditionRow(Scaleform::GFx::Movie& a_movie, Value& a_card, std::uint32_t a_index,
-		std::string_view a_label, std::uint32_t a_tenths, bool a_redrawn)
+		std::string_view a_label, std::uint32_t a_tenths, bool a_redrawn, const char* a_drawing)
 	{
 		const auto children = Flash::Number(a_card, "numChildren"sv);
 		const auto label = Trimmed(a_label);
@@ -190,11 +209,17 @@ namespace Roles::Card
 
 		const auto test = [&](std::uint32_t a_child) {
 			auto child = Flash::ChildAt(a_card, a_child);
-			if (!IsRow(child) || !Prints(child, label, number) || !OnScreen(a_movie, child)) {
+			if (!IsRow(child)) {
+				return;
+			}
+			// A row printing its number again is drawn anew, whatever it
+			// showed before.
+			const auto prints = Prints(child, label, number);
+			if ((!prints && !Draws(child, label, a_drawing)) || !OnScreen(a_movie, child)) {
 				return;
 			}
 			if (!row) {
-				row = Row{ child, {} };
+				row = Row{ child, {}, !prints };
 				at = a_child;
 			}
 			matches++;
@@ -245,6 +270,22 @@ namespace Roles::Card
 		return row;
 	}
 
+	void HideOnOtherRows(Value& a_card, std::string_view a_label, const char* a_drawing)
+	{
+		const auto label = Trimmed(a_label);
+		for (auto& child : Flash::Children(a_card)) {
+			if (!IsRow(child)) {
+				continue;
+			}
+			if (const auto printed = Printed(child, "Label_tf"sv); printed && SameWord(*printed, label)) {
+				continue;
+			}
+			if (auto drawing = Flash::Child(child, a_drawing); drawing.IsDisplayObject()) {
+				Flash::Set(drawing, "visible"sv, Value(false));
+			}
+		}
+	}
+
 	Value NumberField(Value& a_row)
 	{
 		auto field = Flash::Member(a_row, "Value_tf"sv);
@@ -271,7 +312,7 @@ namespace Roles::Card
 			return true;
 		}
 		for (auto& child : Flash::Children(a_row)) {
-			if (IsOwnField(child) || Flash::Opacity(child) <= 0.0 || PrintsNothing(child)) {
+			if (IsOwnField(child) || IsNecPart(child) || Flash::Opacity(child) <= 0.0 || PrintsNothing(child)) {
 				continue;
 			}
 			// A child with no size draws nothing.

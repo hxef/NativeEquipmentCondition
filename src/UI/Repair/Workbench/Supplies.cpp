@@ -161,13 +161,13 @@ namespace Workbench::Supplies
 			REX::INFO("Workbench repairs take no supplies, since iRepairSupplies is 0.");
 			return;
 		}
-		// At CND decimals Off the card shows whole percents, so the line names
-		// the one the slider starts from as well.
+		// At CND decimals Off condition is written in whole percents, so the
+		// line names the one the slider starts from as well.
 		const auto from = FromTenths();
 		const auto value = Settings::fSuppliesOnlyFrom.GetValue();
 		const auto alone = Condition::Decimals() == Condition::CardDecimals::kOff ?
-		                       std::format("and from {:g}% condition, {:d}% on an item's card, nothing else", value, Repair::PercentFrom(from)) :
-		                       std::format("and from {:s}% condition on an item's card, nothing else", Condition::PointText(from));
+		                       std::format("and from {:g}% condition, so from {:d}% in whole numbers, nothing else", value, Repair::PercentFrom(from)) :
+		                       std::format("and from {:s}% condition, nothing else", Condition::PointText(from));
 		REX::INFO("Workbench repairs take {0:d} Oil and {0:d} Cloth for a gun, an automatic melee weapon or one with a mod built from Circuitry or Nuclear Material, {0:d} Adhesive for any other weapon, {0:d} Adhesive and {0:d} Cloth for armor, {1:s}.",
 			count, from < Condition::FULL_TENTHS ? alone : std::format("on top of the components, since fSuppliesOnlyFrom is {:g}", value));
 	}

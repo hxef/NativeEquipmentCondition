@@ -266,8 +266,8 @@ namespace Workbench
 
 		// The bench, the item and the spare are looked up again when the
 		// answer comes, in case anything moved in between. At Choose mods to
-		// use or to keep a spare with a mod that comes off asks which mods
-		// to scrap or keep first.
+		// use up or to keep a spare with a mod that comes off asks which mods
+		// to use up or keep first.
 		RepairPrompt::AskRows(over, Text::SpareQuestion(item->Name(), Condition::CardText(item->tenths)), std::move(rows),
 			[object = &a_object, a_extra, lists = std::move(lists), withMods = std::move(withMods), priced = a_priced](std::size_t a_row) {
 				const auto setting = KeepModsNow();

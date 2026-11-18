@@ -13,12 +13,12 @@
 // What a spare repair does with the spare's mods, iKeepSpareMods. Private to
 // this folder.
 //
-// The spare's frame, its own scrap recipe, is always scrapped, and so is
-// every mod no workbench takes off. Each other mod is either scrapped or
+// The spare's frame, its own scrap recipe, is always used up, and so is
+// every mod no workbench takes off. Each other mod is either used up or
 // comes back as the loose mod a mod swap returns, see Materials/Loose.h. A
 // plan names the mods that come back, and the spare worked for it, see
 // SpareOn, pays for the repair with the rest. Off keeps nothing, so the spare
-// repairs and salvages exactly as when it is scrapped whole. The 2 boxes
+// repairs and salvages exactly as when it is used up whole. The 2 boxes
 // that pick the mods are in SpareModBox.h.
 namespace Workbench
 {
@@ -26,17 +26,18 @@ namespace Workbench
 	enum class KeepMods : std::int32_t
 	{
 		kOff = 0,
-		// Scrap the mods the repair needs, the cheapest first.
+		// Use up the mods the repair needs, the cheapest first.
 		kCheapest = 1,
 		// The same, the priciest first.
 		kPriciest = 2,
-		// A box picks the mods to scrap.
+		// A box picks the mods to use up.
 		kChooseUse = 3,
 		// A box picks the mods to keep.
 		kChooseKeep = 4
 	};
 
-	// iKeepSpareMods as it stands. Any other number reads as Off.
+	// iKeepSpareMods as it stands. Any other number reads as 3, Choose mods
+	// to use up, the default.
 	[[nodiscard]] KeepMods KeepModsNow();
 
 	// Reads into a_spare the mods of a_extra that come off, in the order the
@@ -68,12 +69,12 @@ namespace Workbench
 	// writes 63.
 	[[nodiscard]] std::int32_t ShownTenths(const Spare& a_spare, const Selection& a_item, const Priced& a_priced);
 
-	// The plan of Cheapest and Priciest used first for a_whole, the spare
+	// The plan of Cheapest and Priciest used up first for a_whole, the spare
 	// worked with nothing kept: the frame first, then 1 mod at a time, the
 	// cheapest or the priciest first, until a_item reaches the condition its
 	// card reads after a_whole, a tenth at CND decimals Fractions only and
 	// Always. A mod that adds no worth is passed over, so it comes back.
-	// Every mod not scrapped is kept. Nothing for the other settings.
+	// Every mod not used up is kept. Nothing for the other settings.
 	// Says it in the trace.
 	[[nodiscard]] std::vector<std::uint32_t> AutoKept(const Selection& a_item, const Priced& a_priced, const Spare& a_whole,
 		KeepMods a_setting);

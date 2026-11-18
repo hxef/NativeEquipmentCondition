@@ -14,7 +14,7 @@ namespace PickupBar
 		// nothing to show without it.
 		bool g_patched = false;
 
-		HudParts::Waiter g_waiter{ Settings::bPickupBar, &AddBar };
+		HudParts::Waiter g_waiter{ &Settings::iPickupCnd, &AddBar };
 	}
 
 	void Install()

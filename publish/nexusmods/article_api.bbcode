@@ -75,7 +75,7 @@ While the player turned NEC off on its main MCM page, GetSettingBool("bNecOn:Fea
 
 [list]
 [*][font=Courier New]bool Function IsFeatureOn(string asFeature)[/font]
-True when the NEC feature of this name runs: NEC is on, its NEC.ini switch is on and no other DLL took all of it. Names: see Feature names.
+True when the NEC feature of this name runs: NEC is on, its NEC.ini switch or stepper does not turn it off and no other DLL took all of it. Names: see Feature names.
 [*][font=Courier New]bool Function IsFeatureTakenOver(string asFeature)[/font]
 True when another DLL took some or all of this feature, as NEC's main MCM page and NEC.log say.
 [*][font=Courier New]float Function GetSettingFloat(string asId)[/font]
@@ -164,9 +164,9 @@ The condition points 1 Wear takes off akItem at its holder's wear speed, -1 for 
 
 [list]
 [*][font=Courier New]int Function GetFreeMendFrom()[/font]
-The first whole percent, as an item's card shows it, from which the workbench mends an item for free. MEND puts it back to full at no cost. 100 means MEND is off. GetSettingFloat("fFreeMendFrom:Balance") gives the MCM slider's own value, which can end in .5, and while GetSettingInt("iCndDecimals:Features") is 1 or 2 a card reading that value mends too, such as 97.5%. While GetSettingFloat("fBenchCostMult:Balance") is 0, every repair is a free MEND, whatever this answers.
+The first whole percent, as CND decimals writes it, from which the workbench mends an item for free. MEND puts it back to full at no cost. 100 means MEND is off. GetSettingFloat("fFreeMendFrom:Balance") gives the MCM slider's own value, which can end in .5, and while GetSettingInt("iCndDecimals:Features") is 1 or 2 a card reading that value mends too, such as 97.5%. While GetSettingFloat("fBenchCostMult:Balance") is 0, every repair is a free MEND, whatever this answers.
 [*][font=Courier New]int Function GetSuppliesOnlyFrom()[/font]
-The first whole percent, as an item's card shows it, from which a workbench repair takes only its supplies and no components, at any perk rank. While GetSettingInt("iCndDecimals:Features") is 1 or 2 it starts at GetSettingFloat("fSuppliesOnlyFrom:Balance") itself, such as a card reading 87.5%. It is GetFreeMendFrom's number when no repair does, such as while GetSettingInt("iRepairSupplies:Balance") is 0.
+The first whole percent, as CND decimals writes it, from which a workbench repair takes only its supplies and no components, at any perk rank. While GetSettingInt("iCndDecimals:Features") is 1 or 2 it starts at GetSettingFloat("fSuppliesOnlyFrom:Balance") itself, such as a card reading 87.5%. It is GetFreeMendFrom's number when no repair does, such as while GetSettingInt("iRepairSupplies:Balance") is 0.
 [*][font=Courier New]int Function GetModdingFrom()[/font]
 The first percent from which the workbench lets you modify an item. 100 means only at full condition.
 [*][font=Courier New]int Function GetRepairDiscount(Form akBase)[/font]

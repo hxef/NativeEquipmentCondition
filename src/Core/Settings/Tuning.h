@@ -205,6 +205,10 @@ namespace Settings
 	// bar shows, at the same place.
 	inline Live<bool> bHudBarShowsWord{ "HUD", "bHudBarShowsWord", true };
 
+	// Mirrors the Weapon CND bar, so it fills from the left and the word sits
+	// before it, see HudCondition.h.
+	inline Live<bool> bHudBarFlipped{ "HUD", "bHudBarFlipped", false };
+
 	// How far right of the dash's ammo digits the Power armor CND bar sits,
 	// below 0 to the left. It still sways with the dash, see
 	// PowerArmorCondition.h.
@@ -221,9 +225,13 @@ namespace Settings
 	// only the bar shows, at the same place.
 	inline Live<bool> bPowerArmorBarShowsWord{ "HUD", "bPowerArmorBarShowsWord", true };
 
-	// Whether the Pickup CND bar shows under the name in the prompt of a
-	// weapon, armor or food outside a container, see PickupBar.h.
-	inline Live<bool> bPickupBar{ "HUD", "bPickupBar", true };
+	// Mirrors the Power armor CND bar, so it fills from the left and keeps the
+	// left end of the dash's ammo box, see PowerArmorCondition.h.
+	inline Live<bool> bPowerArmorBarFlipped{ "HUD", "bPowerArmorBarFlipped", false };
+
+	// How the Pickup CND shows under the name in the prompt of a weapon,
+	// armor or food outside a container, see Cnd and PickupBar.h.
+	inline CndStep iPickupCnd{ "HUD", "iPickupCnd", Cnd::kBar };
 
 	// How far right of its own place under the name the Pickup CND bar sits,
 	// below 0 to the left.
@@ -240,12 +248,34 @@ namespace Settings
 	// the bar shows, at the same place.
 	inline Live<bool> bPickupBarShowsWord{ "HUD", "bPickupBarShowsWord", true };
 
+	// Mirrors the Pickup CND bar, so it fills from the left and the word sits
+	// before it. It stays centred under the name.
+	inline Live<bool> bPickupBarFlipped{ "HUD", "bPickupBarFlipped", false };
+
+	// Whether the Pickup CND bar draws the penalty mark the other bars draw.
+	// Off as it ships, since the mark helps most on the weapon in hand.
+	inline Live<bool> bPickupPenaltyMark{ "HUD", "bPickupPenaltyMark", false };
+
+	// Mirrors the quick container's CND meters, so each fills from the right.
+	inline Live<bool> bQuickContainerBarFlipped{ "HUD", "bQuickContainerBarFlipped", false };
+
+	// How thick the CND meter on item cards is drawn, 1 for 65% of its row's
+	// text height.
+	inline Live<float> fItemCardBarThickness{ "HUD", "fItemCardBarThickness", 1.0F };
+
+	// Mirrors the bar of an item card's CND row, so it fills from the right.
+	inline Live<bool> bItemCardBarFlipped{ "HUD", "bItemCardBarFlipped", false };
+
+	// How the CND over each body part of the Pip-Boy apparel figure shows,
+	// see Cnd and PaperDoll.h.
+	inline CndStep iApparelFigureCnd{ "HUD", "iApparelFigureCnd", Cnd::kBar };
+
 	// How thick the CND bars on the Pip-Boy apparel figure are drawn.
 	inline Live<float> fPipboyBarThickness{ "HUD", "fPipboyBarThickness", 1.0F };
 
-	// Mirrors every CND bar NEC draws, so each fills from its other end and
-	// its CND word sits on the bar's other side.
-	inline Live<bool> bCndBarsFlipped{ "HUD", "bCndBarsFlipped", false };
+	// Mirrors the CND bars on the Pip-Boy apparel figure, so each fills from
+	// the right.
+	inline Live<bool> bPipboyBarFlipped{ "HUD", "bPipboyBarFlipped", false };
 
 	// How wide the mark where penalties start is on CND bars, 1 for its normal
 	// width.

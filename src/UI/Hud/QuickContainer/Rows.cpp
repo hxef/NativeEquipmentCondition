@@ -52,7 +52,7 @@ namespace QuickContainer
 		{
 			RE::BSFixedStringCS name;
 			std::uint32_t       count{ 0 };
-			std::int32_t        percent{ NO_CONDITION };
+			Reading             reading;
 			bool                better{ false };
 		};
 
@@ -71,7 +71,7 @@ namespace QuickContainer
 			for (std::size_t i = 0; i < a_lhs.size; i++) {
 				const auto& lhs = a_lhs.rows[i];
 				const auto& rhs = a_rhs.rows[i];
-				if (!(lhs.name == rhs.name) || lhs.count != rhs.count || lhs.percent != rhs.percent) {
+				if (!(lhs.name == rhs.name) || lhs.count != rhs.count || lhs.reading != rhs.reading) {
 					return false;
 				}
 			}
@@ -108,8 +108,8 @@ namespace QuickContainer
 				if (row.count > 1) {
 					text += std::format(" ({:d})", row.count);
 				}
-				if (row.percent >= 0) {
-					text += std::format(" {:d}%", row.percent);
+				if (row.reading.percent >= 0) {
+					text += std::format(" {:d}%", row.reading.percent);
 				}
 				if (row.better) {
 					text += " better";
@@ -144,19 +144,21 @@ namespace QuickContainer
 		// entry names its item by inventory handle and its stacks by index, and
 		// the first stack is where the row's name comes from. Food that spoils
 		// reads its freshness in a_holder instead, as the pickup bar does.
-		std::int32_t ConditionOf(const RE::InventoryUserUIInterfaceEntry& a_entry, const RE::TESObjectREFR* a_holder)
+		Reading ConditionOf(const RE::InventoryUserUIInterfaceEntry& a_entry, const RE::TESObjectREFR* a_holder)
 		{
 			const auto* inventory = RE::BGSInventoryInterface::GetSingleton();
 			const auto* item = inventory && !a_entry.stackIndex.empty() ? inventory->RequestInventoryItem(a_entry.invHandle.id) : nullptr;
 			const auto* stack = item ? item->GetStackByID(a_entry.stackIndex[0]) : nullptr;
 			if (!stack) {
-				return NO_CONDITION;
+				return Reading{};
 			}
-			if (const auto percent = Condition::Percent(*item, stack)) {
-				return static_cast<std::int32_t>(*percent);
+			const auto percent = Condition::Percent(*item, stack);
+			const auto tenths = Condition::Tenths(*item, stack);
+			if (percent && tenths) {
+				return Reading{ static_cast<std::int32_t>(*percent), *tenths };
 			}
 			const auto fresh = item->object ? FoodSpoil::FreshnessOf(*item->object, stack->extra.get(), a_holder) : std::nullopt;
-			return fresh ? static_cast<std::int32_t>(std::lround(*fresh * 100.0F)) : NO_CONDITION;
+			return fresh ? Reading{ static_cast<std::int32_t>(std::lround(*fresh * 100.0F)), Condition::CardTenths(*fresh, false) } : Reading{};
 		}
 
 		// The conditions of the rows AddItemRows is making. The 2 hooks run one
@@ -164,8 +166,8 @@ namespace QuickContainer
 		// outer what it found.
 		struct Building
 		{
-			std::array<std::int32_t, MAX_ROWS> percents{};
-			std::size_t                        made{ 0 };
+			std::array<Reading, MAX_ROWS> readings{};
+			std::size_t                   made{ 0 };
 		};
 
 		thread_local Building* t_building = nullptr;
@@ -186,7 +188,7 @@ namespace QuickContainer
 			const auto result = g_rowLink[0](a_this, a_inventoryRef, a_entry);
 
 			if (auto* building = t_building; building && building->made < MAX_ROWS && g_rowLink[0].Live()) {
-				building->percents[building->made++] = ConditionOf(a_entry, a_inventoryRef.get().get());
+				building->readings[building->made++] = ConditionOf(a_entry, a_inventoryRef.get().get());
 			}
 			return result;
 		}
@@ -221,7 +223,7 @@ namespace QuickContainer
 				auto& row = rows.rows[i];
 				row.name = items[i].itemName;
 				row.count = items[i].itemCount;
-				row.percent = aligned && i < building.made ? building.percents[i] : NO_CONDITION;
+				row.reading = aligned && i < building.made ? building.readings[i] : Reading{};
 				row.better = items[i].isBetterThanEquippedItem;
 			}
 			Publish(rows);
@@ -257,7 +259,7 @@ namespace QuickContainer
 	// Matching the rows on screen to a build
 	// -------------------------------------------------------------------
 
-	std::optional<std::array<std::int32_t, MAX_ROWS>> FindConditions(const std::array<Shown, MAX_ROWS>& a_shown, std::size_t a_size)
+	std::optional<std::array<Reading, MAX_ROWS>> FindConditions(const std::array<Shown, MAX_ROWS>& a_shown, std::size_t a_size)
 	{
 		const std::scoped_lock l{ g_buildsLock };
 		for (const auto& build : g_builds) {
@@ -273,12 +275,11 @@ namespace QuickContainer
 				continue;
 			}
 
-			std::array<std::int32_t, MAX_ROWS> percents{};
-			percents.fill(NO_CONDITION);
+			std::array<Reading, MAX_ROWS> readings{};
 			for (std::size_t i = 0; i < build.size; i++) {
-				percents[i] = build.rows[i].percent;
+				readings[i] = build.rows[i].reading;
 			}
-			return percents;
+			return readings;
 		}
 		return std::nullopt;
 	}

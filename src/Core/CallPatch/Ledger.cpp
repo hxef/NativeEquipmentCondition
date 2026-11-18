@@ -12,6 +12,7 @@
 #include <span>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 // The ledger: every place NEC patches, noted while its row's Install runs and
@@ -165,18 +166,19 @@ namespace CallPatch
 			return free;
 		}
 
-		// Leaves a row's switch off while the game runs: off in memory only,
-		// and every hook that asks it gives the vanilla result. Once per
-		// switch. Say writes the lines.
+		// Leaves a row's switch off, or its stepper at Off, while the game
+		// runs: in memory only, and every hook that asks it gives the vanilla
+		// result. Once per switch or stepper. Say writes the lines.
 		void TurnOff(const Feature& a_row, Part a_cause, Pass& a_pass)
 		{
-			if (!a_row.on || YieldedLocked(a_row.on)) {
+			if (!a_row.on || YieldedLocked(a_row.on.Setting())) {
 				return;
 			}
-			const auto was = a_row.on->GetValue();
-			a_row.on->SetValue(false);
+			const auto was = a_row.on.On();
+			auto       from = a_row.on.Word();
+			a_row.on.SetOff();
 			g_yields.push_back({ a_row.on, a_cause });
-			a_pass.offs.push_back({ &a_row, a_cause, was });
+			a_pass.offs.push_back({ &a_row, a_cause, was, std::move(from) });
 		}
 
 		// End's rule. A taken place of the row's own part leaves a row with a
@@ -239,15 +241,15 @@ namespace CallPatch
 		return g_places;
 	}
 
-	const Yielded* YieldLocked(const Settings::Live<bool>* a_switch)
+	const Yielded* YieldLocked(const Settings::Named* a_setting)
 	{
-		const auto it = std::ranges::find(g_yields, a_switch, &Yielded::on);
+		const auto it = std::ranges::find(g_yields, a_setting, [](const Yielded& a_yield) { return a_yield.on.Setting(); });
 		return it != g_yields.end() ? &*it : nullptr;
 	}
 
-	bool YieldedLocked(const Settings::Live<bool>* a_switch)
+	bool YieldedLocked(const Settings::Named* a_setting)
 	{
-		return YieldLocked(a_switch) != nullptr;
+		return YieldLocked(a_setting) != nullptr;
 	}
 
 	// Its set's hooks give the vanilla result from now on. A place of a
@@ -275,7 +277,7 @@ namespace CallPatch
 	{
 		for (const auto& line : a_lines) {
 			if (!line.off.empty()) {
-				Settings::LogChange(line.off, "true", "false", line.text);
+				Settings::LogChange(line.off, line.from, line.to, line.text);
 			} else if (line.level == REX::ELogLevel::Error) {
 				REX::ERROR("{:s}", line.text);
 			} else if (line.level == REX::ELogLevel::Warning) {
@@ -361,9 +363,9 @@ namespace CallPatch
 		Write(lines);
 	}
 
-	bool IsYielded(const Settings::Live<bool>& a_switch)
+	bool IsYielded(const Settings::Named& a_setting)
 	{
 		const std::scoped_lock l{ g_lock };
-		return YieldedLocked(&a_switch);
+		return YieldedLocked(&a_setting);
 	}
 }

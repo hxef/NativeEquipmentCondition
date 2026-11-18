@@ -5,10 +5,10 @@
 #include "Core/Runtime.h"
 
 #include <algorithm>
-#include <cctype>
 #include <cstdint>
 #include <format>
 #include <iterator>
+#include <optional>
 #include <span>
 #include <string>
 #include <string_view>
@@ -26,13 +26,16 @@ namespace Settings
 		// The lists
 		// -------------------------------------------------------------------
 
-		Live<bool>* const SWITCHES[]{
+		// The switches and CND steppers that lead [Features] on the Settings
+		// line. Every one a row of Features.cpp turns on with is here, so the
+		// walks of what is left to other mods find it.
+		constexpr Gate GATES[]{
 			&bSpawnCondition,
 			&bWorkbenchRepair,
 			&bVendorRepair,
 			&bLoadingTips,
-			&bHudCondition,
-			&bQuickContainer,
+			&iWeaponCnd,
+			&iQuickContainerCnd,
 			&bConfirmScroll,
 			&bInspectPrice,
 			&bFoodSpoils,
@@ -45,6 +48,10 @@ namespace Settings
 			&iSpareModRows,
 			&iRepairBoxRow,
 			&iRepairLock,
+			&iWeaponCnd,
+			&iPowerArmorCnd,
+			&iQuickContainerCnd,
+			&iItemCardCnd,
 			&iCndDecimals,
 			&iLootShift,
 			&iLootSurpriseOdds,
@@ -97,10 +104,13 @@ namespace Settings
 			&fPowerArmorBarY,
 			&fPowerArmorBarLength,
 			&fPowerArmorBarThickness,
+			&iPickupCnd,
 			&fPickupBarX,
 			&fPickupBarY,
 			&fPickupBarLength,
 			&fPickupBarThickness,
+			&fItemCardBarThickness,
+			&iApparelFigureCnd,
 			&fPipboyBarThickness,
 			&fPenaltyMarkWidth,
 		};
@@ -118,11 +128,9 @@ namespace Settings
 			&bRepairBoxColumns,
 			&bRepairBoxGains,
 			&bLoadingTips,
-			&bHudCondition,
-			&bPowerArmorBar,
-			&bQuickContainer,
 			&bCardWearRate,
 			&bPowerArmorCardCnd,
+			&bCndColumn,
 			&bConfirmScroll,
 			&bInspectPrice,
 			&bFoodSpoils,
@@ -130,36 +138,50 @@ namespace Settings
 			&bHudBarHidesWithCounter,
 			&bHudBarStandsAlone,
 			&bHudBarShowsWord,
+			&bHudBarFlipped,
 			&bPowerArmorBarShowsWord,
-			&bPickupBar,
+			&bPowerArmorBarFlipped,
 			&bPickupBarShowsWord,
-			&bCndBarsFlipped,
+			&bPickupBarFlipped,
+			&bPickupPenaltyMark,
+			&bQuickContainerBarFlipped,
+			&bItemCardBarFlipped,
+			&bPipboyBarFlipped,
 			&bPenaltyMarkAsLine,
 			&bTraceLogs,
 		};
 
-		// The switches SWITCHES leaves out, each after the setting NEC.ini has
+		// The switches GATES leaves out, each after the setting NEC.ini has
 		// it after, for the Settings line. bNecOn and bPlainApparelNeverWears
 		// come first in [Features], so ReportLine says them before the list.
 		Live<bool>* const AFTER_VENDOR_REPAIR[]{ &bTraderSign, &bSpareRepair, &bLockSpares, &bRepairBoxColumns, &bRepairBoxGains };
-		Live<bool>* const AFTER_HUD_CONDITION[]{ &bPowerArmorBar };
-		Live<bool>* const AFTER_QUICK_CONTAINER[]{ &bCardWearRate, &bPowerArmorCardCnd };
+		Live<bool>* const AFTER_ITEM_CARD_CND[]{ &bCardWearRate, &bPowerArmorCardCnd };
 		Live<bool>* const AFTER_FOOD_SPOILS[]{ &bFridgeIcon };
-		Live<bool>* const AFTER_HUD_BAR[]{ &bHudBarHidesWithCounter, &bHudBarStandsAlone, &bHudBarShowsWord };
-		Live<bool>* const AFTER_POWER_ARMOR_BAR[]{ &bPowerArmorBarShowsWord, &bPickupBar };
-		Live<bool>* const AFTER_PICKUP_BAR[]{ &bPickupBarShowsWord };
-		Live<bool>* const AFTER_PIPBOY_BAR[]{ &bCndBarsFlipped };
+		Live<bool>* const AFTER_HUD_BAR[]{ &bHudBarHidesWithCounter, &bHudBarStandsAlone, &bHudBarShowsWord, &bHudBarFlipped };
+		Live<bool>* const AFTER_POWER_ARMOR_BAR[]{ &bPowerArmorBarShowsWord, &bPowerArmorBarFlipped };
+		Live<bool>* const AFTER_PICKUP_BAR[]{ &bPickupBarShowsWord, &bPickupBarFlipped, &bPickupPenaltyMark, &bQuickContainerBarFlipped };
+		Live<bool>* const AFTER_ITEM_CARD_BAR[]{ &bItemCardBarFlipped };
+		Live<bool>* const AFTER_PIPBOY_BAR[]{ &bPipboyBarFlipped };
 		Live<bool>* const AFTER_PENALTY_MARK[]{ &bPenaltyMarkAsLine };
+		Live<bool>* const AFTER_CND_DECIMALS[]{ &bCndColumn };
 
-		// The numbers under [Features], which the Settings line puts after the
-		// switch NEC.ini has them after.
+		// The numbers under [Features] GATES leaves out, which the Settings
+		// line puts after the setting NEC.ini has them after.
 		Live<std::int32_t>* const AFTER_SPARE_REPAIR[]{ &iPipboyRepair, &iUnscrappableSpares, &iKeepSpareMods, &iSpareModRows, &iRepairBoxRow, &iRepairLock };
+		Live<std::int32_t>* const AFTER_WEAPON_CND[]{ &iPowerArmorCnd };
+		Live<std::int32_t>* const AFTER_QUICK_CONTAINER_CND[]{ &iItemCardCnd };
 		Live<std::int32_t>* const AFTER_POWER_ARMOR_CARD_CND[]{ &iCndDecimals };
 
 		[[nodiscard]] std::span<Live<std::int32_t>* const> NumbersAfter(const Named& a_setting)
 		{
 			if (&a_setting == &bSpareRepair) {
 				return AFTER_SPARE_REPAIR;
+			}
+			if (&a_setting == &iWeaponCnd) {
+				return AFTER_WEAPON_CND;
+			}
+			if (&a_setting == &iQuickContainerCnd) {
+				return AFTER_QUICK_CONTAINER_CND;
 			}
 			if (&a_setting == &bPowerArmorCardCnd) {
 				return AFTER_POWER_ARMOR_CARD_CND;
@@ -172,11 +194,8 @@ namespace Settings
 			if (&a_setting == &bVendorRepair) {
 				return AFTER_VENDOR_REPAIR;
 			}
-			if (&a_setting == &bHudCondition) {
-				return AFTER_HUD_CONDITION;
-			}
-			if (&a_setting == &bQuickContainer) {
-				return AFTER_QUICK_CONTAINER;
+			if (&a_setting == &iItemCardCnd) {
+				return AFTER_ITEM_CARD_CND;
 			}
 			if (&a_setting == &bFoodSpoils) {
 				return AFTER_FOOD_SPOILS;
@@ -190,11 +209,17 @@ namespace Settings
 			if (&a_setting == &fPickupBarThickness) {
 				return AFTER_PICKUP_BAR;
 			}
+			if (&a_setting == &fItemCardBarThickness) {
+				return AFTER_ITEM_CARD_BAR;
+			}
 			if (&a_setting == &fPipboyBarThickness) {
 				return AFTER_PIPBOY_BAR;
 			}
 			if (&a_setting == &fPenaltyMarkWidth) {
 				return AFTER_PENALTY_MARK;
+			}
+			if (&a_setting == &iCndDecimals) {
+				return AFTER_CND_DECIMALS;
 			}
 			return {};
 		}
@@ -203,7 +228,7 @@ namespace Settings
 		// How the line shows a setting
 		// -------------------------------------------------------------------
 
-		// Who has a switch's part, short for the Settings line: the DLLs,
+		// Who has a setting's part, short for the Settings line: the DLLs,
 		// another mod, or the game version, one NEC does not support or one
 		// with no place for it.
 		std::string Owned(std::span<const CallPatch::Owner> a_owners)
@@ -229,40 +254,75 @@ namespace Settings
 			return effect.idle ? ""sv : effect.None() ? "(no effect)"sv : !effect.off.empty() ? "(some)"sv : ""sv;
 		}
 
-		// A switch as the Settings line prints it. A switch left to another
-		// mod says to whom, and one that is on carries its mark.
-		std::string Shown(const Live<bool>& a_switch)
+		// Who has a switch or a CND stepper left to another mod, as Owned
+		// says it, or nothing while it is free.
+		std::optional<std::string> LeftTo(const Named& a_setting)
 		{
-			if (const auto yield = CallPatch::YieldOf(a_switch)) {
-				std::vector<CallPatch::Owner> owners;
-				for (const auto& cause : yield->causes) {
-					for (const auto& owner : cause.owners) {
-						if (std::ranges::find(owners, owner) == owners.end()) {
-							owners.push_back(owner);
-						}
+			const auto yield = CallPatch::YieldOf(a_setting);
+			if (!yield) {
+				return std::nullopt;
+			}
+			std::vector<CallPatch::Owner> owners;
+			for (const auto& cause : yield->causes) {
+				for (const auto& owner : cause.owners) {
+					if (std::ranges::find(owners, owner) == owners.end()) {
+						owners.push_back(owner);
 					}
 				}
-				std::ranges::sort(owners, CallPatch::Before);
-				return std::format("false({:s})", Owned(owners));
+			}
+			std::ranges::sort(owners, CallPatch::Before);
+			return Owned(owners);
+		}
+
+		// A setting's value as the Settings line prints it. A switch or a
+		// stepper left to another mod says to whom. Otherwise a switch that
+		// is on, and any number, carries its mark.
+		std::string Shown(const Live<bool>& a_switch)
+		{
+			if (const auto owners = LeftTo(a_switch)) {
+				return std::format("false({:s})", *owners);
 			}
 			return a_switch.GetValue() ? std::format("true{:s}", Mark(a_switch)) : "false";
 		}
 
-		// A number as the Settings line prints it.
-		std::string Shown(float a_value)
+		std::string Shown(const Live<float>& a_number)
 		{
-			return std::format("{:g}", a_value);
+			return std::format("{:g}{:s}", a_number.GetValue(), Mark(a_number));
 		}
 
-		std::string Shown(std::int32_t a_value)
+		std::string Shown(const Live<std::int32_t>& a_number)
 		{
-			return std::format("{:d}", a_value);
+			if (const auto owners = LeftTo(a_number)) {
+				return std::format("{:d}({:s})", a_number.GetValue(), *owners);
+			}
+			return std::format("{:d}{:s}", a_number.GetValue(), Mark(a_number));
+		}
+
+		void SayAfter(std::string& a_line, const Named& a_setting);
+
+		// A setting on the Settings line, then the settings NEC.ini has after
+		// it, each with its own after it.
+		template <class T>
+		void Say(std::string& a_line, const Live<T>& a_setting)
+		{
+			std::format_to(std::back_inserter(a_line), " {:s}={:s}", a_setting.key, Shown(a_setting));
+			SayAfter(a_line, a_setting);
+		}
+
+		void SayAfter(std::string& a_line, const Named& a_setting)
+		{
+			for (const auto* after : SwitchesAfter(a_setting)) {
+				Say(a_line, *after);
+			}
+			for (const auto* after : NumbersAfter(a_setting)) {
+				Say(a_line, *after);
+			}
 		}
 	}
 
-	std::span<Live<bool>* const> Switches()
+	std::span<const Gate> Gates()
 	{
-		return SWITCHES;
+		return GATES;
 	}
 
 	std::span<const Number> Numbers()
@@ -275,30 +335,6 @@ namespace Settings
 		return EVERY_SWITCH;
 	}
 
-	bool IsIdOf(const Named& a_setting, std::string_view a_id)
-	{
-		const auto same = [](std::string_view a_lhs, std::string_view a_rhs) {
-			return std::ranges::equal(a_lhs, a_rhs, [](char a_l, char a_r) {
-				return std::tolower(static_cast<unsigned char>(a_l)) == std::tolower(static_cast<unsigned char>(a_r));
-			});
-		};
-		const auto key = a_setting.key.size();
-		return a_id.size() == key + 1 + a_setting.section.size() && a_id[key] == ':' &&
-		       same(a_id.substr(0, key), a_setting.key) && same(a_id.substr(key + 1), a_setting.section);
-	}
-
-	Live<bool>* SwitchById(std::string_view a_id)
-	{
-		const auto it = std::ranges::find_if(EVERY_SWITCH, [&](const Live<bool>* a_switch) { return IsIdOf(*a_switch, a_id); });
-		return it != std::end(EVERY_SWITCH) ? *it : nullptr;
-	}
-
-	Live<bool>* SwitchByKey(std::string_view a_key)
-	{
-		const auto it = std::ranges::find_if(EVERY_SWITCH, [&](const Live<bool>* a_switch) { return a_switch->key == a_key; });
-		return it != std::end(EVERY_SWITCH) ? *it : nullptr;
-	}
-
 	// -------------------------------------------------------------------
 	// The Settings line
 	// -------------------------------------------------------------------
@@ -308,22 +344,17 @@ namespace Settings
 		// Every key as it stands now, before any limit, in NEC.ini's order and
 		// spelling.
 		std::string line = std::format("Settings: [Features] {:s}={:s} {:s}={:s}", bNecOn.key, Shown(bNecOn), bPlainApparelNeverWears.key, Shown(bPlainApparelNeverWears));
-		const auto say = [&](const auto& a_number) {
-			std::format_to(std::back_inserter(line), " {:s}={:s}{:s}", a_number.key, Shown(a_number.GetValue()), Mark(a_number));
-		};
-		for (const auto* on : SWITCHES) {
-			std::format_to(std::back_inserter(line), " {:s}={:s}", on->key, Shown(*on));
-			for (const auto* after : SwitchesAfter(*on)) {
-				std::format_to(std::back_inserter(line), " {:s}={:s}", after->key, Shown(*after));
-				for (const auto* number : NumbersAfter(*after)) {
-					say(*number);
-				}
+		for (const auto& gate : GATES) {
+			if (const auto* on = gate.Switch()) {
+				Say(line, *on);
+			} else {
+				Say(line, *gate.Stepper());
 			}
 		}
 		std::string_view section;
 		for (const auto& entry : NUMBERS) {
 			std::visit([&](const auto* a_number) {
-				// Said after its switch above.
+				// Said after its switch or stepper above.
 				if (a_number->section == bSpareRepair.section) {
 					return;
 				}
@@ -331,10 +362,7 @@ namespace Settings
 					section = a_number->section;
 					std::format_to(std::back_inserter(line), " [{:s}]", section);
 				}
-				say(*a_number);
-				for (const auto* after : SwitchesAfter(*a_number)) {
-					std::format_to(std::back_inserter(line), " {:s}={:s}", after->key, Shown(*after));
-				}
+				Say(line, *a_number);
 			}, entry);
 		}
 		std::format_to(std::back_inserter(line), " [Log] sLogLevel={:s} bTraceLogs={}", LogLevelWord(), bTraceLogs.GetValue());

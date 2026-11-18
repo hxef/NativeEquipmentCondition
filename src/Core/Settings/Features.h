@@ -55,16 +55,18 @@ namespace Settings
 	inline Live<std::int32_t> iUnscrappableSpares{ "Features", "iUnscrappableSpares", 1 };
 
 	// What a spare repair does with the spare's mods, see
-	// Workbench/SpareMods.cpp: 0 scraps them, 1 and 2 hand back those the
-	// repair does not need, 3 and 4 ask in a box. Any other number reads as 0.
-	inline Live<std::int32_t> iKeepSpareMods{ "Features", "iKeepSpareMods", 0 };
+	// Workbench/SpareMods.cpp: 0 uses them up, 1 and 2 hand back those the
+	// repair does not need, 3, the default, and 4 ask in a box. Any other
+	// number reads as 3.
+	inline Live<std::int32_t> iKeepSpareMods{ "Features", "iKeepSpareMods", 3 };
 
 	// Whether iKeepSpareMods at a_value asks in a box which of a spare's mods
-	// to scrap or keep, 3 and 4.
-	[[nodiscard]] constexpr bool KeepSpareModsAsks(std::int32_t a_value) { return a_value == 3 || a_value == 4; }
+	// to use up or keep, 3 and 4, and also any number outside 0 to 4, since
+	// it reads as 3.
+	[[nodiscard]] constexpr bool KeepSpareModsAsks(std::int32_t a_value) { return a_value < 0 || a_value > 2; }
 
 	// What a mod's row shows in the boxes of iKeepSpareMods 3 and 4: 0 what
-	// scrapping the mod adds or keeping it costs, +3.7% or -4.2%, 1 the
+	// using up the mod adds or keeping it costs, +3.7% or -4.2%, 1 the
 	// condition the repair reaches, 64.2%. Any other number reads as 0.
 	inline Live<std::int32_t> iSpareModRows{ "Features", "iSpareModRows", 0 };
 
@@ -98,28 +100,38 @@ namespace Settings
 	// Loading screen tips about condition.
 	inline Live<bool> bLoadingTips{ "Features", "bLoadingTips", true };
 
-	// The Weapon CND bar on the HUD, by the ammo counter.
-	inline Live<bool> bHudCondition{ "Features", "bHudCondition", true };
+	// How each place shows condition, see Cnd. iWeaponCnd and
+	// iQuickContainerCnd also turn their feature's row on, see Features.cpp.
 
-	// The Power armor CND bar on the HUD, on the power armor dash. Its row
-	// goes with bHudCondition's part, see Features.cpp.
-	inline Live<bool> bPowerArmorBar{ "Features", "bPowerArmorBar", true };
+	// The Weapon CND on the HUD, by the ammo counter.
+	inline CndStep iWeaponCnd{ "Features", "iWeaponCnd", Cnd::kBar };
 
-	// Condition meters on the rows of the quick container.
-	inline Live<bool> bQuickContainer{ "Features", "bQuickContainer", true };
+	// The Power armor dash CND, whose row goes with iWeaponCnd's part.
+	inline CndStep iPowerArmorCnd{ "Features", "iPowerArmorCnd", Cnd::kBar };
+
+	// Condition on the rows of the quick container.
+	inline CndStep iQuickContainerCnd{ "Features", "iQuickContainerCnd", Cnd::kBar };
+
+	// The CND row of item cards. At Off the cards stay vanilla.
+	inline CndStep iItemCardCnd{ "Features", "iItemCardCnd", Cnd::kPercent };
 
 	// The wear rate beside the condition on the CND row of item cards, read
 	// at every render of a card, see UI/Inventory/ItemCard/WearRate.cpp.
 	inline Live<bool> bCardWearRate{ "Features", "bCardWearRate", true };
 
-	// A power armor piece's Health on its item card shown as CND in percent,
-	// display only, see UI/Inventory/ItemCard/PowerArmor.cpp.
+	// A power armor piece's Health on its item card shown as CND, a bar or a
+	// percent as iItemCardCnd says, display only, see
+	// UI/Inventory/ItemCard/PowerArmor.cpp.
 	inline Live<bool> bPowerArmorCardCnd{ "Features", "bPowerArmorCardCnd", false };
 
 	// How a card writes an item's condition: 0 whole numbers, 1 a tenth only
 	// when it is not 0, 2 always a tenth. Any other number reads as 2, see
 	// Condition::Decimals.
 	inline Live<std::int32_t> iCndDecimals{ "Features", "iCndDecimals", 2 };
+
+	// A CND column in a UI replacer's item lists, read at each list's opening,
+	// see UI/Inventory/ItemCard/Column.cpp.
+	inline Live<bool> bCndColumn{ "Features", "bCndColumn", true };
 
 	// A workbench's confirmation box shows more of a long list and scrolls it,
 	// see ConfirmScroll.h.

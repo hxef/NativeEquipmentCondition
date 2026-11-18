@@ -76,16 +76,18 @@ namespace Text
 		Key                    help;
 	};
 
-	// The 21 switches, bNecOn, bPlainApparelNeverWears, bWorkbenchRepair,
-	// bTraderSign, bSpareRepair, iPipboyRepair, iUnscrappableSpares,
-	// iKeepSpareMods, iSpareModRows, iRepairBoxRow, iRepairLock, bLockSpares,
-	// bRepairBoxColumns, bRepairBoxGains, bHudCondition, bPowerArmorBar,
-	// bCardWearRate, bPowerArmorCardCnd, iCndDecimals, bFridgeIcon and
-	// bTraceLogs, in MenuSwitches.cpp,
+	// The 24 switches and steppers with a name of their own, bNecOn,
+	// bPlainApparelNeverWears, bWorkbenchRepair, bTraderSign, bSpareRepair,
+	// iPipboyRepair, iUnscrappableSpares, iKeepSpareMods, iSpareModRows,
+	// iRepairBoxRow, iRepairLock, bLockSpares, bRepairBoxColumns,
+	// bRepairBoxGains, iWeaponCnd, iPowerArmorCnd, iQuickContainerCnd,
+	// iItemCardCnd, bCardWearRate, bPowerArmorCardCnd, iCndDecimals,
+	// bCndColumn, bFridgeIcon and bTraceLogs, in MenuSwitches.cpp,
 	// the 10 wear speeds, in MenuWear.cpp, the 3 Loot numbers and the 30
-	// Balance numbers, in MenuNumbers.cpp, and the 14 HUD numbers, the 8 HUD
-	// switches and sLogLevel, in MenuHudLog.cpp, each in NEC.ini's order,
-	// and the 4 presets rows of NEC's main page, in MenuPresets.cpp.
+	// Balance numbers, in MenuNumbers.cpp, and the 15 HUD sliders, the 2 HUD
+	// steppers, the 13 HUD switches and sLogLevel, in MenuHudLog.cpp, each in
+	// NEC.ini's order, and the 4 presets rows of NEC's main page, in
+	// MenuPresets.cpp.
 	[[nodiscard]] std::span<const MenuRow> MenuSwitches();
 	[[nodiscard]] std::span<const MenuRow> MenuWear();
 	[[nodiscard]] std::span<const MenuRow> MenuNumbers();

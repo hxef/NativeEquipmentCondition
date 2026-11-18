@@ -80,12 +80,26 @@ namespace ItemCard
 			MoveLastTo(a_entries, 0);
 		}
 
+		// Whether a card gets its CND row, as Item card CND says.
+		bool CardShowsCnd()
+		{
+			return Settings::iItemCardCnd.Form() != Settings::Cnd::kOff;
+		}
+
 		// The number on the CND row in tenths, see Condition::CardTenths: a
 		// weapon's or armor's condition, or how fresh a food is.
 		std::optional<std::uint32_t> RowTenths(const RE::BGSInventoryItem& a_item, const RE::BGSInventoryItem::Stack* a_stack)
 		{
 			const auto gear = Condition::Tenths(a_item, a_stack);
 			return gear ? gear : FoodTenths(a_item, a_stack);
+		}
+
+		// The kind whose penalty point the CND row's bar marks: a weapon's or
+		// armor's that wears. None for food and power armor pieces.
+		std::optional<Condition::Kind> PenaltyKind(const RE::BGSInventoryItem& a_item)
+		{
+			const auto* object = a_item.object;
+			return object && Condition::WearsOut(*object) ? std::optional{ Condition::KindOf(*object) } : std::nullopt;
 		}
 
 		// Stands in for InventoryUserUIUtils::PopulateItemCardInfo_Helper. A
@@ -110,7 +124,9 @@ namespace ItemCard
 				ShowPowerArmorCnd(a_target, a_item, stack, HELPER_SITES[I].what);
 			}
 
-			const auto tenths = live ? RowTenths(a_item, stack) : std::nullopt;
+			// At Item card CND Off the card gets no CND row, and keeps its
+			// rads row.
+			const auto tenths = live && CardShowsCnd() ? RowTenths(a_item, stack) : std::nullopt;
 			const auto rads = RadsRow(food);
 			if (!tenths && !rads) {
 				return;
@@ -175,6 +191,9 @@ namespace ItemCard
 			if (rate) {
 				entry.SetMember(WEAR_RATE_MARK, Value(static_cast<double>(*rate)));
 			}
+			if (const auto kind = PenaltyKind(a_item)) {
+				entry.SetMember(PENALTY_KIND_MARK, Value(static_cast<std::uint32_t>(*kind)));
+			}
 			// The rate without the mod, which signs the change in the cell
 			// beside the number, see WriteWearRate.
 			if (own) {
@@ -236,11 +255,17 @@ namespace ItemCard
 			// The item's own entry, which the Pip-Boy numbers as it builds it.
 			// Pipboy::MarkEntry keeps the number of a worn out item or of
 			// spoiled food, which reads 0, to fade its name, and the wear rate
-			// its card shows, since no member of NEC's own reaches the card. It
-			// runs either way, since a repaired item needs its number
-			// forgotten.
+			// and penalty kind its card shows, since no member of NEC's own
+			// reaches the card. It runs either way, since a repaired item needs
+			// its number forgotten.
 			const auto spent = Condition::WearsOut(*a_item->object) ? a_stack && a_stack->extra && a_stack->extra->IsItemBroken() : *tenths == 0;
-			Pipboy::MarkEntry(*a_data, a_stack, spent, WearRateOf(*a_item, a_stack));
+			Pipboy::MarkEntry(*a_data, a_stack, spent, WearRateOf(*a_item, a_stack), PenaltyKind(*a_item));
+
+			// At Item card CND Off the card gets no CND row. The name above
+			// still fades.
+			if (!CardShowsCnd()) {
+				return;
+			}
 
 			// The call above created this array from scratch, so its order is
 			// still free to change.

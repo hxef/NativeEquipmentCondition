@@ -7,7 +7,7 @@ namespace ItemCard
 	namespace
 	{
 		// Whether any call took, since a card with no CND row has no row to
-		// move.
+		// move or to give a list column.
 		bool g_patched = false;
 	}
 
@@ -15,6 +15,7 @@ namespace ItemCard
 	{
 		if (g_patched) {
 			WatchCard(a_movie, a_file);
+			OfferColumn(a_movie, a_file);
 		}
 	}
 

@@ -9,6 +9,7 @@
 #include <chrono>
 #include <cstdint>
 #include <optional>
+#include <string>
 #include <string_view>
 
 // The pieces the plugin's CND readouts are built from. CND is drawn on the HUD
@@ -17,8 +18,9 @@
 // folders each place it by their own rules, and all 3 share the readout, the
 // HUD menu lookup and the colour kept here. The 2 weapon bars also share the
 // condition of the weapon in hand, and the pickup bar follows the prompt's
-// warning colour. Readout.h declares the readout and Readout.cpp draws it,
-// Draw.cpp the boxes and text fields it is built from, HudParts.cpp the rest.
+// warning colour. Readout.h declares the readout, Readout.cpp and
+// Percent.cpp draw it, Draw.cpp the boxes and text fields it is built from,
+// HudParts.cpp the rest.
 namespace HudParts
 {
 	using Value = Scaleform::GFx::Value;
@@ -53,8 +55,8 @@ namespace HudParts
 	// It is checked through F4SE's task queue and read from an atomic a frame
 	// later, and both readouts share it. F4SE runs the task on a worker thread
 	// during play, so the check holds the inventory lock while it reads. While
-	// both bars are switched off, or bNecOn is, nothing is checked. While 1
-	// bar is, Percent says NONE to it, so it fades as for a weapon with no
+	// both readouts are at Off, or bNecOn is off, nothing is checked. While 1
+	// is, Percent says NONE to it, so it fades as for a weapon with no
 	// condition.
 	namespace Weapon
 	{
@@ -73,8 +75,12 @@ namespace HudParts
 		inline constexpr std::chrono::milliseconds READING_EVERY{ 300 };
 
 		// The condition of the weapon in hand as a whole percent, or NONE
-		// while a_on, the asking bar's switch, or bNecOn is off.
-		[[nodiscard]] std::int32_t Percent(const Settings::Live<bool>& a_on);
+		// while a_on, the asking place's stepper, is at Off or bNecOn is off.
+		[[nodiscard]] std::int32_t Percent(Settings::Gate a_on);
+
+		// The same condition in tenths, as the weapon's card writes it, see
+		// Condition::CardTenths, or nothing whenever Percent says NONE.
+		[[nodiscard]] std::optional<std::uint32_t> Tenths(Settings::Gate a_on);
 
 		// Whether the player has a weapon drawn. A melee weapon hides the ammo
 		// counter, so a readout beside it has to know.
@@ -92,9 +98,13 @@ namespace HudParts
 	// and the field keeps its default size of 12.
 	void SetStyledText(Value& a_field, std::string_view a_text, std::int32_t a_size);
 
-	// Puts a field's translated text in. Plain text starting with $ is
-	// translated as it goes in and HTML is not, so the key goes in as plain
-	// text first and the translation goes back in as HTML.
+	// The translation of a_key, read back from a_field, which is left holding
+	// it as plain text. Plain text starting with $ is translated as it goes
+	// in and HTML is not.
+	[[nodiscard]] std::string Translated(Value& a_field, const char* a_key);
+
+	// Puts a field's translated text in: the key goes in as plain text
+	// first and the translation goes back in as HTML.
 	void SetTranslatedText(Value& a_field, const char* a_key, std::int32_t a_size);
 
 	// Moves and sizes a box made by AddBox. The box is drawn 1 by 1, so its
@@ -154,27 +164,27 @@ namespace HudParts
 	// displayWarningColor says whether taking the item it shows is stealing.
 	[[nodiscard]] const RE::HUDComponentBase* RolloverPart(const RE::HUDMenu& a_menu);
 
-	// Builds a HUD part of NEC's the first frame its switch reads on, so while
-	// it is off the HUD movie gets nothing of NEC's but this listener on its
-	// stage. One per part, living as long as the plugin. A built part's
-	// listener stays and does nothing, since it could only take itself off
-	// through a reference to the movie held past the movie.
+	// Builds a HUD part of NEC's the first frame its switch or stepper reads
+	// on, so while it is off the HUD movie gets nothing of NEC's but this
+	// listener on its stage. One per part, living as long as the plugin. A
+	// built part's listener stays and does nothing, since it could only take
+	// itself off through a reference to the movie held past the movie.
 	class Waiter final : public Scaleform::GFx::FunctionHandler
 	{
 	public:
-		Waiter(const Settings::Live<bool>& a_on, void (*a_build)(Scaleform::GFx::Movie&)) noexcept :
-			on(&a_on),
+		Waiter(Settings::Gate a_on, void (*a_build)(Scaleform::GFx::Movie&)) noexcept :
+			on(a_on),
 			build(a_build)
 		{}
 
-		// Builds at once while the switch is on, or listens for the first
-		// frame it is. a_what names the part in the log.
+		// Builds at once while the switch or stepper is on, or listens for
+		// the first frame it is. a_what names the part in the log.
 		void Watch(Scaleform::GFx::Movie& a_movie, const char* a_what);
 
 		void Call(const Params& a_params) override;
 
 	private:
-		const Settings::Live<bool>* on;
+		Settings::Gate on;
 		void (*build)(Scaleform::GFx::Movie&);
 
 		// The HUD movie still waiting for its part, or null. Only the HUD's

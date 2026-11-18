@@ -16,12 +16,14 @@ namespace PickupBar
 	bool PatchLook();
 
 	// The item of the newest prompt: its name as the prompt prints it, and
-	// its condition, or a food's freshness, as a whole percent. kind is
-	// empty for a food, which has no point where penalties start.
+	// its condition, or a food's freshness, as a whole percent and in tenths
+	// as its card writes it, see Condition::CardTenths. kind is empty for a
+	// food, which has no point where penalties start.
 	struct Looked
 	{
 		std::string                    name;
 		std::int32_t                   percent{ 0 };
+		std::uint32_t                  tenths{ 0 };
 		RE::ObjectRefHandle            item;
 		std::optional<Condition::Kind> kind;
 	};

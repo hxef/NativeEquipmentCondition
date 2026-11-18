@@ -9,7 +9,7 @@
 // ammo box, as wide as the digits and as deep as the room between them allows,
 // and the word stands inside the box past the bar's right end, level with the
 // bar, sized to fit before the box's right edge, see Layout.h. With
-// bCndBarsFlipped on the bar keeps the box's left end and the word stands
+// bPowerArmorBarFlipped on the bar keeps the box's left end and the word stands
 // before it, sized to fit after the box's left edge. No panel is drawn around
 // it, since the dash's own panels are part of the model, lit and worn, and a
 // flat copy never matches.
@@ -37,8 +37,13 @@
 // the flip, before it is laid out again, since that means measuring text. If
 // anything fails, or the bar would fall outside the movie, nothing is drawn.
 //
-// Dash.cpp finds the dash through its camera, and Layout.cpp lays the bar out
-// in the movie. Dash.h and Layout.h are what they share.
+// At Power armor dash CND Percent the bar and its word hide, and CND stands
+// over the percent right of the ammo box, each line level with its row of
+// digits, in letters a little taller than the dash's AMMO title, see Lines.h.
+//
+// Dash.cpp finds the dash through its camera, Layout.cpp lays the bar out in
+// the movie and Lines.cpp the 2 lines of Percent. Dash.h and Layout.h are
+// what they share.
 namespace PowerArmorCondition
 {
 	// Writes a trace line each time the player steps out of power armor, from

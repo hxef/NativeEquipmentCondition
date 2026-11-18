@@ -152,17 +152,17 @@ namespace CallPatch
 				// A switch's own part is off with its switch, named after the
 				// part it went off with.
 				const auto* own = row.part != Part::kNone ? RowOf(row.part) : nullptr;
-				const auto* yielded = !state.off && own && own->on ? YieldLocked(own->on) : nullptr;
+				const auto* yielded = !state.off && own && own->on ? YieldLocked(own->on.Setting()) : nullptr;
 				if (yielded) {
 					state.off = true;
 					state.cause = yielded->cause;
 					state.owners = OwnersLocked(yielded->cause);
 				}
 			}
-			// A detail of a switch left to another mod does nothing either way,
-			// and the switch's line says so.
-			for (auto* on : Settings::Switches()) {
-				const auto* link = YieldedLocked(on) ? LinkOf(*on) : nullptr;
+			// A detail of a switch or stepper left to another mod does nothing
+			// either way, and the line of the switch or stepper says so.
+			for (const auto& gate : Settings::Gates()) {
+				const auto* link = YieldedLocked(gate.Setting()) ? LinkOf(*gate.Setting()) : nullptr;
 				if (!link) {
 					continue;
 				}
@@ -176,16 +176,16 @@ namespace CallPatch
 			return states;
 		}
 
-		// Whether every switch a piece works through is on: the switch of its
-		// part's row and those of the pieces it needs, all the way down. Trader
-		// stock condition works through bVendorRepair and bSpawnCondition.
+		// Whether every switch a piece works through is on: the switch or
+		// stepper of its part's row and of each piece it needs, all the way
+		// down. Trader stock condition needs bVendorRepair and bSpawnCondition.
 		bool SwitchedOn(Piece a_piece)
 		{
 			const auto& row = RowOfPiece(a_piece);
 			if (row.part != Part::kNone) {
 				const auto* own = RowOf(row.part);
 				const auto* feature = own ? own : RowOfPlaces(row.part);
-				if (feature && feature->on && !feature->on->GetValue()) {
+				if (feature && feature->on && !feature->on.On()) {
 					return false;
 				}
 			}
@@ -243,22 +243,22 @@ namespace CallPatch
 			return std::format("{:s}: off, left to {:s}.", name, Words(a_owners));
 		}
 
-		// A switch a pass turned off, and the change of its setting when it
-		// was on.
+		// A switch or stepper a pass turned off, and its change when it was on.
 		void SayOff(const Pass::Off& a_off, Lines& a_lines, bool a_install)
 		{
 			const auto owners = OwnersLocked(a_off.cause);
-			const auto key = a_off.row->on->key;
-			// At install the switch's row patches nothing: its turn just
-			// ended unwritten, or main.cpp skips it as it reaches it.
-			const auto tail = a_install ? std::format(" NEC patches none of it, and {:s} stays false.", key) :
-			                              std::format(" {:s} stays false.", key);
+			const auto key = a_off.row->on.Setting()->key;
+			const auto off = a_off.row->on.OffWord();
+			// At install the row patches nothing: its turn just ended
+			// unwritten, or main.cpp skips it as it reaches it.
+			const auto tail = a_install ? std::format(" NEC patches none of it, and {:s} stays {:s}.", key, off) :
+			                              std::format(" {:s} stays {:s}.", key, off);
 			a_lines.push_back({ REX::ELogLevel::Warning, SwitchLine(a_off.row->part, a_off.cause, owners) + tail });
 			if (a_off.was) {
 				a_lines.push_back({ REX::ELogLevel::Info,
 					OnlyVersion(owners) ? std::format("as {:s}", VersionWhy()) :
 										  std::format("as {:s} is left to {:s}", Text::PartLogName(a_off.cause), Words(owners)),
-					key });
+					key, a_off.from, off });
 			}
 		}
 
@@ -274,7 +274,7 @@ namespace CallPatch
 			// A whole smaller part of a row whose switch stands and is on.
 			const auto* row = RowOfPlaces(a_part);
 			if (loss->works.empty() && loss->causes.size() == 1 && loss->causes.front().part == a_part && row && row->on &&
-				row->part != a_part && !YieldedLocked(row->on) && row->on->GetValue() && !said.empty()) {
+				row->part != a_part && !YieldedLocked(row->on.Setting()) && row->on.On() && !said.empty()) {
 				said.back() += std::format(" {:s} still works without it.", Text::PartLogName(row->part));
 			}
 			for (auto& line : said) {
@@ -282,14 +282,14 @@ namespace CallPatch
 			}
 		}
 
-		// The switch a setting is, or the one it sits under, nullptr for a
-		// number with none, such as one under a number.
-		const Settings::Live<bool>* SwitchOf(const SettingLink& a_link)
+		// The switch or stepper of Gates that a setting is or sits under,
+		// nullptr for a setting with none, such as one under a number.
+		const Settings::Gate* GateOf(const SettingLink& a_link)
 		{
 			const auto* lead = a_link.under ? a_link.under : a_link.setting;
-			const auto  switches = Settings::Switches();
-			const auto  it = std::ranges::find(switches, lead, [](const auto* a_on) { return static_cast<const Settings::Named*>(a_on); });
-			return it != switches.end() ? *it : nullptr;
+			const auto  gates = Settings::Gates();
+			const auto  it = std::ranges::find(gates, lead, &Settings::Gate::Setting);
+			return it != gates.end() ? &*it : nullptr;
 		}
 
 		// Whether a piece of a_part is off for a part the pass lost a place of,
@@ -364,11 +364,11 @@ namespace CallPatch
 		return losses;
 	}
 
-	std::optional<Loss> YieldOf(const Settings::Live<bool>& a_switch)
+	std::optional<Loss> YieldOf(const Settings::Named& a_setting)
 	{
-		const auto             part = PartOf(a_switch);
+		const auto             part = PartOf(a_setting);
 		const std::scoped_lock l{ Lock() };
-		return YieldedLocked(&a_switch) ? LossFrom(part, StatesLocked()) : std::nullopt;
+		return YieldedLocked(&a_setting) ? LossFrom(part, StatesLocked()) : std::nullopt;
 	}
 
 	Effect EffectOf(const Settings::Named& a_setting)
@@ -380,10 +380,10 @@ namespace CallPatch
 		const std::scoped_lock l{ Lock() };
 		const auto             states = StatesLocked();
 		Effect                 effect;
-		// Idle while the player has its switch off. A switch left to another
-		// mod is off too, but its own line says why, so that is never idle.
-		const auto* on = SwitchOf(*link);
-		effect.idle = on && !on->GetValue() && !YieldedLocked(on);
+		// Idle while the player has it off. One left to another mod is off
+		// too, but its own line says why, so that is never idle.
+		const auto* on = GateOf(*link);
+		effect.idle = on && !on->On() && !YieldedLocked(on->Setting());
 		for (const auto piece : link->core) {
 			(states[static_cast<std::size_t>(piece)].off ? effect.off : effect.works).push_back(piece);
 		}
@@ -398,11 +398,11 @@ namespace CallPatch
 		return effect;
 	}
 
-	std::string OffLine(const Settings::Live<bool>& a_switch)
+	std::string OffLine(const Settings::Named& a_setting)
 	{
-		const auto             part = PartOf(a_switch);
+		const auto             part = PartOf(a_setting);
 		const std::scoped_lock l{ Lock() };
-		const auto*            yielded = YieldLocked(&a_switch);
+		const auto*            yielded = YieldLocked(&a_setting);
 		return yielded ? SwitchLine(part, yielded->cause, OwnersLocked(yielded->cause)) : std::string{};
 	}
 }

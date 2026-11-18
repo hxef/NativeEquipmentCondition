@@ -8,10 +8,10 @@
 // the figure the apparel tab draws with a number per body region. Each bar
 // shows the lowest condition among the pieces the player wears over that
 // region, head, torso, an arm or a leg, and stays hidden while nothing that
-// wears covers it. A region counts the same slots the game counts for its
-// number: the head is the helmet, goggles and gas mask, the torso and each limb
-// their own armor slot plus the underarmor beneath, which the game counts for
-// the torso and all 4 limbs.
+// wears covers it. At Apparel figure CND Off every bar hides. A region counts
+// the same slots the game counts for its number: the head is the helmet,
+// goggles and gas mask, the torso and each limb their own armor slot plus the
+// underarmor beneath, which the game counts for the torso and all 4 limbs.
 //
 // The doll is a Vault Boy seen from the front, as on the STAT page, so the left
 // arm and leg are on the screen's right, by the vanilla numbers for them.
@@ -24,11 +24,15 @@
 // and hides with it. The Pip-Boy tints white with its colour on its own, so the
 // bar needs no colour target.
 //
-// Each bar is then half again as deep, times Pip-Boy CND bar thickness, from
-// 0.5 to 2. It keeps its bottom 2 above the icon and grows upward. A bar stops
-// 2 under the figure's named clips, shown or hidden, and under a header text's
-// drawn letters, so none covers the figure or a tab name, see Room.h. The bars
-// mark where armor penalties start, as the HUD's CND bars mark theirs.
+// Each bar is then half again as deep, times Apparel figure CND bar thickness,
+// from 0.5 to 2. It keeps its bottom 2 above the icon and grows upward. A bar
+// stops 2 under the figure's named clips, shown or hidden, and under a header
+// text's drawn letters, so none covers the figure or a tab name, see Room.h.
+// The bars mark where armor penalties start, as the HUD's CND bars mark theirs.
+//
+// At Apparel figure CND Percent each bar hides and its readout writes CND and
+// the percent by it instead, all 6 at 1 size that fits the room above them,
+// see Numbers.h. fPipboyBarThickness and bPipboyBarFlipped act on bars only.
 //
 // The condition is checked through F4SE's task queue and kept in atomics, the
 // way the HUD checks the weapon in hand, see Regions.h, and a frame listener

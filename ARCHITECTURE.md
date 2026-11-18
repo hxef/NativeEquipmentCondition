@@ -76,8 +76,10 @@ src/
     ScriptEvents.h/.cpp      the events other mods' scripts hear, as every place that changes an item notes them, and the gate of a save load
     Settings/
       Settings.h/.cpp        every setting, read from NEC.ini, and a change kept in NEC_custom.ini or a preset's file
+      Cnd.h                  the CND stepper of each place and the Gate a feature's row turns on with, which Settings.h includes
       Features.h             the settings under [Features], which Settings.h includes
       Line.cpp               NEC.log's Settings line, and every switch and number in NEC.ini's order
+      Ids.cpp                a switch or number found by its id on the MCM page or by its key
       Tuning.h               the settings under [Balance] and [HUD], which Settings.h includes
     Snapshot.h               a table other threads read while it is measured again, swapped in whole, and how 2 readings differ
     Text/
@@ -230,8 +232,9 @@ src/
     PerkChart.h/.cpp         every line of a perk's description on the level up perk chart
     Roles/
       Roles.h/.cpp           the tests every part shares: on screen, a part's box, a point to and from the stage, the found, noted and missing lines
-      Conventions.h          the method names some menu movies share beyond the vanilla ones
+      Conventions.h          the method and member names some menu movies share beyond the vanilla ones
       Bars.h/.cpp            every button hint list a menu draws
+      Columns.h/.cpp         the list columns a menu movie lets mods add, and a card row added to them
       Card.h/.cpp            the item card and its CND row
       Hud.h/.cpp             the ammo counter, its divider, numbers and colour, the parts beside it, where a quick container row's name starts and ends
       ContainerName.h/.cpp   the container's name at the top of the quick container
@@ -242,6 +245,7 @@ src/
     Mcm/
       Mcm.h/.cpp             the settings page in the Mod Configuration Menu
       Bridge.h/.cpp          the page's answers: values, changes and words
+      Hides.h                the hidden switches that hide rows while a setting makes them moot
       FollowUps.cpp          what the game keeps worked out from a setting, done again a frame after a change
       Notes.cpp              the page's grey rows: each block's note, and what MCM asks of them
       TopList.cpp            the list at the top of the main page, of the parts no note names
@@ -254,6 +258,7 @@ src/
       HudParts/
         HudParts.h/.cpp      what the HUD readouts share
         Readout.h/.cpp       the readout itself, a bar, the penalty mark and the word CND
+        Percent.cpp          the texts a readout writes in place of its bar at Percent
         Draw.cpp             the boxes and text fields a readout is built from
       HudCondition/
         HudCondition.h/.cpp          the Weapon CND bar by the ammo counter: the movie
@@ -263,27 +268,31 @@ src/
         Spot.h/.cpp                  where the bar and its word go, the divider's place or the nearest free spot, the NEC.log line, and the bar at its size
         Boxes.h/.cpp                 the boxes that search works with: what the HUD shows by the counter, the bar's box, what a box covers and the places to try beside it
         Place.h/.cpp                 where the readout sits in the counter's parent, by the counter or standing alone from the screen's top left corner, moved by fHudBarX and fHudBarY and held whole on screen, and that place kept for the MCM page
+        Table.h/.cpp                 at Percent, CND over the line and the percent under it, and the line box that runs the line on
       PowerArmorCondition/
         PowerArmorCondition.h/.cpp   the frame listener and the movie
         Dash.h/.cpp                  finding the dash through its own camera
         Layout.h/.cpp                laying the bar out in the movie
+        Lines.h/.cpp                 at Percent, CND over the percent right of the dash's ammo box
       PickupBar/
         PickupBar.h/.cpp             the Pickup CND bar under the name in the pickup prompt: its install and the movie
         Look.h/.cpp                  the item the prompt stands for, as the game builds it, and its roll on the first look
-        Bar.h/.cpp                   the bar in the HUD's prompt
+        Bar.h/.cpp                   the bar in the HUD's prompt, or the percent at Percent
+        Names.h/.cpp                 whether the prompt names the item NEC read
       QuickContainer/
         QuickContainer.h/.cpp        the feature: its install and the movie
         Rows.h/.cpp                  the rows as the game builds them
         Meters.h/.cpp                the meters on the HUD's rows
-        RowLayout.h/.cpp             how a row fits its name, icons and meter
-        Draw.h/.cpp                  how one meter looks
+        RowLayout.h/.cpp             how a row fits its name, icons and meter, or its number at Percent
+        Draw.h/.cpp                  how one meter or number looks
         FridgeIcon.h/.cpp            the icon beside a fridge's name
     Inventory/
       Pipboy.h/.cpp          a worn out item's or spoiled food's name faded in the Pip-Boy, and each entry's wear rate
       PaperDoll/
         PaperDoll.h/.cpp     the feature, a CND bar over each region of the apparel tab's paper doll
         Regions.h/.cpp       the lowest condition worn over each region, read through the task queue
-        Room.h/.cpp          where each bar sits and how far it may grow before it meets the figure or a tab name
+        Room.h/.cpp          where each bar sits and how far it may grow before it meets the figure or a tab name, and each bar's state and layout
+        Numbers.h/.cpp       at Percent, CND and the percent over each region, all at 1 size that fits
       ItemCard/
         ItemCard.h/.cpp      the feature: its install and the movies
         Cards.h              what the folder's files share
@@ -293,10 +302,12 @@ src/
         Aim.cpp              the accuracy and range a card prints, and the sort by accuracy
         Raise.cpp            moving the row up past Damage
         FridgeIcon.cpp       the icon on the CND row of food in a fridge
+        ConditionBar.cpp     at Item card CND Bar, the framed bar in the number's place
         WearRate.cpp         the wear rate beside the condition on the CND row
         WearRateForms.h/.cpp fitting the wear rate into the row or the cell beside it
         Effects.cpp          what spoiled food gives, on its card, the HP bar and STAT Effects
         PowerArmor.cpp       a power armor piece's Health shown as CND, by its switch
+        Column.cpp           the CND row's own column in a UI replacer's item lists, by its switch
     Repair/
       SelectedItem.h/.cpp    the item highlighted in a menu's list
       Restore.h/.cpp         writing a repair onto one copy of an item
@@ -386,11 +397,11 @@ closes, for an item a script added to one. Once a save has loaded with Worn
 loot on, it sets the weapons and armor the player carries with no condition
 to full.
 
-Every row runs at every step whatever its switch says. Its hooks ask the
-switch on every call and leave the game as it is while it is off. Every hook
-does the same while bNecOn is off, see `src/Core/CallPatch/Sets.cpp`. A row
-whose switch is left to another mod is not installed and adds nothing to a
-movie, see `src/Core/Feature.h`. Every setting is read once, as the game starts, see
+Every row runs at every step whatever its switch or CND stepper says. Its
+hooks ask it on every call and leave the game as it is while it is off. Every
+hook does the same while bNecOn is off, see `src/Core/CallPatch/Sets.cpp`. A
+row whose switch or stepper is left to another mod is not installed and adds
+nothing to a movie, see `src/Core/Feature.h`. Every setting is read once, as the game starts, see
 `src/Core/Settings/Settings.h`, and the MCM page changes any of them on the spot, see
 `src/UI/Mcm/Mcm.h`.
 

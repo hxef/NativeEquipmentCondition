@@ -91,6 +91,14 @@ namespace HudCondition
 		const auto elapsed = lastFrame ? std::chrono::duration<double>(now - *lastFrame).count() : 0.0;
 		lastFrame = now;
 
+		// A change between Bar and Percent lays everything out again, at
+		// once, see Table.h.
+		const auto form = Settings::iWeaponCnd.Form();
+		HudParts::Readout::TellForm(form, saidForm, "Weapon CND"sv);
+		if ((form == Settings::Cnd::kPercent) != tabled) {
+			SwitchForm(readout, form == Settings::Cnd::kPercent);
+		}
+
 		const auto reading = !lastReading || now - *lastReading >= HudParts::Weapon::READING_EVERY;
 		if (reading) {
 			lastReading = now;
@@ -98,21 +106,34 @@ namespace HudCondition
 			// The letters are measured again each reading until a line
 			// reads, so a field not laid out yet is not kept for good.
 			if (!label.measured) {
-				label = Label(readout, !labelled, laidOut ? Flash::Point{ laidOut->wordX, laidOut->wordY } : Flash::Point{});
+				label = Label(readout, !labelled, laidOut ? Flash::Point{ laidOut->wordX, laidOut->wordY + laidRise } : Flash::Point{});
 				labelled = true;
+			}
+			// At Percent the 2 lines are laid out again when the counter's
+			// rows, the word or the widest number change.
+			if (tabled) {
+				rows = RowsNow(*a_params.movie, counter, ownVisible, rows);
+				auto laid = LayTable(*a_params.movie, readout, label, rows, table);
+				if (!laid || !table || laid->rows != table->rows || laid->word != table->word || laid->widest != table->widest) {
+					laidOut.reset();
+					shownNumber.clear();
+					lined.reset();
+				}
+				table = std::move(laid);
 			}
 			// Until a reading measures the divider, the bar keeps the shipped
 			// place, flipped as the switch says, so a bar shown before then
 			// is never the wrong way round.
-			const auto flipped = Settings::bCndBarsFlipped.GetValue();
-			const auto choice = Choose(*a_params.movie, counter, readout, ownVisible, label, flipped);
+			const auto  flipped = FlippedNow();
+			const auto& words = Words();
+			const auto  choice = Choose(*a_params.movie, counter, readout, ownVisible, words, flipped);
 			if (choice) {
 				chosen = true;
 				teller.Tell(*choice, now);
 			}
 			auto shipped = SHIPPED;
 			shipped.flipped = flipped;
-			shipped.wordX = Home(flipped, shipped.line.width, label.letters);
+			shipped.wordX = Home(flipped, shipped.line.width, words.letters);
 			// A reading that measures nothing keeps the last spot, turned
 			// at once by a flip to the spot its measure gave the other way
 			// round, see Turned.
@@ -121,7 +142,7 @@ namespace HudCondition
 			} else if (!chosen) {
 				Follow(Choice{ shipped, {}, {} });
 			} else {
-				Follow(Choice{ Turned(spot, flipped, label.letters), "bar turns where it is, since the divider cannot be measured", {} });
+				Follow(Choice{ Turned(spot, flipped, words.letters), "bar turns where it is, since the divider cannot be measured", {} });
 			}
 			if (colored && now >= recolorFrom) {
 				Recolor(readout, counter, toldTint);
@@ -131,20 +152,24 @@ namespace HudCondition
 		// The bar is drawn at the size the player set, laid out again
 		// when the spot or that size changes. clear alone moves nothing.
 		const auto size = SizeNow();
-		const auto drawn = Sized(spot, size, label);
+		const auto drawn = Sized(spot, size, Words());
 		if (!laidOut || !drawn.SitsAs(*laidOut)) {
 			LayOut(readout, drawn, size);
 		}
 
-		HudParts::Readout::FollowWordSwitch(readout, Settings::bHudBarShowsWord, wordShown, "HUD"sv);
+		if (!tabled) {
+			HudParts::Readout::FollowWordSwitch(readout, Settings::bHudBarShowsWord, wordShown, "HUD"sv);
+		}
 
 		// The mark is read every frame, as the size is, and is as wide as
 		// half the bar's depth before its thickness slider. The fill's end
 		// comes from the spot, as the word's place does, so the 2 never
 		// disagree.
-		const auto percent = HudParts::Weapon::Percent(Settings::bHudCondition);
+		const auto percent = HudParts::Weapon::Percent(&Settings::iWeaponCnd);
 		const auto mark = HudParts::Readout::PenaltyMark(Condition::Kind::kWeapon, spot.deep, spot.deep / 2.0);
-		if (percent != shownPercent || mark != shownMark) {
+		if (tabled) {
+			DrawNumber(readout);
+		} else if (percent != shownPercent || mark != shownMark) {
 			const auto still = HudParts::Readout::StillEnd(HudParts::Readout::Still::kRightEnd, drawn.flipped);
 			HudParts::Readout::SetPercent(readout, drawn.line.width, drawn.deep, percent, still, mark);
 			HudParts::Readout::TellFlipped(drawn.flipped, saidFlipped, "HUD CND bar"sv);
@@ -194,7 +219,7 @@ namespace HudCondition
 		const auto stays = alone && !hidesWithCounter;
 
 		auto opacity = 0.0;
-		if (percent < 0) {
+		if (percent < 0 || (tabled && !table)) {
 			fade = 0.0;
 		} else if (counterShows) {
 			opacity = stays ? std::max(counterOpacity, fade) : counterOpacity;
@@ -214,7 +239,7 @@ namespace HudCondition
 		// every frame, since a movie can show it again. With no
 		// condition to show, or the bar off it, the counter keeps its
 		// divider.
-		const auto covered = counterShows && percent >= 0 && onSpot && spot.onDivider;
+		const auto covered = !tabled && counterShows && percent >= 0 && onSpot && spot.onDivider;
 		Roles::Hud::Cover(counter, covered, ownVisible);
 		if (covered != dividerHidden) {
 			dividerHidden = covered;
@@ -223,12 +248,28 @@ namespace HudCondition
 
 		if (opacity != shownOpacity) {
 			if ((opacity > 0.0) != (shownOpacity > 0.0)) {
+				const auto* onDivider = tabled ? "over and under the ammo divider" : "in place of the ammo divider";
 				TraceLog::Line("menu", "HUD CND {:s} {:s}, percent {}", opacity > 0.0 ? "shows" : "hides",
-					!counterShows ? (alone && hidesWithCounter ? "with the ammo counter" : "on its own") : (spot.onDivider ? "in place of the ammo divider" : "beside the ammo counter"), percent);
+					!counterShows ? (alone && hidesWithCounter ? "with the ammo counter" : "on its own") : (spot.onDivider ? onDivider : "beside the ammo counter"), percent);
 			}
 			readout.SetMember("alpha"sv, Value(opacity));
 			readout.SetMember("visible"sv, Value(opacity > 0.0));
 			shownOpacity = opacity;
+		}
+
+		// At Percent the line box runs vanilla's line on while the counter
+		// shows its line where the 2 lines stand, and fades with it.
+		if (tabled && table) {
+			const auto line = counterShows && percent >= 0 && placeable && onSpot && spot.onDivider && drawn.wordX == 0.0 && drawn.wordY == 0.0;
+			if (line != lined) {
+				lined = line;
+				DrawLine(*a_params.movie, readout, *table, line);
+			}
+			const auto alpha = line && opacity > 0.0 ? std::min(1.0, counterOpacity / opacity) : 0.0;
+			if (alpha != lineAlpha) {
+				lineAlpha = alpha;
+				FadeLine(readout, alpha);
+			}
 		}
 	}
 
@@ -264,6 +305,60 @@ namespace HudCondition
 		dividerHidden = false;
 		ownVisible.reset();
 		counterPart = nullptr;
+		saidForm.reset();
+		tabled = false;
+		rows = Rows{};
+		table.reset();
+		laidRise = 0.0;
+		shownNumber.clear();
+		lined.reset();
+		lineAlpha = -1.0;
+	}
+
+	const HudParts::Readout::LabelPlace& FrameListener::Words() const
+	{
+		return tabled && table ? table->place : label;
+	}
+
+	// A change of form shows the bar's boxes, or hides them and shows the
+	// word whatever its switch says, and forgets everything laid out, so
+	// this frame reads and lays the new form out.
+	void FrameListener::SwitchForm(Value& a_readout, bool a_number)
+	{
+		tabled = a_number;
+		HudParts::Readout::ShowBar(a_readout, !a_number);
+		if (a_number) {
+			HudParts::Readout::ShowLabel(a_readout, true);
+		} else {
+			HideTable(a_readout);
+		}
+		wordShown.reset();
+		laidOut.reset();
+		shownPercent = NOT_DRAWN;
+		shownMark = HudParts::Readout::Mark{};
+		table.reset();
+		shownNumber.clear();
+		lined.reset();
+		lineAlpha = -1.0;
+		placedFrom.reset();
+		lastReading.reset();
+	}
+
+	// Writes the percent under the word when it changes, as the weapon's
+	// card writes it.
+	void FrameListener::DrawNumber(Value& a_readout)
+	{
+		const auto tenths = HudParts::Weapon::Tenths(&Settings::iWeaponCnd);
+		const auto number = tenths && table ? HudParts::Readout::PercentText(*tenths) : std::string{};
+		if (number == shownNumber) {
+			return;
+		}
+		shownNumber = number;
+		lined.reset();
+		if (!number.empty()) {
+			WriteNumber(a_readout, number);
+			TraceLog::Line("menu", "HUD CND drawn as {:s} {:s}", Flash::String(HudParts::Readout::LabelOf(a_readout), "text"sv), number);
+		}
 	}
 
 	namespace

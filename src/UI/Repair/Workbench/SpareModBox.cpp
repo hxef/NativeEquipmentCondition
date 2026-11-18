@@ -22,9 +22,9 @@ namespace Workbench
 {
 	namespace
 	{
-		// The rows of the box: SCRAP THE REST, then 1 per mod listed, then
+		// The rows of the box: USE UP THE REST, then 1 per mod listed, then
 		// KEEP THE REST and CANCEL. The highlight starts on the first mod.
-		constexpr std::size_t SCRAP_ROW = 0;
+		constexpr std::size_t USE_UP_ROW = 0;
 		constexpr std::size_t FIRST_MOD_ROW = 1;
 
 		// A row's cells: its name, a mod's value as a loose mod and its
@@ -95,7 +95,7 @@ namespace Workbench
 		}
 
 		// The mods listed are those not picked, 1 for each form ID picked.
-		// The box that picks mods to use keeps every mod listed until it
+		// The box that picks mods to use up keeps every mod listed until it
 		// ends, the one that picks mods to keep keeps only the picks.
 		const bool                       keep = a_setting == KeepMods::kChooseKeep;
 		std::vector<Materials::LooseMod> listed;
@@ -111,26 +111,26 @@ namespace Workbench
 				rest.push_back(mod.FormID());
 			}
 		}
-		// The plans of KEEP THE REST and SCRAP THE REST.
+		// The plans of KEEP THE REST and USE UP THE REST.
 		auto keepRest = keep ? picked : rest;
 		if (keep) {
 			keepRest.insert(keepRest.end(), rest.begin(), rest.end());
 		}
-		const auto scrapRest = keep ? picked : std::vector<std::uint32_t>{};
-		const auto plan = SpareOn(*item, a_priced, a_spare, keep ? scrapRest : keepRest);
+		const auto useUpRest = keep ? picked : std::vector<std::uint32_t>{};
+		const auto plan = SpareOn(*item, a_priced, a_spare, keep ? useUpRest : keepRest);
 		if (!plan) {
 			gone();
 			return;
 		}
 		// The last mod listed leaves nothing to ask, so its pick ends the box.
-		const auto& last = keep ? keepRest : scrapRest;
+		const auto& last = keep ? keepRest : useUpRest;
 		if (listed.empty()) {
 			Pick(a_object, a_item, a_spare, a_priced, last);
 			return;
 		}
 
 		// The title is where the plan brings the item, and each row the step
-		// 1 more pick makes from there: up as a mod is scrapped, down as a
+		// 1 more pick makes from there: up as a mod is used up, down as a
 		// mod is kept.
 		const auto title = ShownTenths(*plan, *item, a_priced);
 		const auto shown = [&](const std::vector<std::uint32_t>& a_plan) {
@@ -140,7 +140,7 @@ namespace Workbench
 		Columns::Table table;
 		table.kept = ROW_CELLS;
 		table.name = NAME_CELL_OF_ROW;
-		table.rows.push_back({ Text::SpareScrapRest(), std::string{}, RowNumber(shown(keepRest), shown(scrapRest), true) });
+		table.rows.push_back({ Text::SpareUseUpRest(), std::string{}, RowNumber(shown(keepRest), shown(useUpRest), true) });
 		std::vector<ModRow> mods;
 		for (std::size_t i = 0; i < listed.size(); i++) {
 			auto with = keep ? picked : rest;
@@ -166,13 +166,13 @@ namespace Workbench
 		                             Text::SpareModQuestion(item->Name(), Number(title, false));
 		RepairPrompt::AskRows({}, question, std::move(rows),
 			[object = &a_object, a_item, a_spare, priced = a_priced, picks = std::move(a_picked), mods = std::move(mods), keepRest,
-				scrapRest, keep, a_setting](std::size_t a_row) {
+				useUpRest, keep, a_setting](std::size_t a_row) {
 				const auto use = [&](std::string_view a_by, const std::vector<std::uint32_t>& a_plan) {
 					TraceLog::Line("menu", "Workbench mod box ends by {:s}", a_by);
 					Pick(*object, a_item, a_spare, priced, a_plan);
 				};
-				if (a_row == SCRAP_ROW) {
-					use("SCRAP THE REST", scrapRest);
+				if (a_row == USE_UP_ROW) {
+					use("USE UP THE REST", useUpRest);
 					return;
 				}
 				if (a_row - FIRST_MOD_ROW >= mods.size()) {
@@ -180,10 +180,10 @@ namespace Workbench
 					return;
 				}
 				const auto& mod = mods[a_row - FIRST_MOD_ROW];
-				TraceLog::Line("menu", "Workbench mod box {:s} {:s}, the item now at {:.1f}%", keep ? "keeps" : "scraps", mod.name,
+				TraceLog::Line("menu", "Workbench mod box {:s} {:s}, the item now at {:.1f}%", keep ? "keeps" : "uses up", mod.name,
 					AsPercent(mod.reached));
 				if (mods.size() == 1) {
-					use("the last mod", keep ? keepRest : scrapRest);
+					use("the last mod", keep ? keepRest : useUpRest);
 					return;
 				}
 				auto more = picks;

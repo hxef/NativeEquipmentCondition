@@ -22,11 +22,6 @@ namespace ItemCard
 		// Measuring
 		// -------------------------------------------------------------------
 
-		// At least this much stays clear between the label's last letter and
-		// the number's field, in the row's units, about a space and a half on
-		// the vanilla card.
-		constexpr double LABEL_GAP = 8.0;
-
 		// Room left over in a field that holds the text at its natural size,
 		// so rounding never tips it into shrinking.
 		constexpr double SLACK = 1.0;
@@ -211,6 +206,20 @@ namespace ItemCard
 			Flash::SetTint(a_cell, *tint);
 		}
 		return true;
+	}
+
+	std::optional<double> FontSize(Value& a_field)
+	{
+		const auto format = FormatOf(a_field);
+		const auto size = format ? Flash::Number(*format, "size"sv, std::numeric_limits<double>::quiet_NaN()) : 0.0;
+		return std::isfinite(size) && size > 0.0 ? std::optional{ size } : std::nullopt;
+	}
+
+	std::optional<double> NaturalWidth(Scaleform::GFx::Movie& a_movie, Value& a_field, const std::string& a_text)
+	{
+		const auto format = FormatOf(a_field);
+		const auto natural = format ? NaturalSize(a_movie, *format, a_text) : std::nullopt;
+		return natural ? std::optional{ natural->width } : std::nullopt;
 	}
 
 	bool WriteKeepingLook(Value& a_field, const std::string& a_text)

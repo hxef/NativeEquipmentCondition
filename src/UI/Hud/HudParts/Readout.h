@@ -6,13 +6,17 @@
 #include "Core/Settings/Settings.h"
 #include "UI/Flash.h"
 
+#include <array>
 #include <cstdint>
 #include <optional>
+#include <string>
 #include <string_view>
 
 // The CND readout every bar but the quick container's meters is drawn as: the
 // Weapon CND bar, the Power armor CND bar, the Pickup CND bar and the bars of
-// the Pip-Boy apparel figure. Readout.cpp draws it.
+// the Pip-Boy apparel figure. A place set to Percent hides the bar and writes
+// CND and the percent in text instead, see the last section. Readout.cpp
+// draws it, and Percent.cpp writes the texts of a place at Percent.
 namespace HudParts
 {
 	using Value = Scaleform::GFx::Value;
@@ -147,7 +151,8 @@ namespace HudParts
 
 		// The end of the bar that stays still as it empties. The HUD keeps the
 		// right end, as the AP meter does. The Pip-Boy keeps the left end, as
-		// its own meters do. bCndBarsFlipped turns every bar to its other end.
+		// its own meters do. Each place's own flip switch, such as
+		// bHudBarFlipped, turns its bar to its other end.
 		enum class Still
 		{
 			kRightEnd,
@@ -155,7 +160,7 @@ namespace HudParts
 		};
 
 		// The still end of a bar that ships with a_shipped, the other end
-		// while a_flipped, bCndBarsFlipped as the bar was laid out.
+		// while a_flipped, its place's flip switch as the bar was laid out.
 		[[nodiscard]] Still StillEnd(Still a_shipped, bool a_flipped);
 
 		// Sets how much of a bar laid out as above is left, and draws a_mark
@@ -174,5 +179,91 @@ namespace HudParts
 		// starts false and is reset with the bar, so a bar never flipped
 		// says nothing.
 		void TellFlipped(bool a_flipped, bool& a_said, std::string_view a_bars);
+
+		// -------------------------------------------------------------------
+		// A percent in place of the bar
+		// -------------------------------------------------------------------
+
+		// The parts only a place at Percent uses, each made the first time it
+		// is asked for, so a place that never shows a percent holds what it
+		// held before: a 2nd copy of the word for a place that moves it, a
+		// field for the number and a line box. All 3 start hidden.
+		enum class Extra
+		{
+			kWord,
+			kNumber,
+			kLine,
+		};
+
+		// a_readout's part a_extra, made on its first use. A value that is
+		// not a display object when the movie refuses it. A new field draws
+		// as smoothly as the word does, see AntiAliasForAnimation.
+		[[nodiscard]] Value ExtraOf(Scaleform::GFx::Movie& a_movie, Value& a_readout, Extra a_extra);
+
+		// a_readout's part a_extra once made, else a value that is not a
+		// display object. It makes nothing, so a place that never showed a
+		// percent stays as it was.
+		[[nodiscard]] Value ExtraIn(Value& a_readout, Extra a_extra);
+
+		// The word's own field.
+		[[nodiscard]] Value LabelOf(Value& a_readout);
+
+		// Shows or hides the bar's 6 boxes: the track, the fill and the 4 of
+		// the mark. A place at Percent hides them. Once they show again the
+		// caller draws the bar again with SetPercent, which shows the mark.
+		void ShowBar(Value& a_readout, bool a_shown);
+
+		// Shows or hides the word's field, for a place at Percent, where the
+		// word shows whatever the bar's word switch says.
+		void ShowLabel(Value& a_readout, bool a_shown);
+
+		// The number a place at Percent writes for a_tenths, as an item's
+		// card writes it, see Condition::CardText: 87.4%, 98% or 100%.
+		[[nodiscard]] std::string PercentText(std::uint32_t a_tenths);
+
+		// The CND word as a_field's movie translates it, a space and
+		// PercentText, "CND 87.4%".
+		[[nodiscard]] std::string WordAndPercent(Value& a_field, std::uint32_t a_tenths);
+
+		// The 2 numbers that write widest: a worn item at its most, 99.9% or
+		// 99% as CND decimals says, and a full one, 100%. Digits share 1
+		// width in the HUD's fonts, so the wider of the 2 is as wide as any
+		// item's number gets.
+		inline constexpr std::array<std::uint32_t, 2> WIDEST{ Condition::MOST_WORN_TENTHS, Condition::FULL_TENTHS };
+
+		// Where a text's letters stand from the point a place puts it by.
+		enum class Align
+		{
+			kStart,
+			kMiddle,
+			kEnd,
+		};
+
+		// Hides the bar's 6 boxes, shows the word's field and writes a_text
+		// into it at a_label's size and width, never mirrored. Its letters
+		// start at, are centred on or end at a_label.gap across from the
+		// origin, as a_align says, and its field's middle hangs a_label.drop
+		// below it, as SetLabel hangs the word. Returns where the field and
+		// its letters sit.
+		LabelPlace ShowNumber(Value& a_readout, std::string_view a_text, const Label& a_label, Align a_align);
+
+		// Writes a_text into a_field in the word's font, a_size big and its
+		// letters a_wide of the font's width, as SetLabel writes the word.
+		// The field keeps its place. Returns where it and its letters sit,
+		// as ExtentOf does.
+		LabelPlace WriteText(Value& a_field, std::string_view a_text, double a_size, double a_wide);
+
+		// Where a field of the readout and its letters sit from the
+		// readout's origin, as LabelExtent measures the word's.
+		[[nodiscard]] LabelPlace ExtentOf(Value& a_field);
+
+		// Moves a field of the readout so its top left corner is at a_x,
+		// a_y from the readout's origin.
+		void MoveField(Value& a_field, double a_x, double a_y);
+
+		// Says in the trace that a_place now shows a_form, when it differs
+		// from a_said, the form last seen: "Weapon CND now shows a percent".
+		// The first form seen, with a_said empty, says nothing.
+		void TellForm(Settings::Cnd a_form, std::optional<Settings::Cnd>& a_said, std::string_view a_place);
 	}
 }

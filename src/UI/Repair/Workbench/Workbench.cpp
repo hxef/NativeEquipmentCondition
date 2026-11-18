@@ -343,8 +343,8 @@ namespace Workbench
 		// from 99.5 too.
 		const auto freeFrom = FreeFromTenths();
 		const auto mends = Condition::Decimals() == Condition::CardDecimals::kOff ?
-		                       std::format("Condition from {:g}% is put right on the spot for nothing, so from {:d}% on an item's card.", Settings::fFreeMendFrom.GetValue(), Repair::PercentFrom(freeFrom)) :
-		                       std::format("Condition from {:s}% on an item's card is put right on the spot for nothing.", Condition::PointText(freeFrom));
+		                       std::format("Condition from {:g}% is put right on the spot for nothing, so from {:d}% in whole numbers.", Settings::fFreeMendFrom.GetValue(), Repair::PercentFrom(freeFrom)) :
+		                       std::format("Condition from {:s}% is put right on the spot for nothing.", Condition::PointText(freeFrom));
 		const auto mend = FreeRepairs()                     ? std::string{ "Every repair is put right on the spot for nothing, since fBenchCostMult is 0." } :
 		                  freeFrom < Condition::FULL_TENTHS ? mends :
 		                                                      std::format("MEND is off, since fFreeMendFrom is {:g}.", Settings::fFreeMendFrom.GetValue());

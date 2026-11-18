@@ -6,6 +6,7 @@
 #include <array>
 #include <cstdint>
 #include <format>
+#include <string>
 
 namespace HudParts
 {
@@ -16,10 +17,15 @@ namespace HudParts
 		a_field.SetMember("htmlText"sv, Value(std::string_view{ html }));
 	}
 
-	void SetTranslatedText(Value& a_field, const char* a_key, std::int32_t a_size)
+	std::string Translated(Value& a_field, const char* a_key)
 	{
 		a_field.SetMember("text"sv, Value(a_key));
-		SetStyledText(a_field, Flash::String(a_field, "text"sv), a_size);
+		return Flash::String(a_field, "text"sv);
+	}
+
+	void SetTranslatedText(Value& a_field, const char* a_key, std::int32_t a_size)
+	{
+		SetStyledText(a_field, Translated(a_field, a_key), a_size);
 	}
 
 	void PutBox(Value& a_box, double a_x, double a_y, double a_width, double a_height)

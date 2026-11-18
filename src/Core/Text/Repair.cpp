@@ -136,9 +136,9 @@ namespace Text
 		return Say(SPARE_MOD_KEEP_QUESTION, a_name, a_to);
 	}
 
-	std::string SpareScrapRest()
+	std::string SpareUseUpRest()
 	{
-		return Pick(SPARE_SCRAP_REST);
+		return Pick(SPARE_USE_UP_REST);
 	}
 
 	std::string SpareKeepRest()

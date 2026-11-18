@@ -136,8 +136,8 @@ GetFireRateShare answer 1, GetRepairCost None and GetSpareGain -1, and the trade
 answer as with their feature off.
 
 bool Function IsFeatureOn(string asFeature)
-    True when the NEC feature of this name runs: NEC is on, its NEC.ini switch is on and no other
-    DLL took all of it. Names: see Feature names.
+    True when the NEC feature of this name runs: NEC is on, its NEC.ini switch or stepper does not
+    turn it off and no other DLL took all of it. Names: see Feature names.
 
 bool Function IsFeatureTakenOver(string asFeature)
     True when another DLL took some or all of this feature, as NEC's main MCM page and NEC.log say.
@@ -284,7 +284,7 @@ Repair economics
 ----------------
 
 int Function GetFreeMendFrom()
-    The first whole percent, as an item's card shows it, from which the workbench mends an item for
+    The first whole percent, as CND decimals writes it, from which the workbench mends an item for
     free. MEND puts it back to full at no cost. 100 means MEND is off.
     GetSettingFloat("fFreeMendFrom:Balance") gives the MCM slider's own value, which can end in .5,
     and while GetSettingInt("iCndDecimals:Features") is 1 or 2 a card reading that value mends too,
@@ -292,10 +292,10 @@ int Function GetFreeMendFrom()
     MEND, whatever this answers.
 
 int Function GetSuppliesOnlyFrom()
-    The first whole percent, as an item's card shows it, from which a workbench repair takes only
-    its supplies and no components, at any perk rank. While GetSettingInt("iCndDecimals:Features")
-    is 1 or 2 it starts at GetSettingFloat("fSuppliesOnlyFrom:Balance") itself, such as a card
-    reading 87.5%. It is GetFreeMendFrom's number when no repair does, such as while
+    The first whole percent, as CND decimals writes it, from which a workbench repair takes only its
+    supplies and no components, at any perk rank. While GetSettingInt("iCndDecimals:Features") is 1
+    or 2 it starts at GetSettingFloat("fSuppliesOnlyFrom:Balance") itself, such as a card reading
+    87.5%. It is GetFreeMendFrom's number when no repair does, such as while
     GetSettingInt("iRepairSupplies:Balance") is 0.
 
 int Function GetModdingFrom()

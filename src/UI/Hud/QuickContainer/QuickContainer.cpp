@@ -19,11 +19,11 @@ namespace QuickContainer
 		// row's condition and the other receives the finished rows.
 		bool g_patched = false;
 
-		HudParts::Waiter g_waiter{ Settings::bQuickContainer, [](Scaleform::GFx::Movie& a_movie) { AddMeters(a_movie); } };
+		HudParts::Waiter g_waiter{ &Settings::iQuickContainerCnd, [](Scaleform::GFx::Movie& a_movie) { AddMeters(a_movie); } };
 
 		// The fridge icon is made only once food spoils, since it loads a file
 		// the game ships.
-		HudParts::Waiter g_iconWaiter{ Settings::bFoodSpoils, [](Scaleform::GFx::Movie& a_movie) { AddFridgeIcon(a_movie); } };
+		HudParts::Waiter g_iconWaiter{ &Settings::bFoodSpoils, [](Scaleform::GFx::Movie& a_movie) { AddFridgeIcon(a_movie); } };
 	}
 
 	// -------------------------------------------------------------------

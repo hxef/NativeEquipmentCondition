@@ -130,8 +130,9 @@ namespace HudCondition
 	// The box the bar and its word fill from the bar's right end, which the
 	// HUD holds whole on screen. It reaches down to the bottom of the word's
 	// line, since letters in some languages, Chinese for one, reach below
-	// the baseline.
-	[[nodiscard]] Flash::Box Filled(const Spot& a_spot, const HudParts::Readout::LabelPlace& a_label);
+	// the baseline. Without a_bar, at Percent, it is the word's box alone,
+	// the 2 lines of Table.h.
+	[[nodiscard]] Flash::Box Filled(const Spot& a_spot, const HudParts::Readout::LabelPlace& a_label, bool a_bar = true);
 
 	// a_spot with its bar a_size times its own length and thickness, about
 	// the bar's right end and middle, so the spot and the shift keep their

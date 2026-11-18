@@ -211,9 +211,9 @@ namespace CallPatch
 	// any owner NEC cannot name. Empty when every owner is this game version.
 	[[nodiscard]] std::vector<std::string> OwnerNames(std::span<const Owner> a_owners, std::string_view a_unnamed);
 
-	// Whether a switch is left to another mod while the game runs. Asked by
-	// the walks and the MCM page, never by a hot hook.
-	[[nodiscard]] bool IsYielded(const Settings::Live<bool>& a_switch);
+	// Whether a switch or CND stepper is left to another mod, false for any
+	// other setting. Asked by the walks and the MCM page, never by a hot hook.
+	[[nodiscard]] bool IsYielded(const Settings::Named& a_setting);
 
 	// Why pieces of a part are off, see Core/Pieces.h: the part whose places
 	// were taken, the part itself or the part of a piece they need, as Jamming
@@ -244,8 +244,9 @@ namespace CallPatch
 	// Every part another mod took some of, in Features.cpp's order.
 	[[nodiscard]] std::vector<Loss> Losses();
 
-	// The loss that turned a switch off, nothing while it is free.
-	[[nodiscard]] std::optional<Loss> YieldOf(const Settings::Live<bool>& a_switch);
+	// The loss that turned a switch or stepper off, nothing while it is free
+	// or for any other setting.
+	[[nodiscard]] std::optional<Loss> YieldOf(const Settings::Named& a_setting);
 
 	// What a setting still does, see SettingLink in Core/Parts.h: its core and
 	// side pieces off, its core pieces working and the one no mod can take.
@@ -259,9 +260,9 @@ namespace CallPatch
 
 	[[nodiscard]] Effect EffectOf(const Settings::Named& a_setting);
 
-	// The log line of a switch left to another mod, "Quick container
-	// meters: off, left to NECClashTest.dll.", empty while it is free.
-	[[nodiscard]] std::string OffLine(const Settings::Live<bool>& a_switch);
+	// The log line of a switch or stepper left to another mod, "Quick
+	// container meters: off, left to NECClashTest.dll.", empty while free.
+	[[nodiscard]] std::string OffLine(const Settings::Named& a_setting);
 
 	// The NEC.log line of every part whose own places another mod took:
 	// "Left to other mods: CND on item cards (containers and traders,

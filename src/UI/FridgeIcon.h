@@ -29,6 +29,7 @@ namespace FridgeIcon
 		double capitals = 0.0;       // how high its capitals and digits are
 		double middle = 0.0;         // halfway between its top and its bottom, the middle its letters show
 		double metricsMiddle = 0.0;  // the middle its line metrics alone give, for the trace
+		double height = 0.0;         // from its top to its bottom, as far as brackets reach
 	};
 
 	// a_field's first line, from its line metrics and where the game draws

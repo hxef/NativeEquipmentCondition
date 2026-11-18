@@ -24,12 +24,12 @@ namespace Workbench
 		// and counts the rest.
 		constexpr std::size_t NAMED_KEPT = 3;
 
-		// The form IDs of the mods of a_order not scrapped, a plan.
-		[[nodiscard]] std::vector<std::uint32_t> PlanOf(std::span<const Materials::LooseMod> a_order, const std::vector<bool>& a_scrapped)
+		// The form IDs of the mods of a_order not used up, a plan.
+		[[nodiscard]] std::vector<std::uint32_t> PlanOf(std::span<const Materials::LooseMod> a_order, const std::vector<bool>& a_usedUp)
 		{
 			std::vector<std::uint32_t> out;
 			for (std::size_t i = 0; i < a_order.size(); i++) {
-				if (!a_scrapped[i]) {
+				if (!a_usedUp[i]) {
 					out.push_back(a_order[i].FormID());
 				}
 			}
@@ -84,16 +84,18 @@ namespace Workbench
 	KeepMods KeepModsNow()
 	{
 		switch (Settings::iKeepSpareMods.GetValue()) {
+		case std::to_underlying(KeepMods::kOff):
+			return KeepMods::kOff;
 		case std::to_underlying(KeepMods::kCheapest):
 			return KeepMods::kCheapest;
 		case std::to_underlying(KeepMods::kPriciest):
 			return KeepMods::kPriciest;
-		case std::to_underlying(KeepMods::kChooseUse):
-			return KeepMods::kChooseUse;
 		case std::to_underlying(KeepMods::kChooseKeep):
 			return KeepMods::kChooseKeep;
 		default:
-			return KeepMods::kOff;
+			// 3 and any stray number. Settings::KeepSpareModsAsks reads them
+			// the same way, so the 2 must change together.
+			return KeepMods::kChooseUse;
 		}
 	}
 
@@ -107,8 +109,8 @@ namespace Workbench
 			return a_left.name != a_right.name ? a_left.name < a_right.name : a_left.FormID() < a_right.FormID();
 		});
 
-		// Only a mod that comes off can be kept, so a plan never leaves a
-		// legendary mod out of the scrap.
+		// Only a mod that comes off can be kept, so a plan never hands back a
+		// legendary mod.
 		std::vector<std::uint32_t> out;
 		auto                       left = a_kept.empty() ? std::vector<Materials::LooseMod>{} : a_spare.mods;
 		for (const auto id : a_kept) {
@@ -170,19 +172,19 @@ namespace Workbench
 		// landing is a whole step.
 		const auto level = [&](const Spare& a_spare) { return LandingOf(a_spare, a_item, a_priced, nullptr); };
 
-		std::vector<bool> scrapped(order.size(), false);
+		std::vector<bool> usedUp(order.size(), false);
 		const auto        goal = level(a_whole);
-		auto              plan = SpareOn(a_item, a_priced, a_whole.extra, PlanOf(order, scrapped));
+		auto              plan = SpareOn(a_item, a_priced, a_whole.extra, PlanOf(order, usedUp));
 		const auto        reached = [&] { return !plan || level(*plan) >= goal; };
 
 		// The frame alone first, then 1 mod at a time.
 		std::vector<std::size_t> taken;
 		std::vector<std::size_t> passed;
 		for (std::size_t i = 0; i < order.size() && !reached(); i++) {
-			scrapped[i] = true;
-			auto worked = SpareOn(a_item, a_priced, a_whole.extra, PlanOf(order, scrapped));
+			usedUp[i] = true;
+			auto worked = SpareOn(a_item, a_priced, a_whole.extra, PlanOf(order, usedUp));
 			if (worked && worked->worth == plan->worth) {
-				scrapped[i] = false;
+				usedUp[i] = false;
 				passed.push_back(i);
 				continue;
 			}
@@ -196,24 +198,24 @@ namespace Workbench
 			if (reached()) {
 				break;
 			}
-			scrapped[i] = true;
-			plan = SpareOn(a_item, a_priced, a_whole.extra, PlanOf(order, scrapped));
+			usedUp[i] = true;
+			plan = SpareOn(a_item, a_priced, a_whole.extra, PlanOf(order, usedUp));
 			taken.push_back(i);
 		}
 
-		std::vector<std::string> scraps;
+		std::vector<std::string> usedNames;
 		std::vector<std::string> keeps;
 		for (const auto i : taken) {
-			scraps.push_back(order[i].name);
+			usedNames.push_back(order[i].name);
 		}
 		for (std::size_t i = 0; i < order.size(); i++) {
-			if (!scrapped[i]) {
+			if (!usedUp[i]) {
 				keeps.push_back(order[i].name);
 			}
 		}
-		TraceLog::Line("menu", "Workbench scraps {:s} of {:s}, the {:s} first, and keeps {:s}", Names(scraps), a_whole.name,
+		TraceLog::Line("menu", "Workbench uses up {:s} of {:s}, the {:s} first, and keeps {:s}", Names(usedNames), a_whole.name,
 			priciest ? "priciest" : "cheapest", Names(keeps));
-		return PlanOf(order, scrapped);
+		return PlanOf(order, usedUp);
 	}
 
 	// -----------------------------------------------------------------------

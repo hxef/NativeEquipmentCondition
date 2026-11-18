@@ -52,9 +52,17 @@ namespace PaperDoll
 			return a_health < 0.0F ? 100 : static_cast<std::int32_t>(Condition::WholePercent(a_health));
 		}
 
+		// A piece's health in tenths, as its card writes it. A piece with no
+		// health counts as new, which CardTenths reads as 1000.
+		[[nodiscard]] std::int32_t TenthsOf(float a_health)
+		{
+			return static_cast<std::int32_t>(Condition::CardTenths(a_health, true));
+		}
+
 		// The latest condition per region, written by the task and read by the
 		// Pip-Boy's frames.
 		std::array<std::atomic<std::int32_t>, kRegions> g_percent{ NONE, NONE, NONE, NONE, NONE, NONE };
+		std::array<std::atomic<std::int32_t>, kRegions> g_tenths{ NONE, NONE, NONE, NONE, NONE, NONE };
 
 		// Set while a check waits in the task queue.
 		std::atomic<bool> g_queued{ false };
@@ -81,18 +89,23 @@ namespace PaperDoll
 				// The lowest condition over each region, since the piece
 				// nearest to breaking is the one the player wants to see.
 				std::array<std::int32_t, kRegions> lowest;
+				std::array<std::int32_t, kRegions> lowestTenths;
 				lowest.fill(NONE);
+				lowestTenths.fill(NONE);
 				for (const auto& piece : *pieces) {
 					const auto percent = PercentOf(piece.health);
+					const auto tenths = TenthsOf(piece.health);
 					const auto underwear = IsUnderwear(piece);
 					for (std::size_t region = 0; region < kRegions; region++) {
 						if (Covers(piece, static_cast<Region>(region), underwear)) {
 							lowest[region] = lowest[region] == NONE ? percent : std::min(lowest[region], percent);
+							lowestTenths[region] = lowestTenths[region] == NONE ? tenths : std::min(lowestTenths[region], tenths);
 						}
 					}
 				}
 				for (std::size_t region = 0; region < kRegions; region++) {
 					g_percent[region] = lowest[region];
+					g_tenths[region] = lowestTenths[region];
 				}
 			}
 			g_queued = false;
@@ -102,5 +115,10 @@ namespace PaperDoll
 	std::int32_t LowestPercent(std::size_t a_region)
 	{
 		return a_region < kRegions && Settings::NecOn() ? g_percent[a_region].load() : NONE;
+	}
+
+	std::int32_t LowestTenths(std::size_t a_region)
+	{
+		return a_region < kRegions && Settings::NecOn() ? g_tenths[a_region].load() : NONE;
 	}
 }

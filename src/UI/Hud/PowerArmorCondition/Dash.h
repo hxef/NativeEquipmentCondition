@@ -38,6 +38,8 @@ namespace PowerArmorCondition
 		Point back{};                    // the furthest left that word may reach
 		Point first{};                   // the reserve row's first digit
 		Point above{};                   // the first digit of the row above
+		Point upper{};                   // where CND starts at Percent, right of the box, level with the row above
+		Point lower{};                   // where the percent starts, right of the box, level with the reserve row
 		bool  flipped = false;           // whether before and back were measured, for flipped bars
 		Miss  miss = Miss::kNoRenderer;  // why none of it is there, when it is not
 	};

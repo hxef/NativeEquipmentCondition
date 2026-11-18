@@ -50,9 +50,9 @@ namespace FridgeIcon
 		const auto down = Flash::Number(a_field, "scaleY"sv, 1.0);
 		const auto middle = y + (line->top + line->baseline + line->descent) * down / 2.0;
 		const Line first{ x + line->left * across, x + line->right * across, (line->baseline - line->top) * down, middle,
-			middle - line->drop * down };
+			middle - line->drop * down, (line->baseline + line->descent - line->top) * down };
 		if (!std::isfinite(first.left) || !std::isfinite(first.right) || !std::isfinite(first.capitals) || !std::isfinite(first.middle) ||
-			!std::isfinite(first.metricsMiddle)) {
+			!std::isfinite(first.metricsMiddle) || !std::isfinite(first.height)) {
 			return std::nullopt;
 		}
 		return first;

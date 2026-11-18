@@ -30,9 +30,6 @@ namespace ItemCard
 		// The text
 		// -------------------------------------------------------------------
 
-		// What NEC writes after the percent in the number's own field.
-		constexpr std::string_view WEAR_RATE_START = " (x";
-
 		// The rate as the row prints it, (x1.3): 1 decimal, 2 below 0.05 and a
 		// whole number from 100 up, x0 for an item that never wears and x0.01
 		// at the least for one that does. The point is "." in every language,
@@ -146,11 +143,27 @@ namespace ItemCard
 			return turned;
 		}
 
-		// The movie's name for the trace, PipboyMenu for PipboyMenu.swf.
-		std::string_view MovieName(std::string_view a_file)
+		// Signs a change the movie printed in a_cell a_way, + or -, the way
+		// the rate moves. a_movie names the movie for the trace.
+		void TurnChange(std::string_view a_movie, Value& a_cell, char a_way)
 		{
-			constexpr auto SWF = ".swf"sv;
-			return a_file.ends_with(SWF) ? a_file.substr(0, a_file.size() - SWF.size()) : a_file;
+			if (const auto turned = TurnedChange(Flash::String(a_cell, "text"sv), a_way); turned && WriteKeepingLook(a_cell, *turned)) {
+				TraceLog::First("menu", "{:s} CND row's change beside the number reads \"{:s}\"", a_movie, IniText::Trimmed(*turned));
+			}
+		}
+
+		// While a mod changes the printed rate, the hook fed the CND entry
+		// this change, by the same test on the same 2 rates. A movie that
+		// prints it beside the number shows its sign as fed, - for a rate
+		// that rose, since it turns only Weight's. The rate's way is the
+		// other, or nothing with no change.
+		std::optional<char> RateWay(float a_rate, std::optional<float> a_compared)
+		{
+			const auto change = a_compared ? WearRateChange(*a_compared, a_rate) : 0.0F;
+			if (change == 0.0F) {
+				return std::nullopt;
+			}
+			return change < 0.0F ? '+' : '-';
 		}
 
 		// -------------------------------------------------------------------
@@ -262,21 +275,14 @@ namespace ItemCard
 		std::string printed{ shown.GetString() };
 		const auto  at = printed.find(WEAR_RATE_START);
 
-		// While a mod changes the printed rate, the hook fed the CND entry
-		// this change, by the same test on the same 2 rates. A movie that
-		// prints it beside the number shows its sign as fed, - for a rate
-		// that rose, since it turns only Weight's. The rate's way is the other.
-		const auto change = a_compared ? WearRateChange(*a_compared, *a_rate) : 0.0F;
-		const auto changed = change != 0.0F;
-		const auto rateWay = change < 0.0F ? '+' : '-';
+		const auto way = RateWay(*a_rate, a_compared);
+		const auto changed = way.has_value();
 		const auto movie = MovieName(a_movieFile);
 		// Signs a change the movie printed in a_cell the rate's way. It runs
 		// at every render while the rate stays in the field too, since the
 		// movie may print its change again with the sign as fed.
 		const auto turnChange = [&](Value& a_cell) {
-			if (const auto turned = TurnedChange(Flash::String(a_cell, "text"sv), rateWay); turned && WriteKeepingLook(a_cell, *turned)) {
-				TraceLog::First("menu", "{:s} CND row's change beside the number reads \"{:s}\"", movie, IniText::Trimmed(*turned));
-			}
+			TurnChange(movie, a_cell, *way);
 		};
 
 		if (at != std::string::npos && std::string_view{ printed }.substr(at + 1) == rate) {
@@ -354,5 +360,15 @@ namespace ItemCard
 		tidyCell();
 		remember();
 		TraceLog::First("menu", "{:s} CND row has no room for \"{:s}\" and reads \"{:s}\"", movie, rate, printed);
+	}
+
+	void TurnWearRateChange(std::string_view a_movieFile, Value& a_row, std::optional<float> a_rate, std::optional<float> a_compared)
+	{
+		const auto way = a_rate ? RateWay(*a_rate, a_compared) : std::nullopt;
+		if (!way) {
+			return;
+		}
+		auto cell = Roles::Card::CellBeside(a_row);
+		TurnChange(MovieName(a_movieFile), cell, *way);
 	}
 }

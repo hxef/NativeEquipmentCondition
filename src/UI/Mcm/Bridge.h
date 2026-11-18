@@ -1,18 +1,14 @@
 #pragma once
 
-#include "Condition/Condition.h"
 #include "Core/CallPatch/CallPatch.h"
 #include "Core/Parts.h"
 #include "Core/Pieces.h"
 #include "Core/Plugin.h"
 #include "Core/Settings/Settings.h"
 
-#include <algorithm>
-#include <array>
 #include <cstddef>
 #include <cstdint>
 #include <functional>
-#include <iterator>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -25,71 +21,6 @@ namespace Mcm
 
 	// config.json's modName, which MCM also puts on every entry of NEC's pages.
 	inline constexpr std::string_view MOD = "NEC"sv;
-
-	// A hidden switch that hides rows while a number is at its off value, as a
-	// switch that is off hides the rows under it, or while a few settings are.
-	// Each has config.json's refreshMenu, so the rows hide and come back as it
-	// moves. rows are the settings of the rows it hides, which their block's
-	// note leaves out too, and nullptr after the last. A row on 2 hides shows
-	// only while both do, as config.json joins their numbers with AND.
-	struct Hide
-	{
-		std::string_view                      id;
-		bool                                  (*shows)();
-		std::array<const Settings::Named*, 8> rows;
-	};
-
-	// Whether anything repairs as a workbench does: the bench itself, or
-	// REPAIR on the Pip-Boy's inspect screen, iPipboyRepair 1 or 2 as set.
-	// When neither does, only traders repair.
-	[[nodiscard]] inline bool BenchWayRepairs()
-	{
-		const auto pipboy = Settings::iPipboyRepair.GetValue();
-		return Settings::bWorkbenchRepair.GetValue() || pipboy == 1 || pipboy == 2;
-	}
-
-	// Jams start at shows while the jam chance is above 0, Perk lock and Lock
-	// spares too while Lock repairs is not Off, and Supplies only from while
-	// Servicing supplies is above 0. An iRepairLock of 3 or -1 locks as By
-	// its mods does, so only 0 hides them. The 8 rows that tune paid repairs
-	// show while Workbench repair cost is above 0, since at 0 every repair is
-	// a free MEND and no repair box opens, see FreeRepairs in
-	// UI/Repair/Workbench/Bench.h, and while something repairs as a workbench
-	// does. The Maintenance header hides with them, as no row is left under
-	// it. Workbench repair cost and the Repair with spares section show only
-	// while something repairs so too, and Repair box opens on only while a
-	// levels box can open, at the bench or as Workbench in the Pip-Boy. Lock
-	// spares too also hides while Spare repair is off, by its config.json
-	// row, and so do Keep spare mods and Spare mod rows. Spare mod rows shows
-	// only while Keep spare mods opens a box, at Choose mods to use or Choose
-	// mods to keep. The Penalty mark section shows while either penalty point
-	// marks a bar, from 0.01 to 0.99. Its 2 points sit on the Weapons and the
-	// Armor page, so its id names the first, and both sliders refresh the
-	// menu.
-	inline constexpr Hide HIDES[]{
-		{ "fJamChance:Jams"sv, [] { return Settings::fJamChance.GetValue() > 0.0F; }, { &Settings::fJamStart } },
-		{ "iRepairLock:Lock"sv, [] { return Settings::iRepairLock.GetValue() != 0; }, { &Settings::iPerkLock, &Settings::bLockSpares } },
-		{ "iRepairSupplies:Supplies"sv, [] { return Settings::iRepairSupplies.GetValue() > 0; }, { &Settings::fSuppliesOnlyFrom } },
-		{ "bWorkbenchRepair:Levels"sv, [] { return Settings::bWorkbenchRepair.GetValue() || Settings::iPipboyRepair.GetValue() == 2; },
-			{ &Settings::iRepairBoxRow } },
-		{ "bWorkbenchRepair:Repairs"sv, BenchWayRepairs,
-			{ &Settings::fBenchCostMult, &Settings::bSpareRepair, &Settings::fSpareWorthMult, &Settings::iUnscrappableSpares,
-				&Settings::iKeepSpareMods, &Settings::iSpareModRows } },
-		{ "iKeepSpareMods:Choose"sv, [] { return Settings::KeepSpareModsAsks(Settings::iKeepSpareMods.GetValue()); },
-			{ &Settings::iSpareModRows } },
-		{ "fBenchCostMult:Paid"sv, [] { return Settings::fBenchCostMult.GetValue() > 0.0F && BenchWayRepairs(); },
-			{ &Settings::fFreeMendFrom, &Settings::iRepairSupplies, &Settings::fSuppliesOnlyFrom, &Settings::iRepairLock,
-				&Settings::iPerkLock, &Settings::iPerkComponentDiscount, &Settings::bLockSpares, &Settings::iRepairBoxRow } },
-		{ "fWeaponPenaltyStart:Marks"sv, [] { return Condition::StartPercent(Condition::Kind::kWeapon) != 0 || Condition::StartPercent(Condition::Kind::kArmor) != 0; },
-			{ &Settings::fPenaltyMarkWidth, &Settings::bPenaltyMarkAsLine } },
-	};
-
-	// The hide a_id names, or nullptr.
-	[[nodiscard]] constexpr const Hide* HideOf(std::string_view a_id)
-	{
-		const auto it = std::ranges::find(HIDES, a_id, &Hide::id);
-		return it != std::end(HIDES) ? &*it : nullptr;
-	}
 
 	// NEC's answers on root.mcm, in Bridge.cpp, each for a call that is NEC's.
 	// a_id is a value's id, bSpawnCondition:Features or the hidden
@@ -247,7 +178,7 @@ namespace Mcm
 
 	// The HUD bar sliders, in HudBar.cpp: the bar's place in HUD units from
 	// the screen's top left, from HudCondition::Measured. HudBarShows
-	// answers bHudCondition:Placed, false until the HUD has measured the
+	// answers iWeaponCnd:Placed, false until the HUD has measured the
 	// bar. HudBarValue and HudBarShift answer the 2 slider ids and
 	// HudBarDefault their help ids, each nothing for any other id or before
 	// that measure. HudBarRanges writes the live ends and value on NEC's

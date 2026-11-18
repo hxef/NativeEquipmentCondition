@@ -27,17 +27,19 @@ namespace Presets
 		// What a preset does not hold: a setting that only changes what a menu
 		// or the HUD shows goes here, so it stays the player's own whatever is
 		// picked. Every gameplay rule is held by default, so a setting added
-		// later is held unless it is named here. Flip CND bars is under [HUD].
+		// later is held unless it is named here. Each bar's flip is in [HUD].
 		// NOT_HELD points at the settings, so renaming one fails to build
 		// instead of making it held.
 		constexpr std::string_view NOT_HELD_SECTIONS[]{ "HUD", "Log", "Presets" };
 		constexpr const Settings::Named* NOT_HELD[]{
-			&Settings::bHudCondition,
-			&Settings::bPowerArmorBar,
-			&Settings::bQuickContainer,
+			&Settings::iWeaponCnd,
+			&Settings::iPowerArmorCnd,
+			&Settings::iQuickContainerCnd,
+			&Settings::iItemCardCnd,
 			&Settings::bCardWearRate,
 			&Settings::bPowerArmorCardCnd,
 			&Settings::iCndDecimals,
+			&Settings::bCndColumn,
 			&Settings::iRepairBoxRow,
 			&Settings::bRepairBoxColumns,
 			&Settings::bRepairBoxGains,

@@ -65,7 +65,7 @@ namespace CallPatch
 
 	bool SwitchLeft(const Place& a_place)
 	{
-		return a_place.use != Use::kTraceOnly && a_place.row->on && YieldedLocked(a_place.row->on);
+		return a_place.use != Use::kTraceOnly && a_place.row->on && YieldedLocked(a_place.row->on.Setting());
 	}
 
 	std::string ChangedLine(const Place& a_place, std::string_view a_tail, std::string_view a_trace)

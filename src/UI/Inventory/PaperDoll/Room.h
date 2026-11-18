@@ -4,13 +4,15 @@
 
 #include "UI/Hud/HudParts/Readout.h"
 
+#include <cstdint>
 #include <optional>
 #include <string>
 #include <vector>
 
 // Where each CND bar on the Pip-Boy apparel figure sits over its entry, and how
 // far it may grow upward before it meets the figure or a tab name, read when a
-// bar is laid out, in the units of the entry it hangs on, y down.
+// bar is laid out, in the units of the entry it hangs on, y down. And each
+// bar's state and its layout there.
 //
 // A bar stops 2 under 2 kinds of thing. The figure's named clips, the body
 // part and head gear drawings, count shown or hidden: vanilla hides a limb no
@@ -58,10 +60,14 @@ namespace PaperDoll
 	// 2 above the icon at every depth, so a deeper bar grows upward.
 	[[nodiscard]] Placement PlaceOver(Value& a_entry, Value& a_icon, Value& a_value, double a_digits, double a_deep);
 
-	// How deep a bar is at Pip-Boy CND bar thickness 1: sized for the
-	// number next to the icon, 18 high, as every CND bar is sized for its
-	// text, see HudParts::Readout, and then half again, 8.1. Its word is
-	// never written, so the bar shows alone.
+	// How wide the number's digits are. It changes with the resistance and
+	// with the damage type the player cycles to.
+	[[nodiscard]] double DigitsWidth(Value& a_entry);
+
+	// How deep a bar is at Apparel figure CND bar thickness 1: sized for the
+	// number next to the icon, 18 high, as every CND bar is sized for its text,
+	// see HudParts::Readout, and then half again, 8.1. Its word is never
+	// written, so the bar shows alone.
 	inline constexpr double BAR_DEEP = HudParts::Readout::BAR_DEEP * 18.0 * 1.5;
 
 	// How deep a bar grows at most while the figure's clips cannot be read,
@@ -121,4 +127,56 @@ namespace PaperDoll
 	// bar thickness 0.5 draws, half of BAR_DEEP, even where the room is less,
 	// and at most NO_CLIPS_DEEP while the clips cannot be read.
 	[[nodiscard]] Hold HoldIn(const Room& a_room, double a_bottom, double a_asked);
+
+	// A value no region ever holds, so the first frame always draws.
+	inline constexpr std::int32_t NOT_DRAWN = -2;
+
+	// One bar's state, kept between frames so only a change is written.
+	// The digits and the thickness are what the bar was laid out for, -1
+	// before that, the room what it found above it then and held what
+	// held it thinner. tight is the room under held when the bar covers
+	// it, see Hold, and tightSaid what the trace last named of it.
+	// shownMark and shownStill are the mark and the still end last
+	// drawn, forgotten with shown.
+	struct Bar
+	{
+		Placement                placed;
+		double                   digits{ -1.0 };
+		double                   thickness{ -1.0 };
+		Room                     room;
+		std::optional<Limit>     held;
+		std::optional<double>    tight;
+		std::optional<double>    tightSaid;
+		std::int32_t             shown{ NOT_DRAWN };
+		HudParts::Readout::Mark  shownMark;
+		HudParts::Readout::Still shownStill{ HudParts::Readout::Still::kLeftEnd };
+	};
+
+	// Whether the room above a laid out bar may have changed: a named
+	// clip gave no box at its layout, or the header's letters over it
+	// came, went or moved, as a header built after the figure does.
+	// Asked every few frames, see PaperDoll.cpp.
+	[[nodiscard]] bool Stale(Scaleform::GFx::Movie& a_movie, std::vector<Value>& a_texts, Value& a_entry, const Bar& a_bar);
+
+	// Places a bar over its entry for the digits the number shows now,
+	// as deep as a_thickness asks and the room above it lets it be. Its
+	// bottom stays put and it grows upward. False when the layout comes
+	// out as the last one, which then changes nothing.
+	bool Lay(Scaleform::GFx::Movie& a_movie, Value& a_readout, Value& a_doll, std::vector<Value>& a_texts, Value& a_entry, Bar& a_bar, double a_digits, double a_thickness);
+
+	// How high something whose bottom is at a_bottom may stand under the
+	// lower limit of a_room, kept 2 under it as HoldIn keeps a bar, and the
+	// limit, at most NO_CLIPS_DEEP with no limit while the clips cannot be
+	// read. Nothing when nothing above holds it.
+	struct Headroom
+	{
+		double               high{ 0.0 };
+		std::optional<Limit> under;
+	};
+	[[nodiscard]] std::optional<Headroom> HeadroomOf(const Room& a_room, double a_bottom);
+
+	// How long the bar over a_entry is while its number shows 1 digit, for
+	// a bar a_deep deep. Digits share 1 width, so 1 is the number's width
+	// over its count of characters.
+	[[nodiscard]] double ShortWidth(Value& a_entry, double a_deep);
 }

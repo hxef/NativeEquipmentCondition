@@ -2,6 +2,9 @@
 
 #include "Core/Plugin.h"
 
+#include "Condition/Condition.h"
+#include "UI/FridgeIcon.h"
+
 #include <cstdint>
 #include <optional>
 #include <string_view>
@@ -85,14 +88,56 @@ namespace ItemCard
 	// so only a movie that names one gets it. a_movieFile is the movie's.
 	void MarkFridge(Scaleform::GFx::Movie& a_movie, std::string_view a_movieFile, Scaleform::GFx::Value& a_row, bool a_fridge);
 
+	// MarkFridge for a row whose number the bar replaces, in FridgeIcon.cpp:
+	// the icon's left edge at a_left, the bar's start, sized and centred on
+	// a_line, a_field's first line measured before the number went, in
+	// a_field's letter colour. Where the bar then starts, past the icon, or
+	// a_left with no icon.
+	[[nodiscard]] double MarkFridgeAtBar(Scaleform::GFx::Movie& a_movie, std::string_view a_movieFile, Scaleform::GFx::Value& a_row, bool a_fridge,
+		double a_left, const FridgeIcon::Line& a_line, Scaleform::GFx::Value& a_field);
+
+	// The bar DrawConditionBar draws in a CND row in place of its number.
+	inline constexpr const char* CONDITION_BAR_NAME = "NEC_CardCondition_mc";
+
+	// What a CND row's bar shows.
+	struct BarReading
+	{
+		std::uint32_t                  tenths;  // the number the row printed, see Condition::CardTenths
+		std::optional<Condition::Kind> kind;    // whose penalty point it marks, none for food and power armor pieces
+		bool                           fridge;  // the row gets the fridge icon
+	};
+
+	// At Item card CND Bar, draws a_row's CND as a framed meter in place of
+	// its number, in ConditionBar.cpp, with the fridge icon at its start while
+	// a_reading says so. The label and the wear rate stay. False with the
+	// number kept when the row has no room for a bar or cannot be measured.
+	// a_movieFile is the movie's.
+	bool DrawConditionBar(Scaleform::GFx::Movie& a_movie, std::string_view a_movieFile, Scaleform::GFx::Value& a_row, const BarReading& a_reading);
+
 	// What a CND entry carries in the card's data beside its number: the
 	// item's wear rate, which the card itself never reads. The Pip-Boy's
 	// card keeps no member of NEC's own, so Pipboy keeps its rate instead.
 	inline constexpr std::string_view WEAR_RATE_MARK = "necWearRate";
 
+	// What NEC writes after the percent in the number's own field.
+	inline constexpr std::string_view WEAR_RATE_START = " (x";
+
 	// What a workbench's CND entry carries beside WEAR_RATE_MARK while a mod
 	// is tried on: the wear rate of the item itself, without the mod.
 	inline constexpr std::string_view WEAR_RATE_COMPARED_MARK = "necWearRateCompared";
+
+	// What a weapon's or armor's CND entry carries beside its number: its
+	// Condition::Kind as a number, so its bar marks where penalties start.
+	// Food and power armor pieces carry none. The card itself never reads
+	// it. The Pip-Boy's card keeps it in Pipboy instead.
+	inline constexpr std::string_view PENALTY_KIND_MARK = "necPenaltyKind";
+
+	// The movie's name for the trace, PipboyMenu for PipboyMenu.swf.
+	[[nodiscard]] inline std::string_view MovieName(std::string_view a_file)
+	{
+		constexpr std::string_view SWF = ".swf";
+		return a_file.ends_with(SWF) ? a_file.substr(0, a_file.size() - SWF.size()) : a_file;
+	}
 
 	// How fast a_stack of a_item wears or spoils against an ordinary item of
 	// its kind in this load order, in WearRate.cpp: the wear code's own
@@ -116,6 +161,12 @@ namespace ItemCard
 	void WriteWearRate(Scaleform::GFx::Movie& a_movie, std::string_view a_movieFile, Scaleform::GFx::Value& a_row, std::optional<float> a_rate,
 		std::optional<float> a_compared);
 
+	// The part of WriteWearRate that runs at every render once the rate has
+	// its place, for a row whose number the bar replaced, in WearRate.cpp:
+	// while a mod changes the printed rate, a change the movie prints
+	// beside the number is signed the way the rate moves.
+	void TurnWearRateChange(std::string_view a_movieFile, Scaleform::GFx::Value& a_row, std::optional<float> a_rate, std::optional<float> a_compared);
+
 	// Drops what WriteWearRate remembers of the last row it measured, for
 	// WatchCard when a card's movie loads.
 	void ForgetWearRate();
@@ -129,11 +180,11 @@ namespace ItemCard
 	// the entries from a_to on 1 place back. Nothing for any other pair.
 	void MoveEntry(Scaleform::GFx::Value& a_entries, std::uint32_t a_from, std::uint32_t a_to);
 
-	// While its switch is on, turns the Health row vanilla gives a power
-	// armor piece, such as 25/50, into CND and the piece's condition in
-	// percent, moved to the top where CND sits on other armor. a_site names
-	// the call for the trace. In PowerArmor.cpp, this one for every card but
-	// the Pip-Boy's.
+	// While its switch is on and Item card CND is not Off, turns the Health
+	// row vanilla gives a power armor piece, such as 25/50, into CND and the
+	// piece's condition in percent, moved to the top where CND sits on other
+	// armor. a_site names the call for the trace. In PowerArmor.cpp, this one
+	// for every card but the Pip-Boy's.
 	void ShowPowerArmorCnd(Scaleform::GFx::Value& a_target, const RE::BGSInventoryItem& a_item, const RE::BGSInventoryItem::Stack* a_stack,
 		std::string_view a_site);
 
@@ -174,4 +225,9 @@ namespace ItemCard
 	// Adds the render listener that keeps a card's CND row above Damage to
 	// a menu movie that draws item cards, and passes over any other movie.
 	void WatchCard(Scaleform::GFx::Movie& a_movie, std::string_view a_file);
+
+	// Gives the CND row a column of its own in a list menu's item lists, in
+	// Column.cpp, while bCndColumn is on and the movie's lists take column
+	// keys from its own settings. Passes over any other movie.
+	void OfferColumn(Scaleform::GFx::Movie& a_movie, std::string_view a_file);
 }

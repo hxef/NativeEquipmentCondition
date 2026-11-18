@@ -36,17 +36,24 @@ namespace Roles::Card
 	{
 		Value              clip;   // the row printing CND
 		std::vector<Value> above;  // the rows CND goes above, nearest first
+		bool               drawn;  // found by the clip NEC drew in place of its number
 	};
 
 	// The shown row printing a_label and a_tenths as Condition::CardText
 	// writes it, with or without %, and 98.0 also as 98, the child at data
 	// order a_index first, found by its printed text since every entry
-	// declares Label_tf and Value_tf. The rows above are the shown rows above
-	// it up to the last combined row, or with none, up to the first with no
-	// Value_tf. Nothing when no row or 2 rows match, 2 matches warning at
-	// once and no match only when a_redrawn.
+	// declares Label_tf and Value_tf. A row printing a_label that shows
+	// a_drawing, the clip NEC drew in place of its number, matches too. The
+	// rows above are the shown rows above it up to the last combined row, or
+	// with none, up to the first with no Value_tf. Nothing when no row or 2
+	// rows match, 2 matches warning at once and no match only when a_redrawn.
 	[[nodiscard]] std::optional<Row> ConditionRow(Scaleform::GFx::Movie& a_movie, Value& a_card, std::uint32_t a_index,
-		std::string_view a_label, std::uint32_t a_tenths, bool a_redrawn);
+		std::string_view a_label, std::uint32_t a_tenths, bool a_redrawn, const char* a_drawing);
+
+	// Hides a_drawing on every row of a_card that prints a label other than
+	// a_label. A card that keeps its row clips for the next item can print
+	// another label in a clip that showed it.
+	void HideOnOtherRows(Value& a_card, std::string_view a_label, const char* a_drawing);
 
 	// The field a row prints its number in, or a value that is not a display
 	// object when the row has none.
@@ -56,7 +63,8 @@ namespace Roles::Card
 	[[nodiscard]] Value LabelField(Value& a_row);
 
 	// Whether a_row shows anything across a_left to a_right, in its own
-	// units, but its label, its number and its background. A text field
+	// units, but its label, its number, its background and the parts NEC
+	// adds, named NEC_. A text field
 	// that prints nothing draws nothing, and the background is a child that
 	// reaches from the label's left edge to the number's right edge. True
 	// when the row cannot be measured.

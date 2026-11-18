@@ -6,8 +6,8 @@
 namespace QuickContainer
 {
 	// Forgets every meter and name width of the last HUD movie, as each HUD
-	// movie loads and whatever the switch says, since the meters can be added
-	// later, when the switch goes on.
+	// movie loads and whatever the stepper says, since the meters can be
+	// added later, when it leaves Off.
 	void ForgetMeters();
 
 	// Adds a meter to each row of the HUD movie's quick container and the

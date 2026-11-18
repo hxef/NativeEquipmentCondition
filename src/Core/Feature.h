@@ -21,9 +21,10 @@ struct Feature
 {
 	const char* name = nullptr;
 
-	// The switch this feature's hooks ask on every call, or nothing for one
-	// always on. While it is off the hooks give the vanilla result.
-	Settings::Live<bool>* on = nullptr;
+	// The switch or CND stepper this feature's hooks ask on every call, or
+	// nothing for one always on. While it is off the hooks give the vanilla
+	// result.
+	Settings::Gate on{};
 
 	// The part this row's places belong to unless a patch call names
 	// another, see CallPatch.h. Of the rows on 1 switch, only the 1 with a
@@ -55,7 +56,7 @@ struct Feature
 	// False once the part its switch stands for is left to another mod, or
 	// the part it rides on. Such a row is not installed and adds nothing to a
 	// movie. Load and Unload run for it anyway.
-	[[nodiscard]] bool Runs() const { return !on || !CallPatch::IsYielded(*on); }
+	[[nodiscard]] bool Runs() const { return !on || !CallPatch::IsYielded(*on.Setting()); }
 };
 
 // Every feature, in the order they run. Defined in Features.cpp.

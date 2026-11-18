@@ -28,6 +28,23 @@ namespace HudParts
 			constexpr const char* LINE_NAME = "NEC_ConditionLine_mc";
 			constexpr const char* LABEL_NAME = "NEC_ConditionLabel_tf";
 
+			// The parts only a place at Percent makes, see Extra.
+			constexpr const char* WORD_NAME = "NEC_ConditionWord_tf";
+			constexpr const char* NUMBER_NAME = "NEC_ConditionNumber_tf";
+			constexpr const char* RULE_NAME = "NEC_ConditionRule_mc";
+
+			[[nodiscard]] const char* NameOf(Extra a_extra)
+			{
+				switch (a_extra) {
+				case Extra::kWord:
+					return WORD_NAME;
+				case Extra::kNumber:
+					return NUMBER_NAME;
+				default:
+					return RULE_NAME;
+				}
+			}
+
 			// The HP meter draws its spare bar at half opacity, so the track
 			// does too.
 			constexpr double TRACK_ALPHA = 0.5;
@@ -124,17 +141,22 @@ namespace HudParts
 		LabelPlace LabelExtent(Value& a_readout)
 		{
 			auto label = Flash::Child(a_readout, LABEL_NAME);
-			if (!label.IsDisplayObject()) {
+			return ExtentOf(label);
+		}
+
+		LabelPlace ExtentOf(Value& a_field)
+		{
+			if (!a_field.IsDisplayObject()) {
 				return LabelPlace{};
 			}
 
 			// The field is made from code, so its box starts at its own 0,0.
-			const auto       left = Flash::Number(label, "x"sv);
-			const auto       top = Flash::Number(label, "y"sv);
-			const auto       across = Flash::Number(label, "scaleX"sv);
-			const auto       down = Flash::Number(label, "scaleY"sv);
-			const Flash::Box field{ left, top, left + Flash::Number(label, "width"sv), top + Flash::Number(label, "height"sv) };
-			if (const auto line = Flash::FirstLine(label)) {
+			const auto       left = Flash::Number(a_field, "x"sv);
+			const auto       top = Flash::Number(a_field, "y"sv);
+			const auto       across = Flash::Number(a_field, "scaleX"sv);
+			const auto       down = Flash::Number(a_field, "scaleY"sv);
+			const Flash::Box field{ left, top, left + Flash::Number(a_field, "width"sv), top + Flash::Number(a_field, "height"sv) };
+			if (const auto line = Flash::FirstLine(a_field)) {
 				return LabelPlace{ field, { left + (line->left * across), top + (line->top * down), left + (line->right * across), top + (line->baseline * down) }, true,
 					line->descent * down };
 			}
@@ -144,10 +166,9 @@ namespace HudParts
 
 		void MoveLabel(Value& a_readout, double a_x, double a_y)
 		{
-			auto label = Flash::Child(a_readout, LABEL_NAME);
+			auto label = LabelOf(a_readout);
 			if (label.IsDisplayObject()) {
-				label.SetMember("x"sv, Value(a_x));
-				label.SetMember("y"sv, Value(a_y));
+				MoveField(label, a_x, a_y);
 			}
 		}
 
@@ -304,6 +325,74 @@ namespace HudParts
 				return Mark{};
 			}
 			return Mark{ at, a_wide * Held(Settings::fPenaltyMarkWidth, MARK_LEAST, MARK_MOST), a_deep * STEP_SHARE, Settings::bPenaltyMarkAsLine.GetValue() };
+		}
+
+		// -------------------------------------------------------------------
+		// A percent in place of the bar
+		// -------------------------------------------------------------------
+
+		Value ExtraIn(Value& a_readout, Extra a_extra)
+		{
+			return Flash::Child(a_readout, NameOf(a_extra));
+		}
+
+		Value ExtraOf(Scaleform::GFx::Movie& a_movie, Value& a_readout, Extra a_extra)
+		{
+			if (auto made = ExtraIn(a_readout, a_extra); made.IsDisplayObject()) {
+				return made;
+			}
+			const auto* name = NameOf(a_extra);
+			const auto  added = a_extra == Extra::kLine ? AddBox(a_movie, a_readout, name) : AddField(a_movie, a_readout, name);
+			auto       made = added ? Flash::Child(a_readout, name) : Value{};
+			if (!made.IsDisplayObject()) {
+				return Value{};
+			}
+			made.SetMember("visible"sv, Value(false));
+			if (a_extra != Extra::kLine) {
+				const auto label = Flash::Child(a_readout, LABEL_NAME);
+				if (const auto how = Flash::Member(label, "antiAliasType"sv); how.IsString()) {
+					made.SetMember("antiAliasType"sv, how);
+				}
+			}
+			return made;
+		}
+
+		Value LabelOf(Value& a_readout)
+		{
+			return Flash::Child(a_readout, LABEL_NAME);
+		}
+
+		void ShowBar(Value& a_readout, bool a_shown)
+		{
+			for (const auto* name : { TRACK_NAME, FILL_NAME }) {
+				auto box = Flash::Child(a_readout, name);
+				Flash::Set(box, "visible"sv, Value(a_shown));
+			}
+			if (a_shown) {
+				return;
+			}
+			for (const auto* name : { TRACK_PAST_NAME, FILL_PAST_NAME, NOTCHES_NAME, LINE_NAME }) {
+				auto box = Flash::Child(a_readout, name);
+				Flash::Set(box, "visible"sv, Value(false));
+			}
+		}
+
+		void ShowLabel(Value& a_readout, bool a_shown)
+		{
+			auto label = Flash::Child(a_readout, LABEL_NAME);
+			Flash::Set(label, "visible"sv, Value(a_shown));
+		}
+
+		LabelPlace WriteText(Value& a_field, std::string_view a_text, double a_size, double a_wide)
+		{
+			if (!a_field.IsDisplayObject()) {
+				return LabelPlace{};
+			}
+			const auto scale = a_size / WRITTEN_SIZE;
+			SetStyledText(a_field, a_text, WRITTEN_SIZE);
+			a_field.SetMember("scaleX"sv, Value(a_wide * scale));
+			a_field.SetMember("scaleY"sv, Value(scale));
+			return ExtentOf(a_field);
 		}
 	}
 }

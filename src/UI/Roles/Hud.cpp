@@ -344,7 +344,7 @@ namespace Roles::Hud
 		std::optional<double> end;
 		auto                  others = false;
 		for (auto& child : Flash::Children(a_row)) {
-			const auto span = SpanOf(child);
+			const auto span = Flash::String(child, "name"sv).starts_with("NEC_"sv) ? std::nullopt : SpanOf(child);
 			if (span && OnScreen(a_movie, child)) {
 				end = std::max(end.value_or(span->end), span->end);
 				others = others || Flash::String(child, "name"sv) != NAME_FIELD;

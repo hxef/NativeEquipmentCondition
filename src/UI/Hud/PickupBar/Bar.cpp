@@ -6,10 +6,8 @@
 #include "UI/Flash.h"
 #include "UI/Hud/HudParts/HudParts.h"
 #include "UI/Hud/PickupBar/Look.h"
+#include "UI/Hud/PickupBar/Names.h"
 #include "UI/Roles/Rollover.h"
-
-#include <REX/CONVERT.h>
-#include <REX/W32/KERNEL32.h>
 
 #include <algorithm>
 #include <array>
@@ -57,67 +55,6 @@ namespace PickupBar
 			return std::isfinite(value) ? value : 0.0;
 		}
 
-		// The text in capitals, each letter raised on its own with no
-		// language's rules, as vanilla's prompt raises the name it prints.
-		// Text that will not convert stays as it is.
-		std::wstring Capitals(std::string_view a_text)
-		{
-			std::wstring wide;
-			if (!REX::UTF8_TO_UTF16(a_text, wide)) {
-				return wide;
-			}
-			const auto   size = static_cast<std::int32_t>(wide.size());
-			std::wstring capitals(wide.size(), L'\0');
-			const auto   written = REX::W32::LCMapStringEx(REX::W32::LOCALE_NAME_INVARIANT, REX::W32::LCMAP_UPPERCASE, wide.data(), size, capitals.data(), size, nullptr, nullptr, 0);
-			return written == size ? capitals : wide;
-		}
-
-		// The name without a sorter's tag in front: 1 bracket group that opens
-		// it, [..], (..), {..} or |..|, and the spaces after it, so
-		// [10mm] 10mm Pistol gives 10mm Pistol. A name with no such group, or
-		// with nothing after it, stays as it is.
-		std::string_view Untagged(std::string_view a_name)
-		{
-			constexpr std::string_view OPENS = "[({|";
-			constexpr std::string_view CLOSES = "])}|";
-			const auto kind = a_name.empty() ? std::string_view::npos : OPENS.find(a_name.front());
-			const auto close = kind == std::string_view::npos ? std::string_view::npos : a_name.find(CLOSES[kind], 1);
-			const auto rest = close == std::string_view::npos ? std::string_view::npos : a_name.find_first_not_of(' ', close + 1);
-			return rest == std::string_view::npos ? a_name : a_name.substr(rest);
-		}
-
-		// Whether a_text is a pile's count as vanilla prints it after the
-		// name, a space and a number in brackets, such as " (3)".
-		bool IsCount(std::wstring_view a_text)
-		{
-			if (a_text.size() < 4 || !a_text.starts_with(L" (") || !a_text.ends_with(L')')) {
-				return false;
-			}
-			const auto digits = a_text.substr(2, a_text.size() - 3);
-			return digits.find_first_not_of(L"0123456789") == std::wstring_view::npos;
-		}
-
-		// Whether the prompt's a_text names a_name. The prompt prints the name
-		// the game built, in capitals and with a count after it for a pile of
-		// several, so the name only has to be in it once both are in
-		// capitals. Some prompts print the name without a sorter's tag, see
-		// Untagged, so the name without it counts too, but only as the whole
-		// text or with a count after it, so another item never matches.
-		bool Names(std::string_view a_text, std::string_view a_name)
-		{
-			const auto text = Capitals(a_text);
-			if (text.find(Capitals(a_name)) != std::wstring::npos) {
-				return true;
-			}
-			const auto untagged = Untagged(a_name);
-			if (untagged.size() == a_name.size()) {
-				return false;
-			}
-			const auto name = Capitals(untagged);
-			const auto after = std::wstring_view{ text }.substr(std::min(name.size(), text.size()));
-			return !name.empty() && text.starts_with(name) && (after.empty() || IsCount(after));
-		}
-
 		// -------------------------------------------------------------------
 		// The frame listener
 		// -------------------------------------------------------------------
@@ -151,8 +88,10 @@ namespace PickupBar
 				const auto hints = Roles::Rollover::Hints(prompt);
 
 				// The prompt has to name the item NEC read, see Names.
+				const auto form = Settings::iPickupCnd.Form();
+				Readout::TellForm(form, saidForm, "Pickup CND"sv);
 				const auto kept = Kept();
-				const auto wanted = Settings::NecOn() && Settings::bPickupBar.GetValue() && kept && kept->percent >= 0 && hints.IsDisplayObject() &&
+				const auto wanted = Settings::NecOn() && form != Settings::Cnd::kOff && kept && kept->percent >= 0 && hints.IsDisplayObject() &&
 				                    Flash::Bool(prompt, "visible"sv) &&
 				                    Names(Flash::String(name, "text"sv), kept->name);
 				if (!wanted) {
@@ -160,10 +99,32 @@ namespace PickupBar
 					return;
 				}
 
+				// A change of form lays the bar out and draws it again, or
+				// writes the number afresh.
+				const auto asNumber = form == Settings::Cnd::kPercent;
+				if (asNumber != shownAsNumber) {
+					shownAsNumber = asNumber;
+					Readout::ShowBar(readout, !asNumber);
+					laidOutSize = Readout::Size{ 0.0, 0.0 };
+					shownPercent = NOT_DRAWN;
+					shownMark = Readout::Mark{};
+					shownName.clear();
+					shownNumber.clear();
+					shownX = NOWHERE;
+					shownY = NOWHERE;
+					wordShown.reset();
+				}
+				if (asNumber) {
+					ShowPercent(readout, name, hints, *kept);
+					FollowWarning();
+					Show(readout, true);
+					return;
+				}
+
 				// Laying out again means measuring text, so it waits for the
 				// player to size or flip the bar.
 				const auto size = Readout::SizeFrom(Settings::fPickupBarLength, Settings::fPickupBarThickness);
-				const auto flipped = Settings::bCndBarsFlipped.GetValue();
+				const auto flipped = Settings::bPickupBarFlipped.GetValue();
 				if (size != laidOutSize || flipped != laidOutFlipped) {
 					width = BAR_LENGTH * size.length;
 					deep = BAR_DEEP * size.thickness;
@@ -185,10 +146,11 @@ namespace PickupBar
 
 				// The bar is centred under the name and the word hangs off its
 				// right end, or its left end while flipped, so turning the word
-				// off moves nothing. It sits halfway down the gap above the
-				// hints, read from the movie each frame since a long name wraps
-				// upward. The readout's origin is the bar's right end. Whole
-				// pixels keep the bar's edges sharp.
+				// off moves nothing. It fills from the right as the Weapon CND bar
+				// does, from the left while flipped. It sits halfway down the
+				// gap above the hints, read from the movie each frame since a
+				// long name wraps upward. The readout's origin is the bar's
+				// right end. Whole pixels keep the bar's edges sharp.
 				// The movie's y runs down, so above 0 is taken off to go up.
 				const auto centre = Flash::Number(name, "x"sv) + (Flash::Number(name, "width"sv) / 2.0);
 				const auto below = Flash::Number(name, "y"sv) + Flash::Number(name, "height"sv);
@@ -204,12 +166,12 @@ namespace PickupBar
 				}
 
 				// A weapon's bar marks the weapon point and an armor or
-				// clothing piece's the armor point, a food's nothing. The mark
-				// is as wide as half the bar's depth before its thickness
-				// slider.
-				const auto mark = kept->kind ? Readout::PenaltyMark(*kept->kind, BAR_DEEP, BAR_DEEP / 2.0) : Readout::Mark{};
+				// clothing piece's the armor point, a food's nothing, and only
+				// while bPickupPenaltyMark is on. The mark is as wide as half
+				// the bar's depth before its thickness slider.
+				const auto mark = kept->kind && Settings::bPickupPenaltyMark.GetValue() ? Readout::PenaltyMark(*kept->kind, BAR_DEEP, BAR_DEEP / 2.0) : Readout::Mark{};
 				if (kept->percent != shownPercent || kept->name != shownName || mark != shownMark) {
-					Readout::SetPercent(readout, width, deep, kept->percent, Readout::StillEnd(Readout::Still::kLeftEnd, laidOutFlipped), mark);
+					Readout::SetPercent(readout, width, deep, kept->percent, Readout::StillEnd(Readout::Still::kRightEnd, laidOutFlipped), mark);
 					Readout::TellFlipped(laidOutFlipped, saidFlipped, "Pickup CND bar"sv);
 					if (kept->percent != shownPercent || kept->name != shownName) {
 						TraceLog::Line("menu", "Pickup CND bar drawn at {:d}% for {:s}, its right end at {:.0f},{:.0f} in the prompt, the name's middle at {:.1f}",
@@ -221,14 +183,7 @@ namespace PickupBar
 					TellMark(mark, *kept);
 				}
 
-				// The game paints the prompt's name and hints in the warning
-				// colour while taking the item is stealing, and the bar joins
-				// them.
-				const auto stealing = rolloverPart && rolloverPart->displayWarningColor;
-				if (stealing != warned && HudParts::SetWarningColor(target, stealing)) {
-					warned = stealing;
-					TraceLog::Line("menu", "Pickup CND bar {:s}", stealing ? "in the warning colour, taking is stealing" : "back in the HUD colour");
-				}
+				FollowWarning();
 				Show(readout, true);
 			}
 
@@ -242,6 +197,9 @@ namespace PickupBar
 				shownMark = Readout::Mark{};
 				saidMark = Readout::Mark{};
 				saidName.clear();
+				saidForm.reset();
+				shownAsNumber = false;
+				shownNumber.clear();
 				shownX = NOWHERE;
 				shownY = NOWHERE;
 				shown.reset();
@@ -253,13 +211,55 @@ namespace PickupBar
 			}
 
 		private:
-			// Names the mark when it changes, and each new item while either
-			// point is from 0.01 to 0.99, so an item with no mark is named too.
+			// At Percent CND and the number stand as 1 line centred under the
+			// name, on the line the word takes at Bar, moved by the place
+			// sliders as the bar is. The text is written only when the number
+			// or the item changes, since it is measured.
+			void ShowPercent(Value& a_readout, const Value& a_name, const Value& a_hints, const Looked& a_kept)
+			{
+				const auto centre = Flash::Number(a_name, "x"sv) + (Flash::Number(a_name, "width"sv) / 2.0);
+				const auto below = Flash::Number(a_name, "y"sv) + Flash::Number(a_name, "height"sv);
+				const auto x = std::round(centre + Offset(Settings::fPickupBarX));
+				const auto y = std::round(((below + Flash::Number(a_hints, "y"sv)) / 2.0) - Offset(Settings::fPickupBarY));
+				if (x != shownX || y != shownY) {
+					a_readout.SetMember("x"sv, Value(x));
+					a_readout.SetMember("y"sv, Value(y));
+					shownX = x;
+					shownY = y;
+				}
+				const auto number = Readout::PercentText(a_kept.tenths);
+				if (number == shownNumber && a_kept.name == shownName) {
+					return;
+				}
+				auto       label = Readout::LabelOf(a_readout);
+				const auto text = Readout::WordAndPercent(label, a_kept.tenths);
+				Readout::ShowNumber(a_readout, text, Readout::Label{ .size = WORD.size }, Readout::Align::kMiddle);
+				TraceLog::Line("menu", "Pickup CND drawn as {:s} for {:s}", text, a_kept.name);
+				shownNumber = number;
+				shownName = a_kept.name;
+			}
+
+			// The game paints the prompt's name and hints in the warning
+			// colour while taking the item is stealing, and the readout joins
+			// them.
+			void FollowWarning()
+			{
+				const auto stealing = rolloverPart && rolloverPart->displayWarningColor;
+				if (stealing != warned && HudParts::SetWarningColor(target, stealing)) {
+					warned = stealing;
+					TraceLog::Line("menu", "Pickup CND bar {:s}", stealing ? "in the warning colour, taking is stealing" : "back in the HUD colour");
+				}
+			}
+
+			// Names the mark when it changes, and each new item while the
+			// switch is on and either point is from 0.01 to 0.99, so an item
+			// with no mark is named too.
 			// The shown percent is forgotten whenever the prompt moves, and a
 			// new name moves it, so the trace keeps its own mark and name.
 			void TellMark(const Readout::Mark& a_mark, const Looked& a_kept)
 			{
-				const auto marking = Condition::StartPercent(Condition::Kind::kWeapon) != 0 || Condition::StartPercent(Condition::Kind::kArmor) != 0;
+				const auto switched = Settings::bPickupPenaltyMark.GetValue();
+				const auto marking = switched && (Condition::StartPercent(Condition::Kind::kWeapon) != 0 || Condition::StartPercent(Condition::Kind::kArmor) != 0);
 				if (a_mark == saidMark && (!marking || a_kept.name == saidName)) {
 					return;
 				}
@@ -268,6 +268,8 @@ namespace PickupBar
 				if (a_mark.at != 0 && a_kept.kind) {
 					TraceLog::Line("menu", "Pickup CND bar marks {:s} penalties from {:d}% {:s} {:.2f} wide for {:s}", *a_kept.kind == Condition::Kind::kArmor ? "armor" : "weapon",
 						a_mark.at, a_mark.line ? "with a line" : "with notches", a_mark.wide, a_kept.name);
+				} else if (!switched) {
+					TraceLog::Line("menu", "Pickup CND bar draws no penalty mark, bPickupPenaltyMark is off");
 				} else {
 					TraceLog::Line("menu", "Pickup CND bar marks no penalty start for {:s}", a_kept.name);
 				}
@@ -295,6 +297,12 @@ namespace PickupBar
 			std::optional<bool> shown;
 			std::optional<bool> wordShown;
 			bool                colored = false;
+
+			// The form last seen, whether the readout last showed a number and
+			// the number last written, see ShowPercent.
+			std::optional<Settings::Cnd> saidForm;
+			bool                         shownAsNumber = false;
+			std::string                  shownNumber;
 
 			// Only a name for HudParts to look the target up by, see
 			// HudParts::SetWarningColor.

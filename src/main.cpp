@@ -80,9 +80,9 @@ namespace
 			if (!feature.Runs()) {
 				continue;
 			}
-			if (feature.on && !feature.on->GetValue()) {
-				REX::INFO("{:s}: switched off with {:s}=false, so it changes nothing while it is off.",
-					Text::PartLogName(feature.part), feature.on->key);
+			if (feature.on && !feature.on.On()) {
+				REX::INFO("{:s}: switched off with {:s}={:s}, so it changes nothing while it is off.",
+					Text::PartLogName(feature.part), feature.on.Setting()->key, feature.on.OffWord());
 			}
 			CallPatch::Begin(feature);
 			feature.Install();

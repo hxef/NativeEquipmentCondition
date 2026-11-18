@@ -29,16 +29,14 @@ namespace CallPatch
 		// The lines of the settings with pieces off, 1 a setting: "Weapon wear
 		// speed: no effect on gun wear from firing for now. Still changes
 		// melee wear.", then "No effect for now: Workbench repair cost." A
-		// switch left to another mod says so on the Settings line, so only
-		// the settings under it are named here.
+		// switch or stepper left to another mod says so on the Settings line,
+		// so only the settings under it are named here.
 		std::vector<std::string> EffectLines()
 		{
 			std::vector<std::string> lines;
 			std::vector<std::string> none;
 			for (const auto& link : SettingLinks()) {
-				const auto switches = Settings::Switches();
-				const auto on = std::ranges::find(switches, link.setting, [](const auto* a_on) { return static_cast<const Settings::Named*>(a_on); });
-				if (on != switches.end() && IsYielded(**on)) {
+				if (IsYielded(*link.setting)) {
 					continue;
 				}
 				const auto effect = EffectOf(*link.setting);
@@ -118,7 +116,7 @@ namespace CallPatch
 				// mod, or whose pieces are all off anyway, see PiecesOffTail,
 				// does nothing there, so it is not counted.
 				if (place.part != part || IsOff(place) || RunOf(place.set) != Run::kLive ||
-					(place.row->on && YieldedLocked(place.row->on)) || (place.under.empty() && place.line.empty()) ||
+					(place.row->on && YieldedLocked(place.row->on.Setting())) || (place.under.empty() && place.line.empty()) ||
 					!PiecesOffTail(place).empty()) {
 					continue;
 				}

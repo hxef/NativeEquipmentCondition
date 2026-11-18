@@ -46,7 +46,7 @@ namespace Mcm
 
 		// The hidden switch the 2 rows hide behind until the HUD has placed
 		// the bar once.
-		constexpr std::string_view PLACED_ID = "bHudCondition:Placed"sv;
+		constexpr std::string_view PLACED_ID = "iWeaponCnd:Placed"sv;
 
 		constexpr std::array SETTINGS{ &Settings::fHudBarX, &Settings::fHudBarY };
 

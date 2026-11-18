@@ -9,7 +9,9 @@
 // centred on it, in the gap above the button hints, drawn as the other HUD
 // bars are, see HudParts::Readout. It has a colour target of its own, so it
 // is drawn whole in the gameplay HUD colour, and in the warning colour with
-// the name and the hints while taking the item is stealing, see Bar.cpp.
+// the name and the hints while taking the item is stealing, see Bar.cpp. At
+// Pickup CND Percent the bar and its word hide, and CND and the percent stand
+// as 1 line centred under the name, on the word's line in its letters.
 //
 // What the game sends to the HUD names no item, only its text, so the call
 // that builds the prompt is patched: after it, the crosshair's pick says
@@ -23,7 +25,8 @@
 // only while the prompt prints the name that was built.
 //
 // Look.cpp is the prompt as the game builds it, Bar.cpp the bar in the HUD's
-// prompt. Look.h and Bar.h are what they share.
+// prompt and Names.cpp whether the prompt names the item. Look.h, Bar.h and
+// Names.h are what they share.
 namespace PickupBar
 {
 	// Patches the call that builds the prompt.

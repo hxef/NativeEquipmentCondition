@@ -49,9 +49,10 @@ namespace Pipboy
 		// What MarkEntry noted of one entry.
 		struct Mark
 		{
-			std::uintptr_t       stack;  // the address it was listed for, 0 for none
-			bool                 broken;
-			std::optional<float> rate;
+			std::uintptr_t                 stack;  // the address it was listed for, 0 for none
+			bool                           broken;
+			std::optional<float>           rate;
+			std::optional<Condition::Kind> kind;
 		};
 
 		// The marks by number, and each marked stack's current number. An
@@ -257,7 +258,8 @@ namespace Pipboy
 		FrameListener g_frameListener;
 	}
 
-	void MarkEntry(const RE::PipboyObject& a_entry, const RE::BGSInventoryItem::Stack* a_stack, bool a_broken, std::optional<float> a_rate)
+	void MarkEntry(const RE::PipboyObject& a_entry, const RE::BGSInventoryItem::Stack* a_stack, bool a_broken, std::optional<float> a_rate,
+		std::optional<Condition::Kind> a_kind)
 	{
 		const std::scoped_lock lock{ g_marksLock };
 
@@ -269,11 +271,11 @@ namespace Pipboy
 		}
 		Forget(a_entry.m_id);
 
-		if (!a_broken && !a_rate) {
+		if (!a_broken && !a_rate && !a_kind) {
 			return;
 		}
 
-		g_marks.emplace(a_entry.m_id, Mark{ stack, a_broken, a_rate });
+		g_marks.emplace(a_entry.m_id, Mark{ stack, a_broken, a_rate, a_kind });
 		if (stack != 0) {
 			g_listed[stack] = a_entry.m_id;
 		}
@@ -285,23 +287,38 @@ namespace Pipboy
 		}
 	}
 
-	// The list's selectedEntry is the data of the row the card shows, so its
-	// nodeID is the entry MarkEntry noted. No inventory is read here.
+	namespace
+	{
+		// The list's selectedEntry is the data of the row the card shows, so
+		// its nodeID is the entry MarkEntry noted. No inventory is read here.
+		std::optional<Mark> SelectedMark(Scaleform::GFx::Movie& a_movie)
+		{
+			Value list;
+			Value selected;
+			if (!a_movie.GetVariable(&list, LIST_PATH) || !list.IsDisplayObject() || !list.GetMember("selectedEntry", &selected) ||
+				!selected.IsObject()) {
+				return std::nullopt;
+			}
+			const auto node = Number(selected, "nodeID"sv, 0);
+			if (node == 0) {
+				return std::nullopt;
+			}
+			const std::scoped_lock lock{ g_marksLock };
+			const auto             mark = g_marks.find(node);
+			return mark != g_marks.end() ? std::optional{ mark->second } : std::nullopt;
+		}
+	}
+
 	std::optional<float> SelectedWearRate(Scaleform::GFx::Movie& a_movie)
 	{
-		Value list;
-		Value selected;
-		if (!a_movie.GetVariable(&list, LIST_PATH) || !list.IsDisplayObject() || !list.GetMember("selectedEntry", &selected) ||
-			!selected.IsObject()) {
-			return std::nullopt;
-		}
-		const auto node = Number(selected, "nodeID"sv, 0);
-		if (node == 0) {
-			return std::nullopt;
-		}
-		const std::scoped_lock lock{ g_marksLock };
-		const auto             mark = g_marks.find(node);
-		return mark != g_marks.end() ? mark->second.rate : std::nullopt;
+		const auto mark = SelectedMark(a_movie);
+		return mark ? mark->rate : std::nullopt;
+	}
+
+	std::optional<Condition::Kind> SelectedPenaltyKind(Scaleform::GFx::Movie& a_movie)
+	{
+		const auto mark = SelectedMark(a_movie);
+		return mark ? mark->kind : std::nullopt;
 	}
 
 	void OnMovieLoaded(Scaleform::GFx::Movie& a_movie, std::string_view a_file)

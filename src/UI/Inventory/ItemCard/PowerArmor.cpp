@@ -32,13 +32,13 @@ namespace ItemCard
 		// -------------------------------------------------------------------
 
 		// The number the row shows for a_stack of a_item, in tenths, see
-		// Condition::CardTenths. Nothing while the switch is off or for
-		// anything but a power armor piece, which keeps the card exactly as
-		// the game builds it. The game wears and repairs these pieces itself,
-		// so this only reads their health.
+		// Condition::CardTenths. Nothing while the switch is off, at Item
+		// card CND Off or for anything but a power armor piece, which keeps
+		// the card exactly as the game builds it. The game wears and repairs
+		// these pieces itself, so this only reads their health.
 		std::optional<std::uint32_t> PowerArmorTenths(const RE::BGSInventoryItem& a_item, const RE::BGSInventoryItem::Stack* a_stack)
 		{
-			if (!Settings::bPowerArmorCardCnd.GetValue()) {
+			if (!Settings::bPowerArmorCardCnd.GetValue() || Settings::iItemCardCnd.Form() == Settings::Cnd::kOff) {
 				return std::nullopt;
 			}
 			const auto* armor = a_item.object ? a_item.object->As<RE::TESObjectARMO>() : nullptr;

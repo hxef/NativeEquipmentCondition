@@ -5,6 +5,7 @@
 #include "Core/TraceLog/TraceLog.h"
 #include "UI/Flash.h"
 #include "UI/Hud/HudParts/HudParts.h"
+#include "UI/Inventory/PaperDoll/Numbers.h"
 #include "UI/Inventory/PaperDoll/Regions.h"
 #include "UI/Inventory/PaperDoll/Room.h"
 #include "UI/MenuMovies.h"
@@ -33,18 +34,14 @@ namespace PaperDoll
 		// under, see Room.h.
 		constexpr const char* HEADER_PATH = "_root.Menu_mc.Header_mc";
 
-		// The 2 parts of a resistance entry, the icon and the number.
-		constexpr const char* ICON_NAME = "Icon_mc";
-		constexpr const char* VALUE_NAME = "Value_tf";
-
 		// The name the bar carries over each entry, so the listener can find
 		// it again.
 		constexpr const char* READOUT_NAME = "NEC_Condition_mc";
 
-		// The most Pip-Boy CND bar thickness counts for, as the MCM page's
-		// slider allows. At 3 the bars turn into square blocks, and at 2 each
-		// leg bar stays at least 13.8 clear of the figure's hands, which no
-		// named clip covers.
+		// The most Apparel figure CND bar thickness counts for, as the MCM
+		// page's slider allows. At 3 the bars turn into square blocks, and at 2
+		// each leg bar stays at least 13.8 clear of the figure's hands, which
+		// no named clip covers.
 		constexpr double PIPBOY_MOST = 2.0;
 
 		// How wide the penalty mark is at Penalty mark width 1. Wider than on
@@ -55,48 +52,6 @@ namespace PaperDoll
 		// repaired, dropped or put on with the Pip-Boy open. The same frame
 		// checks the room above each bar, see Stale.
 		constexpr std::uint32_t FRAMES_PER_READING = 10;
-
-		// A value no region ever holds, so the first frame always draws.
-		constexpr std::int32_t NOT_DRAWN = -2;
-
-		// The entry over each region, in Region's order.
-		constexpr std::array<const char*, kRegions> ENTRY_NAMES{
-			"Head_Resist_mc",
-			"Torso_Resist_mc",
-			"LArm_Resist_mc",
-			"RArm_Resist_mc",
-			"LLeg_Resist_mc",
-			"RLeg_Resist_mc",
-		};
-
-		// How wide the number's digits are. It changes with the resistance and
-		// with the damage type the player cycles to.
-		[[nodiscard]] double DigitsWidth(Value& a_entry)
-		{
-			auto value = Flash::Child(a_entry, VALUE_NAME);
-			return value.IsDisplayObject() ? Flash::Number(value, "textWidth"sv) : 0.0;
-		}
-
-		// One bar's state, kept between frames so only a change is written.
-		// The digits and the thickness are what the bar was laid out for, -1
-		// before that, the room what it found above it then and held what
-		// held it thinner. tight is the room under held when the bar covers
-		// it, see Hold, and tightSaid what the trace last named of it.
-		// shownMark and shownStill are the mark and the still end last
-		// drawn, forgotten with shown.
-		struct Bar
-		{
-			Placement                placed;
-			double                   digits{ -1.0 };
-			double                   thickness{ -1.0 };
-			Room                     room;
-			std::optional<Limit>     held;
-			std::optional<double>    tight;
-			std::optional<double>    tightSaid;
-			std::int32_t             shown{ NOT_DRAWN };
-			HudParts::Readout::Mark  shownMark;
-			HudParts::Readout::Still shownStill{ HudParts::Readout::Still::kLeftEnd };
-		};
 
 		// Called by the Pip-Boy every frame. The doll is looked up every time,
 		// since the inventory page is a movie of its own that loads and unloads
@@ -125,11 +80,27 @@ namespace PaperDoll
 					Queue();
 				}
 
+				// Read every frame, as the 3 below are. At Off the bars hide
+				// and the readings go on, so each comes back with the latest
+				// condition. At Percent the bars keep being laid out and the
+				// numbers stand by them, see Numbers.h.
+				const auto form = Settings::iApparelFigureCnd.Form();
+				HudParts::Readout::TellForm(form, saidForm, "Apparel figure CND"sv);
+				if (form == Settings::Cnd::kOff) {
+					HideAll(doll);
+					return;
+				}
+				const auto asNumber = form == Settings::Cnd::kPercent;
+				if (asNumber != numbersShown) {
+					numbersShown = asNumber;
+					SwitchForm(doll);
+				}
+
 				// All 3 are read every frame, as the HUD bars read theirs. The
 				// mark keeps its width at every thickness.
 				const auto thickness = HudParts::Readout::Held(Settings::fPipboyBarThickness, HudParts::Readout::LEAST_SIZE, PIPBOY_MOST);
 				const auto mark = HudParts::Readout::PenaltyMark(Condition::Kind::kArmor, BAR_DEEP, DOLL_MARK);
-				const auto flipped = Settings::bCndBarsFlipped.GetValue();
+				const auto flipped = Settings::bPipboyBarFlipped.GetValue();
 				const auto still = HudParts::Readout::StillEnd(HudParts::Readout::Still::kLeftEnd, flipped);
 
 				// The header's texts, read on the first bar that needs them.
@@ -143,9 +114,11 @@ namespace PaperDoll
 				};
 
 				// What changed this frame, one trace line for all 6 regions.
-				std::string laid;
-				std::string drawn;
-				auto        redrawn = false;
+				std::string   laid;
+				std::string   drawn;
+				auto          redrawn = false;
+				auto          relaid = false;
+				NumberEntries entries;
 				for (std::size_t region = 0; region < kRegions; region++) {
 					auto entry = Flash::Child(doll, ENTRY_NAMES[region]);
 					if (!entry.IsDisplayObject()) {
@@ -167,6 +140,7 @@ namespace PaperDoll
 					// fills it again, as a change above it may.
 					const auto digits = DigitsWidth(entry);
 					if (digits != bar.digits || thickness != bar.thickness || (pass && Stale(*a_params.movie, headerTexts(), entry, bar))) {
+						relaid = true;
 						if (Lay(*a_params.movie, readout, doll, headerTexts(), entry, bar, digits, thickness)) {
 							const auto& at = bar.placed;
 							std::format_to(std::back_inserter(laid), "{:s}{:s} {:.0f},{:.0f} {:.0f} across{:s}", laid.empty() ? "" : ", ",
@@ -174,6 +148,10 @@ namespace PaperDoll
 						}
 					}
 
+					if (asNumber) {
+						entries[region] = NumberEntry{ entry, readout, NumberSpot{ bar.placed, ShortWidth(entry, bar.placed.deep) } };
+						continue;
+					}
 					const auto percent = LowestPercent(region);
 					if (percent == bar.shown && mark == bar.shownMark && still == bar.shownStill) {
 						continue;
@@ -191,6 +169,9 @@ namespace PaperDoll
 				}
 
 				SayLayouts(laid, thickness);
+				if (asNumber) {
+					numbers.Draw(*a_params.movie, doll, headerTexts(), entries, relaid);
+				}
 				if (!drawn.empty()) {
 					TraceLog::Line("menu", "Pip-Boy doll CND drawn {:s}, hidden where nothing that wears covers it", drawn);
 				}
@@ -216,9 +197,49 @@ namespace PaperDoll
 				saidFlipped = false;
 				noClipsSaid = false;
 				noBoxSaid = false;
+				saidForm.reset();
+				numbersShown = false;
+				numbers.Forget();
 			}
 
 		private:
+			// Hides every bar or number drawn and forgets what each showed, so
+			// the first frame Apparel figure CND is not Off draws each again.
+			// A number leaves its bar's shown at NOT_DRAWN.
+			void HideAll(Value& a_doll)
+			{
+				for (std::size_t region = 0; region < kRegions; region++) {
+					auto& bar = bars[region];
+					if (bar.shown == NOT_DRAWN && !numbersShown) {
+						continue;
+					}
+					auto entry = Flash::Child(a_doll, ENTRY_NAMES[region]);
+					auto readout = entry.IsDisplayObject() ? Flash::Child(entry, READOUT_NAME) : Value{};
+					if (readout.IsDisplayObject()) {
+						readout.SetMember("visible"sv, Value(false));
+					}
+					bar.shown = NOT_DRAWN;
+				}
+				numbers.Forget();
+			}
+
+			// Hides each bar at Percent, where its readout shows a number, or
+			// shows it again at Bar with no text, and forgets what each
+			// showed, so the frame draws everything again.
+			void SwitchForm(Value& a_doll)
+			{
+				for (std::size_t region = 0; region < kRegions; region++) {
+					auto entry = Flash::Child(a_doll, ENTRY_NAMES[region]);
+					auto readout = entry.IsDisplayObject() ? Flash::Child(entry, READOUT_NAME) : Value{};
+					if (readout.IsDisplayObject()) {
+						HudParts::Readout::ShowBar(readout, !numbersShown);
+						HudParts::Readout::ShowLabel(readout, numbersShown);
+					}
+					bars[region].shown = NOT_DRAWN;
+				}
+				numbers.Forget();
+			}
+
 			// Builds one bar and hangs it on an entry, for Lay to place. A
 			// movie that refuses any part of it gets no bar and no second try.
 			Value Build(Scaleform::GFx::Movie& a_movie, Value& a_entry)
@@ -234,50 +255,6 @@ namespace PaperDoll
 					return Value{};
 				}
 				return readout;
-			}
-
-			// Whether the room above a laid out bar may have changed: a named
-			// clip gave no box at its layout, or the header's letters over it
-			// came, went or moved, as a header built after the figure does.
-			// Asked once every FRAMES_PER_READING frames.
-			static bool Stale(Scaleform::GFx::Movie& a_movie, std::vector<Value>& a_texts, Value& a_entry, const Bar& a_bar)
-			{
-				const auto& at = a_bar.placed;
-				return !a_bar.room.noBox.empty() || HeaderAbove(a_movie, a_texts, a_entry, at.y + (at.deep / 2.0), at.x - at.width, at.x) != a_bar.room.header;
-			}
-
-			// Places a bar over its entry for the digits the number shows now,
-			// as deep as a_thickness asks and the room above it lets it be. Its
-			// bottom stays put and it grows upward. False when the layout comes
-			// out as the last one, which then changes nothing.
-			static bool Lay(Scaleform::GFx::Movie& a_movie, Value& a_readout, Value& a_doll, std::vector<Value>& a_texts, Value& a_entry, Bar& a_bar, double a_digits, double a_thickness)
-			{
-				const auto asked = BAR_DEEP * a_thickness;
-				auto       icon = Flash::Child(a_entry, ICON_NAME);
-				auto       value = Flash::Child(a_entry, VALUE_NAME);
-				auto       placement = PlaceOver(a_entry, icon, value, a_digits, asked);
-				const auto bottom = placement.y + (asked / 2.0);
-				a_bar.room = RoomAbove(a_movie, a_doll, a_texts, a_entry, bottom, placement.x - placement.width, placement.x);
-				a_bar.digits = a_digits;
-				a_bar.thickness = a_thickness;
-
-				const auto hold = HoldIn(a_bar.room, bottom, asked);
-				a_bar.held = hold.held;
-				a_bar.tight = hold.tight;
-				placement.deep = hold.deep;
-				placement.y = bottom - (hold.deep / 2.0);
-				if (placement == a_bar.placed) {
-					return false;
-				}
-				a_readout.SetMember("x"sv, Value(placement.x));
-				a_readout.SetMember("y"sv, Value(placement.y));
-				HudParts::Readout::SetTrack(a_readout, placement.width, placement.deep);
-
-				a_bar.placed = placement;
-				a_bar.shown = NOT_DRAWN;
-				a_bar.shownMark = HudParts::Readout::Mark{};
-				a_bar.shownStill = HudParts::Readout::Still::kLeftEnd;
-				return true;
 			}
 
 			// The frame's layout lines. A frame that moved a bar names every
@@ -336,6 +313,12 @@ namespace PaperDoll
 			// SayLayouts.
 			bool noClipsSaid = false;
 			bool noBoxSaid = false;
+
+			// The form last seen, whether the readouts show numbers, and the
+			// numbers.
+			std::optional<Settings::Cnd> saidForm;
+			bool                         numbersShown = false;
+			Numbers                      numbers;
 		};
 
 		FrameListener g_frameListener;

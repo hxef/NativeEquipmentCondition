@@ -318,9 +318,10 @@ namespace HudCondition
 		return choice;
 	}
 
-	Box Filled(const Spot& a_spot, const HudParts::Readout::LabelPlace& a_label)
+	Box Filled(const Spot& a_spot, const HudParts::Readout::LabelPlace& a_label, bool a_bar)
 	{
-		return BarAt(0.0, 0.0, a_spot.line.width, a_spot.deep).With(WholeLine(a_label).Moved(a_spot.wordX, a_spot.wordY));
+		const auto word = WholeLine(a_label).Moved(a_spot.wordX, a_spot.wordY);
+		return a_bar ? BarAt(0.0, 0.0, a_spot.line.width, a_spot.deep).With(word) : word;
 	}
 
 	Spot Sized(const Spot& a_spot, const HudParts::Readout::Size& a_size, const HudParts::Readout::LabelPlace& a_label)

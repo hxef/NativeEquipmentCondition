@@ -20,7 +20,7 @@
 // Multi-Line once another page shows. Only a name would wrap differently, and
 // no name on NEC's pages is wider than 1 line. On NEC's pages it also writes
 // the HUD bar sliders' live ends, see HudBar.cpp, and the line under Preset,
-// see PresetRows.cpp. And while MCM asks for a hide of HIDES in Bridge.h,
+// see PresetRows.cpp. And while MCM asks for a hide of HIDES in Hides.h,
 // such as whether the Jams start at row shows, NEC keeps MCM's left list on
 // the open page, see KeepOpenPage. While bNecOn is off, NEC's pages leave the
 // left list, see HidePages. After a preset's box is answered, NEC has MCM

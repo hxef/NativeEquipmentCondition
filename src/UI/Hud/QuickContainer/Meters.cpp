@@ -3,6 +3,7 @@
 #include "Core/Settings/Settings.h"
 #include "Core/TraceLog/TraceLog.h"
 #include "UI/Flash.h"
+#include "UI/Hud/HudParts/Readout.h"
 #include "UI/Hud/QuickContainer/Draw.h"
 #include "UI/Hud/QuickContainer/RowLayout.h"
 #include "UI/Hud/QuickContainer/Rows.h"
@@ -54,6 +55,8 @@ namespace QuickContainer
 		drawn.fill({});
 		tints.fill({});
 		saidFlipped = false;
+		saidForm.reset();
+		saidNumbers = false;
 	}
 
 	// a_afterRedraw says the rows have just redrawn, which is when the
@@ -66,9 +69,11 @@ namespace QuickContainer
 			return;
 		}
 
-		// Switched off, or with bNecOn off, a row NEC drew into goes back to
-		// how the game draws it, once, and every other row is left as it is.
-		if (!Settings::NecOn() || !Settings::bQuickContainer.GetValue()) {
+		// At Off, or with bNecOn off, a row NEC drew into goes back to how
+		// the game draws it, once, and every other row is left as it is.
+		const auto form = Settings::iQuickContainerCnd.Form();
+		HudParts::Readout::TellForm(form, saidForm, "Quick container CND"sv);
+		if (!Settings::NecOn() || form == Settings::Cnd::kOff) {
 			for (std::size_t i = 0; i < MAX_ROWS; i++) {
 				auto row = Flash::Child(list, ROW_NAMES[i]);
 				if (a_afterRedraw || !Flash::Bool(row, "bIsDirty"sv)) {
@@ -93,9 +98,16 @@ namespace QuickContainer
 			}
 		}
 
-		const auto percents = FindConditions(shown, size);
-		if (!percents && size > 0) {
+		const auto readings = FindConditions(shown, size);
+		if (!readings && size > 0) {
 			Roles::Noted(a_movie, "kept build matching the quick container rows"sv, "the rows get no CND meter"sv);
+		}
+		const auto asNumber = form == Settings::Cnd::kPercent;
+		if (asNumber != saidNumbers && (!asNumber || readings)) {
+			saidNumbers = asNumber;
+			if (asNumber) {
+				TraceLog::Line("menu", "Quick container rows show CND as numbers");
+			}
 		}
 		for (std::size_t i = 0; i < size; i++) {
 			// A row waiting to redraw would undo anything changed now.
@@ -103,7 +115,7 @@ namespace QuickContainer
 			if (!a_afterRedraw && Flash::Bool(rows[i], "bIsDirty"sv)) {
 				continue;
 			}
-			Apply(a_movie, rows[i], i, shown[i], percents ? std::optional{ (*percents)[i] } : std::nullopt, a_afterRedraw);
+			Apply(a_movie, rows[i], i, shown[i], readings ? std::optional{ (*readings)[i] } : std::nullopt, asNumber, a_afterRedraw);
 		}
 	}
 

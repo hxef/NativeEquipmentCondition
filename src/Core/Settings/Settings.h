@@ -30,9 +30,9 @@
 // to publish/NEC.ini too, with a line saying what it does, and to EVERY_SWITCH
 // or NUMBERS in Line.cpp in NEC.ini's order. A setting left out of
 // those is missing from the Settings line, and neither the MCM page nor a
-// script can read or change it. A switch on a row of Features.cpp goes in
-// SWITCHES too, and any other switch gets its place on the Settings line in
-// ReportLine.
+// script can read or change it. A switch or CND stepper on a row of
+// Features.cpp goes in GATES too, and any other switch gets its place on the
+// Settings line in ReportLine.
 namespace Settings
 {
 	// Where a setting sits in NEC.ini, which is also its id on the MCM page.
@@ -74,7 +74,13 @@ namespace Settings
 			SetValue(value);
 		}
 	};
+}
 
+// Cnd, CndStep and Gate. Features.h and Tuning.h make the CND steppers.
+#include "Core/Settings/Cnd.h"
+
+namespace Settings
+{
 	// Reads both files, once as the game starts, then the picked preset, see
 	// Presets::Load. Runs before the log opens, so Report says what was read
 	// afterwards.
@@ -210,13 +216,14 @@ namespace Settings
 	// whole number where the setting only takes whole steps.
 	using Number = std::variant<Live<float>*, Live<std::int32_t>*>;
 
-	// The 9 switches under [Features] and the 61 numbers under [Features],
-	// [Loot], [Balance] and [HUD], in NEC.ini's order, for Report and the MCM
-	// page.
-	[[nodiscard]] std::span<Live<bool>* const> Switches();
-	[[nodiscard]] std::span<const Number>      Numbers();
+	// The 7 switches and 2 CND steppers that lead [Features] on the Settings
+	// line, among them every one a row of Features.cpp turns on with, and the
+	// 70 numbers under [Features], [Loot], [Balance] and [HUD], the 6 CND
+	// steppers among them, in NEC.ini's order, for Report and the MCM page.
+	[[nodiscard]] std::span<const Gate>   Gates();
+	[[nodiscard]] std::span<const Number> Numbers();
 
-	// Every switch in NEC.ini, the 9 of Switches and the 20 others, for the
+	// Every switch in NEC.ini, the 7 of Gates and the 19 others, for the
 	// presets.
 	[[nodiscard]] std::span<Live<bool>* const> EverySwitch();
 
@@ -230,9 +237,9 @@ namespace Settings
 	// NEC does not know.
 	[[nodiscard]] Live<bool>* SwitchById(std::string_view a_id);
 
-	// The switch a_key names without its section, such as bCardWearRate, any
-	// of them, or nullptr.
-	[[nodiscard]] Live<bool>* SwitchByKey(std::string_view a_key);
+	// The switch or number a_key names without its section, such as
+	// bCardWearRate or iWeaponCnd, any of them, or nullptr.
+	[[nodiscard]] const Named* SettingByKey(std::string_view a_key);
 
 	// The number a_id names, a float or a whole number as T asks, or nullptr
 	// for an id NEC does not know or a number of the other kind.

@@ -64,7 +64,7 @@ namespace HudCondition
 			TraceLog::Line("menu", "HUDMenu.swf loaded, CND goes by the ammo counter");
 		}
 
-		HudParts::Waiter g_waiter{ Settings::bHudCondition, &Build };
+		HudParts::Waiter g_waiter{ &Settings::iWeaponCnd, &Build };
 	}
 
 	void OnMovieLoaded(Scaleform::GFx::Movie& a_movie, std::string_view a_file)

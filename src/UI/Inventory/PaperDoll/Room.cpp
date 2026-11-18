@@ -5,6 +5,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
 #include <string_view>
 
@@ -12,6 +13,10 @@ namespace PaperDoll
 {
 	namespace
 	{
+		// The 2 parts of a resistance entry, the icon and the number.
+		constexpr const char* ICON_NAME = "Icon_mc";
+		constexpr const char* VALUE_NAME = "Value_tf";
+
 		// How far above the icon's top the bar's middle sits: a gap of 2, plus
 		// half the bar's depth, so the bar grows upward from 2 above the icon.
 		[[nodiscard]] constexpr double BarRise(double a_deep)
@@ -29,8 +34,8 @@ namespace PaperDoll
 		// How far under what is above it a bar's top stays.
 		constexpr double HOLD = 2.0;
 
-		// The thinnest a bar is held to, as thin as the lowest Pip-Boy CND bar
-		// thickness draws it, 4.05.
+		// The thinnest a bar is held to, as thin as the lowest Apparel figure
+		// CND bar thickness draws it, 4.05.
 		constexpr double LEAST_DEEP = BAR_DEEP * HudParts::Readout::LEAST_SIZE;
 
 		// How many levels below the header a text may sit. Vanilla's tab
@@ -88,6 +93,12 @@ namespace PaperDoll
 			const auto line = a_text.substr(0, a_text.find_first_of("\r\n"sv));
 			return std::ranges::all_of(line, [](char a_c) { return a_c == ' ' || (a_c >= 'A' && a_c <= 'Z') || (a_c >= '0' && a_c <= '9'); });
 		}
+
+		// The lower of a room's 2 limits, the nearer one, since y runs down.
+		[[nodiscard]] const std::optional<Limit>& Lower(const Room& a_room)
+		{
+			return !a_room.header || (a_room.clip && a_room.clip->at >= a_room.header->at) ? a_room.clip : a_room.header;
+		}
 	}
 
 	Edges EdgesIn(Value& a_clip, Value& a_space)
@@ -128,6 +139,12 @@ namespace PaperDoll
 		out.deep = a_deep;
 		out.measured = true;
 		return out;
+	}
+
+	double DigitsWidth(Value& a_entry)
+	{
+		auto value = Flash::Child(a_entry, VALUE_NAME);
+		return value.IsDisplayObject() ? Flash::Number(value, "textWidth"sv) : 0.0;
 	}
 
 	// -------------------------------------------------------------------
@@ -221,8 +238,7 @@ namespace PaperDoll
 	{
 		Hold hold{ a_room.noClips || !a_room.noBox.empty() ? std::min(a_asked, NO_CLIPS_DEEP) : a_asked, std::nullopt, std::nullopt };
 
-		// The lower of the 2 limits is the nearer one, y runs down.
-		const auto& lower = !a_room.header || (a_room.clip && a_room.clip->at >= a_room.header->at) ? a_room.clip : a_room.header;
+		const auto& lower = Lower(a_room);
 		if (lower) {
 			const auto room = a_bottom - lower->at - HOLD;
 			if (room < hold.deep) {
@@ -234,5 +250,69 @@ namespace PaperDoll
 			}
 		}
 		return hold;
+	}
+
+	std::optional<Headroom> HeadroomOf(const Room& a_room, double a_bottom)
+	{
+		std::optional<Headroom> headroom;
+		if (a_room.noClips || !a_room.noBox.empty()) {
+			headroom = Headroom{ NO_CLIPS_DEEP, std::nullopt };
+		}
+		if (const auto& lower = Lower(a_room)) {
+			const auto high = a_bottom - lower->at - HOLD;
+			if (!headroom || high < headroom->high) {
+				headroom = Headroom{ high, lower };
+			}
+		}
+		return headroom;
+	}
+
+	double ShortWidth(Value& a_entry, double a_deep)
+	{
+		auto       icon = Flash::Child(a_entry, ICON_NAME);
+		auto       value = Flash::Child(a_entry, VALUE_NAME);
+		const auto characters = std::max<std::size_t>(1, Flash::String(value, "text"sv).size());
+		const auto digit = Flash::Number(value, "textWidth"sv) / static_cast<double>(characters);
+		return PlaceOver(a_entry, icon, value, digit, a_deep).width;
+	}
+
+	// -------------------------------------------------------------------
+	// Laying a bar out
+	// -------------------------------------------------------------------
+
+	bool Stale(Scaleform::GFx::Movie& a_movie, std::vector<Value>& a_texts, Value& a_entry, const Bar& a_bar)
+	{
+		const auto& at = a_bar.placed;
+		return !a_bar.room.noBox.empty() || HeaderAbove(a_movie, a_texts, a_entry, at.y + (at.deep / 2.0), at.x - at.width, at.x) != a_bar.room.header;
+	}
+
+	bool Lay(Scaleform::GFx::Movie& a_movie, Value& a_readout, Value& a_doll, std::vector<Value>& a_texts, Value& a_entry, Bar& a_bar, double a_digits, double a_thickness)
+	{
+		const auto asked = BAR_DEEP * a_thickness;
+		auto       icon = Flash::Child(a_entry, ICON_NAME);
+		auto       value = Flash::Child(a_entry, VALUE_NAME);
+		auto       placement = PlaceOver(a_entry, icon, value, a_digits, asked);
+		const auto bottom = placement.y + (asked / 2.0);
+		a_bar.room = RoomAbove(a_movie, a_doll, a_texts, a_entry, bottom, placement.x - placement.width, placement.x);
+		a_bar.digits = a_digits;
+		a_bar.thickness = a_thickness;
+
+		const auto hold = HoldIn(a_bar.room, bottom, asked);
+		a_bar.held = hold.held;
+		a_bar.tight = hold.tight;
+		placement.deep = hold.deep;
+		placement.y = bottom - (hold.deep / 2.0);
+		if (placement == a_bar.placed) {
+			return false;
+		}
+		a_readout.SetMember("x"sv, Value(placement.x));
+		a_readout.SetMember("y"sv, Value(placement.y));
+		HudParts::Readout::SetTrack(a_readout, placement.width, placement.deep);
+
+		a_bar.placed = placement;
+		a_bar.shown = NOT_DRAWN;
+		a_bar.shownMark = HudParts::Readout::Mark{};
+		a_bar.shownStill = HudParts::Readout::Still::kLeftEnd;
+		return true;
 	}
 }

@@ -62,7 +62,7 @@ Your weapons and armor [b]wear down as you use them[/b], the way they did in Fal
 [list]
 [*]At the weapon or armor workbench, select a worn item and a REPAIR button takes RENAME's place until it is back at full. Press it, choose how far to repair it in steps of 10%, and pay in supplies, plus the components it is built from for deeper wear. Beside each step the box shows what it adds to the item's damage or resistances by type, and the box of spares does the same for each spare, in columns unless [b]Repair rows in columns[/b] is off. Gear with no scrap recipe, like Grognak's Axe, costs what gear of its kind most often scraps into, and wears at the same rate. Short of components, you get the power armor station's list of what the repair takes, with the ones you lack faded.
 [*]Carrying a spare of the same item? [b]USE A SPARE[/b] in the repair box takes it apart for the repair. It restores as much condition as its scrap is worth, and the components left over go to your inventory. [b]Spare worth[/b] sets how much condition a spare restores and Scrapper raises it, but you never get back more components than it holds.
-[*][b]Keep spare mods[/b] in MCM, off by default, hands back the mods of a spare that a repair does not need as loose mods, the cheapest or priciest used first, or lets you pick in a box which to scrap or keep.
+[*][b]Keep spare mods[/b] in MCM hands back the mods of a spare that a repair does not need as loose mods. By default you pick from a list which ones the repair uses up. You can pick the ones to keep instead, let the cheapest or priciest be used up first, or turn it Off to use up the whole spare.
 [*][b]Pip-Boy repairs[/b] in MCM, off by default, lets you repair from the Pip-Boy as in Fallout 3 and New Vegas. Inspect a worn weapon or armor piece and press REPAIR to use up a spare, or to repair it as at a workbench.
 [*]Barely worn gear, from 97.5%, gets a MEND button instead, which fixes it on the spot [b]for free[/b]. The 97.5% is the [b]Free mend from[/b] setting. 100 turns MEND off, and 0 mends everything for free.
 [*][b]Crafting perks[/b] like Gun Nut, Science!, Blacksmith and Armorer make repairs take fewer components, down to half at the top rank. The perk behind most of an item's components sets the discount, and each rank's description says how much. The perks count too when a skill mod like Classic NV Skill System grants them from your skills.
@@ -89,7 +89,7 @@ Your weapons and armor [b]wear down as you use them[/b], the way they did in Fal
 [list]
 [*]CND on the item cards, with the worn damage, resistances, fire rate, accuracy and range.
 [*]Beside CND, how fast the item wears or spoils, x1.0 for an ordinary item of its kind. While you try a mod at a workbench, marks beside it show that the mod makes the item wear slower or faster, as on Weight.
-[*]CND bars on the HUD ammo counter, the power armor dash, the pickup prompt and the Pip-Boy apparel figure, and condition meters on the quick container rows and a food's freshness. When you set [b]Weapon penalties start at[/b] or [b]Armor penalties start at[/b] from 0.01 to 0.99 in MCM, the bars mark that point with 2 small notches, as in New Vegas. Each HUD bar has its own switch, place and size in MCM.
+[*]CND bars on the HUD ammo counter, the power armor dash, the pickup prompt and the Pip-Boy apparel figure, and condition meters on the quick container rows and a food's freshness. When you set [b]Weapon penalties start at[/b] or [b]Armor penalties start at[/b] from 0.01 to 0.99 in MCM, the bars by the ammo counter, on the dash and on the apparel figure mark that point with 2 small notches, as in New Vegas. Each of these places and the item cards can show CND as a bar, a percent or not at all, and each HUD bar has its own place and size in MCM.
 [*]Broken items fade out in the Pip-Boy lists.
 [/list]
 
@@ -127,7 +127,7 @@ Your weapons and armor [b]wear down as you use them[/b], the way they did in Fal
 [list]
 [*]Runs on Fallout 4 1.11.240 (AE) and 1.10.163 (OG).
 [*]No ESP, so it takes no plugin slot.
-[*]Works with UI replacers like FallUI and DEF_UI. The Weapon CND bar finds a free spot by the ammo counter on any HUD layout and stays on screen at any resolution. A part NEC can't find is skipped and named in NEC.log or the bug report logs, while wear, damage and prices work as ever.
+[*]Works with UI replacers like FallUI and DEF_UI. FallUI's item lists get a CND column. The Weapon CND bar finds a free spot by the ammo counter on any HUD layout and stays on screen at any resolution. A part NEC can't find is skipped and named in NEC.log or the bug report logs, while wear, damage and prices work as ever.
 [*]NEC works alongside other DLL mods that change the same things. When one takes over one of NEC's features, NEC lets it, and NEC's main MCM page and NEC.log name that mod and what is off.
 [*]The plugin's own text comes in every language the game ships in. The rest is vanilla text. Every language but English was translated by AI, not by a person, so some lines may read a little off. To fix a line or add a language, edit or copy a file in Data\F4SE\Plugins\NEC\Translations, as en.ini there explains. For Simplified Chinese, copy zhhans.ini over cn.ini.
 [*]Item stats, recipes, leveled lists and NPC outfits that a DLL mod like RobCo Patcher changes as the game starts count in wear, repair costs and loot condition, since NEC reads them again at every save load and new game.
@@ -279,7 +279,7 @@ A save made without any mod calling NEC's Papyrus API holds no trace of it. Once
 [list]
 [*]Loot rolls its condition once, when the game first spawns the item. Loading a save never rolls anything.
 [*]When the game spawns a loose item in the world, NEC marks it as not rolled yet with an ExtraHealth of 0.99999994. Whoever first picks it up rolls its condition.
-[*]With the [b]Pickup CND bar[/b] on, a loose item gets its condition the first time you look at it, the same roll the pickup would make, and the save keeps it. A loose item with a faction owner (ExtraOwnership) rolls on the barter screen as the trader's stock. Vanilla places none. NEC reads the item from the pickup prompt as the game fills it (HUDRolloverModel::Update), so it is the same item E picks up.
+[*]While [b]Pickup CND[/b] shows, a loose item gets its condition the first time you look at it, the same roll the pickup would make, and the save keeps it. A loose item with a faction owner (ExtraOwnership) rolls on the barter screen as the trader's stock. Vanilla places none. NEC reads the item from the pickup prompt as the game fills it (HUDRolloverModel::Update), so it is the same item E picks up.
 [*]A loose item with no ExtraHealth at all spawned before you installed or updated NEC, or while Worn loot or All NEC features was off. It comes out at 100%.
 [*]The roll uses the leveled list the item came from (ExtraLeveledItem), ranked against every other list of its kind, or the cell a loose item lies in when it has no list. It also uses the armor the item's owner was given.
 [*]Items of an NPC whose base record is essential start at 100%.

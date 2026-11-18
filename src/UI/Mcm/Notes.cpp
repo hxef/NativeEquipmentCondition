@@ -7,6 +7,7 @@
 #include "Core/Settings/Settings.h"
 #include "Core/Text/Text.h"
 #include "UI/Flash.h"
+#include "UI/Mcm/Hides.h"
 
 #include <algorithm>
 #include <bitset>
@@ -20,20 +21,30 @@
 #include <vector>
 
 // The page's grey rows: the note of each block, and the list at the top in
-// TopList.cpp. Also the rows a number hides, see HIDES in Bridge.h.
-// config.json gives every block lead a hidden switch: a feature switch 2,
-// <key>:Free for its row and <key>:Note for its note, a number 1, <key>:Note,
-// and the list 1, parts:Note. These numbers run on across NEC's pages, with
-// 1 for the HUD bar sliders, see HudBar.cpp, and 1 for the Jams start at row,
-// fJamChance:Jams. MCM counts 30 for each page on its own, so a feature
-// switch whose rows hide while it is off takes a number its page leaves free,
-// which other pages use too. So do the other hides. On the Repairs page,
-// where 14, 15, 16, 18 and 19 are taken, iRepairLock:Lock takes 20 for Perk
-// lock and Lock spares too, iRepairSupplies:Supplies 21 for Supplies only
+// TopList.cpp. Also the rows a number hides, see HIDES in Hides.h.
+// config.json gives every block lead a hidden switch: a switch, or a stepper a
+// feature's row turns on with, 2, <key>:Free for its row and <key>:Note for
+// its note, any other number 1, <key>:Note, and the list 1, parts:Note. These
+// numbers run on across NEC's pages, with 1 for the HUD bar sliders, see
+// HudBar.cpp, and 1 for the Jams start at row, fJamChance:Jams. MCM counts
+// 30 for each page on its own, so a feature switch whose rows hide while it
+// is off takes a number its page leaves free, which other pages use too. So
+// do the other hides. On the Repairs page, where 14, 15, 16, 18 and 19 are
+// taken, iRepairLock:Lock takes 20 for Perk lock and Lock spares too,
+// iRepairSupplies:Supplies 21 for Supplies only
 // from, fBenchCostMult:Paid 22 for the 8 rows of paid repairs,
 // bWorkbenchRepair:Levels 23 for Repair box opens on and
 // bWorkbenchRepair:Repairs 24 for Workbench repair cost and the Repair with
-// spares section, and iKeepSpareMods:Choose 25 for Spare mod rows.
+// spares section, and iKeepSpareMods:Choose 25 for Spare mod rows. On the UI
+// page, where 17 to 20, 22 to 25 and 27 are taken, iWeaponCnd:Shown takes 28,
+// iPowerArmorCnd:Shown 29 and iPickupCnd:Shown 30 for the rows each place
+// needs while it shows, iWeaponCnd:Bar 1, iPowerArmorCnd:Bar 2,
+// iPickupCnd:Bar 3, iApparelFigureCnd:Bar 4, iQuickContainerCnd:Bar 5 and
+// iItemCardCnd:Bar 7 for the rows only a bar needs, iItemCardCnd:Shown 21 for
+// the 3 item card switches, bPenaltyMarkAsLine:Notches 6 for Penalty mark as
+// a line, bPickupPenaltyMark:Marks 8 for Pickup CND penalty mark,
+// iCndDecimals:Numbers 26 for CND decimals and bCndColumn:Offered 16 for CND
+// column in UI replacer lists.
 // Each note is worked out from SettingLinks and CallPatch's losses, so a
 // setting needs no code of its own here. A piece left to a mod is named once:
 // in the note of a block that works through it, else in the list at the top.
@@ -112,8 +123,8 @@ namespace Mcm
 		}
 	}
 
-	// A block's note: the line of a switch left to another mod, which
-	// stands in for the hidden switch, the lines of each part with pieces
+	// A block's note: the line of a switch or stepper left to another mod,
+	// which stands in for its hidden row, the lines of each part with pieces
 	// off that a setting of the block works through, then what that
 	// leaves of each setting still on the page. A part another block's
 	// lead works through, and this one's does not, is left to that block's
@@ -142,8 +153,7 @@ namespace Mcm
 				std::ranges::copy(cause.pieces, std::back_inserter(named));
 			}
 		};
-		const auto* on = Settings::SwitchByKey(a_lead.setting->key);
-		const auto  yield = on ? CallPatch::YieldOf(*on) : std::nullopt;
+		const auto yield = CallPatch::YieldOf(*a_lead.setting);
 		if (yield) {
 			add(*yield);
 		}
@@ -248,8 +258,8 @@ namespace Mcm
 			return !AboutLine().empty();
 		}
 		if (a_id.ends_with(FREE)) {
-			const auto* on = Settings::SwitchByKey(a_id.substr(0, a_id.size() - FREE.size()));
-			return on ? std::optional{ !CallPatch::IsYielded(*on) } : std::nullopt;
+			const auto* lead = Settings::SettingByKey(a_id.substr(0, a_id.size() - FREE.size()));
+			return lead ? std::optional{ !CallPatch::IsYielded(*lead) } : std::nullopt;
 		}
 		if (!a_id.ends_with(SHOWN)) {
 			return std::nullopt;

@@ -44,6 +44,15 @@ namespace PowerArmorCondition
 		// lands within 0.02 of a digit of BOX_RIGHT.
 		constexpr float BOX_LEFT = -1.17F;
 
+		// At Percent CND and the percent stand right of the box, each level
+		// with the middle of its row of digits, where the digits' own places
+		// are, and start past the box's right edge by about 0.09 of the
+		// box's width. BOX_LINE is how thick that edge is, 6 of the 25.5
+		// pixels a digit takes on a 1080p shot of the dash.
+		constexpr float BOX_LINE = 0.24F;
+		constexpr float PAST_BOX = 0.09F;
+		constexpr float LINES_FROM = BOX_RIGHT + BOX_LINE + (PAST_BOX * (BOX_RIGHT - BOX_LEFT));
+
 		[[nodiscard]] const char* MissText(Miss a_miss)
 		{
 			switch (a_miss) {
@@ -152,6 +161,10 @@ namespace PowerArmorCondition
 			anchor.back = ScreenPoint(*camera, between + (across * (BOX_LEFT + WORD_CLEAR)));
 			anchor.first = ScreenPoint(*camera, origin);
 			anchor.above = ScreenPoint(*camera, above->GetWorldTranslate());
+
+			// Placed only for Percent, so a bar never waits on them.
+			anchor.upper = ScreenPoint(*camera, above->GetWorldTranslate() + (across * LINES_FROM));
+			anchor.lower = ScreenPoint(*camera, origin + (across * LINES_FROM));
 			if (!anchor.start.ok || !anchor.end.ok || !anchor.word.ok || !anchor.limit.ok || !anchor.first.ok || !anchor.above.ok) {
 				return Anchor{ .miss = Miss::kBehindCamera };
 			}

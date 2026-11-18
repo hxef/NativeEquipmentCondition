@@ -2,15 +2,18 @@
 
 #include "Core/Plugin.h"
 
+#include "Core/Settings/Settings.h"
 #include "UI/Flash.h"
 #include "UI/Hud/HudCondition/Place.h"
 #include "UI/Hud/HudCondition/Spot.h"
+#include "UI/Hud/HudCondition/Table.h"
 #include "UI/Hud/HudParts/HudParts.h"
 
 #include <array>
 #include <chrono>
 #include <cstdint>
 #include <optional>
+#include <string>
 
 // The frame listener's class. Frame.cpp follows the counter, draws the level
 // and fades the bar every frame, Layout.cpp lays the bar out at its spot and
@@ -41,6 +44,12 @@ namespace HudCondition
 		void TellAlone(const std::optional<Placed>& a_placed, const Basis& a_basis);
 		void Follow(const std::optional<Choice>& a_choice);
 		void LayOut(Scaleform::GFx::Value& a_readout, const Spot& a_drawn, const HudParts::Readout::Size& a_size);
+		void SwitchForm(Scaleform::GFx::Value& a_readout, bool a_number);
+		void DrawNumber(Scaleform::GFx::Value& a_readout);
+
+		// The box the word, or at Percent the 2 lines, fill from the bar's
+		// right end, which the spot is chosen for and held by.
+		[[nodiscard]] const HudParts::Readout::LabelPlace& Words() const;
 
 		std::optional<Clock::time_point> lastFrame;
 		std::optional<Clock::time_point> lastReading;
@@ -97,5 +106,18 @@ namespace HudCondition
 
 		// Found along with the HUD menu, see HudParts::AmmoCounterPart.
 		const RE::HUDAmmoCounter* counterPart = nullptr;
+
+		// The form last seen. tabled is true while the readout shows the 2
+		// lines of Percent, see Table.h: the rows read last, the table laid
+		// out for them, the word's rise it was put at, the number last
+		// written, and whether the line box was last shown and how faded.
+		std::optional<Settings::Cnd> saidForm;
+		bool                         tabled = false;
+		Rows                         rows;
+		std::optional<Table>         table;
+		double                       laidRise = 0.0;
+		std::string                  shownNumber;
+		std::optional<bool>          lined;
+		double                       lineAlpha = -1.0;
 	};
 }

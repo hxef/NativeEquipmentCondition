@@ -96,13 +96,14 @@ namespace Roles::Hud
 
 	// Where the shown text of a quick container row ends: the largest
 	// x + getLineMetrics(0).x + getLineMetrics(0).width over its shown text
-	// fields that are not empty, the text's own width and not the field's. A
-	// name drawn in 2 fields, or with its own field hidden, still has an end.
-	// With no such field, an empty name ends where vanilla's name field puts
-	// its empty line. This is the row's own measure, and every quick
-	// container movie puts its first icon 4 past it. The letters are drawn 2
-	// further right, past the field's margin, but the meter follows the
-	// icons, so it keeps the row's measure.
+	// fields that are not empty and not NEC's own, whose names start with
+	// NEC_, the text's own width and not the field's. A name drawn in 2
+	// fields, or with its own field hidden, still has an end. With no such
+	// field, an empty name ends where vanilla's name field puts its empty
+	// line. This is the row's own measure, and every quick container movie
+	// puts its first icon 4 past it. The letters are drawn 2 further right,
+	// past the field's margin, but the meter follows the icons, so it keeps
+	// the row's measure.
 	[[nodiscard]] std::optional<double> TextEnd(Scaleform::GFx::Movie& a_movie, Value& a_row);
 
 	// Where the shown text of a row's name starts, by the same measure, and

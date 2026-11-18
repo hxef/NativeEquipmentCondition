@@ -7,6 +7,7 @@
 #include "Core/Text/Text.h"
 #include "Core/TraceLog/TraceLog.h"
 #include "UI/Flash.h"
+#include "UI/Mcm/Hides.h"
 
 #include <Scaleform/G/GFx_ASMovieRootBase.h>
 
@@ -66,6 +67,10 @@ namespace Mcm
 			{ &Settings::fAutoWearRateMult, FollowUp::kCards },
 			{ &Settings::fSuppressedWearRateMult, FollowUp::kCards },
 			{ &Settings::bPowerArmorCardCnd, FollowUp::kCards },
+			// Item card CND adds or drops the CND row of every card, food's
+			// freshness row among them.
+			{ &Settings::iItemCardCnd, FollowUp::kCards },
+			{ &Settings::iItemCardCnd, FollowUp::kFoodCards },
 			// iCndDecimals changes every CND row and a perk line's start point.
 			{ &Settings::iCndDecimals, FollowUp::kCards },
 			{ &Settings::iCndDecimals, FollowUp::kFoodCards },
@@ -231,6 +236,8 @@ namespace Mcm
 		Answer(a_params, true);
 	}
 
+	// A CND stepper left to another mod stays at Off, as a switch stays off,
+	// see SetBool.
 	void SetInt(const Params& a_params, std::string_view a_id)
 	{
 		if (a_id == PRESET_ID) {
@@ -242,6 +249,11 @@ namespace Mcm
 			Unknown(a_id);
 		}
 		if ((!whole && a_id != LOG_LEVEL_ID) || a_params.argCount < 3) {
+			Answer(a_params, false);
+			return;
+		}
+		if (whole && CallPatch::IsYielded(*whole)) {
+			REX::INFO("{:s} stays 0. {:s}", whole->key, CallPatch::OffLine(*whole));
 			Answer(a_params, false);
 			return;
 		}

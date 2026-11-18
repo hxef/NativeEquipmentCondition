@@ -152,20 +152,20 @@ namespace
 		// Every line of a perk's description on the level up perk chart, which
 		// draws 2 on its own.
 		{ .name = "PerkChart", .OnMovieLoaded = PerkChart::OnMovieLoaded },
-		// What both CND bars on the HUD share, on the switch of their part.
-		// Their colour targets go with the HUD menu they were made for.
-		{ .name = "HudParts", .on = &Settings::bHudCondition, .part = Part::kHudBar, .Install = HudParts::Install, .Load = HudParts::Load },
-		// The Weapon CND bar by the HUD's ammo counter.
-		{ .name = "HudCondition", .on = &Settings::bHudCondition, .OnMovieLoaded = HudCondition::OnMovieLoaded },
-		// The Power armor CND bar on the dash. It goes with the same part,
-		// and bPowerArmorBar switches the bar itself, see HudParts::Waiter.
-		{ .name = "PowerArmorCondition", .on = &Settings::bHudCondition, .Load = PowerArmorCondition::Load, .OnMovieLoaded = PowerArmorCondition::OnMovieLoaded },
-		// A CND bar under the name in the prompt of a weapon, armor or food
-		// outside a container. Its hook asks bPickupBar itself, as the power
-		// armor bar asks bPowerArmorBar, so the row has no switch.
+		// What both CND readouts on the HUD share, on the stepper of their
+		// part. Their colour targets go with the HUD menu they were made for.
+		{ .name = "HudParts", .on = &Settings::iWeaponCnd, .part = Part::kHudBar, .Install = HudParts::Install, .Load = HudParts::Load },
+		// The Weapon CND by the HUD's ammo counter.
+		{ .name = "HudCondition", .on = &Settings::iWeaponCnd, .OnMovieLoaded = HudCondition::OnMovieLoaded },
+		// The Power armor dash CND. It goes with the same part, and
+		// iPowerArmorCnd shows it or not itself, see HudParts::Waiter.
+		{ .name = "PowerArmorCondition", .on = &Settings::iWeaponCnd, .Load = PowerArmorCondition::Load, .OnMovieLoaded = PowerArmorCondition::OnMovieLoaded },
+		// The Pickup CND under the name in the prompt of a weapon, armor or
+		// food outside a container. Its hook asks iPickupCnd itself, as the
+		// power armor dash asks iPowerArmorCnd, so the row has no stepper.
 		{ .name = "PickupBar", .part = Part::kPickup, .Install = PickupBar::Install, .OnMovieLoaded = PickupBar::OnMovieLoaded },
-		// Condition meters on the rows of the HUD's quick container.
-		{ .name = "QuickContainer", .on = &Settings::bQuickContainer, .part = Part::kQuick, .Install = QuickContainer::Install, .OnMovieLoaded = QuickContainer::OnMovieLoaded },
+		// Condition on the rows of the HUD's quick container.
+		{ .name = "QuickContainer", .on = &Settings::iQuickContainerCnd, .part = Part::kQuick, .Install = QuickContainer::Install, .OnMovieLoaded = QuickContainer::OnMovieLoaded },
 		// NEC's own question box stays solid under a message box mod's style
 		// that would draw it see-through.
 		{ .name = "MessageBox", .OnMovieLoaded = MessageBox::OnMovieLoaded },
@@ -239,7 +239,8 @@ namespace
 	}
 	static_assert(NeedsRowsAbove());
 
-	// Of the rows on 1 switch, exactly 1 has a part, the one PartOf gives.
+	// Of the rows on 1 switch or stepper, exactly 1 has a part, the one PartOf
+	// gives.
 	consteval bool SwitchesNamed()
 	{
 		for (const auto& row : FEATURES) {
@@ -280,7 +281,7 @@ const Feature* FeatureNamed(std::string_view a_name)
 Part PartOf(const Settings::Named& a_switch)
 {
 	for (const auto& row : FEATURES) {
-		if (row.on && row.part != Part::kNone && static_cast<const Settings::Named*>(row.on) == &a_switch) {
+		if (row.on && row.part != Part::kNone && row.on.Setting() == &a_switch) {
 			return row.part;
 		}
 	}

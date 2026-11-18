@@ -18,7 +18,7 @@ namespace HudCondition
 	// parts next to the counter. word is where the word's letters sit from
 	// the bar's right end and line the same down to the bottom of their
 	// line, deep how deep the bar is, and frame the screen, or nothing
-	// while it cannot be told. flipped is on while bCndBarsFlipped is, so
+	// while it cannot be told. flipped is on while bHudBarFlipped is, so
 	// the word's own place is before the bar's start, see Spot.
 	struct Around
 	{

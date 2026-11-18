@@ -35,14 +35,20 @@
 // Power armor gets no CND row, since the game wears and repairs it itself and
 // its card shows a Health row instead, such as 25/50. While its switch is on,
 // that row reads CND and the piece's condition in percent, at the top as on
-// other armor.
+// other armor. At Item card CND Off no card gets a CND row, so every card
+// stays vanilla.
+//
+// Under a UI replacer whose item lists give named card rows a column each,
+// the CND row gets its column there too while bCndColumn is on. The replacer
+// draws and sizes it itself, as for its own columns.
 //
 // Hooks.cpp is the CND row, Rate.cpp the fire rate and the sort's note,
 // Aim.cpp accuracy and range, Raise.cpp moves the row past Damage,
 // FridgeIcon.cpp marks food in a fridge on it, WearRate.cpp writes the wear
 // rate on it, WearRateForms.cpp fits it into the row, Effects.cpp shows what
 // spoiled food gives, PowerArmor.cpp shows a power armor piece's Health as
-// CND, and Cards.h is what they share.
+// CND, Column.cpp gives the row its list column, and Cards.h is what they
+// share.
 namespace ItemCard
 {
 	// Patches the calls that fill item cards.
@@ -56,6 +62,10 @@ namespace ItemCard
 	// faded name. False while either Pip-Boy site is left to another mod or
 	// waits.
 	[[nodiscard]] bool PipboyCards();
+
+	// Whether a list with columns opened this session, so the MCM row shows,
+	// in Column.cpp.
+	[[nodiscard]] bool ColumnOffered();
 
 	// Patches the calls that give the numbers of a food's effects, on the
 	// cards, the Pip-Boy's HP bar and its STAT Effects list, in Effects.cpp.

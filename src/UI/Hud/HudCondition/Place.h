@@ -12,8 +12,16 @@
 // on screen. And that place kept for the MCM page. Private to this folder.
 namespace HudCondition
 {
-	// The size fHudBarLength and fHudBarThickness ask for now.
+	// Whether Weapon CND is at Percent now, which draws the 2 lines of
+	// Table.h and no bar.
+	[[nodiscard]] bool AsNumber();
+
+	// The size fHudBarLength and fHudBarThickness ask for now, and 1 at
+	// Percent, which they never move.
 	[[nodiscard]] HudParts::Readout::Size SizeNow();
+
+	// bHudBarFlipped now, and false at Percent, where nothing is flipped.
+	[[nodiscard]] bool FlippedNow();
 
 	// Where a clip sits, how big it is drawn and how far it is turned.
 	struct Transform
@@ -100,9 +108,10 @@ namespace HudCondition
 
 	// Keeps a_placed's box for the MCM page, see Measured, with what it was
 	// worked out from: a_spot as chosen, a_size, a_label and a_frame, the
-	// visible frame. The trace says the box when a whole HUD unit changes.
+	// visible frame, and a_number, true for the 2 lines of Percent. The trace
+	// says the box when a whole HUD unit changes.
 	void Keep(const Placed& a_placed, const Spot& a_spot, const HudParts::Readout::Size& a_size, const HudParts::Readout::LabelPlace& a_label,
-		const Flash::Box& a_frame);
+		const Flash::Box& a_frame, bool a_number);
 
 	// Forgets the place kept, for a new HUD movie.
 	void Forget();

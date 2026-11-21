@@ -27,8 +27,9 @@
 // Button.h the button, Retry.h the wait for a bar under a UI replacer and
 // the watch over it, Payment.h the paying, Upkeep.h the trader's own stock,
 // TraderList.h the levels a player sets by hand, and Sign.h the sign that
-// shows how far the trader repairs, with SignBlock.h and SignLine.h its 2
-// forms.
+// shows how far the trader repairs, with SignBlock.h and SignLine.h its
+// forms, SignPlace.h and SignMove.h where they go, and SignBack.h the native
+// targets behind its panel and around a sign the player moves.
 namespace VendorRepair
 {
 	// Patches the barter menu's 2 function tables, as a menu and as an input

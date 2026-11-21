@@ -209,6 +209,11 @@ namespace Settings
 	// before it, see HudCondition.h.
 	inline Live<bool> bHudBarFlipped{ "HUD", "bHudBarFlipped", false };
 
+	// Whether the Weapon CND percent reads in 1 line, CND 87.4%, at the ammo
+	// divider too, where it reads in 2 lines when off. Anywhere else it is 1
+	// line either way, see Lines in HudCondition/Table.h.
+	inline Live<bool> bHudBarPercentOneLine{ "HUD", "bHudBarPercentOneLine", false };
+
 	// How far right of the dash's ammo digits the Power armor CND bar sits,
 	// below 0 to the left. It still sways with the dash, see
 	// PowerArmorCondition.h.
@@ -283,4 +288,12 @@ namespace Settings
 
 	// Draws that mark as a plain line instead of 2 notches.
 	inline Live<bool> bPenaltyMarkAsLine{ "HUD", "bPenaltyMarkAsLine", false };
+
+	// How far right of its own place on the barter screen the trader repair
+	// sign sits, below 0 to the left. At 0 and 0 NEC places it itself, see
+	// VendorRepair/Sign.h.
+	inline Live<float> fTraderSignX{ "HUD", "fTraderSignX", 0.0F };
+
+	// How far up from its own place it sits, below 0 down.
+	inline Live<float> fTraderSignY{ "HUD", "fTraderSignY", 0.0F };
 }

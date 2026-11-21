@@ -36,6 +36,10 @@ namespace SpawnCondition
 		thread_local bool           t_spawnContainer = false;
 		thread_local bool           t_spawnDupe = false;
 
+		// The item a station is handing the player, so a stack of any other
+		// form never matches.
+		thread_local const RE::TESBoundObject* t_made = nullptr;
+
 		// -------------------------------------------------------------------
 		// The handover calls
 		// -------------------------------------------------------------------
@@ -178,6 +182,31 @@ namespace SpawnCondition
 			const Scoped noWrite{ t_spawnDupe, t_spawnDupe || (Settings::bSpawnCondition.GetValue() && g_spawnDupe.Runs(g_spawnDupeLink[0])) };
 			g_spawnDupeLink[0](a_receiver, a_object, std::move(a_extra), a_count, a_oldContainer, a_filter, a_worldRef);
 		}
+
+		// -------------------------------------------------------------------
+		// Made at a bench
+		// -------------------------------------------------------------------
+
+		// The 1 call in CookingMenu::BuildConfirmed that hands the player what
+		// a recipe makes. Every bench that makes an item through the game's
+		// menu opens CookingMenu: a cooking or chemistry station, or a mod's
+		// bench of that kind. The weapons, armor, power armor and robot benches
+		// only fit mods in place and never add an item.
+		constexpr CallPatch::CallSite MADE_SITE[] = {
+			{ CallPatch::AE{ RE::ID::CookingMenu::BuildConfirmed.ae(), 0x09D }, CallPatch::OG{ RE::ID::CookingMenu::BuildConfirmed.og(), 0x09D }, "made at a bench" },
+		};
+
+		std::array<CallPatch::Link<AddInventoryItem_t>, 1> g_madeLink;
+
+		// The made item's adds run inside this call on this thread, so the
+		// mark covers them and nothing a cell loads on another thread. Like
+		// the hooks above it marks only while Worn loot is on.
+		void MadeHk(RE::TESObjectREFR* a_receiver, RE::TESBoundObject* a_object, RE::BSTSmartPointer<RE::ExtraDataList> a_extra,
+			std::uint32_t a_count, RE::TESObjectREFR* a_oldContainer, const RE::INSTANCE_FILTER* a_filter, RE::TESObjectREFR* a_worldRef)
+		{
+			const Scoped made{ t_made, Settings::bSpawnCondition.GetValue() && g_madeLink[0].Live() ? a_object : t_made };
+			g_madeLink[0](a_receiver, a_object, std::move(a_extra), a_count, a_oldContainer, a_filter, a_worldRef);
+		}
 	}
 
 	// -------------------------------------------------------------------
@@ -310,6 +339,11 @@ namespace SpawnCondition
 		return t_spawnDupe;
 	}
 
+	bool MadeAtBench(const RE::TESBoundObject* a_object)
+	{
+		return a_object && t_made == a_object;
+	}
+
 	ScopedSpawnContainer::ScopedSpawnContainer() :
 		_mark(t_spawnContainer, true)
 	{}
@@ -319,6 +353,16 @@ namespace SpawnCondition
 		const auto hooks = CallPatch::PerSite<std::size(HANDOVER_SITES)>([]<std::size_t I>() { return &HandoverHk<I>; });
 		CallPatch::PatchAll(HANDOVER_SITES, RE::ID::TESObjectREFR::AddInventoryItem, hooks, g_handoverLinks,
 			"Weapons and armor that change hands keep their condition, and loose loot rolls for its first holder");
+
+		// Filed under Quest rewards arrive new and patched alone, so losing it
+		// leaves the rest of Worn loot working. It has no piece of its own, so
+		// only NEC.log tells of it. Patched before SpawnDupe's set opens, or it
+		// would join that set.
+		const auto madeHooks = CallPatch::PerSite<std::size(MADE_SITE)>([]<std::size_t I>() { return &MadeHk; });
+		if (CallPatch::PatchAll(MADE_SITE, RE::ID::TESObjectREFR::AddInventoryItem, madeHooks, g_madeLink,
+				"Weapons and armor made at a workbench arrive at full condition", Part::kGifts) == 0) {
+			REX::WARN("Weapons and armor made at a workbench will be rolled like any other loot.");
+		}
 
 		const CallPatch::Together spawnDupe{ Part::kConsoleNew };
 		const auto                dupeHooks = CallPatch::PerSite<std::size(SPAWN_DUPE_SITE)>([]<std::size_t I>() { return &SpawnDupeHk; });

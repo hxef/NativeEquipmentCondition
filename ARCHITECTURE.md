@@ -210,7 +210,7 @@ src/
       Fill.h/.cpp            a list filled from a container's record, its plain lines and its stock record
       Food.h/.cpp            found food's starting freshness
       Guards.h/.cpp          what marks a save being applied, a game recording no change, a console command, a script's gift and a restock, the folder's scope, and what the player carries
-      Handover.h/.cpp        an item changing hands and SpawnDupe's copies
+      Handover.h/.cpp        an item changing hands, SpawnDupe's copies and the item a station makes
       Look.cpp               the first look at loot lying in the world, rolled as the player's pickup would roll it
       LooseItem.cpp          a trader's loose item, 1 roll for the copy on the barter screen and the item in the world
       Owners.h/.cpp          who a stack goes to, and which of them get it at full condition

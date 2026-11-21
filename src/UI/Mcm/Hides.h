@@ -89,7 +89,8 @@ namespace Mcm
 	// mark. Its 2 points sit on the Weapons and the Armor page, so the
 	// section's id names the first, and both sliders refresh the menu.
 	// At Off each CND stepper hides the rows of its place, and at any form
-	// but Bar the rows that size a bar, flip it or show its word. A part left
+	// but Bar the rows that size a bar, flip it or show its word. Weapon CND
+	// percent in 1 line shows only while Weapon CND is at Percent. A part left
 	// to another mod leaves its stepper at Off in memory, see Gate::SetOff, so
 	// its Bar rows hide too and a block's note leaves them out. The 3 item
 	// card switches hide while Item card CND is Off, and CND decimals while no
@@ -119,6 +120,7 @@ namespace Mcm
 			{ &Settings::fHudBarX, &Settings::fHudBarY, &Settings::bHudBarHidesWithCounter, &Settings::bHudBarStandsAlone } },
 		{ "iWeaponCnd:Bar"sv, [] { return Settings::iWeaponCnd.Form() == Settings::Cnd::kBar; },
 			{ &Settings::fHudBarLength, &Settings::fHudBarThickness, &Settings::bHudBarShowsWord, &Settings::bHudBarFlipped } },
+		{ "iWeaponCnd:Percent"sv, [] { return Settings::iWeaponCnd.Form() == Settings::Cnd::kPercent; }, { &Settings::bHudBarPercentOneLine } },
 		{ "iPowerArmorCnd:Shown"sv, [] { return Settings::iPowerArmorCnd.Form() != Settings::Cnd::kOff; },
 			{ &Settings::fPowerArmorBarX, &Settings::fPowerArmorBarY } },
 		{ "iPowerArmorCnd:Bar"sv, [] { return Settings::iPowerArmorCnd.Form() == Settings::Cnd::kBar; },

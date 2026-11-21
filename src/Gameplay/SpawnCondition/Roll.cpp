@@ -6,6 +6,7 @@
 #include "Core/ScriptEvents.h"
 #include "Core/TraceLog/TraceLog.h"
 #include "Gameplay/SpawnCondition/Guards.h"
+#include "Gameplay/SpawnCondition/Handover.h"
 #include "Gameplay/SpawnCondition/Owners.h"
 #include "Gameplay/SpawnCondition/Trace.h"
 
@@ -123,6 +124,15 @@ namespace SpawnCondition
 		if (FromScript() && players) {
 			a_extra->SetHealthPerc(Condition::MAX_HEALTH);
 			Report(listed, "given by a script", "{:<30s} [{:08X}] x{:<3d} starts at {:.4f}, from a script",
+				name, id, count, Condition::MAX_HEALTH);
+			return std::nullopt;
+		}
+
+		// What the player makes at a cooking or chemistry station arrives new.
+		// The copies made at once are never split.
+		if (players && MadeAtBench(a_object)) {
+			a_extra->SetHealthPerc(Condition::MAX_HEALTH);
+			Report(listed, "made at a workbench", "{:<30s} [{:08X}] x{:<3d} starts at {:.4f}, made at a workbench",
 				name, id, count, Condition::MAX_HEALTH);
 			return std::nullopt;
 		}

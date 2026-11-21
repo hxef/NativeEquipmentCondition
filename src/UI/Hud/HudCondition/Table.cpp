@@ -4,8 +4,11 @@
 #include "UI/Roles/Hud.h"
 
 #include <algorithm>
+#include <cmath>
+#include <cstdint>
 #include <optional>
 #include <string>
+#include <string_view>
 
 namespace HudCondition
 {
@@ -72,6 +75,66 @@ namespace HudCondition
 			}
 			return widest;
 		}
+
+		// Where a_field's letters sit, from its top left corner, with the
+		// widest text a_text gives for the numbers of WIDEST written in.
+		// Nothing while a line cannot be measured. With a_whole its letters
+		// reach as far as the wider of the 2 widths the movie gives the text,
+		// its line's and textWidth, which differ by about half a unit, so a
+		// line held by the screen's edge stays whole on screen by either.
+		template <class Text>
+		[[nodiscard]] std::optional<Readout::LabelPlace> Widest(Value& a_field, Text a_text, bool a_whole = false)
+		{
+			std::optional<Readout::LabelPlace> wide;
+			for (const auto tenths : Readout::WIDEST) {
+				auto at = Readout::WriteText(a_field, a_text(tenths), WORD_SIZE, WORD_WIDE);
+				if (!at.measured) {
+					return std::nullopt;
+				}
+				if (a_whole) {
+					const auto text = Flash::Number(a_field, "textWidth"sv) * Flash::Number(a_field, "scaleX"sv, 1.0);
+					at.letters.right = std::max(at.letters.right, at.letters.left + text);
+				}
+				if (!wide || at.letters.right - at.letters.left > wide->letters.right - wide->letters.left) {
+					wide = FromCorner(at);
+				}
+			}
+			return wide;
+		}
+
+		// The 1 line at the ammo line is never drawn under this share of the
+		// word's size. Where even that runs off screen, Spot.h finds it a
+		// free spot as it does for the word.
+		constexpr double MIN_LINE_SCALE = 0.6;
+
+		// How far the 1 line at the ammo line ends before the screen's edge.
+		constexpr double LINE_ROOM = 0.5;
+
+		// The share of the word's size the 1 line with a_letters, at its
+		// widest in the word's size, takes to end by a_right. 1 with no edge
+		// known. In steps of 0.01, so an edge that moves by a hair lays
+		// nothing out again.
+		[[nodiscard]] double LineScale(const Flash::Box& a_letters, std::optional<double> a_right)
+		{
+			const auto wide = a_letters.right - a_letters.left;
+			if (!a_right || wide <= 0.0) {
+				return 1.0;
+			}
+			const auto scale = std::floor(((*a_right - LINE_ROOM - a_letters.left) / wide) * 100.0) / 100.0;
+			return std::clamp(scale, MIN_LINE_SCALE, 1.0);
+		}
+
+		// a_line, measured with its field's corner at 0,0, drawn a_scale
+		// times its size with its field's corner moved from a_at so its
+		// letters keep the left edge and the baseline they have at a_at. A
+		// field scales about that corner.
+		[[nodiscard]] OneLine Shrunk(const Readout::LabelPlace& a_line, const Flash::Point& a_at, double a_scale)
+		{
+			const auto         by = [&](const Flash::Box& a_box) { return Flash::Box{ a_box.left * a_scale, a_box.top * a_scale, a_box.right * a_scale, a_box.bottom * a_scale }; };
+			const Flash::Point corner{ a_at.x + ((1.0 - a_scale) * a_line.letters.left), a_at.y + ((1.0 - a_scale) * a_line.letters.bottom) };
+			const Readout::LabelPlace place{ by(a_line.field).Moved(corner.x, corner.y), by(a_line.letters).Moved(corner.x, corner.y), true, a_line.descent * a_scale };
+			return OneLine{ place, corner, a_scale };
+		}
 	}
 
 	// -------------------------------------------------------------------
@@ -114,16 +177,18 @@ namespace HudCondition
 	}
 
 	// -------------------------------------------------------------------
-	// Laying the 2 lines out
+	// Laying the lines out
 	// -------------------------------------------------------------------
 
-	std::optional<Table> LayTable(Scaleform::GFx::Movie& a_movie, Value& a_readout, const Readout::LabelPlace& a_word, const Rows& a_rows, const std::optional<Table>& a_last)
+	std::optional<Table> LayTable(Scaleform::GFx::Movie& a_movie, Value& a_readout, const Readout::LabelPlace& a_word, const Rows& a_rows, const std::optional<Table>& a_last,
+		std::optional<double> a_lineRight)
 	{
 		if (!a_word.measured) {
 			return std::nullopt;
 		}
 		const auto widest = WidestNow();
-		if (a_last && a_last->rows == a_rows && a_last->word == a_word.letters && a_last->widest == widest) {
+		if (a_last && a_last->rows == a_rows && a_last->word == a_word.letters && a_last->widest == widest &&
+			LineScale(a_last->away.place.letters, a_lineRight) == a_last->atLine.scale) {
 			return a_last;
 		}
 		auto field = Readout::ExtraOf(a_movie, a_readout, Readout::Extra::kNumber);
@@ -131,36 +196,70 @@ namespace HudCondition
 			return std::nullopt;
 		}
 
-		// The number is laid out at its widest, so nothing moves as its
-		// digits change.
-		std::optional<Readout::LabelPlace> wide;
-		for (const auto tenths : Readout::WIDEST) {
-			const auto at = Readout::WriteText(field, Readout::PercentText(tenths), WORD_SIZE, WORD_WIDE);
-			if (!at.measured) {
-				return std::nullopt;
-			}
-			if (!wide || at.letters.right - at.letters.left > wide->letters.right - wide->letters.left) {
-				wide = FromCorner(at);
-			}
+		// The 1 line and the number are laid out at their widest, so nothing
+		// moves as the digits change. The number goes last, so the field is
+		// left holding a number.
+		const auto line = Widest(field, [&](std::uint32_t a_tenths) { return Readout::WordAndPercent(field, a_tenths); }, true);
+		const auto wide = Widest(field, [](std::uint32_t a_tenths) { return Readout::PercentText(a_tenths); });
+		if (!line || !wide) {
+			return std::nullopt;
 		}
 
-		Table table{ {}, a_rows.foot - a_word.letters.bottom, {}, a_rows, a_word.letters, widest };
+		Table table{ {}, {}, {}, a_rows.foot - a_word.letters.bottom, {}, a_rows, a_word.letters, widest };
 		table.number = Flash::Point{ a_word.letters.left - wide->letters.left, a_rows.head - DigitsTop(wide->letters) };
 		const auto word = a_word.letters.Moved(0.0, table.rise);
 		const auto number = wide->letters.Moved(table.number.x, table.number.y);
 		const auto fields = a_word.field.Moved(0.0, table.rise).With(wide->field.Moved(table.number.x, table.number.y));
 		table.place = Readout::LabelPlace{ fields, word.With(number), true, wide->descent };
+
+		// The 1 line is written in the word's own field, where the word's
+		// field stands.
+		const Flash::Point at{ a_word.field.left, a_word.field.top + table.rise };
+		table.away = Shrunk(*line, at, 1.0);
+		table.atLine = Shrunk(*line, at, LineScale(table.away.place.letters, a_lineRight));
 		return table;
 	}
 
-	void PutTable(Value& a_readout, const Readout::LabelPlace& a_word, const Table& a_table, double a_x, double a_y)
+	// -------------------------------------------------------------------
+	// 1 line or 2
+	// -------------------------------------------------------------------
+
+	Lines LinesFor(const LinesFacts& a_facts)
 	{
-		auto label = Readout::LabelOf(a_readout);
-		auto number = Readout::ExtraIn(a_readout, Readout::Extra::kNumber);
-		auto line = Readout::ExtraIn(a_readout, Readout::Extra::kLine);
-		Readout::MoveField(label, a_word.field.left + a_x, a_word.field.top + a_table.rise + a_y);
+		if (a_facts.moved) {
+			return Lines{ .one = true, .why = "since fHudBarX or fHudBarY moved it"sv };
+		}
+		if (a_facts.alone) {
+			return Lines{ .one = true, .why = "since it stands alone"sv };
+		}
+		if (a_facts.noCounter) {
+			return Lines{ .one = true, .why = "since the game shows no ammo counter for this weapon"sv };
+		}
+		if (!a_facts.between) {
+			return Lines{ .one = true, .why = "since no ammo divider runs between the 2 ammo numbers"sv };
+		}
+		if (a_facts.asked) {
+			return Lines{ .atLine = true, .one = true, .why = "since bHudBarPercentOneLine is on"sv };
+		}
+		if (!a_facts.fits) {
+			return Lines{ .atLine = true, .one = true, .why = "since the 2 lines have no room by the ammo divider"sv };
+		}
+		return Lines{ .atLine = true, .why = "over and under the ammo divider"sv };
+	}
+
+	// -------------------------------------------------------------------
+	// Drawing the lines
+	// -------------------------------------------------------------------
+
+	void PutTable(Value& a_readout, const Readout::LabelPlace& a_word, const Table& a_table, double a_x, double a_y, const OneLine* a_one)
+	{
+		auto       label = Readout::LabelOf(a_readout);
+		auto       number = Readout::ExtraIn(a_readout, Readout::Extra::kNumber);
+		auto       line = Readout::ExtraIn(a_readout, Readout::Extra::kLine);
+		const auto corner = a_one ? a_one->corner : Flash::Point{ a_word.field.left, a_word.field.top + a_table.rise };
+		Readout::MoveField(label, corner.x + a_x, corner.y + a_y);
 		Readout::MoveField(number, a_table.number.x + a_x, a_table.number.y + a_y);
-		Flash::Set(number, "visible"sv, Value(true));
+		Flash::Set(number, "visible"sv, Value(!a_one));
 		Flash::Set(line, "visible"sv, Value(false));
 	}
 
@@ -170,7 +269,19 @@ namespace HudCondition
 		static_cast<void>(Readout::WriteText(number, a_number, WORD_SIZE, WORD_WIDE));
 	}
 
-	void DrawLine(Scaleform::GFx::Movie& a_movie, Value& a_readout, const Table& a_table, bool a_lined)
+	void WriteOneLine(Value& a_readout, std::uint32_t a_tenths, double a_scale)
+	{
+		auto label = Readout::LabelOf(a_readout);
+		static_cast<void>(Readout::WriteText(label, Readout::WordAndPercent(label, a_tenths), WORD_SIZE * a_scale, WORD_WIDE));
+	}
+
+	void WriteWord(Value& a_readout)
+	{
+		auto label = Readout::LabelOf(a_readout);
+		static_cast<void>(Readout::WriteText(label, HudParts::Translated(label, HudParts::CND_TEXT), WORD_SIZE, WORD_WIDE));
+	}
+
+	void DrawLine(Scaleform::GFx::Movie& a_movie, Value& a_readout, const Table& a_table, bool a_lined, bool a_oneLine)
 	{
 		auto line = a_lined ? Readout::ExtraOf(a_movie, a_readout, Readout::Extra::kLine) : Readout::ExtraIn(a_readout, Readout::Extra::kLine);
 		if (!line.IsDisplayObject()) {
@@ -178,7 +289,8 @@ namespace HudCondition
 		}
 		auto       label = Readout::LabelOf(a_readout);
 		auto       number = Readout::ExtraIn(a_readout, Readout::Extra::kNumber);
-		const auto right = std::max(Readout::ExtentOf(label).letters.right, Readout::ExtentOf(number).letters.right);
+		const auto ends = Readout::ExtentOf(label).letters.right;
+		const auto right = a_oneLine ? ends : std::max(ends, Readout::ExtentOf(number).letters.right);
 		const auto& rows = a_table.rows;
 		const auto  shown = a_lined && right > rows.end;
 		if (shown) {

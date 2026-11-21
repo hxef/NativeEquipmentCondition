@@ -60,7 +60,11 @@
 // the bar's word stands and the percent stands under it, with the divider run
 // on between them by a line box of NEC's, see Table.h. The 2 lines take the
 // bar's spot and hold as 1 box, and the length, thickness and flip of the bar
-// leave them as they are.
+// leave them as they are. They stand only where the divider runs between
+// them. Moved off it, standing alone, with a melee weapon or with no divider
+// between the numbers, and with bHudBarPercentOneLine on or no room for the 2
+// lines, the percent reads in 1 line, CND 87.4%, where the word stands. At the
+// divider that 1 line is drawn smaller where it would run off screen.
 namespace HudCondition
 {
 	// Adds the bar to the HUD movie through HudParts::Waiter. Ignores every

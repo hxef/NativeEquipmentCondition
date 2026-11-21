@@ -292,6 +292,11 @@ namespace Roles::Card
 		return field.IsDisplayObject() ? field : Value{};
 	}
 
+	FieldNames RowFieldNames()
+	{
+		return { "Label_tf", "Value_tf" };
+	}
+
 	Value LabelField(Value& a_row)
 	{
 		auto field = Flash::Member(a_row, "Label_tf"sv);

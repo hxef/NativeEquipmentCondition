@@ -84,7 +84,7 @@ namespace Text
 	// iItemCardCnd, bCardWearRate, bPowerArmorCardCnd, iCndDecimals,
 	// bCndColumn, bFridgeIcon and bTraceLogs, in MenuSwitches.cpp,
 	// the 10 wear speeds, in MenuWear.cpp, the 3 Loot numbers and the 30
-	// Balance numbers, in MenuNumbers.cpp, and the 15 HUD sliders, the 2 HUD
+	// Balance numbers, in MenuNumbers.cpp, and the 17 HUD sliders, the 2 HUD
 	// steppers, the 13 HUD switches and sLogLevel, in MenuHudLog.cpp, each in
 	// NEC.ini's order, and the 4 presets rows of NEC's main page, in
 	// MenuPresets.cpp.

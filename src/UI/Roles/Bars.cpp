@@ -25,6 +25,10 @@ namespace Roles::Bars
 		// dozen within 3 levels of menuObj.
 		constexpr std::uint32_t MAX_CLIPS = 500;
 
+		// The menu that draws the buttons of a menu whose own bar hands them
+		// over, as vanilla's menus all do.
+		constexpr auto DRAWER_MENU = "ButtonBarMenu"sv;
+
 		// How many hints a list holds, or nothing when it is no list.
 		[[nodiscard]] std::optional<std::uint32_t> CountOf(const Value& a_list)
 		{
@@ -212,5 +216,45 @@ namespace Roles::Bars
 			SayFound(movie, bar.convention);
 			Flash::Call(bar.list, "forEach", args);
 		}
+	}
+
+	// -------------------------------------------------------------------
+	// Where the bar draws
+	// -------------------------------------------------------------------
+
+	std::optional<double> DrawnTop(RE::GameMenuBase& a_menu)
+	{
+		// How far down its movie's screen a clip starts, 0 to 1.
+		const auto top = [](Scaleform::GFx::Movie& a_movie, Value& a_clip) -> std::optional<double> {
+			const auto shown = a_movie.GetVisibleFrameRect();
+			const auto bounds = Flash::StageBounds(a_clip);
+			if (shown.y2 <= shown.y1 || !bounds) {
+				return std::nullopt;
+			}
+			const auto share = (Flash::Number(*bounds, "y"sv) - shown.y1) / (shown.y2 - shown.y1);
+			return std::isfinite(share) ? std::optional{ share } : std::nullopt;
+		};
+
+		auto* const own = a_menu.buttonHintBar.get();
+		if (!own || !a_menu.uiMovie) {
+			return std::nullopt;
+		}
+		if (!own->redirectToButtonBarMenu) {
+			return OnScreen(*a_menu.uiMovie, *own) ? top(*a_menu.uiMovie, *own) : std::nullopt;
+		}
+
+		// The engine's ButtonBarMenu is a GameMenuBase whose own bar draws the
+		// buttons handed over, read in its RTTI. Its place counts shown or
+		// hidden: a screen that just opened asks before the bar has its
+		// buttons, while the bar still hides for the talk before it, and the
+		// bar keeps its row.
+		auto* const ui = RE::UI::GetSingleton();
+		const auto  open = ui ? ui->GetMenu(DRAWER_MENU) : Scaleform::Ptr<RE::IMenu>{};
+		auto* const drawer = open && open->uiMovie ? static_cast<RE::GameMenuBase*>(open.get()) : nullptr;
+		auto* const bar = drawer ? drawer->buttonHintBar.get() : nullptr;
+		if (!bar || !bar->IsDisplayObject() || !InFrame(*drawer->uiMovie, *bar)) {
+			return std::nullopt;
+		}
+		return top(*drawer->uiMovie, *bar);
 	}
 }

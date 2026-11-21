@@ -38,4 +38,12 @@ namespace Roles::Bars
 	// Calls a_visit with every hint of every bar the menu has, so a word is
 	// written wherever its hint shows.
 	void ForEach(RE::GameMenuBase& a_menu, Scaleform::GFx::FunctionHandler& a_visit);
+
+	// Where the bar that draws a_menu's buttons starts, as a share of the
+	// screen's height from its top: ButtonBarMenu's bar for a menu whose own
+	// bar hands its buttons over, as vanilla's do, shown or still hidden,
+	// else the menu's own bar while it shows. The menu's own movie then holds
+	// a hidden bar lower down that draws nothing. Nothing for a bar off
+	// screen or not found.
+	[[nodiscard]] std::optional<double> DrawnTop(RE::GameMenuBase& a_menu);
 }

@@ -23,7 +23,7 @@ namespace RepairPrompt
 				rows(a_rows), chosen(std::move(a_chosen)), cancelled(std::move(a_cancelled))
 			{}
 
-			void operator()(std::uint8_t a_button) override
+			void Answer(std::uint8_t a_button) override
 			{
 				// Any button after the rows means cancel. Without the task
 				// queue the box counts as cancelled at once, which spends

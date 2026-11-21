@@ -43,6 +43,13 @@ namespace MessageBox
 
 		Callback(const Callback&) = delete;
 		Callback& operator=(const Callback&) = delete;
+
+		// The game's call with the button pressed. The trace says which row
+		// answered, then Answer gets it.
+		void operator()(std::uint8_t a_button) final;
+
+	private:
+		virtual void Answer(std::uint8_t a_button) = 0;
 	};
 
 	// How wide the text of a row NEC lays may be, in the row's pixels: the
@@ -59,11 +66,13 @@ namespace MessageBox
 	// pressed, counting from 0. The last button is cancel, and the Cancel key,
 	// Tab or B, and Escape press it too. When the box never opens, the
 	// callback gets the cancel button and is freed here. The box pauses
-	// whatever is under it. The movie puts the highlight on the first button,
-	// and the frame listener moves it to button a_start once, on the box's
-	// first frame. With NO_ROW it takes the highlight off, so Enter presses
-	// nothing until Down or the mouse highlights a button. Up does nothing
-	// then, as the movie has it. A message box mod can keep it on the first.
+	// whatever is under it. A press the movie makes before the box is drawn
+	// answers nothing, see MessageBoxMovie.cpp. The movie puts the highlight
+	// on the first button, and the frame listener moves it to button a_start
+	// once, on the box's first frame. With NO_ROW it takes the highlight off,
+	// so Enter presses nothing until Down or the mouse highlights a button. Up
+	// does nothing then, as the movie has it. A message box mod can keep it on
+	// the first.
 	void Ask(const char* a_title, const char* a_body,
 		const std::vector<std::string>& a_buttons, Callback* a_callback, std::uint32_t a_start = 0);
 

@@ -22,10 +22,13 @@ namespace MessageBox
 		std::uint32_t buttons = 0;
 		// The number of its last button, its cancel.
 		std::uint8_t last = 0;
+		// Whether the box has been drawn, so a press can answer it.
+		bool drawn = false;
 	};
 
-	// The box a_callback belongs to, and setting the row it starts on, in
-	// MessageBox.cpp.
+	// The box a_callback belongs to, setting the row it starts on and noting
+	// that it was drawn, in MessageBox.cpp.
 	[[nodiscard]] std::optional<Asked> Find(const RE::IMessageBoxCallback* a_callback);
 	void                               StartAt(const RE::IMessageBoxCallback* a_callback, std::uint32_t a_start, std::uint32_t a_buttons);
+	void                               Drawn(const RE::IMessageBoxCallback* a_callback);
 }

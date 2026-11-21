@@ -62,6 +62,15 @@ namespace Roles::Card
 	// The field a row prints its label in, the same way.
 	[[nodiscard]] Value LabelField(Value& a_row);
 
+	// The names a card row gives its label and its number fields, for a part
+	// of NEC's own laid out in rows the way a card's are.
+	struct FieldNames
+	{
+		const char* label;
+		const char* value;
+	};
+	[[nodiscard]] FieldNames RowFieldNames();
+
 	// Whether a_row shows anything across a_left to a_right, in its own
 	// units, but its label, its number, its background and the parts NEC
 	// adds, named NEC_. A text field

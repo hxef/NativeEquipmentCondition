@@ -51,7 +51,7 @@ namespace Mcm
 				yes(std::move(a_yes))
 			{}
 
-			void operator()(std::uint8_t a_button) override
+			void Answer(std::uint8_t a_button) override
 			{
 				if (a_button != 0 || !yes) {
 					return;

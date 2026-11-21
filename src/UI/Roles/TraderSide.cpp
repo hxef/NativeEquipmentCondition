@@ -3,6 +3,8 @@
 #include "UI/Flash.h"
 
 #include <algorithm>
+#include <array>
+#include <cmath>
 #include <string_view>
 
 namespace Roles::TraderSide
@@ -20,6 +22,10 @@ namespace Roles::TraderSide
 
 		// Every part NEC adds is named NEC_..., and none counts as taken.
 		constexpr std::string_view OWN_PREFIX = "NEC_"sv;
+
+		// The Shape vanilla's script draws the list's frame lines in, at
+		// every list switch, as a child of the side.
+		constexpr std::string_view LINES_NAME = "lines"sv;
 
 		// The share of the bracket's area a part must cover to count as its
 		// background or its frame lines. Not all of it, since the bracket's
@@ -79,14 +85,16 @@ namespace Roles::TraderSide
 		// A covering part that starts between the title's top and the
 		// bracket's still lifts the line. When the bracket is hidden and the
 		// only covering part starts lower than the bracket's top, top follows
-		// that part, so the line sits lower by as much.
+		// that part, so the line sits lower by as much. The first covering
+		// part named LINES_NAME is the frame lines.
 		void Take(Room& a_room, Side& a_side)
 		{
 			auto&                 side = a_side.side;
 			const auto            title = BoundsIn(a_side.title, side);
 			std::optional<double> top;
 			const auto            lift = [&](double a_top) { top = std::min(top.value_or(a_top), a_top); };
-			if (Flash::Opacity(a_side.bracket) > 0.0) {
+			a_room.backed = Flash::Opacity(a_side.bracket) > 0.0;
+			if (a_room.backed) {
 				lift(a_room.bracket.top);
 			}
 			for (auto& child : Flash::Children(side)) {
@@ -98,6 +106,9 @@ namespace Roles::TraderSide
 					continue;
 				}
 				if (Covers(*box, a_room.bracket)) {
+					if (!a_room.lines && Flash::String(child, "name"sv) == LINES_NAME) {
+						a_room.lines = box;
+					}
 					if (title && box->top >= title->top) {
 						lift(box->top);
 					}
@@ -169,7 +180,13 @@ namespace Roles::TraderSide
 		return frame && frame->Holds(a_box) && clear(taken) && (!a_around || clear(around));
 	}
 
-	std::optional<Room> RoomOf(Scaleform::GFx::Movie& a_movie, Side& a_side, Value a_bar)
+	bool Room::OverBar(const Box& a_box, double a_gap) const
+	{
+		const auto top = row ? row : (bar ? std::optional{ bar->top } : std::nullopt);
+		return !top || a_box.bottom + (a_gap * unit) <= *top;
+	}
+
+	std::optional<Room> RoomOf(Scaleform::GFx::Movie& a_movie, Side& a_side, Value a_bar, std::optional<double> a_row)
 	{
 		auto&      side = a_side.side;
 		const auto bracket = BoundsIn(a_side.bracket, side);
@@ -178,12 +195,34 @@ namespace Roles::TraderSide
 		if (!bracket || !origin || !down || !(down->y - origin->y > 0.0)) {
 			return std::nullopt;
 		}
-		Room room{ FrameIn(a_movie, side), *bracket, bracket->top, {}, 1.0 / (down->y - origin->y), {} };
+		Room room;
+		room.frame = FrameIn(a_movie, side);
+		room.bracket = *bracket;
+		room.top = bracket->top;
+		room.unit = 1.0 / (down->y - origin->y);
 		Take(room, a_side);
-		if (const auto bar = BoundsIn(a_bar, side)) {
-			room.taken.push_back(*bar);
+		room.bar = BoundsIn(a_bar, side);
+		if (room.bar) {
+			room.taken.push_back(*room.bar);
+		}
+
+		// Every menu's movie is drawn the full height of the screen, so the
+		// row's share of the screen is the same share of this movie's.
+		const auto shown = a_movie.GetVisibleFrameRect();
+		if (a_row && shown.y2 > shown.y1) {
+			const auto at = FromStage(a_movie, side, Point{ 0.0, shown.y1 + (*a_row * (shown.y2 - shown.y1)) });
+			room.row = at && std::isfinite(at->y) ? std::optional{ at->y } : std::nullopt;
 		}
 		return room;
+	}
+
+	bool AddAbove(Side& a_side, Value& a_clip)
+	{
+		auto& side = a_side.side;
+		auto  parent = Flash::Member(side, "parent"sv);
+		Value index;
+		return parent.IsDisplayObject() && parent.Invoke("getChildIndex", &index, &side, 1) && Flash::IsAnyNumber(index) &&
+		       Flash::Call(parent, "addChildAt", std::array{ a_clip, Value(Flash::AsNumber(index) + 1.0) });
 	}
 
 	void AroundOf(Side& a_side, Room& a_room)

@@ -2,11 +2,14 @@
 
 #include "Core/Settings/Settings.h"
 #include "Core/TraceLog/TraceLog.h"
+#include "UI/Flash.h"
+#include "UI/Hud/HudParts/HudParts.h"
 #include "UI/Roles/Roles.h"
 
 #include <array>
 #include <cmath>
 #include <optional>
+#include <string>
 #include <string_view>
 
 namespace HudCondition
@@ -105,12 +108,12 @@ namespace HudCondition
 
 	// Draws the track and moves the word for a_drawn, the spot at
 	// a_size, then draws the level and places the bar again. At Percent
-	// it moves the 2 lines instead, see Table.h.
+	// it moves the 1 line or the 2 lines instead, see Table.h.
 	void FrameListener::LayOut(Value& a_readout, const Spot& a_drawn, const HudParts::Readout::Size& a_size)
 	{
 		HudParts::Readout::SetTrack(a_readout, a_drawn.line.width, a_drawn.deep);
 		if (tabled && table) {
-			PutTable(a_readout, label, *table, a_drawn.wordX, a_drawn.wordY);
+			PutTable(a_readout, label, *table, a_drawn.wordX, a_drawn.wordY, One());
 			laidRise = table->rise;
 			lined.reset();
 		} else {
@@ -126,5 +129,97 @@ namespace HudCondition
 			TraceLog::Line("menu", "HUD CND bar sized to {:g} times its length and {:g} times its thickness, {:.0f} across and {:.1f} deep",
 				a_size.length, a_size.thickness, a_drawn.line.width, a_drawn.deep);
 		}
+	}
+
+	// -------------------------------------------------------------------
+	// Bar or percent, 1 line or 2
+	// -------------------------------------------------------------------
+
+	// A change of form shows the bar's boxes, or hides them and shows the
+	// word whatever its switch says, and forgets everything laid out, so
+	// this frame reads and lays the new form out. A bar takes the word back
+	// from the 1 line, and a percent starts in 2 lines until told.
+	void FrameListener::SwitchForm(Value& a_readout, bool a_number)
+	{
+		tabled = a_number;
+		HudParts::Readout::ShowBar(a_readout, !a_number);
+		if (a_number) {
+			HudParts::Readout::ShowLabel(a_readout, true);
+		} else {
+			HideTable(a_readout);
+		}
+		if (oneLine) {
+			WriteWord(a_readout);
+		}
+		oneLine = false;
+		saidLines = {};
+		wordShown.reset();
+		laidOut.reset();
+		shownPercent = NOT_DRAWN;
+		shownMark = HudParts::Readout::Mark{};
+		table.reset();
+		shownNumber.clear();
+		lined.reset();
+		lineAlpha = -1.0;
+		placedFrom.reset();
+		lastReading.reset();
+	}
+
+	// Tells the percent's form every frame from the facts now, see Lines in
+	// Table.h, the divider's from the last measure. A change of form lays
+	// the percent out again and reads the HUD again next frame, so its spot
+	// is chosen for the new box. The 1 line going to the ammo line or away
+	// from it is laid out again too, since its size may change. The trace
+	// says the form and why on every change of either.
+	void FrameListener::FollowLines(Value& a_readout)
+	{
+		const LinesFacts facts{ .moved = ShiftNow() != Shift{},
+			.alone = standsAlone,
+			.noCounter = counterPart && !HudParts::HasRounds(*counterPart),
+			.between = between,
+			.fits = fits,
+			.asked = Settings::bHudBarPercentOneLine.GetValue() };
+		const auto lines = LinesFor(facts);
+		const auto moves = lines.one != oneLine || (lines.one && lines.atLine != atLine);
+		atLine = lines.atLine;
+		if (lines.why != saidLines) {
+			saidLines = lines.why;
+			TraceLog::Line("menu", "HUD CND percent in {:s}, {:s}", lines.one ? "1 line" : "2 lines", lines.why);
+		}
+		if (!moves) {
+			return;
+		}
+		oneLine = lines.one;
+		if (!oneLine) {
+			WriteWord(a_readout);
+		}
+		laidOut.reset();
+		shownNumber.clear();
+		lined.reset();
+		placedFrom.reset();
+		lastReading.reset();
+	}
+
+	// Writes the percent under the word when it changes, as the weapon's
+	// card writes it, or the 1 line in the word's field.
+	void FrameListener::DrawNumber(Value& a_readout)
+	{
+		const auto tenths = HudParts::Weapon::Tenths(&Settings::iWeaponCnd);
+		const auto number = tenths && table ? HudParts::Readout::PercentText(*tenths) : std::string{};
+		if (number == shownNumber) {
+			return;
+		}
+		shownNumber = number;
+		lined.reset();
+		if (number.empty()) {
+			return;
+		}
+		if (const auto* one = One()) {
+			WriteOneLine(a_readout, *tenths, one->scale);
+		} else {
+			WriteNumber(a_readout, number);
+		}
+		const auto word = Flash::String(HudParts::Readout::LabelOf(a_readout), "text"sv);
+		TraceLog::Line("menu", "HUD CND drawn as {:s}", oneLine ? word : word + " " + number);
 	}
 }

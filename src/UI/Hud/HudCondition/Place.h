@@ -12,7 +12,7 @@
 // on screen. And that place kept for the MCM page. Private to this folder.
 namespace HudCondition
 {
-	// Whether Weapon CND is at Percent now, which draws the 2 lines of
+	// Whether Weapon CND is at Percent now, which draws the lines of
 	// Table.h and no bar.
 	[[nodiscard]] bool AsNumber();
 
@@ -108,7 +108,7 @@ namespace HudCondition
 
 	// Keeps a_placed's box for the MCM page, see Measured, with what it was
 	// worked out from: a_spot as chosen, a_size, a_label and a_frame, the
-	// visible frame, and a_number, true for the 2 lines of Percent. The trace
+	// visible frame, and a_number, true for the lines of Percent. The trace
 	// says the box when a whole HUD unit changes.
 	void Keep(const Placed& a_placed, const Spot& a_spot, const HudParts::Readout::Size& a_size, const HudParts::Readout::LabelPlace& a_label,
 		const Flash::Box& a_frame, bool a_number);

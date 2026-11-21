@@ -273,7 +273,8 @@ namespace HudCondition
 	}
 
 	std::optional<Choice> Choose(Scaleform::GFx::Movie& a_movie, Roles::Value& a_counter, const Roles::Value& a_readout,
-		std::optional<bool> a_ownVisible, const HudParts::Readout::LabelPlace& a_label, bool a_flipped)
+		std::optional<bool> a_ownVisible, const HudParts::Readout::LabelPlace& a_label, bool a_flipped,
+		const std::optional<HudParts::Readout::LabelPlace>& a_lines)
 	{
 		const auto shape = Roles::Hud::Divider(a_movie, a_counter, a_ownVisible);
 		if (!shape) {
@@ -315,6 +316,13 @@ namespace HudCondition
 		around.flipped = !a_flipped;
 		const auto other = chosen().spot;
 		choice.spot.turn = Turn{ other.line, other.onDivider, other.wordX, other.wordY, other.clear };
+
+		// The 2 lines are tested at their own place as WithWord tests a word
+		// there. Percent is never flipped.
+		const auto& place = around.divider.place;
+		choice.between = !why && Between(around.divider.box, around.numbers);
+		choice.fits = a_lines && OnScreen(around, WholeLine(*a_lines).Moved(place.x, place.y)) && !Covered(a_lines->letters.Moved(place.x, place.y), keepOff);
+		choice.lineRight = around.frame ? std::optional{ around.frame->right - place.x } : std::nullopt;
 		return choice;
 	}
 

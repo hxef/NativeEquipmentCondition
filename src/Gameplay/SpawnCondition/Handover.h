@@ -9,7 +9,8 @@
 
 // An item changing hands: the mark the 3 handover calls raise, what a stack
 // that changes hands gets, a trader's loose item, in LooseItem.cpp,
-// SpawnDupe's copies and the spawn container scope. Private to this folder.
+// SpawnDupe's copies, the item a station makes and the spawn container
+// scope. Private to this folder.
 namespace SpawnCondition
 {
 	// What a handover in progress on this thread moves: the item, who gets it,
@@ -56,6 +57,11 @@ namespace SpawnCondition
 	// written to it.
 	[[nodiscard]] bool UnderSpawnDupe();
 
+	// Whether a_object is the item a cooking or chemistry station is handing
+	// the player on this thread. Lives only for that one call to
+	// TESObjectREFR::AddInventoryItem.
+	[[nodiscard]] bool MadeAtBench(const RE::TESBoundObject* a_object);
+
 	// Keeps the pickup mark down on this thread while alive. The game moves
 	// an item whose own placed reference names a spawn container from the
 	// world into that container through the pickup road, and that item is
@@ -69,7 +75,7 @@ namespace SpawnCondition
 		Scoped<bool> _mark;
 	};
 
-	// Patches the 3 handover calls and SpawnDupe's copy, and says so in the
-	// log.
+	// Patches the 3 handover calls, the station's call and SpawnDupe's copy,
+	// and says so in the log.
 	void InstallHandover();
 }

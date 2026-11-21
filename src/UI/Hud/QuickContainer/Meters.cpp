@@ -236,6 +236,14 @@ namespace QuickContainer
 			}
 			meter.SetMember("name"sv, Value(METER_NAME));
 			meter.SetMember("visible"sv, Value(false));
+			// A Shape with nothing drawn in it reads 1e29 wide and high in this
+			// Scaleform, hidden or not, and so does every clip above it. A HUD
+			// mod that measures the quick container then puts its own card at
+			// the screen's edge. So each meter gets its empty frame at Show's
+			// height before it joins its row. Its percent stays NOT_DRAWN, so
+			// the first Apply still draws it.
+			Draw(meter, 0, false, false);
+			meter.SetMember("y"sv, Value(METER_CENTER_Y));
 			row.Invoke("addChild", std::array{ meter });
 		}
 

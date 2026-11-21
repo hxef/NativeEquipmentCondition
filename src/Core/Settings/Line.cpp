@@ -113,6 +113,8 @@ namespace Settings
 			&iApparelFigureCnd,
 			&fPipboyBarThickness,
 			&fPenaltyMarkWidth,
+			&fTraderSignX,
+			&fTraderSignY,
 		};
 
 		// Every switch in NEC.ini's order, for a lookup by id.
@@ -139,6 +141,7 @@ namespace Settings
 			&bHudBarStandsAlone,
 			&bHudBarShowsWord,
 			&bHudBarFlipped,
+			&bHudBarPercentOneLine,
 			&bPowerArmorBarShowsWord,
 			&bPowerArmorBarFlipped,
 			&bPickupBarShowsWord,
@@ -157,7 +160,7 @@ namespace Settings
 		Live<bool>* const AFTER_VENDOR_REPAIR[]{ &bTraderSign, &bSpareRepair, &bLockSpares, &bRepairBoxColumns, &bRepairBoxGains };
 		Live<bool>* const AFTER_ITEM_CARD_CND[]{ &bCardWearRate, &bPowerArmorCardCnd };
 		Live<bool>* const AFTER_FOOD_SPOILS[]{ &bFridgeIcon };
-		Live<bool>* const AFTER_HUD_BAR[]{ &bHudBarHidesWithCounter, &bHudBarStandsAlone, &bHudBarShowsWord, &bHudBarFlipped };
+		Live<bool>* const AFTER_HUD_BAR[]{ &bHudBarHidesWithCounter, &bHudBarStandsAlone, &bHudBarShowsWord, &bHudBarFlipped, &bHudBarPercentOneLine };
 		Live<bool>* const AFTER_POWER_ARMOR_BAR[]{ &bPowerArmorBarShowsWord, &bPowerArmorBarFlipped };
 		Live<bool>* const AFTER_PICKUP_BAR[]{ &bPickupBarShowsWord, &bPickupBarFlipped, &bPickupPenaltyMark, &bQuickContainerBarFlipped };
 		Live<bool>* const AFTER_ITEM_CARD_BAR[]{ &bItemCardBarFlipped };

@@ -14,10 +14,12 @@
 #include <cstdint>
 #include <optional>
 #include <string>
+#include <string_view>
 
 // The frame listener's class. Frame.cpp follows the counter, draws the level
 // and fades the bar every frame, Layout.cpp lays the bar out at its spot and
-// size and places it on screen. Private to this folder.
+// size, places it on screen and tells a percent's 1 line from 2. Private to
+// this folder.
 namespace HudCondition
 {
 	// Where the bar goes with no divider measured: 44 wide, with its
@@ -45,11 +47,17 @@ namespace HudCondition
 		void Follow(const std::optional<Choice>& a_choice);
 		void LayOut(Scaleform::GFx::Value& a_readout, const Spot& a_drawn, const HudParts::Readout::Size& a_size);
 		void SwitchForm(Scaleform::GFx::Value& a_readout, bool a_number);
+		void FollowLines(Scaleform::GFx::Value& a_readout);
 		void DrawNumber(Scaleform::GFx::Value& a_readout);
 
-		// The box the word, or at Percent the 2 lines, fill from the bar's
-		// right end, which the spot is chosen for and held by.
+		// The box the word, or at Percent the 1 line or the 2 lines, fill
+		// from the bar's right end, which the spot is held by and, but for
+		// the 1 line away from the ammo line, chosen for.
 		[[nodiscard]] const HudParts::Readout::LabelPlace& Words() const;
+
+		// The 1 line as drawn now, at the ammo line or away from it, nothing
+		// at Bar or in 2 lines.
+		[[nodiscard]] const OneLine* One() const;
 
 		std::optional<Clock::time_point> lastFrame;
 		std::optional<Clock::time_point> lastReading;
@@ -107,7 +115,7 @@ namespace HudCondition
 		// Found along with the HUD menu, see HudParts::AmmoCounterPart.
 		const RE::HUDAmmoCounter* counterPart = nullptr;
 
-		// The form last seen. tabled is true while the readout shows the 2
+		// The form last seen. tabled is true while the readout shows the
 		// lines of Percent, see Table.h: the rows read last, the table laid
 		// out for them, the word's rise it was put at, the number last
 		// written, and whether the line box was last shown and how faded.
@@ -119,5 +127,17 @@ namespace HudCondition
 		std::string                  shownNumber;
 		std::optional<bool>          lined;
 		double                       lineAlpha = -1.0;
+
+		// At Percent, whether the percent reads in 1 line, CND 87.4%, and
+		// whether it stands at the divider, see Lines in Table.h, from the
+		// divider's facts the last measure at Percent gave, and the screen's
+		// edge the 1 line there is sized by. saidLines is the why the trace
+		// last gave.
+		bool                  oneLine = false;
+		bool                  atLine = false;
+		bool                  between = false;
+		bool                  fits = false;
+		std::optional<double> lineRight;
+		std::string_view      saidLines;
 	};
 }

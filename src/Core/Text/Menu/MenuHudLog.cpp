@@ -21,6 +21,7 @@ namespace Text
 			{ &Settings::bHudBarStandsAlone, HUD_BAR_ALONE_NAME, HUD_BAR_ALONE_HELP },
 			{ &Settings::bHudBarShowsWord, HUD_BAR_WORD_NAME, HUD_BAR_WORD_HELP },
 			{ &Settings::bHudBarFlipped, HUD_BAR_FLIPPED_NAME, HUD_BAR_FLIPPED_HELP },
+			{ &Settings::bHudBarPercentOneLine, HUD_BAR_ONE_LINE_NAME, HUD_BAR_ONE_LINE_HELP },
 			{ &Settings::fPowerArmorBarX, POWER_ARMOR_BAR_X_NAME, POWER_ARMOR_BAR_X_HELP },
 			{ &Settings::fPowerArmorBarY, POWER_ARMOR_BAR_Y_NAME, POWER_ARMOR_BAR_Y_HELP },
 			{ &Settings::fPowerArmorBarLength, POWER_ARMOR_BAR_LENGTH_NAME, POWER_ARMOR_BAR_LENGTH_HELP },
@@ -43,6 +44,8 @@ namespace Text
 			{ &Settings::bPipboyBarFlipped, PIPBOY_BAR_FLIPPED_NAME, PIPBOY_BAR_FLIPPED_HELP },
 			{ &Settings::fPenaltyMarkWidth, PENALTY_MARK_WIDTH_NAME, PENALTY_MARK_WIDTH_HELP },
 			{ &Settings::bPenaltyMarkAsLine, PENALTY_MARK_LINE_NAME, PENALTY_MARK_LINE_HELP },
+			{ &Settings::fTraderSignX, TRADER_SIGN_X_NAME, TRADER_SIGN_X_HELP },
+			{ &Settings::fTraderSignY, TRADER_SIGN_Y_NAME, TRADER_SIGN_Y_HELP },
 			{ &LOG_LEVEL, LOG_LEVEL_NAME, LOG_LEVEL_HELP },
 		};
 	}

@@ -70,6 +70,7 @@ enum class Part : std::uint8_t
 	kBenchMessages,    // the bench place that also shows NEC's 2 messages when MODIFY opens nothing
 	kTraderKeys,       // the barter place that keeps REPAIR's key out of other buttons' combinations
 	kFertilizerNeeds,  // the chemistry station place that shows what NEC's Fertilizer row needs
+	kTraderSignBack,   // the barter place that lets the trader repair sign take the list's background, and its own colour when moved
 	kTotal,
 };
 

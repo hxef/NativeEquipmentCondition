@@ -223,6 +223,7 @@ namespace
 		{ &Settings::bHudBarStandsAlone, &Settings::iWeaponCnd, HUD_BARS },
 		{ &Settings::bHudBarShowsWord, &Settings::iWeaponCnd, HUD_BARS },
 		{ &Settings::bHudBarFlipped, &Settings::iWeaponCnd, HUD_BARS },
+		{ &Settings::bHudBarPercentOneLine, &Settings::iWeaponCnd, HUD_BARS },
 		{ &Settings::fPowerArmorBarX, &Settings::iWeaponCnd, HUD_BARS },
 		{ &Settings::fPowerArmorBarY, &Settings::iWeaponCnd, HUD_BARS },
 		{ &Settings::fPowerArmorBarLength, &Settings::iWeaponCnd, HUD_BARS },
@@ -245,6 +246,10 @@ namespace
 		{ &Settings::bQuickContainerBarFlipped, &Settings::iQuickContainerCnd, LOOT_METERS },
 		{ &Settings::fItemCardBarThickness, &Settings::iItemCardCnd, CARD_CND },
 		{ &Settings::bItemCardBarFlipped, &Settings::iItemCardCnd, CARD_CND },
+		// The sign's 2 sliders sit in Trader repairs' block, as the sign's
+		// switch does.
+		{ &Settings::fTraderSignX, &Settings::bVendorRepair, TRADER_REPAIRS },
+		{ &Settings::fTraderSignY, &Settings::bVendorRepair, TRADER_REPAIRS },
 	};
 
 	// Every setting changes something, no list names kNone or a piece twice,

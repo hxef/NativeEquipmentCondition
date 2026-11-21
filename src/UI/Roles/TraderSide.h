@@ -30,6 +30,25 @@ namespace Roles::TraderSide
 		Box                bracket;
 		double             top = 0.0;  // the frame's top: the highest top of the shown bracket and of the covering parts that start no higher than the title
 
+		// Whether the bracket shows, so the engine paints the list's see
+		// through background over its box. A movie that paints its own
+		// hides it.
+		bool backed = false;
+
+		// The list's frame lines while they show and cover the bracket:
+		// the side's child the movie's script draws them in, by vanilla's
+		// name, which the UI replacers seen so far keep. Nothing in a movie
+		// that draws none.
+		std::optional<Box> lines;
+
+		// The bar's bounds, nothing when they do not read.
+		std::optional<Box> bar;
+
+		// The top of the row the button bar is drawn in, nothing when it
+		// does not read. Vanilla's bar is drawn by another menu, see
+		// Bars::DrawnTop, while the movie's own bar stays hidden lower down.
+		std::optional<double> row;
+
 		// What the side draws, 1 box per part: a text field by its letters,
 		// a clip by its parts 1 level down, anything else by its bounds, and
 		// the bar's bounds. A child of the side hidden or faded to 0 counts
@@ -52,11 +71,24 @@ namespace Roles::TraderSide
 		// px left, right and above it and of a_under under it meets nothing
 		// taken, and with a_around nothing around either.
 		[[nodiscard]] bool Fits(const Box& a_box, double a_gap, double a_under, bool a_around = false) const;
+
+		// Whether a_box and a gap of a_gap stage px under it end above the
+		// bar's row, however far across the bar reaches, so a part under the
+		// list stays above it. The bar's own top where the row does not read,
+		// and true when neither does.
+		[[nodiscard]] bool OverBar(const Box& a_box, double a_gap) const;
 	};
 
-	// a_bar counts as taken when its bounds read. Nothing when the
-	// bracket's box or the side's scale does not read as numbers.
-	[[nodiscard]] std::optional<Room> RoomOf(Scaleform::GFx::Movie& a_movie, Side& a_side, Value a_bar = {});
+	// a_bar counts as taken and is kept when its bounds read. a_row is the
+	// share of the screen's height where the bar is drawn, from
+	// Bars::DrawnTop. Nothing when the bracket's box or the side's scale does
+	// not read as numbers.
+	[[nodiscard]] std::optional<Room> RoomOf(Scaleform::GFx::Movie& a_movie, Side& a_side, Value a_bar = {}, std::optional<double> a_row = std::nullopt);
+
+	// Puts a_clip in the side's parent right above the side, so it draws over
+	// what the side draws over and under what draws over the side. False when
+	// the side has no parent or the movie refuses a step.
+	bool AddAbove(Side& a_side, Value& a_clip);
 
 	// Fills a_room's around, a few reads per part, so it is asked only for
 	// a place outside the side.

@@ -125,6 +125,9 @@ namespace
 		{ "pickup", { kWornLoot } },
 		{ "handover", { kWornLoot } },
 		{ "actor handover", { kWornLoot } },
+		// Filed under Quest rewards arrive new with no piece, so losing it is
+		// told only in NEC.log, and made gear then rolls like loot.
+		{ "made at a bench", {} },
 		{ "spawndupe", { kConsoleNew } },
 		{ "new reference", { kWorldLoot } },
 		{ "drop", { kWorldLoot } },
@@ -224,6 +227,9 @@ namespace
 		// lets the place's line say the key rule does nothing while Trader
 		// repairs is off.
 		{ "barter input", { kTraderRepairs } },
+		// Nor here, see Part::kTraderSignBack. Without it the sign shows as
+		// a line above the list, at its own place.
+		{ "barter screen delete", { kTraderRepairs } },
 		// A restock falls due only as the screen opens, for both kinds of
 		// chest. A trade and an investment build the screen again with the
 		// game paused, so what was due has already restocked.

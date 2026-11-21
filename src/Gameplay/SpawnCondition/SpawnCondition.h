@@ -39,7 +39,8 @@ namespace SpawnCondition
 	// which covers a trader's showpiece, placed once by a quest script and
 	// never restocked. An essential character's weapons and armor, a
 	// companion's for example, arrive new, and so does the outfit the
-	// player's own record puts on them in a new game.
+	// player's own record puts on them in a new game. Weapons and armor the
+	// player makes at a cooking or chemistry station arrive new too.
 	//
 	// Food that spoils rolls in the same band, as the share of its time it
 	// starts with, see FoodSpoil::SetStart. Only while food spoiling is on.
@@ -47,12 +48,12 @@ namespace SpawnCondition
 	// Band.cpp is the roll itself, either side of an item's middle or in a
 	// trader's band, Roll.cpp a stack's first condition and its split,
 	// Food.cpp food's starting freshness, Handover.cpp an item changing
-	// hands, LooseItem.cpp a trader's loose item, World.cpp loot lying in the
-	// world, Look.cpp the first look at it, Guards.cpp KeepCarried and what
-	// marks a save being applied, a console command, a script giving an item
-	// and a restock, Owners.cpp the owner checks, and Trace.cpp what the trace
-	// log is told about a stack. Their headers are what the folder's files
-	// share.
+	// hands and the item a station makes, LooseItem.cpp a trader's loose
+	// item, World.cpp loot lying in the world, Look.cpp the first look at it,
+	// Guards.cpp KeepCarried and what marks a save being applied, a console
+	// command, a script giving an item and a restock, Owners.cpp the owner
+	// checks, and Trace.cpp what the trace log is told about a stack. Their
+	// headers are what the folder's files share.
 	void Install();
 
 	// Whether KeepCarried may run from the MCM: no main menu, no loading

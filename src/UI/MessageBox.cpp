@@ -55,6 +55,16 @@ namespace MessageBox
 		}
 	}
 
+	void Drawn(const RE::IMessageBoxCallback* a_callback)
+	{
+		const std::scoped_lock l{ g_askedLock };
+		for (auto& asked : g_asked) {
+			if (asked.callback == a_callback) {
+				asked.drawn = true;
+			}
+		}
+	}
+
 	namespace
 	{
 		// Notes that a_callback's box cancels by button a_last.
@@ -194,6 +204,14 @@ namespace MessageBox
 		std::erase_if(g_asked, [this](const Asked& a_asked) { return a_asked.callback == this; });
 	}
 
+	void Callback::operator()(std::uint8_t a_button)
+	{
+		if (const auto asked = Find(this)) {
+			TraceLog::Line("menu", "NEC's box {:d} is answered by row {:d} of {:d}", asked->number, a_button, asked->last + 1);
+		}
+		Answer(a_button);
+	}
+
 	// -------------------------------------------------------------------
 	// Asking
 	// -------------------------------------------------------------------
@@ -206,11 +224,16 @@ namespace MessageBox
 			return;
 		}
 
+		// The Cancel key presses the last button. Most vanilla boxes
+		// give it no button, -1.
+		const auto wayOut = static_cast<std::int32_t>(a_buttons.size() - 1);
+		CancelsBy(a_callback, static_cast<std::uint8_t>(wayOut));
+
 		// A box that never opens returns the cancel button, so whatever waits
 		// on the answer can carry on.
 		auto* messages = RE::MessageMenuManager::GetSingleton();
 		if (!messages) {
-			(*a_callback)(static_cast<std::uint8_t>(a_buttons.size() - 1));
+			(*a_callback)(static_cast<std::uint8_t>(wayOut));
 			delete a_callback;
 			return;
 		}
@@ -220,10 +243,6 @@ namespace MessageBox
 			buttons.emplace_back().Set(button.c_str(), 0);
 		}
 
-		// The Cancel key presses the last button. Most vanilla boxes
-		// give it no button, -1.
-		const auto wayOut = static_cast<std::int32_t>(a_buttons.size() - 1);
-		CancelsBy(a_callback, static_cast<std::uint8_t>(wayOut));
 		if (a_start == NO_ROW || (a_start > 0 && a_start < a_buttons.size())) {
 			StartAt(a_callback, a_start, static_cast<std::uint32_t>(a_buttons.size()));
 		}

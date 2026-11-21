@@ -3,131 +3,45 @@
 #include "Core/Settings/Settings.h"
 #include "Core/TraceLog/TraceLog.h"
 #include "UI/Flash.h"
+#include "UI/Repair/VendorRepair/SignBack.h"
 #include "UI/Repair/VendorRepair/SignBlock.h"
 #include "UI/Repair/VendorRepair/SignLine.h"
+#include "UI/Repair/VendorRepair/SignMove.h"
+#include "UI/Repair/VendorRepair/SignPlace.h"
 #include "UI/Repair/VendorRepair/Stock.h"
 #include "UI/Roles/Roles.h"
 #include "UI/Roles/TraderSide.h"
 
 #include <algorithm>
 #include <array>
-#include <cmath>
 #include <format>
 #include <optional>
 #include <string>
 #include <string_view>
 #include <utility>
-#include <vector>
 
 namespace VendorRepair::Sign
 {
 	namespace
 	{
-		using Scaleform::GFx::Value;
-		using Flash::Box;
-
-		// Where the block and the line are kept while they are out of the
-		// display list, as the barter screen's class is dynamic, see
-		// HINT_MEMBER in Button.cpp.
-		constexpr std::string_view SIGN_MEMBER = "NECTraderSign"sv;
-		constexpr std::string_view LINE_MEMBER = "NECTraderSignLine"sv;
-
-		// What the player sees when the movie lacks a part the block, the
+		// What the player sees when the movie lacks a part the panel, the
 		// line or both need.
 		constexpr auto NO_SIGN = "the barter screen shows no trader repair sign"sv;
 		constexpr auto ONLY_ABOVE = "the trader repair sign shows only above the trader's list"sv;
 		constexpr auto ONLY_UNDER = "the trader repair sign shows only under the trader's list"sv;
 
-		// -------------------------------------------------------------------
-		// The place
-		// -------------------------------------------------------------------
-
-		using Roles::TraderSide::Room;
-
-		// The block's spot: its right edge on the bracket's, its top a gap
-		// under the bracket. Nothing when its box does not read as numbers.
-		[[nodiscard]] std::optional<Spot> Under(Value& a_sign, const Room& a_room)
-		{
-			const auto own = Roles::BoundsIn(a_sign, a_sign);
-			const auto scale = Flash::Number(a_sign, "scaleX"sv);
-			if (!own || !std::isfinite(scale) || !(scale > 0.0)) {
-				return std::nullopt;
-			}
-			const auto top = a_room.bracket.bottom + GAP * a_room.unit;
-			Spot       spot;
-			spot.x = a_room.bracket.right - own->right * scale;
-			spot.y = top - own->top * scale;
-			spot.box = Box{ spot.x + own->left * scale, top, a_room.bracket.right, top + (own->bottom - own->top) * scale };
-			return spot;
-		}
-
-		// Puts a_clip on a_side at a_spot.
-		void Put(Value& a_side, Value& a_clip, const Spot& a_spot)
-		{
-			Flash::Set(a_clip, "x"sv, Value(a_spot.x));
-			Flash::Set(a_clip, "y"sv, Value(a_spot.y));
-			if (!Flash::Member(a_clip, "parent"sv).IsDisplayObject()) {
-				Flash::Call(a_side, "addChild", std::array{ a_clip });
-			}
-		}
-
-		// Takes a_clip out of the display list, if it is in, never only
-		// hidden, so the side's colour never stretches over another part.
-		void Off(Value& a_clip)
-		{
-			if (auto parent = Flash::Member(a_clip, "parent"sv); parent.IsDisplayObject()) {
-				Flash::Call(parent, "removeChild", std::array{ a_clip });
-			}
-		}
-
-		// A form of the line and whether it goes left of the frame.
-		struct Pick
-		{
-			std::size_t form = 0;
-			bool        beside = false;
-		};
-
-		// The line's forms for this screen, from Draw, the one its field holds
-		// now and where, and the title row as Place last saw it while the
-		// line was shown or left out for want of room, for TitleRowChanged.
-		std::vector<Form>       g_forms;
-		std::optional<Pick>     g_held;
+		// The title row as Place last saw it while the line was shown or left
+		// out for want of room, for TitleRowChanged.
 		std::optional<TitleRow> g_row;
 
-		// Takes the screen's block and line out and forgets them.
-		void TakeOut(RE::BarterMenu& a_menu)
+		// Takes the screen's panel, line and moved sign out and forgets them,
+		// with every target, a_how saying why.
+		void TakeOut(RE::BarterMenu& a_menu, std::string_view a_how)
 		{
-			g_forms.clear();
-			g_held.reset();
 			g_row.reset();
-			if (!a_menu.menuObj.IsObject()) {
-				return;
-			}
-			for (const auto member : { SIGN_MEMBER, LINE_MEMBER }) {
-				if (auto clip = Flash::Member(a_menu.menuObj, member); clip.IsDisplayObject()) {
-					Off(clip);
-					a_menu.menuObj.SetMember(member, Value());
-				}
-			}
-		}
-
-		// Where the sign was last put on this screen, as the trace says it,
-		// so it says each change once.
-		constexpr auto SHOWS_UNDER = "shows under the trader's list"sv;
-		constexpr auto LEFT_OUT = "is left out, as it has no room under or above the trader's list or left of its frame"sv;
-		// A screen with no line clip tries only the place under the list.
-		constexpr auto LEFT_OUT_UNDER = "is left out, as it has no room under the trader's list"sv;
-		// A screen with no block tries only the line's places.
-		constexpr auto LEFT_OUT_LINE = "is left out, as it has no room above the trader's list or left of its frame"sv;
-
-		std::optional<std::string_view> g_placed;
-
-		void Say(RE::BarterMenu* a_menu, std::string_view a_where)
-		{
-			if (g_placed != a_where) {
-				g_placed = a_where;
-				TraceLog::Line("menu", "{:s}'s sign {:s}", Trader(a_menu), a_where);
-			}
+			SignBack::Drop(a_menu, a_how);
+			Clear(a_menu);
+			ForgetMoved(a_menu);
 		}
 
 		// "weapons 100%, armor 80%", or "no repairs".
@@ -152,7 +66,7 @@ namespace VendorRepair::Sign
 		if (!a_menu || !a_menu->uiMovie || !a_menu->menuObj.IsObject()) {
 			return;
 		}
-		TakeOut(*a_menu);
+		TakeOut(*a_menu, COMES_OUT);
 		if (!Settings::NecOn()) {
 			TraceLog::Line("menu", "All of NEC is off, so {:s}'s screen shows no sign", Trader(a_menu));
 			return;
@@ -177,27 +91,41 @@ namespace VendorRepair::Sign
 			return;
 		}
 
-		// The block needs the card's scale and rows, the line only the
-		// trader's title, so a movie that refuses the one still shows the
-		// other. When both fail, the trace names only the block's part, so 1
+		// The panel needs NEC's delete hook and the title's size, the line
+		// only the title, so a movie that refuses the one still shows the
+		// other. When both fail, the trace names only the panel's part, so 1
 		// line says no sign shows.
-		const auto* card = a_menu->itemCard_mc.get();
-		const auto  scale = card && card->IsDisplayObject() ? Flash::Number(*card, "scaleX"sv) : 0.0;
-		auto        missing = "item card"sv;
-		auto        sign = std::isfinite(scale) && scale > 0.0 ? Build(movie, *ceilings, scale, missing) : Value();
-		auto        line = LineOf(movie, *side, *ceilings);
-		if (sign.IsDisplayObject()) {
-			a_menu->menuObj.SetMember(SIGN_MEMBER, sign);
+		auto                 line = LineOf(movie, *side, *ceilings);
+		std::optional<Panel> panel;
+		if (SignBack::Held()) {
+			auto missing = "Sprite class"sv;
+			panel = Build(movie, *side, *ceilings, missing);
+			if (!panel) {
+				Roles::Noted(movie, missing, line ? ONLY_ABOVE : NO_SIGN);
+			}
 		} else {
-			Roles::Noted(movie, missing, line ? ONLY_ABOVE : NO_SIGN);
+			TraceLog::Once("menu", "NEC does not hold the barter screen delete, so {:s}", ONLY_ABOVE);
+		}
+		Clips kept;
+		Forms forms;
+		if (panel) {
+			kept.sign = panel->clip;
+			kept.back = panel->back;
 		}
 		if (line) {
-			a_menu->menuObj.SetMember(LINE_MEMBER, line->field);
-			g_forms = std::move(line->forms);
-		} else if (sign.IsDisplayObject()) {
+			kept.line = line->field;
+			if (line->frame) {
+				kept.frame = line->frame->shape;
+				forms.frame = line->frame->box;
+			}
+			forms.forms = std::move(line->forms);
+		} else if (panel) {
 			Roles::Noted(movie, "trader's title"sv, ONLY_UNDER);
+		} else if (!SignBack::Held()) {
+			Roles::Noted(movie, "trader's title"sv, NO_SIGN);
 		}
-		if (sign.IsDisplayObject() || line) {
+		Keep(*a_menu, kept, std::move(forms));
+		if (panel || line) {
 			TraceLog::Line("menu", "{:s}'s sign reads {:s}", Trader(a_menu), Reads(*ceilings));
 		}
 	}
@@ -207,67 +135,50 @@ namespace VendorRepair::Sign
 		if (!a_menu || !a_menu->uiMovie || !a_menu->menuObj.IsObject()) {
 			return;
 		}
-		auto sign = Flash::Member(a_menu->menuObj, SIGN_MEMBER);
-		auto line = Flash::Member(a_menu->menuObj, LINE_MEMBER);
+		auto clips = ClipsOf(*a_menu);
 		g_row.reset();
-		if (!sign.IsDisplayObject() && !line.IsDisplayObject()) {
+		if (!clips.sign.IsDisplayObject() && !clips.line.IsDisplayObject()) {
 			return;
 		}
 		// A script can turn the sign off while the screen is open.
 		if (!Settings::bTraderSign.GetValue()) {
-			TakeOut(*a_menu);
+			TakeOut(*a_menu, COMES_OUT);
 			return;
 		}
-		auto side = Roles::TraderSide::Find(*a_menu);
-		auto room = side && a_bar ? Roles::TraderSide::RoomOf(*a_menu->uiMovie, *side, a_bar->bar) : std::nullopt;
+		// The engine's bar is drawn by another menu, a bar of the movie's own
+		// where it sits.
+		auto       side = Roles::TraderSide::Find(*a_menu);
+		const auto row = a_bar && !a_bar->convention ? Roles::Bars::DrawnTop(*a_menu) : std::nullopt;
+		auto       room = side && a_bar ? Roles::TraderSide::RoomOf(*a_menu->uiMovie, *side, a_bar->bar, row) : std::nullopt;
 		if (!room) {
-			Off(sign);
-			Off(line);
+			PanelOff(*a_menu, clips, COMES_OUT);
+			Off(clips.line);
+			Off(clips.frame);
+			MovedOff(*a_menu, COMES_OUT);
 			return;
 		}
 
-		// The block under the list first, where the movie could build it,
-		// then the line above it.
-		if (const auto under = sign.IsDisplayObject() ? Under(sign, *room) : std::nullopt; under && room->Fits(under->box, GAP, GAP)) {
-			Put(side->side, sign, *under);
-			Off(line);
-			Say(a_menu, SHOWS_UNDER);
-			return;
-		}
-		Off(sign);
-		if (!line.IsDisplayObject()) {
-			Say(a_menu, LEFT_OUT_UNDER);
-			return;
-		}
-
-		// The form shown last while it still fits where it is, so a title row
-		// that grows and shrinks back leaves the sign as it is, else the first
-		// that fits above the list, then the first left of the frame, where
-		// the rest of the screen is read only when it is needed.
+		// The form's own place is the spot Choose gives. Show puts it there,
+		// or PlaceMoved where the player moved it.
 		auto       around = false;
-		const auto fits = [&](const Pick& a_pick) {
-			if (a_pick.beside && !around) {
-				Roles::TraderSide::AroundOf(*side, *room);
-				around = true;
-			}
-			return room->Fits(SpotOf(g_forms[a_pick.form], *room, a_pick.beside).box, GAP, a_pick.beside ? GAP_UNDER_LEFT : GAP, a_pick.beside);
-		};
-		auto pick = g_held && fits(*g_held) ? g_held : std::nullopt;
-		for (const auto beside : { false, true }) {
-			for (std::size_t i = 0; !pick && i < g_forms.size(); i++) {
-				if (fits(Pick{ i, beside })) {
-					pick = Pick{ i, beside };
+		const auto choice = Choose(*side, *room, clips, around);
+		if (const auto by = MoveOf(*room)) {
+			if (const auto row = PlaceMoved(*a_menu, *side, *room, clips, choice, *by)) {
+				if (*row) {
+					g_row = RowOf(*side, around);
 				}
+				return;
 			}
 		}
-		if (pick && ((g_held && g_held->form == pick->form) || Flash::Set(line, "htmlText"sv, Value(g_forms[pick->form].html.c_str())))) {
-			g_held = pick;
-			ColorLine(line, *side);
-			Put(side->side, line, SpotOf(g_forms[pick->form], *room, pick->beside));
-			Say(a_menu, pick->beside ? g_forms[pick->form].saidLeft : g_forms[pick->form].said);
-		} else {
-			Off(line);
-			Say(a_menu, sign.IsDisplayObject() ? LEFT_OUT : LEFT_OUT_LINE);
+		MovedOff(*a_menu, COMES_OUT);
+		const auto where = choice ? Show(*a_menu, *side, clips, *choice, side->side) : std::nullopt;
+		if (where) {
+			Say(a_menu, *where);
+			if (!choice->pick) {
+				return;
+			}
+		} else if (!LeftOut(*a_menu, *room, clips)) {
+			return;
 		}
 		// Read after the line went in or out, as the side counts it, with each
 		// part's look while the place left of the frame is in play.
@@ -277,9 +188,9 @@ namespace VendorRepair::Sign
 	void Forget(RE::BarterMenu* a_menu)
 	{
 		if (a_menu) {
-			TakeOut(*a_menu);
+			TakeOut(*a_menu, CLOSES);
 		}
-		g_placed.reset();
+		ForgetSaid();
 	}
 
 	bool Shown(RE::BarterMenu* a_menu)
@@ -287,10 +198,9 @@ namespace VendorRepair::Sign
 		if (!a_menu) {
 			return false;
 		}
-		return std::ranges::any_of(std::array{ SIGN_MEMBER, LINE_MEMBER }, [&](std::string_view a_member) {
-			const auto clip = Flash::Member(a_menu->menuObj, a_member);
-			return clip.IsDisplayObject() && Flash::Member(clip, "parent"sv).IsDisplayObject();
-		});
+		const auto clips = ClipsOf(*a_menu);
+		return std::ranges::any_of(std::array{ &clips.sign, &clips.line },
+			[](const Scaleform::GFx::Value* a_clip) { return a_clip->IsDisplayObject() && Flash::Member(*a_clip, "parent"sv).IsDisplayObject(); });
 	}
 
 	bool TitleRowChanged(const Scaleform::GFx::Movie* a_movie)

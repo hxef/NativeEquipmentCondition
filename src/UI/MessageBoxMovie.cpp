@@ -10,13 +10,16 @@
 #include <atomic>
 #include <cmath>
 #include <cstdint>
+#include <format>
 #include <limits>
 #include <optional>
+#include <string>
 #include <vector>
 
 // What NEC does in the message box movie: the row its box starts on, its
-// background kept solid under a message box mod, and the room its rows have,
-// all by 1 frame listener.
+// background kept solid under a message box mod, the room its rows have, and
+// a guard that lets a press answer its box only once the box is drawn, all by
+// 1 frame listener.
 namespace MessageBox
 {
 	namespace
@@ -58,6 +61,81 @@ namespace MessageBox
 				TraceLog::Line("menu", "NEC's box {:d} put its highlight on row {:d}", a_asked.number, a_asked.start);
 			}
 			return true;
+		}
+
+		// -------------------------------------------------------------------
+		// Presses before NEC's box is drawn
+		// -------------------------------------------------------------------
+
+		// The movie answers its box by calling this function of its code
+		// object by name, on a click, on Enter and on a message box mod's own
+		// keys. The guard takes that name and keeps the game's function under
+		// the second one.
+		constexpr auto CODE_OBJECT = "BGSCodeObj"sv;
+		constexpr auto PRESS = "onButtonPress"sv;
+		constexpr auto GAME_PRESS = "NEC_onButtonPress"sv;
+
+		// Answers NEC's box only once the box has been drawn. No hand can
+		// press a box it never saw, so a press before that was meant for the
+		// box before it. The message box mod answers Escape as the key is let
+		// go, after NEC's own answer to the same key, and that press would
+		// land on the box NEC's answer opened. Every other box, and every
+		// press on a drawn box, goes to the game's function as before. NEC's
+		// own Tab and Escape do not come through here, so they still close a
+		// box that is never drawn.
+		class PressGuard final : public Scaleform::GFx::FunctionHandler
+		{
+		public:
+			void Call(const Params& a_params) override
+			{
+				// The guard lives only in the message box movie, which the
+				// menu owns, so the menu is there whenever the movie calls it.
+				const auto* ui = RE::UI::GetSingleton();
+				const auto  menu = ui ? ui->GetMenu<RE::MessageBoxMenu>() : nullptr;
+				if (!menu || menu->uiMovie.get() != a_params.movie) {
+					return;
+				}
+				const auto* message = menu->GetRuntimeData().currentMessage;
+				const auto  asked = message ? Find(message->callback.get()) : std::nullopt;
+				if (asked && !asked->drawn) {
+					const auto* row = a_params.argCount > 0 ? a_params.args : nullptr;
+					TraceLog::Line("menu", "NEC's box {:d} drops a press on row {:s} made before the box was drawn", asked->number,
+						row && Flash::IsAnyNumber(*row) ? std::format("{:.0f}", Flash::AsNumber(*row)) : std::string{ "(none)" });
+					return;
+				}
+				auto code = Flash::Member(menu->menuObj, CODE_OBJECT);
+				if (code.IsObject()) {
+					code.Invoke(GAME_PRESS.data(), a_params.retVal, a_params.args, a_params.argCount);
+				}
+			}
+		};
+
+		// Lives as long as the plugin, see Flash.h.
+		PressGuard g_pressGuard;
+
+		// The movie that refused the guard, so that is said once. Only the
+		// message box's own thread comes here.
+		const Scaleform::GFx::Movie* g_unguarded = nullptr;
+
+		// Puts the guard in the game function's place, once per movie.
+		void Guard(RE::MessageBoxMenu& a_menu, Scaleform::GFx::Movie& a_movie)
+		{
+			auto code = Flash::Member(a_menu.menuObj, CODE_OBJECT);
+			if (!code.IsObject() || code.HasMember(GAME_PRESS) || &a_movie == g_unguarded) {
+				return;
+			}
+			const auto press = Flash::Member(code, PRESS);
+			if (press.IsUndefined()) {
+				return;
+			}
+			Value guard;
+			a_movie.CreateFunction(&guard, &g_pressGuard);
+			if (!Flash::Set(code, GAME_PRESS, press) || !Flash::Set(code, PRESS, guard)) {
+				g_unguarded = &a_movie;
+				TraceLog::Line("menu", "The message box movie refused NEC's press guard, so a press made before NEC's box is drawn can answer it");
+				return;
+			}
+			TraceLog::Line("menu", "NEC guards the message box movie's presses, so a press made before NEC's box is drawn answers nothing");
 		}
 
 		// -------------------------------------------------------------------
@@ -118,8 +196,9 @@ namespace MessageBox
 
 		// Called by the message box movie every frame. Only NEC's own box is
 		// looked at, so while NEC has no box up or waiting, a frame costs a
-		// check of an empty list. A box with a starting row gets its
-		// highlight there first.
+		// check of an empty list. The press guard joins the movie on the first
+		// frame NEC has a box up or waiting. A box with a starting row gets
+		// its highlight there first.
 		//
 		// The message box mod puts a background of its own in the vanilla
 		// background's place and styles it as each box shows, a few frames
@@ -145,11 +224,22 @@ namespace MessageBox
 				// a freed box.
 				const auto* ui = RE::UI::GetSingleton();
 				const auto  menu = ui ? ui->GetMenu<RE::MessageBoxMenu>() : nullptr;
-				if (!menu || menu->uiMovie.get() != a_params.movie || !menu->GetRuntimeData().currentMessage) {
+				if (!menu || menu->uiMovie.get() != a_params.movie) {
+					return;
+				}
+				Guard(*menu, *a_params.movie);
+				if (!menu->GetRuntimeData().currentMessage) {
 					return;
 				}
 				const auto* callback = menu->GetRuntimeData().currentMessage->callback.get();
 				const auto  asked = Find(callback);
+
+				// The first frame the box shows on. A hand needs many frames
+				// to answer a box it sees, so its press, however quick, comes
+				// after this and answers the box.
+				if (asked && !asked->drawn && Flash::Opacity(menu->menuObj) > 0.0) {
+					Drawn(callback);
+				}
 				if (asked && asked->start > 0 && MoveHighlight(*menu, *asked)) {
 					StartAt(callback, 0, 0);
 				}

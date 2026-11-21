@@ -11,6 +11,7 @@
 #include "UI/Repair/VendorRepair/Quote.h"
 #include "UI/Repair/VendorRepair/Retry.h"
 #include "UI/Repair/VendorRepair/Sign.h"
+#include "UI/Repair/VendorRepair/SignBack.h"
 #include "UI/Repair/VendorRepair/Stock.h"
 #include "UI/Repair/VendorRepair/Upkeep.h"
 
@@ -236,8 +237,9 @@ namespace VendorRepair
 
 		// Refreshes REPAIR whenever a message box opens or closes, since the
 		// game opens its trade and INVEST boxes over the barter screen without
-		// a call NEC hooks. Only queued here, since the game sends this while
-		// it works on its menus.
+		// a call NEC hooks. A frame after a barter screen closes, lets go of a
+		// sign target its screen left, see SignBack::ForgetOld. Only queued
+		// here, since the game sends this while it works on its menus.
 		class BoxSink : public RE::BSTEventSink<RE::MenuOpenCloseEvent>
 		{
 		public:
@@ -246,14 +248,15 @@ namespace VendorRepair
 		private:
 			RE::BSEventNotifyControl ProcessEvent(const RE::MenuOpenCloseEvent& a_event, RE::BSTEventSource<RE::MenuOpenCloseEvent>*) override
 			{
-				if (a_event.menuName == RE::MessageBoxMenu::MENU_NAME) {
-					if (const auto* tasks = F4SE::GetTaskInterface()) {
-						tasks->AddTask([] {
-							if (auto* menu = OpenBarter(); menu && HighlightLive()) {
-								Refresh(menu);
-							}
-						});
-					}
+				const auto* tasks = F4SE::GetTaskInterface();
+				if (tasks && a_event.menuName == RE::MessageBoxMenu::MENU_NAME) {
+					tasks->AddTask([] {
+						if (auto* menu = OpenBarter(); menu && HighlightLive()) {
+							Refresh(menu);
+						}
+					});
+				} else if (tasks && !a_event.opening && a_event.menuName == RE::BarterMenu::MENU_NAME) {
+					tasks->AddTask([] { SignBack::ForgetOld(); });
 				}
 				return RE::BSEventNotifyControl::kContinue;
 			}
@@ -286,6 +289,10 @@ namespace VendorRepair
 		// Noted only when the 4 can go in. Trader repairs work without it, so
 		// another mod there turns nothing off, see Part::kTraderKeys.
 		_ShouldHandleEvent = CallPatch::PatchSlot(input, { 0x01, 0x01 }, ShouldHandleEventHk, "barter input", Part::kTraderKeys, true, &g_inputLink).value_or(0);
+
+		// The same for the delete, which only the sign's panel and the sign
+		// the player moves need.
+		SignBack::Install();
 
 		REX::INFO("Traders who restock {:d} rows of weapons with one row in {:d} a weapon, "
 				  "or {:d} rows of weapons, ammunition, grenades and mines with one row in {:d} one of those, "

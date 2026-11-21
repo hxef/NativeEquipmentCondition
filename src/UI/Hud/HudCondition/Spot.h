@@ -68,11 +68,23 @@ namespace HudCondition
 	// divider with its word past its end. key is the same without its
 	// numbers, so NEC.log says a spot and a kind of reason once however the
 	// measured numbers change.
+	//
+	// between is true while the divider is upright, a bar fits on its own
+	// place and it runs between the 2 numbers, and fits while the 2 lines of
+	// Percent Choose was given cover nothing and stay on screen at their own
+	// place past its end. Neither reads the word Choose places, so neither
+	// changes as the percent goes from 2 lines to 1, see Lines in Table.h.
+	// lineRight is the screen's right edge from the readout's origin at the
+	// divider's place, nothing while the counter is off screen, which the 1
+	// line at the ammo line is sized by.
 	struct Choice
 	{
-		Spot        spot;
-		std::string said;
-		std::string key;
+		Spot                  spot;
+		std::string           said;
+		std::string           key;
+		bool                  between = false;
+		bool                  fits = false;
+		std::optional<double> lineRight = std::nullopt;
 	};
 
 	// How far the word moves from its place past the end of a bar a_length
@@ -124,14 +136,18 @@ namespace HudCondition
 	// none free the bar keeps the divider's place, as before NEC looked for
 	// a spot, its word placed as on a divider that fits, and NEC.log says
 	// so. Widgets a mod adds in another layer of the movie are not avoided.
+	//
+	// a_lines are the 2 lines of Percent, which the choice's fits tests,
+	// nothing at Bar.
 	[[nodiscard]] std::optional<Choice> Choose(Scaleform::GFx::Movie& a_movie, Roles::Value& a_counter, const Roles::Value& a_readout,
-		std::optional<bool> a_ownVisible, const HudParts::Readout::LabelPlace& a_label, bool a_flipped);
+		std::optional<bool> a_ownVisible, const HudParts::Readout::LabelPlace& a_label, bool a_flipped,
+		const std::optional<HudParts::Readout::LabelPlace>& a_lines);
 
 	// The box the bar and its word fill from the bar's right end, which the
 	// HUD holds whole on screen. It reaches down to the bottom of the word's
 	// line, since letters in some languages, Chinese for one, reach below
 	// the baseline. Without a_bar, at Percent, it is the word's box alone,
-	// the 2 lines of Table.h.
+	// the 1 line or the 2 lines of Table.h.
 	[[nodiscard]] Flash::Box Filled(const Spot& a_spot, const HudParts::Readout::LabelPlace& a_label, bool a_bar = true);
 
 	// a_spot with its bar a_size times its own length and thickness, about

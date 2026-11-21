@@ -29,8 +29,8 @@
 // HudBar.cpp, and 1 for the Jams start at row, fJamChance:Jams. MCM counts
 // 30 for each page on its own, so a feature switch whose rows hide while it
 // is off takes a number its page leaves free, which other pages use too. So
-// do the other hides. On the Repairs page, where 14, 15, 16, 18 and 19 are
-// taken, iRepairLock:Lock takes 20 for Perk lock and Lock spares too,
+// do the other hides. On the Repairs page, where 14, 15, 16, 18, 19 and 26
+// are taken, iRepairLock:Lock takes 20 for Perk lock and Lock spares too,
 // iRepairSupplies:Supplies 21 for Supplies only
 // from, fBenchCostMult:Paid 22 for the 8 rows of paid repairs,
 // bWorkbenchRepair:Levels 23 for Repair box opens on and
@@ -40,7 +40,8 @@
 // iPowerArmorCnd:Shown 29 and iPickupCnd:Shown 30 for the rows each place
 // needs while it shows, iWeaponCnd:Bar 1, iPowerArmorCnd:Bar 2,
 // iPickupCnd:Bar 3, iApparelFigureCnd:Bar 4, iQuickContainerCnd:Bar 5 and
-// iItemCardCnd:Bar 7 for the rows only a bar needs, iItemCardCnd:Shown 21 for
+// iItemCardCnd:Bar 7 for the rows only a bar needs, iWeaponCnd:Percent 9 for
+// Weapon CND percent in 1 line, iItemCardCnd:Shown 21 for
 // the 3 item card switches, bPenaltyMarkAsLine:Notches 6 for Penalty mark as
 // a line, bPickupPenaltyMark:Marks 8 for Pickup CND penalty mark,
 // iCndDecimals:Numbers 26 for CND decimals and bCndColumn:Offered 16 for CND

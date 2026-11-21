@@ -6,36 +6,36 @@
 #include <optional>
 
 // The sign on the barter screen that shows how far the trader repairs each
-// kind, in 1 of 2 forms, as a child of the trader's side, so it moves with
-// that side and the engine colours it with the side. Private to this folder.
+// kind, as a child of the trader's side, so it moves with that side and the
+// engine colours it with the side. How a form goes in and out is in
+// SignPlace.h, and the place the player moves it to in SignMove.h. Private to
+// this folder.
 //
-// The block goes under the trader's list: "Repairs up to" over 1 row per kind,
-// "Weapons 100%", or "No repairs" alone, made of the movie's own item card
-// rows at the card's scale. Its right edge is on the bracket's, its top 8
-// stage px under it.
+// The panel goes under the trader's list in the list's own frame style:
+// "REPAIRS UP TO" in its top frame line, then 1 row per kind, "Weapons 100%",
+// then its bottom line, or "NO REPAIRS" over 1 empty row, with the engine's
+// own see through list background behind it, see SignBlock.h and SignBack.h.
+// Its right frame end is on the list frame's, its top 8 stage px under the
+// bracket, and it ends above the bar's row. It shows only where the side
+// shows the engine's background and the list's frame lines, and while NEC
+// holds the barter screen's delete, which drops the background target.
 //
-// The line goes above the list where the block has no room or the movie
-// cannot build it: the same words in 1 text field right of the trader's
-// title, ending on the bracket's right edge, see SignLine.h. Too wide for 1
-// line, it takes 2 rows. Where that row holds none of these forms, the line
-// goes left of the trader's frame in the same forms and order, its rows at
-// the same height, ending a gap left of the bracket's left edge.
-//
-// A form shows only where the screen holds all of it and a gap of 8 stage px
-// around it meets nothing the side or the bar draws, and left of the frame
-// nothing else the screen draws either, else the sign is left out. Left of
-// the frame the gap under it is 5, see SignLine.h. A form not shown is taken
-// out of the side, never only hidden, so the side's colour never stretches
-// over another part.
-//
-// Left of the frame the line stays a child of the side, since the engine
-// draws a part only inside the box of a part it colours, and the side's box
-// grows to hold it. That box draws no background, the brackets have their
-// own, and over the gap it meets only parts the engine colours in the same
-// HUD colour, as the item card and the caps transfer box.
+// The line goes above the list where the panel has no room or the screen
+// cannot show it: the same words in 1 text field right of the trader's
+// title, ending on the bracket's right edge, see SignLine.h. Where the movie
+// hides the engine's background and draws the list's frame lines, the 1 line
+// form first tries a frame of those lines around it, its bottom line 8 stage
+// px above the list's frame. Too wide for 1 line, it takes 2 rows. Where that
+// row holds none of these forms, the line goes left of the trader's frame in
+// the same plain forms and order, its rows at the same height, ending a gap
+// left of the bracket's left edge. A form shows only where the screen holds
+// all of it and a gap of 8 stage px around it meets nothing the side or the
+// bar draws, and left of the frame nothing else the screen draws either, else
+// the sign is left out. Left of the frame the gap under it is 5, see
+// SignLine.h.
 namespace VendorRepair::Sign
 {
-	// Builds the block and the line again for a trader's side just rebuilt,
+	// Builds the panel and the line again for a trader's side just rebuilt,
 	// each where the movie allows it, kept off the screen until Place puts
 	// one there. With Trader repairs, the sign or bNecOn switched off it only
 	// takes the last one out, and counts nothing.
@@ -52,7 +52,7 @@ namespace VendorRepair::Sign
 	// opening or closing, since the next screen can reuse the movie.
 	void Forget(RE::BarterMenu* a_menu);
 
-	// Whether the block or the line is on the barter screen now, so the
+	// Whether the panel or the line is on the barter screen now, so the
 	// repair question leaves out what the sign already says.
 	[[nodiscard]] bool Shown(RE::BarterMenu* a_menu);
 
@@ -61,7 +61,7 @@ namespace VendorRepair::Sign
 	// change that row without moving the highlight, when a tab's title grows
 	// or a part shows there. Asked each frame: a few reads while the line
 	// shows or waits for room, 3 more reads per part of the side while the
-	// place left of the frame is in play, and false at once while the block
+	// place left of the frame is in play, and false at once while the panel
 	// shows.
 	[[nodiscard]] bool TitleRowChanged(const Scaleform::GFx::Movie* a_movie);
 }

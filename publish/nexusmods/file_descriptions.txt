@@ -1,5 +1,7 @@
-1.9.3
-v1.9.3 shows on each item card how fast it wears or spoils, beside its CND, such as 87% (x1.3) for a gun that wears 1.3 times as fast as an ordinary one. Energy weapons now wear against energy weapons, and an MCM slider sets suppressor wear.
+2.0.0
+v2.0.0 is the final version. It adds Pip-Boy repairs, MCM presets, cheap servicing of well kept gear, perk locked repairs, item card wear rates, better loose loot in rich areas, CND bar penalty marks and more!
+
+Thank you for all your support!
 
 OG/AE only
 

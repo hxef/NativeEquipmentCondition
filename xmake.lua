@@ -9,7 +9,7 @@ end
 
 -- set project constants
 set_project("NativeEquipmentCondition")
-set_version("1.9.3")
+set_version("2.0.0")
 set_license("GPL-3.0")
 set_languages("c++23")
 set_warnings("allextra")

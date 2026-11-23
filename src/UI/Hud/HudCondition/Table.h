@@ -89,9 +89,9 @@ namespace HudCondition
 	//
 	// a_lineRight is the screen's right edge from the readout's origin, see
 	// Choice in Spot.h. Right of the clip number the 1 line at the ammo line
-	// runs past it on a 16:9 screen, in vanilla, FallUI and DEF_UI alike, so
-	// it is drawn smaller there until it ends on screen, never under 0.6 of
-	// the word's size. Its left edge and baseline stay the word's.
+	// runs past it on a 16:9 screen, in vanilla and HUD mods alike, so it
+	// is drawn smaller there until it ends on screen, never under 0.6 of the
+	// word's size. Its left edge and baseline stay the word's.
 	[[nodiscard]] std::optional<Table> LayTable(Scaleform::GFx::Movie& a_movie, Scaleform::GFx::Value& a_readout, const HudParts::Readout::LabelPlace& a_word, const Rows& a_rows,
 		const std::optional<Table>& a_last, std::optional<double> a_lineRight);
 

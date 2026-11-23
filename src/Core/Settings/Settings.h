@@ -26,7 +26,7 @@
 // the change in NEC_custom.ini, or in the picked preset's file for a gameplay
 // setting, see UI/Mcm/Mcm.h and Core/Presets/Presets.h.
 //
-// A setting added here, in Features.h or in Tuning.h is added
+// A setting added here, in Features.h, Tuning.h or Hud.h is added
 // to publish/NEC.ini too, with a line saying what it does, and to EVERY_SWITCH
 // or NUMBERS in Line.cpp in NEC.ini's order. A setting left out of
 // those is missing from the Settings line, and neither the MCM page nor a
@@ -76,7 +76,7 @@ namespace Settings
 	};
 }
 
-// Cnd, CndStep and Gate. Features.h and Tuning.h make the CND steppers.
+// Cnd, CndStep and Gate. Features.h and Hud.h make the CND steppers.
 #include "Core/Settings/Cnd.h"
 
 namespace Settings
@@ -190,6 +190,7 @@ namespace Settings
 // [Balance] and [HUD]. Each setting joins the setting store as it is made, so
 // they are included here, between [Loot] and [Log], in NEC.ini's order.
 #include "Core/Settings/Tuning.h"
+#include "Core/Settings/Hud.h"
 
 namespace Settings
 {

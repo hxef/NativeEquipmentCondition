@@ -75,7 +75,8 @@ namespace VendorRepair::Sign
 
 	// Puts a_choice's form in a_into, the side or the moved sign's clip, at
 	// its spot and takes the rest out. Gives where the trace says the form
-	// shows, or nothing when the line's field refuses its form's text.
+	// shows, or nothing when the line's field refuses its form's text or the
+	// frame its lines.
 	std::optional<std::string_view> Show(RE::BarterMenu& a_menu, Roles::TraderSide::Side& a_side, Clips& a_clips, const Choice& a_choice,
 		Scaleform::GFx::Value& a_into);
 

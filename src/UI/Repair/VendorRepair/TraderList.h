@@ -10,17 +10,22 @@
 
 // The trader list, for a player or a patch that sets by hand how far a trader
 // repairs a kind of gear. A file in Data/F4SE/Plugins/NEC/Traders/, such as
-// MyTraders.ini, has 1 kind a line in the form Core/ListFiles.h gives, with
-// the kind and how far after it:
+// MyTraders.ini, has lines in the form Core/ListFiles.h gives, each naming 1
+// trader with 1 or more kinds after it, each kind with how far, split by
+// commas:
 //
 //   Fallout4.esm|1679CE = armor 90
+//   Fallout4.esm|002CB9 = weapons 100, armor none
 //
 // The kinds are weapons, armor and clothing, and how far is 30 to 100 in steps
-// of 10, none or measured. The ID is the trader's ref ID, their base ID or the
-// faction they trade under, and a line of the first beats one of the second,
-// which beats one of the third. measured is a level like any other, so a ref
-// ID set to measured keeps what the trader's stock gives even when their
-// faction has a line. NEC ships an example file there that changes nothing.
+// of 10, none or measured. Each kind of a line counts on its own, so a wrong
+// one is skipped and the rest are kept. A kind set again for the same ID, in
+// the same line or another, keeps the first. The ID is the trader's ref ID,
+// their base ID or the faction they trade under, and a line of the first
+// beats one of the second, which beats one of the third. measured is a level
+// like any other, so a ref ID set to measured keeps what the trader's stock
+// gives even when their faction has a line. NEC ships an example file there
+// that changes nothing.
 //
 // Most traders' refs are not loaded when the list is read, since the game
 // loads them with their cell, so a line whose form is not loaded is taken for
@@ -31,7 +36,7 @@
 // to this folder.
 namespace VendorRepair::TraderList
 {
-	// What 1 line sets, and where.
+	// What 1 kind of a line sets, and where.
 	struct Set
 	{
 		// The level, 0 for no repair, or nothing for measured.

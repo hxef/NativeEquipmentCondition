@@ -7,8 +7,9 @@
 #include "UI/Hud/QuickContainer/Draw.h"
 #include "UI/Hud/QuickContainer/RowLayout.h"
 #include "UI/Hud/QuickContainer/Rows.h"
-#include "UI/Roles/Hud.h"
+#include "UI/Roles/Roles.h"
 
+#include <algorithm>
 #include <array>
 #include <cstdint>
 #include <limits>
@@ -57,6 +58,7 @@ namespace QuickContainer
 		saidFlipped = false;
 		saidForm.reset();
 		saidNumbers = false;
+		saidAtRight.reset();
 	}
 
 	// a_afterRedraw says the rows have just redrawn, which is when the
@@ -109,13 +111,30 @@ namespace QuickContainer
 				TraceLog::Line("menu", "Quick container rows show CND as numbers");
 			}
 		}
+		const auto atRight = Settings::bQuickContainerCndAtRight.GetValue();
+		if (saidAtRight != atRight) {
+			saidAtRight = atRight;
+			TraceLog::Line("menu", "Quick container CND stands {:s}", atRight ? "at each row's right edge"sv : "after each row's name"sv);
+		}
+		// A row waiting to redraw would undo anything changed now. The render
+		// listener comes back to it, and its room as last measured counts.
+		std::array<bool, MAX_ROWS> measured{};
 		for (std::size_t i = 0; i < size; i++) {
-			// A row waiting to redraw would undo anything changed now.
-			// The render listener comes back to it.
-			if (!a_afterRedraw && Flash::Bool(rows[i], "bIsDirty"sv)) {
-				continue;
+			measured[i] = (a_afterRedraw || !Flash::Bool(rows[i], "bIsDirty"sv)) && Measure(a_movie, rows[i], i, shown[i], a_afterRedraw);
+		}
+
+		// Every row's CND ends at the smallest room end of the rows with a
+		// CND, see Place.
+		std::optional<double> edge;
+		for (std::size_t i = 0; i < size; i++) {
+			if (const auto room = drawn[i].room; room && readings && (*readings)[i].percent >= 0) {
+				edge = std::min(edge.value_or(*room), *room);
 			}
-			Apply(a_movie, rows[i], i, shown[i], readings ? std::optional{ (*readings)[i] } : std::nullopt, asNumber, a_afterRedraw);
+		}
+		for (std::size_t i = 0; i < size; i++) {
+			if (measured[i]) {
+				Apply(a_movie, rows[i], i, readings ? std::optional{ (*readings)[i] } : std::nullopt, asNumber, edge, a_afterRedraw);
+			}
 		}
 	}
 

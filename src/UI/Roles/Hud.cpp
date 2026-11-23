@@ -1,6 +1,7 @@
 #include "UI/Roles/Hud.h"
 
 #include "UI/Flash.h"
+#include "UI/Roles/QuickRow.h"
 
 #include <algorithm>
 #include <cmath>
@@ -315,9 +316,8 @@ namespace Roles::Hud
 			return a_clip.IsDisplayObject() && Flash::Opacity(a_clip) > 0.0;
 		}
 
-		// A clip's right edge in a_space's units. A clip holding others counts
-		// by its shown children only, since it may keep hidden ones of other
-		// widths.
+		// A clip's right edge in a_space's units. One that holds others goes by
+		// its shown children, since it may keep hidden ones of other widths.
 		[[nodiscard]] std::optional<double> RightEdge(Value& a_clip, Value& a_space)
 		{
 			if (Flash::Number(a_clip, "numChildren"sv) > 0.0) {
@@ -344,7 +344,7 @@ namespace Roles::Hud
 		std::optional<double> end;
 		auto                  others = false;
 		for (auto& child : Flash::Children(a_row)) {
-			const auto span = Flash::String(child, "name"sv).starts_with("NEC_"sv) ? std::nullopt : SpanOf(child);
+			const auto span = QuickRow::OfName(a_row, child) ? SpanOf(child) : std::nullopt;
 			if (span && OnScreen(a_movie, child)) {
 				end = std::max(end.value_or(span->end), span->end);
 				others = others || Flash::String(child, "name"sv) != NAME_FIELD;

@@ -96,8 +96,9 @@ namespace Roles::Hud
 
 	// Where the shown text of a quick container row ends: the largest
 	// x + getLineMetrics(0).x + getLineMetrics(0).width over its shown text
-	// fields that are not empty and not NEC's own, whose names start with
-	// NEC_, the text's own width and not the field's. A name drawn in 2
+	// fields that are not empty and draw the row's name, as
+	// Roles::QuickRow::OfName tells them, the text's own width and not the
+	// field's. A column a HUD mod adds is no part of it. A name drawn in 2
 	// fields, or with its own field hidden, still has an end. With no such
 	// field, an empty name ends where vanilla's name field puts its empty
 	// line. This is the row's own measure, and every quick container movie

@@ -53,6 +53,7 @@ namespace Pipboy
 			bool                           broken;
 			std::optional<float>           rate;
 			std::optional<Condition::Kind> kind;
+			std::optional<float>           compared = std::nullopt;  // the equipped item's rate, see SetComparedWearRate
 		};
 
 		// The marks by number, and each marked stack's current number. An
@@ -309,16 +310,26 @@ namespace Pipboy
 		}
 	}
 
-	std::optional<float> SelectedWearRate(Scaleform::GFx::Movie& a_movie)
+	Selected SelectedEntry(Scaleform::GFx::Movie& a_movie)
 	{
 		const auto mark = SelectedMark(a_movie);
-		return mark ? mark->rate : std::nullopt;
+		return mark ? Selected{ mark->rate, mark->compared, mark->kind } : Selected{};
 	}
 
-	std::optional<Condition::Kind> SelectedPenaltyKind(Scaleform::GFx::Movie& a_movie)
+	// A mark with a kind is gear that wears, see MarkEntry's caller.
+	std::optional<float> GearWearRate(std::uint32_t a_node)
 	{
-		const auto mark = SelectedMark(a_movie);
-		return mark ? mark->kind : std::nullopt;
+		const std::scoped_lock lock{ g_marksLock };
+		const auto             mark = g_marks.find(a_node);
+		return mark != g_marks.end() && mark->second.kind ? mark->second.rate : std::nullopt;
+	}
+
+	void SetComparedWearRate(std::uint32_t a_node, std::optional<float> a_rate)
+	{
+		const std::scoped_lock lock{ g_marksLock };
+		if (const auto mark = g_marks.find(a_node); mark != g_marks.end()) {
+			mark->second.compared = a_rate;
+		}
 	}
 
 	void OnMovieLoaded(Scaleform::GFx::Movie& a_movie, std::string_view a_file)

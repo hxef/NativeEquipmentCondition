@@ -4,11 +4,13 @@
 
 #include <optional>
 #include <string>
+#include <string_view>
 
 // The 2 forms of WriteWearRate in WearRate.cpp that measure the CND row: the
 // rate in the number's own field, and in the cell beside it, and the write
-// that turns a change the movie printed beside it. The CND row's bar takes
-// its measures from here too. Private to this folder.
+// that turns a change the movie printed beside it, with the tests of what
+// that cell shows. The CND row's bar takes its measures from here too.
+// Private to this folder.
 namespace ItemCard
 {
 	// At least this much stays clear between the label's last letter and
@@ -51,4 +53,23 @@ namespace ItemCard
 	// shrink of that field stays in charge of its size. False when the
 	// field has no look to read, with nothing written.
 	bool WriteKeepingLook(Scaleform::GFx::Value& a_field, const std::string& a_text);
+
+	// Whether a cell's a_text is a rate NEC wrote, (x1.3), x262, x1.3 + or
+	// x.01 +, and not a difference the movie prints itself, such as +8.5.
+	[[nodiscard]] bool IsWearRateText(std::string_view a_text);
+
+	// a_text, a change the movie printed with its sign, (-0.1) or +0.2,
+	// with that sign set to a_sign, + or -: (-0.1) and + give (+0.1).
+	// Nothing for any other text, marks such as - - or a rate, and for a
+	// change that already shows a_sign, so a second render never turns it
+	// back. Spaces round the change stay where they are.
+	[[nodiscard]] std::optional<std::string> TurnedChange(std::string_view a_text, char a_sign);
+
+	// Whether a_text, the cell beside the number, can be what the movie
+	// makes of the change a_change NEC fed: nothing, marks such as + +, a
+	// rate NEC wrote, or the change cut after 1 decimal as replacers print
+	// it, with either sign and in brackets or not. Any other number is the
+	// movie's own figure, such as a replacer's difference to the card it
+	// compares with, and stays as the movie wrote it.
+	[[nodiscard]] bool ShowsFedChange(std::string_view a_text, float a_change);
 }

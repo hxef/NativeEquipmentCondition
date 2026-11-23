@@ -94,6 +94,10 @@ namespace Text
 	// "Weapons", a kind's name on the sign, which prints the level beside it.
 	[[nodiscard]] std::string SignKind(Trade a_trade);
 
+	// "Wpn", a kind's short name, for the sign as 1 line where the names
+	// leave it too wide.
+	[[nodiscard]] std::string SignKindShort(Trade a_trade);
+
 	// A crafting perk rank's sentence, see CraftingPerks.h and en.ini: the
 	// discount a_off on weapons, armor or both by a_weapons and a_armor, joined
 	// to the repair lock's start a_from, written as 70.5 or 50 (empty is any

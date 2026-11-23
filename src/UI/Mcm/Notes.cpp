@@ -37,13 +37,14 @@
 // bWorkbenchRepair:Repairs 24 for Workbench repair cost and the Repair with
 // spares section, and iKeepSpareMods:Choose 25 for Spare mod rows. On the UI
 // page, where 17 to 20, 22 to 25 and 27 are taken, iWeaponCnd:Shown takes 28,
-// iPowerArmorCnd:Shown 29 and iPickupCnd:Shown 30 for the rows each place
-// needs while it shows, iWeaponCnd:Bar 1, iPowerArmorCnd:Bar 2,
-// iPickupCnd:Bar 3, iApparelFigureCnd:Bar 4, iQuickContainerCnd:Bar 5 and
-// iItemCardCnd:Bar 7 for the rows only a bar needs, iWeaponCnd:Percent 9 for
-// Weapon CND percent in 1 line, iItemCardCnd:Shown 21 for
-// the 3 item card switches, bPenaltyMarkAsLine:Notches 6 for Penalty mark as
-// a line, bPickupPenaltyMark:Marks 8 for Pickup CND penalty mark,
+// iPowerArmorCnd:Shown 29, iPickupCnd:Shown 30 and iQuickContainerCnd:Shown
+// 10 for the rows each place needs while it shows, iWeaponCnd:Bar 1,
+// iPowerArmorCnd:Bar 2, iPickupCnd:Bar 3, iApparelFigureCnd:Bar 4,
+// iQuickContainerCnd:Bar 5 and iItemCardCnd:Bar 7 for the rows only a bar
+// needs, iWeaponCnd:Percent 9 for Weapon CND percent in 1 line,
+// iItemCardCnd:Shown 21 for the 3 item card switches,
+// bPenaltyMarkAsLine:Notches 6 for Penalty mark as a line,
+// bPickupPenaltyMark:Marks 8 for Pickup CND penalty mark,
 // iCndDecimals:Numbers 26 for CND decimals and bCndColumn:Offered 16 for CND
 // column in UI replacer lists.
 // Each note is worked out from SettingLinks and CallPatch's losses, so a

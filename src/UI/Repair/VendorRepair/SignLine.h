@@ -1,6 +1,5 @@
 #pragma once
 
-#include "Core/Plugin.h"
 #include "UI/Flash.h"
 #include "UI/Repair/VendorRepair/Stock.h"
 #include "UI/Roles/TraderSide.h"
@@ -13,35 +12,33 @@
 
 // The sign as 1 text field beside the trader's title, or left of the
 // trader's frame where that row has no room, for a screen with no room or no
-// panel under their list: "Repairs up to  Weapons 100%  Armor 80%", or 2 rows
-// of it where 1 line is too wide. Where the movie hides the engine's list
-// background and draws the list's frame lines, the 1 line form can show in a
+// panel under their list: "Repairs up to  Weapons 100%  Armor 80%", the same
+// with short kind names where that is too wide, "Wpn 100%  Arm 80%", kinds of
+// 1 level sharing 1 number, "Wpn/Arm 100%", or 2 rows with the full names
+// where that is too wide too. Where the movie hides the engine's list
+// background and draws the list's frame lines, a 1 line form can show in a
 // frame of the same lines. Also what the framed panel shares with it: the
 // field, the fonts, the colour and the lines. Private to this folder.
 namespace VendorRepair::Sign
 {
-	// A form of the line, in the order Place tries them.
+	// A form of the line, in the order LineOf makes them.
 	struct Form
 	{
-		std::string_view said;      // where the trace says the sign shows above the list
-		std::string_view saidLeft;  // and left of the frame
-		std::string      html;      // what the field shows
-		Flash::Box       own;       // the field's box with it, in its own units
+		std::string_view          said;        // where the trace says the sign shows above the list
+		std::string_view          saidLeft;    // and left of the frame
+		std::string_view          saidFramed;  // and in its frame, for a 1 line form
+		std::string               html;        // what the field shows
+		Flash::Box                own;         // the field's box with it, in its own units
+		std::optional<Flash::Box> frame;       // a 1 line form's 2 frame lines, in the field's units
 	};
 
-	// The frame around the 1 line form: the 2 lines in a Shape drawn in the
-	// field's units, so it goes where the field goes, and the box they draw.
-	struct Frame
-	{
-		Scaleform::GFx::Value shape;
-		Flash::Box            box;
-	};
-
+	// The frame is 1 Shape drawn in the field's units, so it goes where the
+	// field goes, with the lines of 1 form at a time.
 	struct Line
 	{
 		Scaleform::GFx::Value field;
 		std::vector<Form>     forms;  // 1 line first, never empty
-		std::optional<Frame>  frame;  // nothing when the movie refuses the Shape
+		Scaleform::GFx::Value frame;  // around the first, not a display object when the movie refuses the Shape
 	};
 
 	// The gap kept around the sign, in stage px.
@@ -89,11 +86,10 @@ namespace VendorRepair::Sign
 	// where they show, else the bracket's.
 	[[nodiscard]] double RightEnd(const Roles::TraderSide::Room& a_room);
 
-	// The line's forms for a screen, from LineOf, and its frame's box.
+	// The line's forms for a screen, from LineOf.
 	struct Forms
 	{
-		std::vector<Form>         forms;
-		std::optional<Flash::Box> frame;
+		std::vector<Form> forms;
 	};
 
 	// A form of the line, whether it goes left of the frame, and whether
@@ -110,10 +106,12 @@ namespace VendorRepair::Sign
 
 	// The line's form with room: a_held, the form shown last, while it still
 	// fits where it is, so a title row that grows and shrinks back leaves the
-	// sign as it is, else the framed line where a_framable, the first plain
-	// form above the list and the first left of the frame. The rest of the
-	// screen is read only when the place left of the frame is tried, and
-	// a_around says whether it was. Nothing where no form has room.
+	// sign as it is. Else above the list in LineOf's order, the full names in
+	// 1 line, then the short names in 1 line, each in its frame where
+	// a_framable and then plain, then 2 rows, and then the same plain forms
+	// left of the frame. The rest of the screen is read only when the place
+	// left of the frame is tried, and a_around says whether it was. Nothing
+	// where no form has room.
 	[[nodiscard]] std::optional<Pick> PickOf(const Forms& a_line, const std::optional<Pick>& a_held, bool a_framable, Roles::TraderSide::Side& a_side,
 		Roles::TraderSide::Room& a_room, bool& a_around);
 
@@ -137,12 +135,18 @@ namespace VendorRepair::Sign
 	// the movie refuses a call.
 	bool DrawFrame(Scaleform::GFx::Value& a_shape, const Flash::Box& a_frame, std::optional<std::pair<double, double>> a_gap = std::nullopt);
 
+	// Draws a_form's frame on the line's frame Shape in place of the lines it
+	// held. False when the movie refuses a call.
+	bool Reframe(Scaleform::GFx::Value& a_shape, const Form& a_form);
+
 	// The line for a trader who repairs a_ceilings: 1 text field with the
 	// title's edge, at 3/5 of its size and never under 15, never shrunk to
 	// fit, in white until ColorLine gives it the title's colour. Its forms:
-	// 1 line, the title over the kinds, then the kinds on both rows where
-	// that is narrower. "No repairs" is 1 line only. A hidden title still
-	// gives its size, edge and colour. Nothing when the movie has no title or
+	// 1 line, 1 line with short kind names where that is narrower, the title
+	// over the kinds, then the kinds on both rows where that is narrower. 1
+	// row is right aligned, 2 rows start at the left, so the title starts
+	// over the kinds. "No repairs" is 1 line only. A hidden title still gives
+	// its size, edge and colour. Nothing when the movie has no title or
 	// refuses to make or fill the field.
 	[[nodiscard]] std::optional<Line> LineOf(Scaleform::GFx::Movie& a_movie, Roles::TraderSide::Side& a_side, const Ceilings& a_ceilings);
 

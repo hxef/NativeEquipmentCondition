@@ -5,10 +5,12 @@
 #include "UI/Hud/HudParts/HudParts.h"
 #include "UI/Hud/QuickContainer/Draw.h"
 #include "UI/Roles/Hud.h"
+#include "UI/Roles/QuickRow.h"
 
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <optional>
 #include <string>
 
 namespace QuickContainer
@@ -60,11 +62,69 @@ namespace QuickContainer
 				Flash::Set(part, "x"sv, Value(Flash::Number(part, "x"sv) + after->x - before->x));
 			}
 		}
+		LayIcons(a_row, a_index);
+	}
+
+	// Lays the row's icons out again after its name's new end.
+	void Meters::LayIcons(Value& a_row, std::size_t a_index)
+	{
 		auto kept = Flash::TextTints(a_row);
 		a_row.Invoke("AddIconsToEntry");
 		if (const auto back = Flash::PutBackTints(kept); back > 0) {
 			TraceLog::Line("menu", "Quick container row {:d} text colour put back on {:d} of {:d} shown text fields after its icon layout", a_index, back, kept.size());
 		}
+	}
+
+	// Narrows the other fields the row's name is drawn in, so their text ends
+	// by a_limit, room for the icons and the CND after it, as ItemName_tf's
+	// does. With no a_limit each gets its own width back. A field's own width
+	// is its width unless that is still NEC's last write.
+	void Meters::NarrowOthers(Scaleform::GFx::Movie& a_movie, Value& a_row, std::size_t a_index, std::optional<double> a_limit)
+	{
+		auto& last = drawn[a_index];
+		auto  wrote = false;
+		for (auto& field : Roles::QuickRow::NameFields(a_movie, a_row)) {
+			const auto name = Flash::String(field, "name"sv);
+			auto       other = std::ranges::find(last.others, name, &Other::name);
+			if (other == last.others.end()) {
+				other = std::ranges::find(last.others, ""s, &Other::name);
+				if (other == last.others.end()) {
+					Roles::Noted(a_movie, "room for a quick container name in more fields"sv, "that field keeps its width"sv);
+					continue;
+				}
+				other->name = name;
+			}
+			const auto width = Flash::Number(field, "width"sv);
+			if (!other->written || std::abs(width - *other->written) >= SAME_WIDTH) {
+				other->base = width;
+				other->written.reset();
+			}
+			const auto wanted = a_limit ? std::clamp(*a_limit - Flash::Number(field, "x"sv), 0.0, other->base) : other->base;
+			if (std::abs(width - wanted) >= SAME_WIDTH) {
+				Flash::Set(field, "width"sv, Value(wanted));
+				wrote = true;
+			}
+			other->written = a_limit ? std::optional{ wanted } : std::nullopt;
+		}
+		if (wrote) {
+			LayIcons(a_row, a_index);
+		}
+	}
+
+	// Gives every other field the name was drawn in its own width back, a
+	// hidden one too, while it still holds NEC's write. True when one got
+	// it back.
+	bool Meters::GiveOthersBack(Value& a_row, Drawn& a_drawn)
+	{
+		auto gave = false;
+		for (auto& other : a_drawn.others) {
+			auto field = other.name.empty() ? Value{} : Flash::Child(a_row, other.name.c_str());
+			if (other.written && field.IsDisplayObject() && std::abs(Flash::Number(field, "width"sv) - *other.written) < SAME_WIDTH) {
+				gave = Flash::Set(field, "width"sv, Value(other.base)) || gave;
+			}
+			other = Other{};
+		}
+		return gave;
 	}
 
 	// Hides the meter of a row NEC drew into or narrowed, and gives the
@@ -74,11 +134,13 @@ namespace QuickContainer
 	// AddIconsToEntry fails on it, so it gets no give back.
 	void Meters::Withdraw(Scaleform::GFx::Movie& a_movie, Value& a_row, std::size_t a_index)
 	{
-		auto& last = drawn[a_index];
-		if (last.percent == NOT_DRAWN && !last.visible && !last.numberShown && !last.written) {
+		auto&      last = drawn[a_index];
+		const auto narrowed = std::ranges::any_of(last.others, [](const Other& a_other) { return a_other.written.has_value(); });
+		if (last.percent == NOT_DRAWN && !last.visible && !last.numberShown && !last.written && !narrowed) {
 			return;
 		}
 		HideNumber(a_row, last);
+		const auto gave = GiveOthersBack(a_row, last);
 
 		Value field;
 		auto  meter = Flash::Child(a_row, METER_NAME);
@@ -88,24 +150,31 @@ namespace QuickContainer
 		Hide(meter, last);
 
 		Value data;
-		if (a_row.GetMember("data"sv, &data) && data.IsObject() && HoldsWrite(field, last)) {
-			WriteWidth(a_movie, a_row, a_index, field, meter, last.base);
+		if (a_row.GetMember("data"sv, &data) && data.IsObject()) {
+			if (HoldsWrite(field, last)) {
+				WriteWidth(a_movie, a_row, a_index, field, meter, last.base);
+			} else if (gave) {
+				LayIcons(a_row, a_index);
+			}
 		}
 		last = Drawn{};
 	}
 
-	// Lays out one row. a_reading's percent is NO_CONDITION for an item
-	// that does not wear, and a_reading is nothing when no kept build
-	// matches. a_asNumber is true at Percent.
-	void Meters::Apply(Scaleform::GFx::Movie& a_movie, Value& a_row, std::size_t a_index, const Shown& a_shown, std::optional<Reading> a_reading, bool a_asNumber,
-		bool a_afterRedraw)
+	// The first half of a row's layout: its icons' width, and its name's own
+	// width, taken afresh when the movie set it. Keeps where the room the
+	// movie gives the row's text ends: the name field's right edge at the
+	// movie's own width plus what the movie took off it for icons, or the
+	// left edge of a column a HUD mod adds when that comes first. False for
+	// a row with no name field or meter.
+	bool Meters::Measure(Scaleform::GFx::Movie& a_movie, Value& a_row, std::size_t a_index, const Shown& a_shown, bool a_afterRedraw)
 	{
+		auto& last = drawn[a_index];
+		last.room.reset();
 		Value field;
 		auto  meter = Flash::Child(a_row, METER_NAME);
 		if (!a_row.GetMember("ItemName_tf"sv, &field) || !field.IsDisplayObject() || !meter.IsDisplayObject()) {
-			return;
+			return false;
 		}
-		auto& last = drawn[a_index];
 
 		// The row makes room for its icons by narrowing the name by
 		// what CalcIconWidth says, and a movie may narrow it more for
@@ -127,12 +196,39 @@ namespace QuickContainer
 			last.item = a_shown;
 			last.icons = icons;
 			last.written.reset();
+			last.probed.reset();
 		}
 		const auto width = Flash::Number(field, "width"sv);
 		if (!last.written || std::abs(width - *last.written) >= SAME_WIDTH) {
 			last.base = width;
 			last.written.reset();
 		}
+		const auto left = Flash::Number(field, "x"sv);
+		auto       room = left + last.base + icons;
+		if (const auto column = Roles::QuickRow::ColumnStart(a_movie, a_row, left)) {
+			room = std::min(room, *column);
+		}
+		if (std::isfinite(room)) {
+			last.room = room;
+		}
+		return true;
+	}
+
+	// Lays out the rest of one measured row. a_reading's percent is
+	// NO_CONDITION for an item that does not wear, and a_reading is nothing
+	// when no kept build matches. a_asNumber is true at Percent. a_edge is
+	// the smallest room end of the list's rows, see Place.
+	void Meters::Apply(Scaleform::GFx::Movie& a_movie, Value& a_row, std::size_t a_index, std::optional<Reading> a_reading, bool a_asNumber,
+		std::optional<double> a_edge, bool a_afterRedraw)
+	{
+		Value field;
+		auto  meter = Flash::Child(a_row, METER_NAME);
+		auto& last = drawn[a_index];
+		if (!a_row.GetMember("ItemName_tf"sv, &field) || !field.IsDisplayObject() || !meter.IsDisplayObject() || !last.room) {
+			return;
+		}
+		const auto icons = last.icons;
+		const auto width = Flash::Number(field, "width"sv);
 
 		// With no build to go on the row is left alone, unless the game
 		// just redrew it and a meter left showing would sit on its
@@ -145,17 +241,25 @@ namespace QuickContainer
 			return;
 		}
 
-		// At Percent the name narrows by the widest number the row can
-		// write in place of the meter. A row whose number cannot be made or
-		// measured shows nothing.
+		// The CND ends at the row's right edge, or after the name inside
+		// the row's own room. At Percent the name narrows by the widest
+		// number the row can write in place of the meter, and every other
+		// field it is drawn in ends as far in. A row whose number cannot be
+		// made or measured shows nothing.
 		const auto  percent = a_reading->percent;
 		auto        number = a_asNumber && percent >= 0 ? NumberOf(a_movie, a_row) : Value{};
 		const auto  widest = number.IsDisplayObject() ? Widest(number, field, last) : std::nullopt;
 		const auto  narrows = percent >= 0 && (!a_asNumber || widest);
-		const auto  wanted = narrows ? last.base - METER_GAP - (a_asNumber ? *widest : METER_WIDTH) : last.base;
+		// The name narrows by the CND and by what the room's end, or the
+		// row's right edge, takes off the movie's own room.
+		const auto  end = Settings::bQuickContainerCndAtRight.GetValue() && a_edge ? std::min(*a_edge, *last.room) : *last.room;
+		const auto  room = METER_GAP + (a_asNumber ? widest.value_or(0.0) : METER_WIDTH);
+		const auto  ownEnd = Flash::Number(field, "x"sv) + last.base + icons;
+		const auto  wanted = narrows ? last.base - room - (ownEnd - end) : last.base;
 		if (std::abs(width - wanted) >= SAME_WIDTH) {
 			WriteWidth(a_movie, a_row, a_index, field, meter, wanted);
 		}
+		NarrowOthers(a_movie, a_row, a_index, narrows ? std::optional{ end - room - icons } : std::nullopt);
 		if (percent < 0) {
 			last.written.reset();
 			Hide(meter, last);
@@ -172,7 +276,7 @@ namespace QuickContainer
 				HideNumber(a_row, last);
 				return;
 			}
-			ShowNumber(a_movie, a_row, a_index, number, field, *a_reading, icons, a_afterRedraw);
+			ShowNumber(a_movie, a_row, a_index, number, field, *a_reading, icons, end, a_afterRedraw);
 			return;
 		}
 		HideNumber(a_row, last);
@@ -191,10 +295,7 @@ namespace QuickContainer
 			Recolor(meter, field, a_index);
 		}
 
-		// The first icon sits 4 past the name's end, counted in
-		// CalcIconWidth, so the icons end at the name's end plus that
-		// width. A row with no shown text to measure keeps the meter
-		// hidden.
+		// A row with no shown text to measure keeps the meter hidden.
 		const auto nameEnd = Roles::Hud::TextEnd(a_movie, a_row);
 		if (!nameEnd) {
 			Roles::Noted(a_movie, "quick container name's end"sv, "that row shows no CND meter"sv);
@@ -203,115 +304,10 @@ namespace QuickContainer
 		}
 
 		// Whole pixels keep the one pixel frame sharp.
-		if (Show(meter, last, std::round(*nameEnd + icons + METER_GAP))) {
-			TraceLog::Line("menu", "Quick container row {:d} CND meter at {:.0f}, after icons {:.0f} wide from the name's end at {:.1f}", a_index, last.x, icons, *nameEnd);
-		}
-	}
-	// -------------------------------------------------------------------
-	// A row's number at Percent
-	// -------------------------------------------------------------------
-
-	void Meters::HideNumber(Value& a_row, Drawn& a_drawn)
-	{
-		if (!a_drawn.numberShown) {
-			return;
-		}
-		auto number = Flash::Child(a_row, NUMBER_NAME);
-		Flash::Set(number, "visible"sv, Value(false));
-		a_drawn.numberShown = false;
-		a_drawn.number.clear();
-	}
-
-	// The widest text the row can write: CND and the number of a worn item
-	// at its most or of a full one, see HudParts::Readout::WIDEST, in the
-	// name's letters. Measured again only when those texts or letters
-	// change, as CND decimals or a new name font does, and a measure leaves
-	// the number to be written again.
-	std::optional<double> Meters::Widest(Value& a_number, const Value& a_name, Drawn& a_drawn)
-	{
-		const auto letters = LettersOf(a_name);
-		if (!letters) {
-			return std::nullopt;
-		}
-		// The word is read back from the field, so it is translated once a
-		// HUD movie and the field written afresh after.
-		if (a_drawn.word.empty()) {
-			a_drawn.word = HudParts::Translated(a_number, HudParts::CND_TEXT);
-			a_drawn.number.clear();
-		}
-		std::array<std::string, HudParts::Readout::WIDEST.size()> texts;
-		std::ranges::transform(HudParts::Readout::WIDEST, texts.begin(), [&](std::uint32_t a_tenths) { return a_drawn.word + " " + HudParts::Readout::PercentText(a_tenths); });
-		const auto of = texts[0] + "|" + texts[1];
-		if (letters == a_drawn.letters && of == a_drawn.widestOf) {
-			return a_drawn.widest;
-		}
-		std::optional<double> widest;
-		for (const auto& text : texts) {
-			const auto wide = Write(a_number, text, *letters, false);
-			if (!wide) {
-				return std::nullopt;
-			}
-			widest = std::max(widest.value_or(*wide), *wide);
-		}
-		a_drawn.letters = letters;
-		a_drawn.widestOf = of;
-		a_drawn.widest = *widest;
-		a_drawn.number.clear();
-		return widest;
-	}
-
-	// Writes the row's number when it or the highlight changes, gives it the
-	// colour the name has of its own, as the meter takes it, and puts its
-	// letters where the meter starts, its baseline on the name's as the
-	// game draws it after its own shrink.
-	void Meters::ShowNumber(Scaleform::GFx::Movie& a_movie, Value& a_row, std::size_t a_index, Value& a_number, Value& a_name, const Reading& a_reading, double a_icons,
-		bool a_afterRedraw)
-	{
-		auto&      last = drawn[a_index];
-		const auto selected = Flash::Bool(a_row, "selected"sv);
-		const auto number = HudParts::Readout::PercentText(a_reading.tenths);
-		const auto text = last.word + " " + number;
-		const auto renumbered = number != last.number;
-		const auto changed = renumbered || selected != last.numberSelected;
-		if (changed) {
-			Write(a_number, text, *last.letters, selected);
-			last.number = number;
-			last.numberSelected = selected;
-		}
-		if (changed || a_afterRedraw) {
-			const auto wanted = Flash::TintOf(a_name);
-			const auto now = Flash::TintOf(a_number);
-			if (wanted && (!now || !now->Near(*wanted))) {
-				Flash::SetTint(a_number, *wanted);
-			}
-		}
-
-		const auto nameEnd = Roles::Hud::TextEnd(a_movie, a_row);
-		if (!nameEnd) {
-			Roles::Noted(a_movie, "quick container name's end"sv, "that row shows no CND"sv);
-			HideNumber(a_row, last);
-			return;
-		}
-		const auto x = std::round(*nameEnd + a_icons + METER_GAP);
-		if (!changed && !a_afterRedraw && x == last.numberX && last.numberShown) {
-			return;
-		}
-		const auto name = Flash::DrawnLine(a_name);
-		const auto own = Flash::FirstLine(a_number);
-		if (!name || !own) {
-			Roles::Noted(a_movie, "quick container name's line"sv, "that row shows no CND"sv);
-			HideNumber(a_row, last);
-			return;
-		}
-		const auto scale = Flash::Number(a_number, "scaleX"sv, 1.0);
-		const auto baseline = Flash::Number(a_name, "y"sv) + (name->baseline * Flash::Number(a_name, "scaleY"sv, 1.0));
-		Flash::Set(a_number, "x"sv, Value(x - (own->left * scale)));
-		Flash::Set(a_number, "y"sv, Value(baseline - (own->baseline * scale)));
-		Flash::Set(a_number, "visible"sv, Value(true));
-		last.numberX = x;
-		last.numberShown = true;
-		if (renumbered) {
-			TraceLog::Line("menu", "Quick container row {:d} CND drawn as {:s} at {:.0f}, after icons {:.0f} wide from the name's end at {:.1f}", a_index, text, x, a_icons, *nameEnd);
+		const auto spot = Place(a_movie, a_row, field, last, *nameEnd, icons, METER_WIDTH, end, a_afterRedraw);
+		if (Show(meter, last, std::round(spot.x))) {
+			TraceLog::Line("menu", "Quick container row {:d} CND meter at {:.0f}, after icons {:.0f} wide from the name's end at {:.1f}, {:s}", a_index, last.x, icons, *nameEnd,
+				Standing(spot.edge));
 		}
 	}
 }

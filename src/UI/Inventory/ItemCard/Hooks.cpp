@@ -33,15 +33,12 @@ namespace ItemCard
 			{ AE{ 2222904, 0x0E9 }, OG{ 1053915, 0x0E9 }, "cooking card" },
 		};
 
-		// The examine card's place in HELPER_SITES, whose order sets it: the
-		// workbench and inspect, see ExamineMenu::UpdateItemCard.
+		// The places in HELPER_SITES, whose order sets them: containers and
+		// trades, and the workbench and inspect, see ExamineMenu::UpdateItemCard.
+		constexpr std::size_t CONTAINER_SITE = 0;
 		constexpr std::size_t EXAMINE_SITE = 1;
+		static_assert(std::string_view{ HELPER_SITES[CONTAINER_SITE].what } == "container card"sv);
 		static_assert(std::string_view{ HELPER_SITES[EXAMINE_SITE].what } == "examine card"sv);
-
-		// What a mark beside CND means at the workbench. true is vanilla's meaning,
-		// as on Weight: 1 to 3 + when the mod makes the item wear slower, - when
-		// faster. false turns the marks round: + when it wears faster.
-		constexpr bool MARKS_SAY_BETTER = true;
 
 		// The calls to PipboyInventoryData::PopulateItemCardInfo, the same job
 		// for the Pip-Boy. The first, in InitializeItem, is a tail call whose
@@ -151,7 +148,9 @@ namespace ItemCard
 			// player highlights. The 1 item it is compared with is the item
 			// itself while a mod is tried on, else the copy again. So an entry
 			// that is not the copy but has its base form gives the rate
-			// without the mod, own.
+			// without the mod, own. In a container or a trade own is the rate
+			// of the equipped item vanilla compares with. Cooking compares
+			// nothing.
 			const auto           rate = WearRateOf(a_item, stack);
 			std::optional<float> own;
 			if constexpr (I == EXAMINE_SITE) {
@@ -159,6 +158,8 @@ namespace ItemCard
 				if (rate && compared && compared != &a_item && compared->object == a_item.object) {
 					own = WearRateOf(*compared, compared->GetStackByID(a_compareItems[0].second));
 				}
+			} else if constexpr (I == CONTAINER_SITE) {
+				own = rate ? ComparedWearRate(a_item, a_compareItems) : std::nullopt;
 			}
 			// The rate is drawn only while its switch is on, see Raise.cpp, so
 			// with it off no change is fed.
@@ -170,10 +171,10 @@ namespace ItemCard
 			const Value value{ Condition::CardValue(*tenths) };
 			Value       entry;
 			if (change != 0.0F) {
-				// As vanilla adds Weight: the change is the item's own printed
-				// rate less the copy's, so less wear counts as better, and
-				// vanilla rates the 2 rates by its own steps into 1 to 3 marks
-				// right of the row.
+				// As vanilla adds Weight: the change is the printed rate of the
+				// item compared less this one's, so less wear counts as better,
+				// and vanilla rates the 2 rates by its own steps into 1 to 3
+				// marks right of the row.
 				const auto [total, compare] = MARKS_SAY_BETTER ? std::pair{ *own, *rate } : std::pair{ *rate, *own };
 				RE::InventoryUserUIUtils::AddItemCardInfoEntry(entries, entry, CND_TEXT, value, change, total, compare);
 			} else {
@@ -194,8 +195,8 @@ namespace ItemCard
 			if (const auto kind = PenaltyKind(a_item)) {
 				entry.SetMember(PENALTY_KIND_MARK, Value(static_cast<std::uint32_t>(*kind)));
 			}
-			// The rate without the mod, which signs the change in the cell
-			// beside the number, see WriteWearRate.
+			// The rate of the item compared, which signs the change in the
+			// cell beside the number, see WriteWearRate.
 			if (own) {
 				entry.SetMember(WEAR_RATE_COMPARED_MARK, Value(static_cast<double>(*own)));
 			}
@@ -377,6 +378,7 @@ namespace ItemCard
 		});
 		if (g_pipboy) {
 			REX::INFO("Pip-Boy item cards show a CND row.");
+			PatchCompare();
 		}
 
 		return helper > 0 || static_cast<bool>(g_pipboy);

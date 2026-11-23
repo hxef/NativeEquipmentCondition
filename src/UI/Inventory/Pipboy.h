@@ -4,6 +4,7 @@
 
 #include "Condition/Condition.h"
 
+#include <cstdint>
 #include <optional>
 
 // Fading the name of a worn out item in the Pip-Boy's lists, since the game
@@ -14,7 +15,8 @@
 // any row carrying one in half white, which the Pip-Boy's tint turns into half
 // strength Pip-Boy colour. Nothing fades while the Pip-Boy's cards are left to
 // another mod. Spoiled food fades the same way. The wear rate of each entry's
-// card is kept by the same number, see ItemCard/WearRate.cpp, and the kind
+// card is kept by the same number, see ItemCard/WearRate.cpp, the rate of the
+// equipped item it is compared with, see ItemCard/Compare.cpp, and the kind
 // its CND bar marks, see ItemCard/ConditionBar.cpp.
 namespace Pipboy
 {
@@ -30,12 +32,25 @@ namespace Pipboy
 	void MarkEntry(const RE::PipboyObject& a_entry, const RE::BGSInventoryItem::Stack* a_stack, bool a_broken, std::optional<float> a_rate,
 		std::optional<Condition::Kind> a_kind);
 
-	// The wear rate MarkEntry noted for the entry selected in the Pip-Boy's
-	// inventory list, the one its card shows. Nothing on a page with no list,
-	// or for an entry with no rate.
-	[[nodiscard]] std::optional<float> SelectedWearRate(Scaleform::GFx::Movie& a_movie);
+	// What was noted for the entry selected in the Pip-Boy's inventory list,
+	// the one its card shows. All empty on a page with no list, or for an
+	// entry with no mark.
+	struct Selected
+	{
+		std::optional<float>           rate;      // its wear rate, see MarkEntry
+		std::optional<float>           compared;  // the rate it is compared with, see SetComparedWearRate
+		std::optional<Condition::Kind> kind;      // the kind its CND bar marks, nothing for food and power armor pieces
+	};
 
-	// The kind MarkEntry noted for that entry the same way. Nothing for food
-	// and power armor pieces.
-	[[nodiscard]] std::optional<Condition::Kind> SelectedPenaltyKind(Scaleform::GFx::Movie& a_movie);
+	[[nodiscard]] Selected SelectedEntry(Scaleform::GFx::Movie& a_movie);
+
+	// The wear rate MarkEntry noted for the entry numbered a_node, for the
+	// Pip-Boy's compare pass. Only for gear that wears, so nothing for food,
+	// power armor pieces and an entry it never marked.
+	[[nodiscard]] std::optional<float> GearWearRate(std::uint32_t a_node);
+
+	// Notes a_rate as the rate the entry numbered a_node is compared with,
+	// the equipped item's, or none. Only an entry MarkEntry marked keeps it,
+	// and listing it again forgets it.
+	void SetComparedWearRate(std::uint32_t a_node, std::optional<float> a_rate);
 }

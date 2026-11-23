@@ -330,9 +330,10 @@ Data\F4SE\Plugins\NEC\Traders.
   Fallout4.esm|10C03F = weapons 50    ; every settlement weapon store, to 50%
 
 A line names a trader, a kind of gear (weapons, armor or clothing) and how far
-they repair it, from 30 to 100 in steps of 10. "none" means they don't repair
-that kind. "measured" leaves it to NEC, as if there were no line, which exempts
-1 trader from their faction's line.
+they repair it, from 30 to 100 in steps of 10. More kinds of the same trader can
+follow in that line, split by commas, as in "weapons 100, armor none". "none"
+means they don't repair that kind. "measured" leaves it to NEC, as if there were
+no line, which exempts 1 trader from their faction's line.
 
 The ID can be the trader's ref ID, their base ID or the form ID of the faction
 they trade under, which covers a whole caravan or every store of a kind. The ref
@@ -358,12 +359,12 @@ or WeaponTypeLaser for every laser weapon.
   Fallout4.esm|148338 = wear 1.2              ; a 10mm receiver
   Fallout4.esm|092A86 = wear 0.8 damage 0.9   ; WeaponTypeBallistic keyword
 
-A line holds wear, damage or both, each followed by its number. wear is how
-fast it wears, from 0 to 10, where 1 is normal. damage is the share of its
-full damage the weapon still does at 0 condition, from 0 to 1, so the
-Baseball Bat above hits for 30% when fully worn. "Damage at 0 condition" sets
-it for every other weapon. Both come from the weapon's own line, else from a
-line for 1 of its keywords. A mod's line multiplies the wear, up to 10 in
+A line holds wear, damage or both, each followed by its number. wear is a
+multiplier for how fast it wears, from 0 to 10, where 1 is normal. damage is
+the share of its full damage the weapon still does at 0 condition, from 0 to 1,
+so the Baseball Bat above hits for 30% when fully worn. "Damage at 0 condition"
+sets it for every other weapon. Both come from the weapon's own line, else from
+a line for 1 of its keywords. A mod's line multiplies the wear, up to 10 in
 all, and its damage beats a keyword's. The first line read counts.
 
 NEC.log lists what each file sets and any line it skips. NEC ships
@@ -405,10 +406,11 @@ once NEC is gone nothing in the game can repair it, so it stays unusable.
 After that, removing the mod is safe. It has no ESP and keeps no save data of
 its own. NEC keeps each item's condition in its health, one of the small tags,
 called extra data, that Fallout 4 already saves on an item, like its custom
-name. Power armor pieces use health too. That health is all that stays in your
-save. On anything but power armor the game ignores it for damage, protection
-and price, so what is left behind does nothing there, except that identical
-items at different conditions stay in separate stacks in your inventory.
+name. Power armor pieces use health too. Food keeps the day it started to spoil
+in another such tag. These tags are all that stays in your save. On anything
+but power armor the game ignores them for damage, protection and price, so what
+is left behind does nothing there, except that identical items at different
+conditions stay in separate stacks in your inventory.
 
 To stop NEC without quitting, turn off "All NEC features" on its main MCM page.
 NEC then changes nothing until you turn it back on. Your weapons and armor keep

@@ -1,6 +1,5 @@
 #pragma once
 
-#include "Core/Plugin.h"
 #include "UI/Roles/Bars.h"
 
 #include <optional>
@@ -23,16 +22,17 @@
 // The line goes above the list where the panel has no room or the screen
 // cannot show it: the same words in 1 text field right of the trader's
 // title, ending on the bracket's right edge, see SignLine.h. Where the movie
-// hides the engine's background and draws the list's frame lines, the 1 line
+// hides the engine's background and draws the list's frame lines, a 1 line
 // form first tries a frame of those lines around it, its bottom line 8 stage
-// px above the list's frame. Too wide for 1 line, it takes 2 rows. Where that
-// row holds none of these forms, the line goes left of the trader's frame in
-// the same plain forms and order, its rows at the same height, ending a gap
-// left of the bracket's left edge. A form shows only where the screen holds
-// all of it and a gap of 8 stage px around it meets nothing the side or the
-// bar draws, and left of the frame nothing else the screen draws either, else
-// the sign is left out. Left of the frame the gap under it is 5, see
-// SignLine.h.
+// px above the list's frame. Too wide for 1 line, it takes short kind names,
+// "Wpn 100%", kinds of 1 level sharing 1 number, "Wpn/Arm 100%", and too wide
+// for that, 2 rows with the title at the left. Where that row holds none of
+// these forms, the line goes left of the trader's frame in the same plain
+// forms and order, its rows at the same height, ending a gap left of the
+// bracket's left edge. A form shows only where the screen holds all of it
+// and a gap of 8 stage px around it meets nothing the side or the bar draws,
+// and left of the frame nothing else the screen draws either, else the sign
+// is left out. Left of the frame the gap under it is 5, see SignLine.h.
 namespace VendorRepair::Sign
 {
 	// Builds the panel and the line again for a trader's side just rebuilt,

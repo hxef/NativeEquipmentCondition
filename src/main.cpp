@@ -13,6 +13,7 @@
 #include "Gameplay/FoodSpoil/FoodSpoil.h"
 #include "Gameplay/SpawnCondition/SpawnCondition.h"
 #include "Papyrus/Papyrus.h"
+#include "UI/Inventory/ItemCard/ItemCard.h"
 #include "UI/MenuMovies.h"
 #include "UI/Repair/ConsoleRepair.h"
 
@@ -173,6 +174,7 @@ namespace
 			                   static_cast<bool>(a_msg->data)                       ? "the save has loaded" :
 			                                                                          "the save did not load");
 			ConsoleRepair::Settle();
+			ItemCard::SettleCompare();
 			// Here and not in a task, so it is done before the player can
 			// move an item.
 			if (a_msg->type == F4SE::MessagingInterface::kPostLoadGame && static_cast<bool>(a_msg->data)) {
@@ -237,6 +239,7 @@ namespace
 			Settings::ReportLine();
 		}
 		ConsoleRepair::Settle();
+		ItemCard::SettleCompare();
 	}
 }
 

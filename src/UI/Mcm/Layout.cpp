@@ -3,6 +3,7 @@
 #include "Core/TraceLog/TraceLog.h"
 #include "UI/Flash.h"
 
+#include <array>
 #include <atomic>
 #include <cstdint>
 #include <optional>
@@ -270,8 +271,40 @@ namespace Mcm
 	// into the settings list. The first hide asked puts it back and the others
 	// find it there. Only on NEC's pages, and not while MCM builds its pages,
 	// when the highlight is below 0.
+	//
+	// A press on a page name opens the page the highlight is on when the click
+	// comes, and the hover that moved it there can come a frame before the
+	// refresh and the click a frame after. So the highlight goes back for the
+	// refresh, and at the next frame the page name still under the pointer
+	// gets it again, so a press there opens that page.
 	namespace
 	{
+		// The left list's entry the highlight was put back from while the
+		// pointer was on it, -1 for none. Only the main or pause menu's
+		// movie thread reads and writes it.
+		std::atomic<double> g_hovered{ -1.0 };
+
+		// Whether the pointer is on the clip that draws the left list's entry
+		// a_page, tested as the list itself tests it in SetFocusUnderMouse.
+		// False for an entry not on screen.
+		bool PointerOn(Value& a_left, const Value& a_page)
+		{
+			const auto clipIndex = Flash::Number(a_page, "clipIndex"sv, -1.0);
+			const auto shown = Flash::Number(a_left, "itemsShown"sv, 0.0);
+			if (!(clipIndex >= 0.0 && clipIndex < shown)) {
+				return false;
+			}
+			Value      clip;
+			const auto index = Value(static_cast<std::uint32_t>(clipIndex));
+			const auto stage = Flash::Member(a_left, "stage"sv);
+			if (!a_left.Invoke("GetClipByIndex", &clip, &index, 1) || !clip.IsDisplayObject() || !stage.IsObject()) {
+				return false;
+			}
+			const std::array at{ Value(Flash::Number(stage, "mouseX"sv)), Value(Flash::Number(stage, "mouseY"sv)), Value(false) };
+			Value            hit;
+			return clip.Invoke("hitTestPoint", &hit, at.data(), at.size()) && hit.IsBoolean() && hit.GetBoolean();
+		}
+
 		// Where the left list's highlight was, where the open page is, and
 		// whether the highlight went back there.
 		struct Highlight
@@ -283,7 +316,8 @@ namespace Mcm
 		};
 
 		// Puts the highlight back on the open page when that is one of NEC's,
-		// see KeepOpenPage. Nothing while MCM is not open.
+		// see KeepOpenPage, and notes the lit page name for GiveHoverBack
+		// while the pointer is on it. Nothing while MCM is not open.
 		std::optional<Highlight> PutBack(const Value& a_mcm)
 		{
 			auto       left = LeftList(a_mcm);
@@ -295,7 +329,11 @@ namespace Mcm
 			const auto lit = Flash::Number(left, "selectedIndex"sv, -1.0);
 			const auto open = PageAt(pages, page);
 			const auto ours = open.IsObject() && Flash::String(open, "modName"sv) == MOD;
+			const auto hovered = lit >= 0.0 && lit != page && ours && PointerOn(left, PageAt(pages, lit));
 			const auto back = lit >= 0.0 && lit != page && ours && Flash::Set(left, "selectedIndex"sv, Value(page));
+			if (back && hovered) {
+				g_hovered.store(lit);
+			}
 			return Highlight{ pages, lit, page, back };
 		}
 	}
@@ -328,5 +366,25 @@ namespace Mcm
 		const auto done = mcm.Invoke("RefreshMCM");
 		TraceLog::Line("menu", "NEC has MCM refresh the page {:g} ({:s}), highlight put back {:s}, {:s}", put ? put->page : -1.0,
 			put ? PageName(PageAt(put->pages, put->page)) : std::string{ "(none)" }, put && put->back ? "yes" : "no", done ? "done" : "refused");
+	}
+
+	void GiveHoverBack(Scaleform::GFx::Movie& a_movie)
+	{
+		const auto hovered = g_hovered.exchange(-1.0);
+		Value      menus;
+		if (hovered < 0.0 || !a_movie.GetVariable(&menus, "_root.Menu_mc") || !menus.IsObject()) {
+			return;
+		}
+		const auto mcm = McmMenu(menus);
+		auto       left = LeftList(mcm);
+		const auto pages = Flash::Member(left, "entryList"sv);
+		const auto page = Flash::Number(mcm, "selectedPage"sv, -1.0);
+		// Only while the highlight is still where the put back left it.
+		if (!pages.IsArray() || Flash::Number(left, "selectedIndex"sv, -1.0) != page || !PointerOn(left, PageAt(pages, hovered))) {
+			return;
+		}
+		if (Flash::Set(left, "selectedIndex"sv, Value(hovered))) {
+			TraceLog::Line("menu", "MCM's left list highlight given back to {:g} ({:s}) after the refresh, the pointer still on it", hovered, PageName(PageAt(pages, hovered)));
+		}
 	}
 }

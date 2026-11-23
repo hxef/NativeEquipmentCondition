@@ -67,6 +67,9 @@ namespace Mcm
 			{ &Settings::fAutoWearRateMult, FollowUp::kCards },
 			{ &Settings::fSuppressedWearRateMult, FollowUp::kCards },
 			{ &Settings::bPowerArmorCardCnd, FollowUp::kCards },
+			// The Pip-Boy keeps its cards, so the marks beside CND go or come
+			// with the rate only once they are built again.
+			{ &Settings::bCardWearRate, FollowUp::kCards },
 			// Item card CND adds or drops the CND row of every card, food's
 			// freshness row among them.
 			{ &Settings::iItemCardCnd, FollowUp::kCards },

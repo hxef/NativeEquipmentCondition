@@ -84,7 +84,7 @@ namespace QuickContainer
 		}
 		Flash::Set(a_field, "scaleX"sv, Value(scale));
 		Flash::Set(a_field, "scaleY"sv, Value(scale));
-		const auto line = Flash::FirstLine(a_field);
-		return line ? std::optional{ (line->right - line->left) * scale } : std::nullopt;
+		const auto wide = Flash::Number(a_field, "textWidth"sv);
+		return std::isfinite(wide) && wide > 0.0 ? std::optional{ wide * scale } : std::nullopt;
 	}
 }

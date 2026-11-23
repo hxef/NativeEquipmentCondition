@@ -31,7 +31,6 @@ namespace VendorRepair::Sign
 		// Where the sign was last put on this screen, as the trace says it,
 		// so it says each change once.
 		constexpr auto SHOWS_UNDER = "shows under the trader's list"sv;
-		constexpr auto SHOWS_FRAMED = "shows as 1 line in a frame above the trader's list"sv;
 		constexpr auto LEFT_OUT = "is left out, as it has no room under or above the trader's list or left of its frame"sv;
 		// A screen with no line clip tries only the place under the list.
 		constexpr auto LEFT_OUT_UNDER = "is left out, as it has no room under the trader's list"sv;
@@ -40,10 +39,12 @@ namespace VendorRepair::Sign
 
 		std::optional<std::string> g_placed;
 
-		// The line's forms for this screen, from Draw, and the form its field
-		// holds now and where.
-		Forms               g_line;
-		std::optional<Pick> g_held;
+		// The line's forms for this screen, from Draw, the form its field
+		// holds now and where, and the form whose lines the frame holds,
+		// LineOf's first.
+		Forms                      g_line;
+		std::optional<Pick>        g_held;
+		std::optional<std::size_t> g_framed;
 
 		// Puts a_clip in a_into, the side or the moved sign's clip, at a_spot.
 		// Only the side and that clip ever hold it, and their names differ.
@@ -69,7 +70,7 @@ namespace VendorRepair::Sign
 		// the engine's background and draws the list's frame lines.
 		[[nodiscard]] bool Framable(const Room& a_room, const Clips& a_clips)
 		{
-			return g_line.frame && a_clips.frame.IsDisplayObject() && !a_room.backed && a_room.lines;
+			return a_clips.frame.IsDisplayObject() && !a_room.backed && a_room.lines;
 		}
 	}
 
@@ -93,12 +94,14 @@ namespace VendorRepair::Sign
 			}
 		}
 		g_line = std::move(a_line);
+		g_framed = a_clips.frame.IsDisplayObject() ? std::optional<std::size_t>{ 0 } : std::nullopt;
 	}
 
 	void Clear(RE::BarterMenu& a_menu)
 	{
 		g_line = {};
 		g_held.reset();
+		g_framed.reset();
 		if (!a_menu.menuObj.IsObject()) {
 			return;
 		}
@@ -180,8 +183,21 @@ namespace VendorRepair::Sign
 			return SHOWS_UNDER;
 		}
 		const auto& pick = *a_choice.pick;
-		if (!(g_held && g_held->form == pick.form) && !Flash::Set(a_clips.line, "htmlText"sv, Value(g_line.forms[pick.form].html.c_str()))) {
+		const auto& form = g_line.forms[pick.form];
+		if (!(g_held && g_held->form == pick.form) && !Flash::Set(a_clips.line, "htmlText"sv, Value(form.html.c_str()))) {
 			return std::nullopt;
+		}
+		// The field holds the new form's text from here, so a refused frame
+		// leaves no form held. The frame is then dropped for this screen, so
+		// the next Place tries only the plain forms.
+		if (pick.framed && g_framed != pick.form) {
+			g_framed.reset();
+			if (!Reframe(a_clips.frame, form)) {
+				a_menu.menuObj.SetMember(FRAME_MEMBER, Value());
+				g_held.reset();
+				return std::nullopt;
+			}
+			g_framed = pick.form;
 		}
 		PanelOff(a_menu, a_clips, COMES_OUT);
 		g_held = pick;
@@ -193,8 +209,7 @@ namespace VendorRepair::Sign
 		} else {
 			Off(a_clips.frame);
 		}
-		const auto& form = g_line.forms[pick.form];
-		return pick.framed ? SHOWS_FRAMED : (pick.beside ? form.saidLeft : form.said);
+		return pick.framed ? form.saidFramed : (pick.beside ? form.saidLeft : form.said);
 	}
 
 	bool LeftOut(RE::BarterMenu& a_menu, const Room& a_room, Clips& a_clips)

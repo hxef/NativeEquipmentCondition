@@ -63,6 +63,12 @@ namespace ItemCard
 	// waits.
 	[[nodiscard]] bool PipboyCards();
 
+	// Builds the Pip-Boy's weapon and armor cards anew once NEC no longer
+	// feeds its compare pass, so no wear rate mark NEC fed outlives the
+	// calls it came through, in Compare.cpp. Called after every check of
+	// the patches.
+	void SettleCompare();
+
 	// Whether a list with columns opened this session, so the MCM row shows,
 	// in Column.cpp.
 	[[nodiscard]] bool ColumnOffered();

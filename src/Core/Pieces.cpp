@@ -95,6 +95,9 @@ namespace
 		// The Pip-Boy builds a card at 2 places, and NEC adds its rows at both
 		// or neither, see UI/Inventory/ItemCard/Hooks.cpp.
 		{ kCndPipboy, Part::kCardCnd, Shown::kName },
+		// The wear rate marks on the Pip-Boy's CND row come from the rates
+		// its 2 card places note, see UI/Inventory/ItemCard/Compare.cpp.
+		{ kCndPipboyMarks, Part::kCardCnd, Shown::kName, { kCndPipboy } },
 		// The 3 card rate places go in together. A card's rate reads the
 		// condition noted where the same menu builds its CND row, so each of
 		// these card rates is a piece of its own that needs both.

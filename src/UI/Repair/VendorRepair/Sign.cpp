@@ -114,10 +114,7 @@ namespace VendorRepair::Sign
 		}
 		if (line) {
 			kept.line = line->field;
-			if (line->frame) {
-				kept.frame = line->frame->shape;
-				forms.frame = line->frame->box;
-			}
+			kept.frame = line->frame;
 			forms.forms = std::move(line->forms);
 		} else if (panel) {
 			Roles::Noted(movie, "trader's title"sv, ONLY_UNDER);

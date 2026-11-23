@@ -34,13 +34,13 @@ Scriptname NEC Native Hidden
 ; The game may later give that number to an item that arrives in the same container, so drop a handle you no longer
 ; need.
 ;
-; Identical new copies share 1 stack, so GetCount can be above 1. A write, a wear or a repair changes 1 copy of such
-; a stack: that copy splits off and your handle follows it. Call GetItems again for the rest.
+; Identical new items share 1 stack, so GetCount can be above 1. A write, a wear or a repair changes 1 item of such
+; a stack: that item splits off and your handle follows it. Call GetItems again for the rest.
 ;
-; A pile lying in the world shares 1 condition between its copies, and a write changes all of them.
+; A pile lying in the world shares 1 condition between its items, and a write changes all of them.
 ;
-; A function that takes a Form asks about a kind of item, and one that takes an ObjectReference asks about 1 copy,
-; its mods included. A Form argument takes a base form or a reference, and a reference answers for that very copy.
+; A function that takes a Form asks about a base form, and one that takes an ObjectReference asks about 1 reference,
+; its mods included. A Form argument takes a reference too, and then the function answers for that reference.
 ; Only GetRepairDiscount reads its mods, since mods change no other Form function's answer. GetItems lists every
 ; stack of a reference's base form. A handle may reach a Form argument as None, so pass the handle to an
 ; ObjectReference function such as GetItemRepairDiscount, or NEC.GetBase(akItem) to a Form one.
@@ -137,7 +137,7 @@ ObjectReference Function GetHolder(ObjectReference akItem) global native
 ; The base form of akItem, such as its Weapon, Armor or Potion record, None for None or an item that no longer exists.
 Form Function GetBase(ObjectReference akItem) global native
 
-; How many copies akItem's stack holds, 0 for None or an item that no longer exists.
+; How many items akItem's stack holds, 0 for None or an item that no longer exists.
 int Function GetCount(ObjectReference akItem) global native
 
 ; ## Reading condition
@@ -239,10 +239,10 @@ int Function GetModdingFrom() global native
 
 ; How many percent the player's crafting perk rank takes off a workbench repair of akBase, 0 to
 ; GetSettingInt("iPerkComponentDiscount:Balance"), 50 by default, 0 for gear NEC gives no condition. A base form is
-; priced as the plain item, and a reference as that very copy with its mods.
+; priced as the plain item, and a reference with its mods.
 int Function GetRepairDiscount(Form akBase) global native
 
-; The same for 1 copy wherever it is, in the world or in an inventory, its mods included. Takes a handle from GetItems.
+; The same for 1 reference, in the world or in an inventory, its mods included. Takes a handle from GetItems.
 int Function GetItemRepairDiscount(ObjectReference akItem) global native
 
 ; 1 component of a bill and how many of it.

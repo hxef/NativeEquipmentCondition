@@ -4,6 +4,7 @@
 #include "Core/Feature.h"
 #include "Core/Settings/Settings.h"
 #include "UI/Hud/HudParts/HudParts.h"
+#include "UI/Inventory/ItemCard/ItemCard.h"
 #include "UI/Mcm/Mcm.h"
 #include "UI/Repair/ConsoleRepair.h"
 #include "UI/Roles/Roles.h"
@@ -52,6 +53,7 @@ namespace MenuMovies
 					Settings::ReportLine();
 				}
 				ConsoleRepair::Settle();
+				ItemCard::SettleCompare();
 				if (a_plugin) {
 					Mcm::AddPresetButtons(*a_movie, *a_plugin);
 				}

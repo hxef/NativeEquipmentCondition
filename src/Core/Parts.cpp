@@ -124,6 +124,8 @@ namespace
 
 	// The CND row and the wear rate on it, on every card that has one.
 	constexpr Piece CARD_CND[]{ kCndContainers, kCndWorkbench, kCndCooking, kCndPipboy };
+	// The Pip-Boy's compare marks for the wear rate show only with the rate.
+	constexpr Piece CARD_RATE_SIDE[]{ kCndPipboyMarks };
 	// A power armor piece's CND shows on the cards it has: containers and
 	// trading, the workbench and the power armor station, and the Pip-Boy.
 	constexpr Piece POWER_ARMOR_CND[]{ kCndContainers, kCndWorkbench, kCndPipboy };
@@ -154,7 +156,7 @@ namespace
 		{ &Settings::iPowerArmorCnd, &Settings::iWeaponCnd, HUD_BARS },
 		{ &Settings::iQuickContainerCnd, nullptr, LOOT_METERS },
 		{ &Settings::iItemCardCnd, nullptr, CARD_CND },
-		{ &Settings::bCardWearRate, &Settings::iItemCardCnd, CARD_CND },
+		{ &Settings::bCardWearRate, &Settings::iItemCardCnd, CARD_CND, CARD_RATE_SIDE },
 		// The CND column rides on the card's CND row, so it sits in the
 		// card's block.
 		{ &Settings::bCndColumn, &Settings::iItemCardCnd, CARD_CND },
@@ -244,6 +246,7 @@ namespace
 		// The quick container's and the item card's rows ride on their own
 		// stepper's block.
 		{ &Settings::bQuickContainerBarFlipped, &Settings::iQuickContainerCnd, LOOT_METERS },
+		{ &Settings::bQuickContainerCndAtRight, &Settings::iQuickContainerCnd, LOOT_METERS },
 		{ &Settings::fItemCardBarThickness, &Settings::iItemCardCnd, CARD_CND },
 		{ &Settings::bItemCardBarFlipped, &Settings::iItemCardCnd, CARD_CND },
 		// The sign's 2 sliders sit in Trader repairs' block, as the sign's

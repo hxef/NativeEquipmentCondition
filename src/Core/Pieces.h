@@ -96,6 +96,7 @@ enum class Piece : std::uint8_t
 	kCndWorkbench,
 	kCndCooking,
 	kCndPipboy,
+	kCndPipboyMarks,
 	// Fire rate shown in menus
 	kRateCards,
 	kRateCardsContainers,

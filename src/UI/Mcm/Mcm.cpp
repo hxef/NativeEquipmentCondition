@@ -316,6 +316,7 @@ namespace Mcm
 					Write();
 				}
 				if (a_params.movie) {
+					GiveHoverBack(*a_params.movie);
 					Layout(*a_params.movie);
 					if (g_refresh.exchange(false)) {
 						RefreshMcm(*a_params.movie);

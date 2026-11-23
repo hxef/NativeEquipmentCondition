@@ -11,7 +11,6 @@
 #include <array>
 #include <cmath>
 #include <cstdint>
-#include <format>
 #include <limits>
 #include <mutex>
 #include <optional>
@@ -56,7 +55,7 @@ namespace ItemCard
 			std::uint32_t                  tenths;            // the number the row prints, see Condition::CardTenths
 			bool                           fridge;            // the row gets the fridge icon
 			std::optional<float>           wearRate;          // the item's wear rate, see WearRate.cpp
-			std::optional<float>           wearRateCompared;  // the rate of the item a workbench compares its copy with
+			std::optional<float>           wearRateCompared;  // the rate of the item compared, see WEAR_RATE_COMPARED_MARK
 			std::optional<Condition::Kind> kind;              // whose penalty point the row's bar marks
 		};
 
@@ -182,8 +181,50 @@ namespace ItemCard
 
 		// Moves a freshly drawn CND row up past Damage. Every row above CND
 		// moves down by the room CND took, and CND takes the highest one's
-		// place.
-		void RaiseConditionRow(Scaleform::GFx::Movie& a_movie, const Place& a_place, Value& a_card)
+		// place. False when it stays, as an earlier render left it or where
+		// the card draws it.
+		bool Raise(Scaleform::GFx::Movie& a_movie, Roles::Card::Row& a_row)
+		{
+			if (a_row.above.empty()) {
+				return false;
+			}
+
+			// y grows downwards, so a CND row already above the highest row
+			// means an earlier render event did this.
+			const auto rowY = Flash::Number(a_row.clip, "y"sv);
+			const auto lastY = Flash::Number(a_row.above.back(), "y"sv);
+			if (!std::isfinite(rowY) || !std::isfinite(lastY)) {
+				Roles::Noted(a_movie, "CND row's place"sv, "CND stays where the card draws it"sv);
+				return false;
+			}
+			if (rowY <= lastY) {
+				return false;
+			}
+
+			// Neighbouring rows overlap a little. Reading it from the rows
+			// keeps this in sync with the card's spacing.
+			const auto& next = a_row.above.front();
+			const auto  overlap = Flash::Number(next, "y"sv) + Flash::Number(next, "height"sv) - rowY;
+			const auto  step = Flash::Number(a_row.clip, "height"sv) - overlap;
+			if (!std::isfinite(step)) {
+				Roles::Noted(a_movie, "CND row's place"sv, "CND stays where the card draws it"sv);
+				return false;
+			}
+
+			for (auto& clip : a_row.above) {
+				Flash::Set(clip, "y"sv, Value(Flash::Number(clip, "y"sv) + step));
+			}
+			Flash::Set(a_row.clip, "y"sv, Value(lastY));
+			return true;
+		}
+
+		// Raises the CND row of a_card, the card at a_place, and writes the
+		// rate, the bar and the fridge icon there. a_cardBeside says a card
+		// is shown beside it: the movie then compares the 2 cards itself and
+		// the cell beside the number holds its own figure, which no change
+		// NEC fed may sign or write over. The label it looked for, empty
+		// when it has none.
+		std::string RaiseConditionRow(Scaleform::GFx::Movie& a_movie, const Place& a_place, Value& a_card, bool a_cardBeside)
 		{
 			const auto look = LookAt(a_movie, a_place, a_card);
 			// Before the CND row is looked for, so a card with no CND row,
@@ -191,126 +232,70 @@ namespace ItemCard
 			Roles::Card::HideOnOtherRows(a_card, look.label, CONDITION_BAR_NAME);
 			const auto entry = ConditionEntry(a_card);
 			if (!entry) {
-				return;
+				return look.label;
 			}
 			if (look.label.empty()) {
 				Roles::Noted(a_movie, "translated CND label"sv, "no CND row is raised"sv);
-				return;
+				return look.label;
 			}
 
 			auto row = Roles::Card::ConditionRow(a_movie, a_card, entry->index, look.label, entry->tenths, look.redrawn, CONDITION_BAR_NAME);
 			if (!row) {
-				return;
+				return look.label;
 			}
 
-			const auto pipboy = a_place.movie == PIPBOY_MOVIE;
+			// The Pip-Boy's card keeps no member of NEC's own, so Pipboy keeps
+			// its rates and its kind. Read at every render, so the switch needs
+			// no new card for the rate.
+			struct Rates
+			{
+				std::optional<float>           rate;
+				std::optional<float>           compared;
+				std::optional<Condition::Kind> kind;
+			};
+			Rates rates{ entry->wearRate, entry->wearRateCompared, entry->kind };
+			if (a_place.movie == PIPBOY_MOVIE) {
+				const auto selected = Pipboy::SelectedEntry(a_movie);
+				rates = { selected.rate, selected.compared, selected.kind };
+			}
+			const auto showsRate = Settings::bCardWearRate.GetValue();
+			const auto rate = showsRate ? rates.rate : std::nullopt;
+			const auto compared = showsRate && !a_cardBeside ? rates.compared : std::nullopt;
 			if (row->drawn) {
 				// A row showing the bar keeps it until the card draws it anew.
 				// Only a change the movie prints beside it is signed again, as
 				// WriteWearRate does at every render.
-				if (Settings::bCardWearRate.GetValue() && !pipboy) {
-					TurnWearRateChange(a_place.movie, row->clip, entry->wearRate, entry->wearRateCompared);
+				if (showsRate) {
+					TurnWearRateChange(a_place.movie, row->clip, rate, compared);
 				}
 			} else {
 				// The rate goes in before the bar and the fridge icon, which sit
-				// left of it. Read at every render, so the switch needs no new
-				// card.
-				if (Settings::bCardWearRate.GetValue()) {
-					const auto rate = pipboy ? Pipboy::SelectedWearRate(a_movie) : entry->wearRate;
-					WriteWearRate(a_movie, a_place.movie, row->clip, rate, pipboy ? std::nullopt : entry->wearRateCompared);
+				// left of it.
+				if (showsRate) {
+					WriteWearRate(a_movie, a_place.movie, row->clip, rate, compared, a_cardBeside);
 				}
 				const auto bar = Settings::iItemCardCnd.Form() == Settings::Cnd::kBar;
-				if (!bar || !DrawConditionBar(a_movie, a_place.movie, row->clip,
-								BarReading{ entry->tenths, pipboy ? Pipboy::SelectedPenaltyKind(a_movie) : entry->kind, entry->fridge })) {
+				if (!bar || !DrawConditionBar(a_movie, a_place.movie, row->clip, BarReading{ entry->tenths, rates.kind, entry->fridge })) {
 					MarkFridge(a_movie, a_place.movie, row->clip, entry->fridge);
 				}
 			}
-			if (row->above.empty()) {
-				return;
+			if (Raise(a_movie, *row)) {
+				TraceLog::Line("card", "{:s}% row raised above {:d} rows", Condition::CardText(entry->tenths), row->above.size());
 			}
-
-			// y grows downwards, so a CND row already above the highest row
-			// means an earlier render event did this.
-			const auto rowY = Flash::Number(row->clip, "y"sv);
-			const auto lastY = Flash::Number(row->above.back(), "y"sv);
-			if (!std::isfinite(rowY) || !std::isfinite(lastY)) {
-				Roles::Noted(a_movie, "CND row's place"sv, "CND stays where the card draws it"sv);
-				return;
-			}
-			if (rowY <= lastY) {
-				return;
-			}
-
-			// Neighbouring rows overlap a little. Reading it from the rows
-			// keeps this in sync with the card's spacing.
-			const auto& next = row->above.front();
-			const auto  overlap = Flash::Number(next, "y"sv) + Flash::Number(next, "height"sv) - rowY;
-			const auto  step = Flash::Number(row->clip, "height"sv) - overlap;
-			if (!std::isfinite(step)) {
-				Roles::Noted(a_movie, "CND row's place"sv, "CND stays where the card draws it"sv);
-				return;
-			}
-
-			for (auto& clip : row->above) {
-				Flash::Set(clip, "y"sv, Value(Flash::Number(clip, "y"sv) + step));
-			}
-			Flash::Set(row->clip, "y"sv, Value(lastY));
-
-			TraceLog::Line("card", "{:s}% row raised above {:d} rows", Condition::CardText(entry->tenths), row->above.size());
+			return look.label;
 		}
 
-		// -------------------------------------------------------------------
-		// The trace
-		// -------------------------------------------------------------------
-
-		// A number as short as it will go, 48 or 7.2.
-		std::string Short(double a_number)
+		// Raises the CND row of a card shown beside the card at a_place, such
+		// as the copy of an earlier card a replacer pins there to compare
+		// with, so CND stands at the same place on both. a_label is CND as
+		// the movie prints it. Nothing else of that card changes.
+		void RaiseBeside(Scaleform::GFx::Movie& a_movie, const Place& a_place, Value& a_card, const std::string& a_label)
 		{
-			return std::format("{:g}", a_number);
-		}
-
-		// One line for the card on the screen: each entry's text and value, the
-		// difference to the equipped item, and a damage entry's type. Written
-		// through First, since the listener runs at every redraw in the menu,
-		// often many times a second while the list scrolls.
-		void TraceCard(const Place& a_place, const Value& a_card)
-		{
-			Value entries;
-			if (!a_card.GetMember("InfoObj"sv, &entries) || !entries.IsArray()) {
-				return;
-			}
-
-			std::string text;
-			const auto  size = entries.GetArraySize();
-			for (std::uint32_t i = 0; i < size; i++) {
-				Value entry;
-				Value name;
-				Value value;
-				if (!entries.GetElement(i, &entry) || !entry.IsObject() ||
-					!entry.GetMember("text"sv, &name) || !name.IsString()) {
-					continue;
-				}
-
-				text += text.empty() ? "" : ", ";
-				text += name.GetString();
-				if (entry.GetMember("value"sv, &value)) {
-					text += " ";
-					text += value.IsString() ? std::string{ value.GetString() } : Short(Flash::AsNumber(value));
-				}
-
-				Value flag;
-				if (entry.GetMember("showAsPercent"sv, &flag) && flag.IsBoolean() && flag.GetBoolean()) {
-					text += "%";
-				}
-				if (const auto difference = Flash::Number(entry, "difference"sv); difference != 0.0) {
-					text += std::format(" ({:s}{:s})", difference > 0.0 ? "+" : "", Short(difference));
-				}
-				if (Value type; (HasText(entry, "$dmg"sv) || HasText(entry, "$dr"sv)) && entry.GetMember("damageType"sv, &type)) {
-					text += std::format(" type {:s}", Short(Flash::AsNumber(type)));
-				}
-			}
-			if (!text.empty()) {
-				TraceLog::First("menu", "{:s} card shows {:s}", a_place.movie, text);
+			const auto entry = a_label.empty() ? std::nullopt : ConditionEntry(a_card);
+			auto       row = entry ? Roles::Card::ConditionRow(a_movie, a_card, entry->index, a_label, entry->tenths, false, CONDITION_BAR_NAME) : std::nullopt;
+			if (row && Raise(a_movie, *row)) {
+				TraceLog::Line("menu", "{:s} compared card's {:s}% row raised above {:d} rows", MovieName(a_place.movie),
+					Condition::CardText(entry->tenths), row->above.size());
 			}
 		}
 
@@ -332,9 +317,13 @@ namespace ItemCard
 					return;
 				}
 				if (auto card = Roles::Card::Find(*a_params.movie, *place)) {
-					RaiseConditionRow(*a_params.movie, *place, *card);
+					auto       besides = Roles::Card::Beside(*a_params.movie, *card);
+					const auto label = RaiseConditionRow(*a_params.movie, *place, *card, !besides.empty());
+					for (auto& beside : besides) {
+						RaiseBeside(*a_params.movie, *place, beside, label);
+					}
 					if (TraceLog::IsOpen()) {
-						TraceCard(*place, *card);
+						TraceCard(place->movie, *card);
 					}
 				}
 			}

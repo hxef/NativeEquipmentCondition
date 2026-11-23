@@ -134,6 +134,8 @@ namespace Mcm
 			{ &Settings::bPickupPenaltyMark } },
 		{ "iItemCardCnd:Shown"sv, [] { return Settings::iItemCardCnd.Form() != Settings::Cnd::kOff; },
 			{ &Settings::bCardWearRate, &Settings::bPowerArmorCardCnd, &Settings::bCndColumn } },
+		{ "iQuickContainerCnd:Shown"sv, [] { return Settings::iQuickContainerCnd.Form() != Settings::Cnd::kOff; },
+			{ &Settings::bQuickContainerCndAtRight } },
 		{ "iQuickContainerCnd:Bar"sv, [] { return Settings::iQuickContainerCnd.Form() == Settings::Cnd::kBar; },
 			{ &Settings::bQuickContainerBarFlipped } },
 		{ "iItemCardCnd:Bar"sv, [] { return Settings::iItemCardCnd.Form() == Settings::Cnd::kBar; },

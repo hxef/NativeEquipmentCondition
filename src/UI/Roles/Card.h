@@ -28,6 +28,11 @@ namespace Roles::Card
 	// The card at a_place in this movie, when it holds an InfoObj array.
 	[[nodiscard]] std::optional<Value> Find(Scaleform::GFx::Movie& a_movie, const Place& a_place);
 
+	// The other cards shown beside a_card, the clips of its parent that hold
+	// an InfoObj array and are on screen, such as a copy of an earlier card a
+	// replacer pins beside it to compare with.
+	[[nodiscard]] std::vector<Value> Beside(Scaleform::GFx::Movie& a_movie, Value& a_card);
+
 	// The name of the card's first row, or of its first child where no child
 	// is a row. A redraw makes every row anew, so a new name tells it.
 	[[nodiscard]] std::string FirstRowName(Value& a_card);

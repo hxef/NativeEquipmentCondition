@@ -62,6 +62,25 @@ namespace ItemCard
 	// was patched.
 	bool PatchCards();
 
+	// What a mark beside CND means, at the workbench and against the equipped
+	// item. true is vanilla's meaning, as on Weight: 1 to 3 + when the item
+	// wears slower, - when faster. false turns the marks round: + when it
+	// wears faster.
+	inline constexpr bool MARKS_SAY_BETTER = true;
+
+	// The wear rate of the equipped item a card outside the Pip-Boy compares
+	// a_item with, in Compare.cpp. a_compareItems are the player's equipped
+	// items the game passes. The item is vanilla's own pick: for a weapon the
+	// last of the same kind, thrown or not, and for armor the 1 worn piece
+	// that shares a slot with it. Nothing when none is or 2 pieces are, and
+	// for anything that never wears.
+	[[nodiscard]] std::optional<float> ComparedWearRate(const RE::BGSInventoryItem& a_item, const CompareItems& a_compareItems);
+
+	// Patches the 3 calls of the Pip-Boy's compare pass that feed the CND row
+	// its change, all or none, in Compare.cpp. Only after the 2 Pip-Boy card
+	// calls went in, since the rates come from what they noted.
+	void PatchCompare();
+
 	// The CND row of food that spoils, in Food.cpp: how much of its time
 	// a_stack has left, in tenths as Condition::CardTenths counts them, 1000
 	// before it is stamped and 0 once spoiled. Nothing for anything else,
@@ -122,8 +141,11 @@ namespace ItemCard
 	// What NEC writes after the percent in the number's own field.
 	inline constexpr std::string_view WEAR_RATE_START = " (x";
 
-	// What a workbench's CND entry carries beside WEAR_RATE_MARK while a mod
-	// is tried on: the wear rate of the item itself, without the mod.
+	// What a CND entry carries beside WEAR_RATE_MARK while its item is
+	// compared: at a workbench with a mod tried on, the wear rate of the item
+	// itself without the mod, and in a container or a trade the rate of the
+	// equipped item, see ComparedWearRate. The Pip-Boy keeps its compared
+	// rate in Pipboy instead.
 	inline constexpr std::string_view WEAR_RATE_COMPARED_MARK = "necWearRateCompared";
 
 	// What a weapon's or armor's CND entry carries beside its number: its
@@ -145,26 +167,28 @@ namespace ItemCard
 	// an item with no CND row.
 	[[nodiscard]] std::optional<float> WearRateOf(const RE::BGSInventoryItem& a_item, const RE::BGSInventoryItem::Stack* a_stack);
 
-	// The change a workbench feeds the CND entry, in WearRate.cpp: a_own, the
-	// item's printed rate, less a_rate, its copy's, or 0 under 0.1 apart.
+	// The change a card feeds the CND entry, in WearRate.cpp: a_own, the
+	// printed rate of the item compared, less a_rate, the item's own, or 0
+	// under 0.1 apart.
 	[[nodiscard]] float WearRateChange(float a_own, float a_rate);
 
 	// Writes a_rate beside the number on a_row, the CND row, in WearRate.cpp:
 	// in the number's own field, grown left over the label's free room, else
 	// in the empty field beside it, else nowhere, so it never draws shrunk.
 	// Nothing for a row whose item has no rate. a_movieFile is the movie's.
-	// a_compared is the rate of the item a workbench compares its copy with.
-	// While a mod changes the printed rate, it signs the rate in the cell
-	// beside the number, and a change the movie prints beside the number is
-	// kept with its sign turned to the way the rate moves. The rate in the
-	// number's field never carries a sign.
+	// a_compared is the rate of the item compared, see
+	// WEAR_RATE_COMPARED_MARK. While the 2 print apart, it signs the rate in
+	// the cell beside the number, and a change the movie prints beside the
+	// number is kept with its sign turned to the way the rate moves. The rate
+	// in the number's field never carries a sign. a_movieCompares says the
+	// movie compares 2 cards itself, so the cell is its own and gets nothing.
 	void WriteWearRate(Scaleform::GFx::Movie& a_movie, std::string_view a_movieFile, Scaleform::GFx::Value& a_row, std::optional<float> a_rate,
-		std::optional<float> a_compared);
+		std::optional<float> a_compared, bool a_movieCompares);
 
 	// The part of WriteWearRate that runs at every render once the rate has
 	// its place, for a row whose number the bar replaced, in WearRate.cpp:
-	// while a mod changes the printed rate, a change the movie prints
-	// beside the number is signed the way the rate moves.
+	// while the 2 rates print apart, a change the movie prints beside the
+	// number is signed the way the rate moves.
 	void TurnWearRateChange(std::string_view a_movieFile, Scaleform::GFx::Value& a_row, std::optional<float> a_rate, std::optional<float> a_compared);
 
 	// Drops what WriteWearRate remembers of the last row it measured, for
@@ -225,6 +249,11 @@ namespace ItemCard
 	// Adds the render listener that keeps a card's CND row above Damage to
 	// a menu movie that draws item cards, and passes over any other movie.
 	void WatchCard(Scaleform::GFx::Movie& a_movie, std::string_view a_file);
+
+	// One trace line for a_card, the card on the screen, in Trace.cpp: each
+	// entry's text and value, the difference to the equipped item, and a
+	// damage entry's type. a_movieFile names the movie.
+	void TraceCard(std::string_view a_movieFile, const Scaleform::GFx::Value& a_card);
 
 	// Gives the CND row a column of its own in a list menu's item lists, in
 	// Column.cpp, while bCndColumn is on and the movie's lists take column

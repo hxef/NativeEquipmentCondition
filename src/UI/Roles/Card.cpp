@@ -179,6 +179,29 @@ namespace Roles::Card
 		return card;
 	}
 
+	// a_card itself is told by its place in the parent, since 2 values of 1
+	// clip cannot be compared.
+	std::vector<Value> Beside(Scaleform::GFx::Movie& a_movie, Value& a_card)
+	{
+		std::vector<Value> cards;
+		auto               parent = Flash::Member(a_card, "parent"sv);
+		Value              own;
+		if (!parent.IsDisplayObject() || !parent.Invoke("getChildIndex", &own, &a_card, 1) || !Flash::IsAnyNumber(own)) {
+			return cards;
+		}
+		const auto children = Flash::Number(parent, "numChildren"sv);
+		for (std::uint32_t i = 0; i < children; i++) {
+			if (static_cast<double>(i) == Flash::AsNumber(own)) {
+				continue;
+			}
+			auto child = Flash::ChildAt(parent, i);
+			if (child.IsDisplayObject() && Flash::Member(child, "InfoObj"sv).IsArray() && OnScreen(a_movie, child)) {
+				cards.push_back(std::move(child));
+			}
+		}
+		return cards;
+	}
+
 	std::string FirstRowName(Value& a_card)
 	{
 		const auto children = Flash::Number(a_card, "numChildren"sv);

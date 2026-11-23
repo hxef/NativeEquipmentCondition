@@ -160,4 +160,9 @@ namespace Text
 	{
 		return Pick(Of(a_trade, TRADER_SIGN_WEAPONS, TRADER_SIGN_ARMOR, TRADER_SIGN_CLOTHING));
 	}
+
+	std::string SignKindShort(Trade a_trade)
+	{
+		return Pick(Of(a_trade, TRADER_SIGN_WEAPONS_SHORT, TRADER_SIGN_ARMOR_SHORT, TRADER_SIGN_CLOTHING_SHORT));
+	}
 }

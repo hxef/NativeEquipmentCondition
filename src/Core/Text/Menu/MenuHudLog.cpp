@@ -37,6 +37,7 @@ namespace Text
 			{ &Settings::bPickupBarFlipped, PICKUP_BAR_FLIPPED_NAME, PICKUP_BAR_FLIPPED_HELP },
 			{ &Settings::bPickupPenaltyMark, PICKUP_BAR_MARK_NAME, PICKUP_BAR_MARK_HELP },
 			{ &Settings::bQuickContainerBarFlipped, QUICK_CONTAINER_BAR_FLIPPED_NAME, QUICK_CONTAINER_BAR_FLIPPED_HELP },
+			{ &Settings::bQuickContainerCndAtRight, QUICK_CONTAINER_AT_RIGHT_NAME, QUICK_CONTAINER_AT_RIGHT_HELP },
 			{ &Settings::fItemCardBarThickness, ITEM_CARD_BAR_THICKNESS_NAME, ITEM_CARD_BAR_THICKNESS_HELP },
 			{ &Settings::bItemCardBarFlipped, ITEM_CARD_BAR_FLIPPED_NAME, ITEM_CARD_BAR_FLIPPED_HELP },
 			{ &Settings::iApparelFigureCnd, FIGURE_CND_NAME, FIGURE_CND_HELP },

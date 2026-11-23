@@ -1,7 +1,5 @@
 #pragma once
 
-#include "Core/Plugin.h"
-
 #include <cstdint>
 #include <optional>
 #include <string>
@@ -30,10 +28,22 @@ namespace QuickContainer
 	// a_fromRight.
 	void Draw(Scaleform::GFx::Value& a_meter, std::int32_t a_percent, bool a_selected, bool a_fromRight);
 
-	// At Percent the row shows CND and its percent in the meter's place, in
-	// the name's font at this share of the name's size, as the pickup
-	// prompt's word is to the name over it.
+	// At Percent the row shows CND and its percent in the meter's place,
+	// centred on the name's capitals, in the name's font at this share of the
+	// name's size, as the pickup prompt's word is to the name over it.
 	constexpr double NUMBER_SHARE = 0.7;
+
+	// The share of a font's ascent, its line's top to its baseline, taken as
+	// its capitals' height, which centres the percent's capitals on the
+	// name's. No text field tells a font's capital height, so it is typed.
+	// It was found on shots of the quick container under vanilla's HUD and 2
+	// HUD mods, where it leaves the percent's capitals within 0.5 pixels of
+	// the name's on average. It is more than the capitals' own share, about
+	// 0.75 there, and it is kept, since at a name's full size the excess
+	// moves the name's middle and the percent's by about as much and they
+	// stay level. A name shrunk under half its size gets its percent up to
+	// 1.5 pixels low.
+	constexpr double CAPITALS_SHARE = 0.92;
 
 	// The font a row's name is written in, read from its field's own text
 	// format: its name, such as $MAIN_Font, and its size.
@@ -51,7 +61,9 @@ namespace QuickContainer
 
 	// Writes a_text into a row's number field in a_letters at NUMBER_SHARE of
 	// their size, black on the highlighted row and white elsewhere, as the
-	// row writes its name. Returns how wide its letters are in the row's
-	// units, or nothing when they cannot be measured.
+	// row writes its name. Returns how wide its text is in the row's units,
+	// or nothing when it cannot be measured. The field's textWidth is taken,
+	// the measure its letters end by, since the first line's width reads
+	// short of it on some texts, such as CND 40.0%.
 	std::optional<double> Write(Scaleform::GFx::Value& a_field, std::string_view a_text, const Letters& a_letters, bool a_selected);
 }

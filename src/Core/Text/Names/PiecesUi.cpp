@@ -18,6 +18,7 @@ namespace Text
 			{ Piece::kCndWorkbench, PIECE_WORKBENCHES },
 			{ Piece::kCndCooking, PIECE_COOKING },
 			{ Piece::kCndPipboy, PIECE_PIPBOY },
+			{ Piece::kCndPipboyMarks, PIECE_PIPBOY_MARKS },
 			{ Piece::kRateCardsContainers, PIECE_CONTAINERS },
 			{ Piece::kRateCardsWorkbench, PIECE_WORKBENCHES },
 			{ Piece::kRateCardsCooking, PIECE_COOKING },

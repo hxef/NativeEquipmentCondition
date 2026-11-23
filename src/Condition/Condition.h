@@ -175,8 +175,8 @@ namespace Condition
 	// setting.
 	[[nodiscard]] std::string TenthText(std::uint32_t a_tenths);
 
-	// The value a card is given for a_tenths. Vanilla, DEF_UI and FallUI cut
-	// a number's text after its precision without rounding, and a float tenth
+	// The value a card is given for a_tenths. Vanilla and UI mods cut a
+	// number's text after its precision without rounding, and a float tenth
 	// can sit just under its value: a Weight of 4.2 prints as 4.1. So a tenth
 	// goes a hair above, 97.5 as 97.505, the way WearRateChange feeds a rate
 	// change. A whole value goes exact at Off, for a full item and at

@@ -207,4 +207,10 @@ namespace Mcm
 	// refreshMenu does, with the highlight put back first as above. Nothing
 	// while MCM is not open, in Layout.cpp.
 	void RefreshMcm(Scaleform::GFx::Movie& a_movie);
+
+	// Gives the highlight back to the page name a put back took it from
+	// while the pointer is still on it, so a press there opens that page, in
+	// Layout.cpp. Called every frame of the main or pause menu, the frame
+	// after the refresh.
+	void GiveHoverBack(Scaleform::GFx::Movie& a_movie);
 }

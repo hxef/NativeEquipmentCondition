@@ -80,7 +80,8 @@ src/
       Features.h             the settings under [Features], which Settings.h includes
       Line.cpp               NEC.log's Settings line, and every switch and number in NEC.ini's order
       Ids.cpp                a switch or number found by its id on the MCM page or by its key
-      Tuning.h               the settings under [Balance] and [HUD], which Settings.h includes
+      Tuning.h               the settings under [Balance], which Settings.h includes
+      Hud.h                  the settings under [HUD], which Settings.h includes
     Snapshot.h               a table other threads read while it is measured again, swapped in whole, and how 2 readings differ
     Text/
       Text.h/.cpp            the plugin's own sentences, 1 function each
@@ -239,6 +240,7 @@ src/
       Card.h/.cpp            the item card and its CND row
       Hud.h/.cpp             the ammo counter, its divider, numbers and colour, the parts beside it, where a quick container row's name starts and ends
       ContainerName.h/.cpp   the container's name at the top of the quick container
+      QuickRow.h/.cpp        what stands at a quick container row's right edge, where its CND goes
       TraderSide.h/.cpp      the trader's side of the barter screen, the bracket around their list, its title, what it draws and what the screen draws beside it
       Rollover.h/.cpp        the pickup prompt: the name and the button hints under it
       PerkCard.h/.cpp        the perk chart's card and the field its description prints in
@@ -284,7 +286,8 @@ src/
         QuickContainer.h/.cpp        the feature: its install and the movie
         Rows.h/.cpp                  the rows as the game builds them
         Meters.h/.cpp                the meters on the HUD's rows
-        RowLayout.h/.cpp             how a row fits its name, icons and meter, or its number at Percent
+        RowLayout.h/.cpp             how a row fits its name, icons and meter
+        RowPlace.cpp                 where a row's CND stands, and its number at Percent
         Draw.h/.cpp                  how one meter or number looks
         FridgeIcon.h/.cpp            the icon beside a fridge's name
     Inventory/

@@ -170,29 +170,56 @@ namespace VendorRepair::TraderList
 			                       std::format("{:s} sets {:s} to {:d}%", who, Named(a_trade), *a_level);
 		}
 
-		// 1 line into a_reading, said in NEC.log. a_who is how NEC.log names
-		// the form, and a_unloaded says it was not loaded.
+		// a_word split at its commas, each piece trimmed. A word with no
+		// comma is 1 piece.
+		std::vector<std::string_view> Pieces(std::string_view a_word)
+		{
+			std::vector<std::string_view> pieces;
+			for (auto rest = a_word;;) {
+				const auto comma = rest.find(',');
+				pieces.push_back(IniText::Trimmed(rest.substr(0, comma)));
+				if (comma == std::string_view::npos) {
+					return pieces;
+				}
+				rest.remove_prefix(comma + 1);
+			}
+		}
+
+		// 1 line into a_reading, each kind and level between its commas on
+		// its own, said in NEC.log. A wrong one is skipped and the rest count.
+		// a_who is how NEC.log names the form, and a_unloaded says it was not
+		// loaded, said once with the first kind the line sets.
 		void Keep(Reading& a_reading, Tier a_tier, RE::TESFormID a_id, std::string_view a_who, bool a_unloaded, std::string_view a_word,
 			std::string_view a_file, std::size_t a_line, ListFiles::Faults& a_faults)
 		{
-			auto parsed = Parse(a_word, a_file, a_line, a_faults);
-			if (!parsed) {
-				return;
+			const auto pieces = Pieces(a_word);
+			for (std::size_t i = 0; i < pieces.size(); i++) {
+				if (pieces[i].empty()) {
+					const auto where = i == 0 ? "before its first comma" : (i + 1 == pieces.size() ? "after its last comma" : "between 2 commas");
+					a_faults.Add(std::format("{:s} line {:d}: \"{:s}\" has no kind {:s}, so NEC skips that comma.", a_file, a_line, a_word, where));
+					continue;
+				}
+				auto parsed = Parse(pieces[i], a_file, a_line, a_faults);
+				if (!parsed) {
+					continue;
+				}
+				auto& [trade, set] = *parsed;
+				auto& slot = a_reading.table[std::to_underlying(a_tier)][a_id][std::to_underlying(trade)];
+				if (slot) {
+					const auto where = slot->file != a_file ? std::format("{:s} line {:d}", slot->file, slot->line) :
+					                   slot->line != a_line ? std::format("line {:d}", slot->line) :
+					                                          std::string{ "the first" };
+					a_faults.Add(std::format("{:s} line {:d}: {:s} has {:s} set again, so NEC keeps {:s}.", a_file, a_line, a_who, Named(trade), where));
+					continue;
+				}
+				if (std::exchange(a_unloaded, false)) {
+					REX::INFO("{:s} line {:d}: {:s} is not loaded as the game starts, so NEC takes it for a trader's ref ID.", a_file,
+						a_line, a_who);
+				}
+				REX::DEBUG("{:s} line {:d}: {:s}.", a_file, a_line, Sets(a_tier, a_who, trade, set.level));
+				slot = std::move(set);
+				a_reading.mine[std::to_underlying(a_tier)]++;
 			}
-			auto& [trade, set] = *parsed;
-			auto& slot = a_reading.table[std::to_underlying(a_tier)][a_id][std::to_underlying(trade)];
-			if (slot) {
-				const auto where = slot->file == a_file ? std::format("line {:d}", slot->line) : std::format("{:s} line {:d}", slot->file, slot->line);
-				a_faults.Add(std::format("{:s} line {:d}: {:s} has {:s} set again, so NEC keeps {:s}.", a_file, a_line, a_who, Named(trade), where));
-				return;
-			}
-			if (a_unloaded) {
-				REX::INFO("{:s} line {:d}: {:s} is not loaded as the game starts, so NEC takes it for a trader's ref ID.", a_file,
-					a_line, a_who);
-			}
-			REX::DEBUG("{:s} line {:d}: {:s}.", a_file, a_line, Sets(a_tier, a_who, trade, set.level));
-			slot = std::move(set);
-			a_reading.mine[std::to_underlying(a_tier)]++;
 		}
 
 		// A line whose form is loaded, by what the form is.

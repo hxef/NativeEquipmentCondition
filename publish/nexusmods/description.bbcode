@@ -99,7 +99,16 @@ Your weapons and armor [b]wear down as you use them[/b], the way they did in Fal
 [*]With MCM, every setting changes on the spot. The main page shows NEC's version, [b]All NEC features[/b], the presets, Log and any part another mod took over. The Weapons, Armor, Loot, Repairs, UI and Little extras pages hold the rest, where you switch features off or tune wear, penalties, loot condition, prices and repair costs.
 [*]Without MCM, [b]NEC.ini[/b] in Data\F4SE\Plugins\NEC\Config explains every setting. Copy a line into [b]NEC_custom.ini[/b] beside it, under the same section heading, change the value and restart the game.
 [*]Either way your changes go in NEC_custom.ini, or into the presets' Custom folder while a preset other than Default is picked, and NEC.ini stays as it ships. The mod comes without a NEC_custom.ini, so an update never wipes your settings. With Mod Organizer 2, keep NEC_custom.ini and the Custom folder in their own mod or in overwrite.
-[*][b]Presets[/b]. The [b]Preset[/b] row on NEC's main MCM page picks Default (NEC.ini's values), Casual (gear wears half as fast and repairs cost half), Hardcore (gear wears 1.5 times as fast, repairs cost more, and those that take components ask crafting perk ranks), New Vegas (repairs from a spare in the Pip-Boy and none at the workbench, as in Fallout: New Vegas) or a preset you downloaded or saved. Your changes to Default, a shipped or a downloaded preset show as (Custom) and never touch its file. [b]Save as new preset[/b] writes a preset of your own you can share. [b]Reset preset[/b] drops your changes and [b]Delete preset[/b] removes your own preset, each after you confirm. A preset leaves the UI page and the log as you set them. Presets you download go in Data\F4SE\Plugins\NEC\Config\MCM_Presets, and a preset you save goes in its Custom folder.
+[*][b]Presets[/b]. The [b]Preset[/b] row on NEC's main MCM page picks Default, Casual, Hardcore, New Vegas or a preset you downloaded or saved.
+[spoiler]
+[list]
+[*]The presets are Default (NEC.ini's values), Casual (gear wears half as fast and repairs cost half), Hardcore (gear wears 1.5 times as fast, repairs cost more, and those that take components ask crafting perk ranks) and New Vegas (repairs from a spare in the Pip-Boy and none at the workbench, as in Fallout: New Vegas).
+[*]Your changes to Default, a shipped or a downloaded preset show as (Custom) and never touch its file.
+[*][b]Save as new preset[/b] writes a preset of your own you can share. [b]Reset preset[/b] drops your changes and [b]Delete preset[/b] removes your own preset, each after you confirm.
+[*]A preset leaves the UI page and the log as you set them.
+[*]Presets you download go in Data\F4SE\Plugins\NEC\Config\MCM_Presets, and a preset you save goes in its Custom folder.
+[/list]
+[/spoiler]
 [/list]
 
 [size=3][b][font=Georgia][color=#1AFF80]Little extras[/color][/font][/b][/size]
@@ -175,7 +184,7 @@ Fallout4.esm|002CB9 = armor none    ; Arturo Rodriguez repairs no armor
 Fallout4.esm|1679CE = armor 90      ; Lucas Miller's caravan, armor to 90%
 Fallout4.esm|10C03F = weapons 50    ; every settlement weapon store, to 50%[/code]
 
-A line names a trader, a kind of gear (weapons, armor or clothing) and how far they repair it, from 30 to 100 in steps of 10. [font=Courier New]none[/font] means they don't repair that kind. [font=Courier New]measured[/font] leaves it to NEC, as if there were no line, which exempts 1 trader from their faction's line.
+A line names a trader, a kind of gear (weapons, armor or clothing) and how far they repair it, from 30 to 100 in steps of 10. More kinds of the same trader can follow in that line, split by commas, as in [font=Courier New]weapons 100, armor none[/font]. [font=Courier New]none[/font] means they don't repair that kind. [font=Courier New]measured[/font] leaves it to NEC, as if there were no line, which exempts 1 trader from their faction's line.
 
 The ID can be the trader's ref ID, their base ID or the form ID of the faction they trade under, which covers a whole caravan or every store of a kind. The ref ID beats the base ID, which beats the faction. The fastest way to get a ref ID is to click the trader in the console. To get all 3, turn on [b]Bug report logs[/b] and trade with them. NEC.ui.trace.log then lists all 3 in this form. A ref ID that starts with FF belongs to an NPC the game created during play, such as a spawned settler. NEC skips such a line, because that ID is stored in the save (in another save, or after that NPC is removed, it can point to a different NPC). Use their base ID or faction instead.
 
@@ -190,7 +199,7 @@ Fallout4.esm|08E736 = damage 0.3            ; Baseball Bat
 Fallout4.esm|148338 = wear 1.2              ; a 10mm receiver
 Fallout4.esm|092A86 = wear 0.8 damage 0.9   ; WeaponTypeBallistic keyword[/code]
 
-A line holds [font=Courier New]wear[/font], [font=Courier New]damage[/font] or both, each followed by its number. [font=Courier New]wear[/font] is how fast it wears, from 0 to 10, where 1 is normal. [font=Courier New]damage[/font] is the share of its full damage the weapon still does at 0 condition, from 0 to 1, so the Baseball Bat above hits for 30% when fully worn. [b]Damage at 0 condition[/b] sets it for every other weapon. Both come from the weapon's own line, else from a line for 1 of its keywords. A mod's line multiplies the wear, up to 10 in all, and its damage beats a keyword's. The first line read counts.
+A line holds [font=Courier New]wear[/font], [font=Courier New]damage[/font] or both, each followed by its number. [font=Courier New]wear[/font] is a multiplier for how fast it wears, from 0 to 10, where 1 is normal. [font=Courier New]damage[/font] is the share of its full damage the weapon still does at 0 condition, from 0 to 1, so the Baseball Bat above hits for 30% when fully worn. [b]Damage at 0 condition[/b] sets it for every other weapon. Both come from the weapon's own line, else from a line for 1 of its keywords. A mod's line multiplies the wear, up to 10 in all, and its damage beats a keyword's. The first line read counts.
 
 NEC.log lists what each file sets and any line it skips. NEC ships Wear\NEC_Example.ini, an example that changes nothing as it is.[/spoiler]
 
@@ -215,7 +224,7 @@ Installing it to a playthrough in progress? What you carry and store stays at 10
 
 [b]Repair anything broken first[/b], at a workbench, at a trader or, for gear you still have on, with [font=Courier New]srm[/font] in the console. Fallout 4 still has the rule from Fallout 3 and New Vegas that an item at 0 condition can't be equipped, and once NEC is gone nothing in the game can repair it, so it stays unusable.
 
-After that, [b]removing the mod is safe.[/b] It has no ESP and keeps no save data of its own. NEC keeps each item's condition in its health, one of the small tags, called extra data, that Fallout 4 already saves on an item, like its custom name. Power armor pieces use health too. That health is all that stays in your save. On anything but power armor the game ignores it for damage, protection and price, so what is left behind does nothing there, except that identical items at different conditions stay in separate stacks in your inventory.
+After that, [b]removing the mod is safe.[/b] It has no ESP and keeps no save data of its own. NEC keeps each item's condition in its health, one of the small tags, called extra data, that Fallout 4 already saves on an item, like its custom name. Power armor pieces use health too. Food keeps the day it started to spoil in another such tag. These tags are all that stays in your save. On anything but power armor the game ignores them for damage, protection and price, so what is left behind does nothing there, except that identical items at different conditions stay in separate stacks in your inventory.
 
 To stop NEC without quitting, turn off [b]All NEC features[/b] on its main MCM page. NEC then changes nothing until you turn it back on. Your weapons and armor keep their condition, broken ones too, so repair them first. Food keeps aging, so it spoils on its usual day once NEC is on again. Loot that spawns while NEC is off stays at 100%.
 

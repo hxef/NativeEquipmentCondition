@@ -188,7 +188,7 @@ namespace Condition
 
 	double CardValue(std::uint32_t a_tenths)
 	{
-		// A cut after 1 decimal or after 2, as FallUI's list column cuts,
+		// A cut after 1 decimal or after 2, as a UI mod's list column cuts,
 		// still gives the tenth: 97.505 prints as 97.5 and 97.50.
 		const auto tenths = std::min(a_tenths, FULL_TENTHS);
 		const auto value = static_cast<double>(tenths) / static_cast<double>(TENTHS_PER_PERCENT);

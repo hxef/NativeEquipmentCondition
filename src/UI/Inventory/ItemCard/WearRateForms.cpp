@@ -1,9 +1,12 @@
 #include "UI/Inventory/ItemCard/WearRateForms.h"
 
+#include "Core/IniText.h"
 #include "UI/Flash.h"
 #include "UI/Roles/Card.h"
 
 #include <algorithm>
+#include <cctype>
+#include <charconv>
 #include <cmath>
 #include <format>
 #include <limits>
@@ -230,5 +233,62 @@ namespace ItemCard
 		}
 		PutLook(a_field, a_text, *look);
 		return true;
+	}
+
+	// -------------------------------------------------------------------
+	// What the cell beside the number shows
+	// -------------------------------------------------------------------
+
+	bool IsWearRateText(std::string_view a_text)
+	{
+		if (a_text.starts_with("(x"sv)) {
+			return true;
+		}
+		return a_text.size() > 1 && a_text[0] == 'x' && (a_text[1] == '.' || std::isdigit(static_cast<unsigned char>(a_text[1])));
+	}
+
+	std::optional<std::string> TurnedChange(std::string_view a_text, char a_sign)
+	{
+		const auto shown = IniText::Trimmed(a_text);
+		const auto bracketed = shown.size() > 1 && shown.front() == '(' && shown.back() == ')';
+		const auto change = bracketed ? shown.substr(1, shown.size() - 2) : shown;
+		if (change.size() < 2 || (change[0] != '+' && change[0] != '-') || change[0] == a_sign) {
+			return std::nullopt;
+		}
+		// After the sign: digits, then at most a point and more digits.
+		const auto digits = [](std::string_view a_digits) {
+			return !a_digits.empty() && std::ranges::all_of(a_digits, [](char a_char) { return std::isdigit(static_cast<unsigned char>(a_char)) != 0; });
+		};
+		const auto number = change.substr(1);
+		const auto point = number.find('.');
+		const auto isNumber = point == std::string_view::npos ? digits(number) : (digits(number.substr(0, point)) && digits(number.substr(point + 1)));
+		if (!isNumber) {
+			return std::nullopt;
+		}
+		std::string turned{ a_text };
+		turned[static_cast<std::size_t>(change.data() - a_text.data())] = a_sign;
+		return turned;
+	}
+
+	bool ShowsFedChange(std::string_view a_text, float a_change)
+	{
+		auto shown = IniText::Trimmed(a_text);
+		if (shown.empty() || IsWearRateText(shown) || shown.find_first_not_of("+- "sv) == std::string_view::npos) {
+			return true;
+		}
+		if (shown.size() > 1 && shown.front() == '(' && shown.back() == ')') {
+			shown = shown.substr(1, shown.size() - 2);
+		}
+		if (!shown.empty() && (shown.front() == '+' || shown.front() == '-')) {
+			shown = shown.substr(1);
+		}
+		float      number = 0.0F;
+		const auto end = shown.data() + shown.size();
+		const auto [at, error] = std::from_chars(shown.data(), end, number);
+		if (error != std::errc{} || at != end) {
+			return false;
+		}
+		const auto cut = std::trunc(std::abs(a_change) * 10.0F) / 10.0F;
+		return std::abs(number - cut) < 0.001F;
 	}
 }

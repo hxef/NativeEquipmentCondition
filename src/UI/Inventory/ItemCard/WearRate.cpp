@@ -9,8 +9,6 @@
 #include "UI/Inventory/ItemCard/WearRateForms.h"
 #include "UI/Roles/Card.h"
 
-#include <algorithm>
-#include <cctype>
 #include <charconv>
 #include <cmath>
 #include <format>
@@ -105,44 +103,6 @@ namespace ItemCard
 			return { std::format("{:s} {:s}", text, sign), std::format("{:s} {:s}", bare, sign), text, bare };
 		}
 
-		// Whether a cell's a_text is a rate NEC wrote, (x1.3), x262, x1.3 + or
-		// x.01 +, and not a difference the movie prints itself, such as +8.5.
-		bool IsWearRateText(std::string_view a_text)
-		{
-			if (a_text.starts_with("(x"sv)) {
-				return true;
-			}
-			return a_text.size() > 1 && a_text[0] == 'x' && (a_text[1] == '.' || std::isdigit(static_cast<unsigned char>(a_text[1])));
-		}
-
-		// a_text, a change the movie printed with its sign, (-0.1) or +0.2,
-		// with that sign set to a_sign, + or -: (-0.1) and + give (+0.1).
-		// Nothing for any other text, marks such as - - or a rate, and for a
-		// change that already shows a_sign, so a second render never turns
-		// it back. Spaces round the change stay where they are.
-		std::optional<std::string> TurnedChange(std::string_view a_text, char a_sign)
-		{
-			const auto shown = IniText::Trimmed(a_text);
-			const auto bracketed = shown.size() > 1 && shown.front() == '(' && shown.back() == ')';
-			const auto change = bracketed ? shown.substr(1, shown.size() - 2) : shown;
-			if (change.size() < 2 || (change[0] != '+' && change[0] != '-') || change[0] == a_sign) {
-				return std::nullopt;
-			}
-			// After the sign: digits, then at most a point and more digits.
-			const auto digits = [](std::string_view a_digits) {
-				return !a_digits.empty() && std::ranges::all_of(a_digits, [](char a_char) { return std::isdigit(static_cast<unsigned char>(a_char)) != 0; });
-			};
-			const auto number = change.substr(1);
-			const auto point = number.find('.');
-			const auto isNumber = point == std::string_view::npos ? digits(number) : (digits(number.substr(0, point)) && digits(number.substr(point + 1)));
-			if (!isNumber) {
-				return std::nullopt;
-			}
-			std::string turned{ a_text };
-			turned[static_cast<std::size_t>(change.data() - a_text.data())] = a_sign;
-			return turned;
-		}
-
 		// Signs a change the movie printed in a_cell a_way, + or -, the way
 		// the rate moves. a_movie names the movie for the trace.
 		void TurnChange(std::string_view a_movie, Value& a_cell, char a_way)
@@ -152,18 +112,22 @@ namespace ItemCard
 			}
 		}
 
-		// While a mod changes the printed rate, the hook fed the CND entry
-		// this change, by the same test on the same 2 rates. A movie that
-		// prints it beside the number shows its sign as fed, - for a rate
-		// that rose, since it turns only Weight's. The rate's way is the
-		// other, or nothing with no change.
-		std::optional<char> RateWay(float a_rate, std::optional<float> a_compared)
+		// The change the hook fed the CND entry while the 2 rates print apart,
+		// by the same test on the same 2 rates, else 0.
+		float FedChange(float a_rate, std::optional<float> a_compared)
 		{
-			const auto change = a_compared ? WearRateChange(*a_compared, a_rate) : 0.0F;
-			if (change == 0.0F) {
+			return a_compared ? WearRateChange(*a_compared, a_rate) : 0.0F;
+		}
+
+		// A movie that prints the fed change beside the number shows its sign
+		// as fed, - for a rate that rose, since it turns only Weight's. The
+		// rate's way is the other, or nothing with no change.
+		std::optional<char> RateWay(float a_change)
+		{
+			if (a_change == 0.0F) {
 				return std::nullopt;
 			}
-			return change < 0.0F ? '+' : '-';
+			return a_change < 0.0F ? '+' : '-';
 		}
 
 		// -------------------------------------------------------------------
@@ -228,10 +192,10 @@ namespace ItemCard
 		return rate && std::isfinite(*rate) ? rate : std::nullopt;
 	}
 
-	// DEF_UI and FallUI cut a change after 1 decimal, so -0.1 goes as -0.105,
-	// which they print as -0.1 however the float rounds it. 2 printed rates
-	// 0.1 apart can differ by a hair less in a float, 0.09999, which would
-	// print as 0.0 and draw no vanilla mark. A change under 0.1 (rates under
+	// UI mods cut a change after 1 decimal, so -0.1 goes as -0.105, which
+	// they print as -0.1 however the float rounds it. 2 printed rates 0.1
+	// apart can differ by a hair less in a float, 0.09999, which would print
+	// as 0.0 and draw no vanilla mark. A change under 0.1 (rates under
 	// x0.05) draws no vanilla mark at precision 1, so it is not fed.
 	// 1.0628 and 1.1532 give -0.105, 1.0628 and 0.8622 give 0.205, and 5.6793
 	// and 5.7007 (both x5.7) give 0.
@@ -259,7 +223,7 @@ namespace ItemCard
 	// another copy at an earlier render is written again. Each trace line
 	// comes once for the same card, since the listener runs at every redraw.
 	void WriteWearRate(Scaleform::GFx::Movie& a_movie, std::string_view a_movieFile, Value& a_row, std::optional<float> a_rate,
-		std::optional<float> a_compared)
+		std::optional<float> a_compared, bool a_movieCompares)
 	{
 		if (!a_rate) {
 			Roles::Noted(a_movie, "CND row's wear rate"sv, "CND shows alone"sv);
@@ -275,8 +239,8 @@ namespace ItemCard
 		std::string printed{ shown.GetString() };
 		const auto  at = printed.find(WEAR_RATE_START);
 
-		const auto way = RateWay(*a_rate, a_compared);
-		const auto changed = way.has_value();
+		const auto fed = FedChange(*a_rate, a_compared);
+		const auto way = RateWay(fed);
 		const auto movie = MovieName(a_movieFile);
 		// Signs a change the movie printed in a_cell the rate's way. It runs
 		// at every render while the rate stays in the field too, since the
@@ -286,14 +250,19 @@ namespace ItemCard
 		};
 
 		if (at != std::string::npos && std::string_view{ printed }.substr(at + 1) == rate) {
-			if (changed) {
+			if (way) {
 				auto cell = Roles::Card::CellBeside(a_row);
-				turnChange(cell);
+				if (ShowsFedChange(Flash::String(cell, "text"sv), fed)) {
+					turnChange(cell);
+				}
 			}
 			return;
 		}
 		auto cell = Roles::Card::CellBeside(a_row);
 		const auto now = StateOf(a_movie, field, cell, rate);
+		// A cell with a figure of the movie's own is no change NEC fed, so
+		// the row reads as if nothing were compared.
+		const auto changed = way && ShowsFedChange(now.beside, fed);
 		{
 			const std::scoped_lock lock{ g_lastLock };
 			if (now == g_last) {
@@ -343,7 +312,7 @@ namespace ItemCard
 			remember();
 			return;
 		}
-		if (cell.IsDisplayObject()) {
+		if (cell.IsDisplayObject() && !a_movieCompares) {
 			// Only the last try's reason is traced, the rate with no sign and
 			// no brackets, as it says why the row shows no rate at all.
 			const auto  keepColour = changed && !beside.empty();
@@ -364,11 +333,14 @@ namespace ItemCard
 
 	void TurnWearRateChange(std::string_view a_movieFile, Value& a_row, std::optional<float> a_rate, std::optional<float> a_compared)
 	{
-		const auto way = a_rate ? RateWay(*a_rate, a_compared) : std::nullopt;
+		const auto fed = a_rate ? FedChange(*a_rate, a_compared) : 0.0F;
+		const auto way = RateWay(fed);
 		if (!way) {
 			return;
 		}
 		auto cell = Roles::Card::CellBeside(a_row);
-		TurnChange(MovieName(a_movieFile), cell, *way);
+		if (ShowsFedChange(Flash::String(cell, "text"sv), fed)) {
+			TurnChange(MovieName(a_movieFile), cell, *way);
+		}
 	}
 }

@@ -9,8 +9,10 @@
 // thin frame around a bar, black on the highlighted row. Food that spoils gets
 // one too, its freshness, while Food spoils is on. At Quick container CND
 // Percent the row shows CND and the percent in the meter's place instead, in
-// the name's font at 0.7 of its size, on the name's baseline, and the name
-// narrows by the widest such text.
+// the name's font at 0.7 of its size, centred on the name's capitals, and the
+// name narrows by the widest such text. bQuickContainerCndAtRight, on as it
+// ships, puts the meter or the percent at the row's right edge, and a centred
+// name stays centred in the room left of it.
 //
 // The hard part is which stack a row stands for, since 3 rows can all read 10mm
 // Pistol. What the game sends to the HUD keeps only the name, the count and the
@@ -20,10 +22,11 @@
 // and each row takes its meter from the newest whose names and counts match.
 //
 // Rows.cpp is the rows as the game builds them, Meters.cpp the meters on the
-// HUD's rows, RowLayout.cpp how a row fits its name, icons and meter or
-// number, and Draw.cpp how one meter or number looks. FridgeIcon.cpp puts an
-// icon beside a fridge's name, from the container Rows.cpp sees. Rows.h,
-// Meters.h, RowLayout.h, Draw.h and FridgeIcon.h are what they share.
+// HUD's rows, RowLayout.cpp how a row fits its name, icons and meter,
+// RowPlace.cpp where its CND stands and its number at Percent, and Draw.cpp
+// how one meter or number looks. FridgeIcon.cpp puts an icon beside a
+// fridge's name, from the container Rows.cpp sees. Rows.h, Meters.h,
+// RowLayout.h, Draw.h and FridgeIcon.h are what they share.
 namespace QuickContainer
 {
 	// Patches the calls that build the rows.

@@ -86,8 +86,9 @@ namespace Text
 	// the 10 wear speeds, in MenuWear.cpp, the 3 Loot numbers and the 30
 	// Balance numbers, in MenuNumbers.cpp, and the 17 HUD sliders, the 2 HUD
 	// steppers, the 13 HUD switches, sLogLevel and iLogFiles, in
-	// MenuHudLog.cpp, each in NEC.ini's order, and the 4 presets rows of
-	// NEC's main page, in MenuPresets.cpp.
+	// MenuHudLog.cpp, each in NEC.ini's order, and the 5 presets rows of
+	// NEC's main page and the UI page's Reset UI settings, in
+	// MenuPresets.cpp.
 	[[nodiscard]] std::span<const MenuRow> MenuSwitches();
 	[[nodiscard]] std::span<const MenuRow> MenuWear();
 	[[nodiscard]] std::span<const MenuRow> MenuNumbers();

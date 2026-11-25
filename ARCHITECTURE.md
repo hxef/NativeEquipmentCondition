@@ -258,7 +258,8 @@ src/
       Layout.cpp             MCM's list in None mode while one of NEC's pages shows, the HUD bar sliders' live ends, NEC's pages out of the left list while bNecOn is off, and MCM's refresh of the page
       HudBar.cpp             the HUD bar sliders: the bar's place in HUD units from the screen's top left, with the screen as their range
       PresetRows.cpp         the presets rows of the main page: the Preset list, its pick, the line under it, Save as new preset and Describe preset
-      PresetButtons.cpp      the Reset preset and Delete preset buttons, the box each opens and the box after a failed save, delete or description
+      Buttons.cpp            the Reset preset, Delete preset and Reset UI settings buttons, the box each opens and the box after a failed save, delete or description
+      UiPage.cpp             the settings of the UI page, which Reset UI settings puts back to their defaults
     Hud/
       HudParts/
         HudParts.h/.cpp      what the HUD readouts share

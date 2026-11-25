@@ -24,7 +24,7 @@
 // and for the pick's place in it at every build and refresh of the page, the
 // place first. Each action writes what the page still owes first, so a
 // setting made a moment before lands in the file it was made for. Reset
-// preset and Delete preset are in PresetButtons.cpp.
+// preset and Delete preset are in Buttons.cpp.
 namespace Mcm
 {
 	namespace

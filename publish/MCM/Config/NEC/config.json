@@ -375,6 +375,10 @@
     {
       "pageDisplayName": "UI",
       "content": [
+        { "type": "button",
+          "text": "NEC|ResetUi", "textFromFormName": true,
+          "help": "NEC|ResetUi.help", "helpFromFormName": true,
+          "action": { "type": "CallExternalFunction", "plugin": "Native Equipment Condition", "function": "ResetUi", "params": [] } },
         { "type": "section", "text": "NEC|HudBar", "textFromFormName": true },
         { "id": "iWeaponCnd:Free", "type": "hiddenSwitcher", "groupControl": 17,
           "valueOptions": { "sourceType": "ModSettingBool" } },

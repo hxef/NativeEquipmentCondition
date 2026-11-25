@@ -9,20 +9,22 @@
 #include <string>
 #include <string_view>
 
-// The names and help lines of the presets rows on NEC's main MCM page, see
-// MenuLine in Text.h, the list's own words and the bodies of NEC's boxes.
+// The names and help lines of the presets rows on NEC's main MCM page and of
+// the UI page's reset button, see MenuLine in Text.h, the list's own words
+// and the bodies of NEC's boxes.
 // Files and NEC.log name presets in English, see Core/Presets/Presets.h.
 namespace Text
 {
 	namespace
 	{
-		// The 5 rows are no settings of NEC.ini, so each names its id on the
+		// The 6 rows are no settings of NEC.ini, so each names its id on the
 		// page itself, as config.json gives it.
 		constexpr Settings::Named PRESET_ROW{ "Presets", "iPreset" };
 		constexpr Settings::Named RESET_ROW{ "Presets", "ResetPreset" };
 		constexpr Settings::Named DELETE_ROW{ "Presets", "DeletePreset" };
 		constexpr Settings::Named SAVE_ROW{ "Presets", "sSavePreset" };
 		constexpr Settings::Named DESCRIBE_ROW{ "Presets", "sDescribePreset" };
+		constexpr Settings::Named RESET_UI_ROW{ "UI", "ResetUi" };
 
 		constexpr MenuRow ROWS[]{
 			{ &PRESET_ROW, PRESET_NAME, PRESET_HELP },
@@ -30,6 +32,7 @@ namespace Text
 			{ &DELETE_ROW, PRESET_DELETE_NAME, PRESET_DELETE_HELP },
 			{ &SAVE_ROW, PRESET_SAVE_NAME, PRESET_SAVE_HELP },
 			{ &DESCRIBE_ROW, PRESET_DESCRIBE_NAME, PRESET_DESCRIBE_HELP },
+			{ &RESET_UI_ROW, UI_RESET_NAME, UI_RESET_HELP },
 		};
 	}
 
@@ -51,6 +54,11 @@ namespace Text
 	std::string MenuPresetReset(std::string_view a_name)
 	{
 		return Say(PRESET_RESET_BODY, a_name);
+	}
+
+	std::string MenuUiReset()
+	{
+		return Pick(UI_RESET_BODY);
 	}
 
 	std::string MenuPresetDelete(std::string_view a_name)

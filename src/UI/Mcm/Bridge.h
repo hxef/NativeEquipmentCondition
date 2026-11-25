@@ -90,8 +90,13 @@ namespace Mcm
 
 	// NEC's box with vanilla's OK, saying a_body, after a save, a delete or a
 	// description of a preset that failed and so changed nothing, in
-	// PresetButtons.cpp.
+	// Buttons.cpp.
 	void SayFailed(const std::string& a_body);
+
+	// Puts every setting of the UI page back to its default as changes from
+	// the page, so they are written and logged as the page's own, in
+	// UiPage.cpp. How many changed.
+	std::size_t ResetUiPage();
 
 	// Asks the game to work out again what it keeps from a_setting, whose
 	// value just changed, by the page or by a pick, a reset or a delete of a

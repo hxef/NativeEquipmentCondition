@@ -13,7 +13,8 @@
 // its sliders. A part left to another mod shows as a grey line at the top of
 // its block, see Notes.cpp, and in a list at the top of NEC's main page, see
 // TopList.cpp. The main page also picks, saves, resets and deletes presets,
-// see PresetRows.cpp and PresetButtons.cpp.
+// see PresetRows.cpp and Buttons.cpp, and the UI page resets its own
+// settings, see UiPage.cpp.
 //
 // A change applies on the spot. Once it has stood for half a second it is
 // written into NEC_custom.ini, or into the picked preset's file, see
@@ -25,8 +26,8 @@ namespace Mcm
 	// every other movie.
 	void OnMovieLoaded(Scaleform::GFx::Movie& a_movie, std::string_view a_file);
 
-	// Puts the functions the Reset preset and Delete preset buttons call on
-	// a_plugin, the object F4SE gives NEC in MainMenu.swf, in
-	// PresetButtons.cpp.
-	void AddPresetButtons(Scaleform::GFx::Movie& a_movie, Scaleform::GFx::Value& a_plugin);
+	// Puts the functions the Reset preset, Delete preset and Reset UI
+	// settings buttons call on a_plugin, the object F4SE gives NEC in
+	// MainMenu.swf, in Buttons.cpp.
+	void AddButtons(Scaleform::GFx::Movie& a_movie, Scaleform::GFx::Value& a_plugin);
 }

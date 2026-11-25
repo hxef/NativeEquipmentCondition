@@ -3,9 +3,10 @@
 #include <string>
 #include <string_view>
 
-// The words of the presets rows on NEC's main MCM page in the player's
-// language, kept apart from Text.h, which is at its size limit. Their names
-// and help lines are MenuLine's, see Text.h.
+// The words of the presets rows on NEC's main MCM page and of the UI page's
+// Reset UI settings button in the player's language, kept apart from Text.h,
+// which is at its size limit. Their names and help lines are MenuLine's, see
+// Text.h.
 namespace Text
 {
 	// Default, the list's first entry.
@@ -20,6 +21,9 @@ namespace Text
 	[[nodiscard]] std::string MenuPresetReset(std::string_view a_name);
 	[[nodiscard]] std::string MenuPresetDelete(std::string_view a_name);
 	[[nodiscard]] std::string MenuPresetDeleteFailed(std::string_view a_name);
+
+	// The body of NEC's box after Reset UI settings.
+	[[nodiscard]] std::string MenuUiReset();
 
 	// The bodies of NEC's box after Save as new preset saved nothing: for a
 	// typed name that kept no letter or digit, and for a file that could not

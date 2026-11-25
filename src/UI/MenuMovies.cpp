@@ -24,7 +24,7 @@ namespace MenuMovies
 
 		// F4SE calls this for every menu movie. The second argument is F4SE's
 		// object for this plugin inside the movie, which MCM's buttons call
-		// the functions of, see Mcm::AddPresetButtons.
+		// the functions of, see Mcm::AddButtons.
 		bool MovieLoaded(Scaleform::GFx::Movie* a_movie, Scaleform::GFx::Value* a_plugin)
 		{
 			const auto* definition = a_movie ? a_movie->GetMovieDef() : nullptr;
@@ -55,7 +55,7 @@ namespace MenuMovies
 				ConsoleRepair::Settle();
 				ItemCard::SettleCompare();
 				if (a_plugin) {
-					Mcm::AddPresetButtons(*a_movie, *a_plugin);
+					Mcm::AddButtons(*a_movie, *a_plugin);
 				}
 			}
 

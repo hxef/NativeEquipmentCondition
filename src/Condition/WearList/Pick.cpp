@@ -8,6 +8,7 @@
 #include <optional>
 #include <string>
 #include <tuple>
+#include <unordered_map>
 
 namespace WearList
 {
@@ -19,74 +20,89 @@ namespace WearList
 		{
 			return a_set && (!a_first || std::tie(a_set->file, a_set->line) < std::tie(a_first->file, a_first->line));
 		}
-	}
 
-	// Nothing is kept per copy: the game frees a copy's instance data and
-	// builds it again at every mod change, and may give the new one the old
-	// address, so no key would outlive its mods. The table is the cache.
-	Pick Of(const RE::TESObjectWEAP& a_weapon, const RE::TESObjectWEAP::InstanceData* a_instance, const RE::ExtraDataList* a_extra)
-	{
-		Pick pick;
-		const auto table = Any() ? Current() : nullptr;
-		if (!table) {
+		// The lines for 1 copy of a_item, a weapon or a piece of armor, whose
+		// own lines are in a_own. a_floor is the number a line keeps at 0
+		// condition for its kind, damage or protection, and goes to
+		// a_kept. Nothing is kept per copy: the game frees a copy's instance
+		// data and builds it again at every mod change, and may give the new
+		// one the old address, so no key would outlive its mods. The table is
+		// the cache.
+		template <class Item>
+		Pick PickOf(const Table& a_table, const std::unordered_map<RE::TESFormID, Entry>& a_own, const Item& a_item,
+			const typename Item::InstanceData* a_instance, const RE::ExtraDataList* a_extra, std::optional<Set> Entry::* a_floor,
+			std::optional<Set> Pick::* a_kept)
+		{
+			// The item's own line, else for each number the keyword line read
+			// first of the keywords the copy has. Its keywords come from the
+			// instance, so a mod that adds one counts.
+			Pick               pick;
+			auto&              kept = pick.*a_kept;
+			std::optional<Set> wear;
+			std::optional<Set> keywordFloor;
+			if (const auto own = a_own.find(a_item.formID); own != a_own.end()) {
+				wear = own->second.wear;
+				kept = own->second.*a_floor;
+			}
+			const auto ownWear = wear.has_value();
+			for (const auto& [keyword, entry] : a_table.keywords) {
+				const auto takeWear = !ownWear && Earlier(entry.wear, wear);
+				const auto takeFloor = !kept && Earlier(entry.*a_floor, keywordFloor);
+				if ((takeWear || takeFloor) && a_item.HasKeyword(keyword, a_instance)) {
+					wear = takeWear ? entry.wear : wear;
+					keywordFloor = takeFloor ? entry.*a_floor : keywordFloor;
+				}
+			}
+			double product = 1.0;
+			if (wear) {
+				product = wear->value;
+				pick.wearFrom[pick.wearCount++] = *wear;
+			}
+
+			// Then each enabled mod's line, as Materials walks them. A legendary
+			// mod counts too, unlike there, since a player may list one. An item
+			// with no mods may come back from a save with no mod list, which
+			// GetIndexData reads without checking. The product is a double, so no
+			// count of mods reaches infinity, and a mod at 0 makes it 0.
+			std::optional<Set> modFloor;
+			const auto*        mods = a_extra ? a_extra->GetByType<RE::BGSObjectInstanceExtra>() : nullptr;
+			if (mods && mods->values && !a_table.mods.empty()) {
+				for (const auto& index : mods->GetIndexData()) {
+					const auto found = index.disabled ? a_table.mods.end() : a_table.mods.find(index.objectID);
+					if (found == a_table.mods.end()) {
+						continue;
+					}
+					const auto& modWear = found->second.wear;
+					if (modWear) {
+						product *= modWear->value;
+						if (pick.wearCount < Pick::MOST_FROM) {
+							pick.wearFrom[pick.wearCount] = *modWear;
+						}
+						pick.wearCount++;
+					}
+					if (Earlier(found->second.*a_floor, modFloor)) {
+						modFloor = found->second.*a_floor;
+					}
+				}
+			}
+
+			kept = kept ? kept : modFloor ? modFloor : keywordFloor;
+			pick.capped = product > MOST_WEAR;
+			pick.wear = static_cast<float>(std::min(product, static_cast<double>(MOST_WEAR)));
 			return pick;
 		}
+	}
 
-		// The weapon's own line, else for each number the keyword line read
-		// first of the keywords the copy has. Its keywords come from the
-		// instance, so a mod that adds one counts.
-		std::optional<Set> wear;
-		std::optional<Set> keywordDamage;
-		if (const auto own = table->weapons.find(a_weapon.formID); own != table->weapons.end()) {
-			wear = own->second.wear;
-			pick.damage = own->second.damage;
-		}
-		const auto ownWear = wear.has_value();
-		for (const auto& [keyword, entry] : table->keywords) {
-			const auto takeWear = !ownWear && Earlier(entry.wear, wear);
-			const auto takeDamage = !pick.damage && Earlier(entry.damage, keywordDamage);
-			if ((takeWear || takeDamage) && a_weapon.HasKeyword(keyword, a_instance)) {
-				wear = takeWear ? entry.wear : wear;
-				keywordDamage = takeDamage ? entry.damage : keywordDamage;
-			}
-		}
-		double product = 1.0;
-		if (wear) {
-			product = wear->value;
-			pick.wearFrom[pick.wearCount++] = *wear;
-		}
+	Pick Of(const RE::TESObjectWEAP& a_weapon, const RE::TESObjectWEAP::InstanceData* a_instance, const RE::ExtraDataList* a_extra)
+	{
+		const auto table = Any() ? Current() : nullptr;
+		return table ? PickOf(*table, table->weapons, a_weapon, a_instance, a_extra, &Entry::damage, &Pick::damage) : Pick{};
+	}
 
-		// Then each enabled mod's line, as Materials walks them. A legendary
-		// mod counts too, unlike there, since a player may list one. An item
-		// with no mods may come back from a save with no mod list, which
-		// GetIndexData reads without checking. The product is a double, so no
-		// count of mods reaches infinity, and a mod at 0 makes it 0.
-		std::optional<Set> modDamage;
-		const auto*        mods = a_extra ? a_extra->GetByType<RE::BGSObjectInstanceExtra>() : nullptr;
-		if (mods && mods->values && !table->mods.empty()) {
-			for (const auto& index : mods->GetIndexData()) {
-				const auto found = index.disabled ? table->mods.end() : table->mods.find(index.objectID);
-				if (found == table->mods.end()) {
-					continue;
-				}
-				const auto& [modWear, damage] = found->second;
-				if (modWear) {
-					product *= modWear->value;
-					if (pick.wearCount < Pick::MOST_FROM) {
-						pick.wearFrom[pick.wearCount] = *modWear;
-					}
-					pick.wearCount++;
-				}
-				if (Earlier(damage, modDamage)) {
-					modDamage = damage;
-				}
-			}
-		}
-
-		pick.damage = pick.damage ? pick.damage : modDamage ? modDamage : keywordDamage;
-		pick.capped = product > MOST_WEAR;
-		pick.wear = static_cast<float>(std::min(product, static_cast<double>(MOST_WEAR)));
-		return pick;
+	Pick Of(const RE::TESObjectARMO& a_armor, const RE::TESObjectARMO::InstanceData* a_instance, const RE::ExtraDataList* a_extra)
+	{
+		const auto table = Any() ? Current() : nullptr;
+		return table ? PickOf(*table, table->armors, a_armor, a_instance, a_extra, &Entry::protection, &Pick::protection) : Pick{};
 	}
 
 	std::string Pick::WearTail() const

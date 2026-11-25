@@ -16,18 +16,24 @@ namespace WearList
 	// The most a line, or all the lines of 1 copy, multiply wear by.
 	inline constexpr float MOST_WEAR = 10.0F;
 
-	// What 1 form's lines set, each number at most once.
+	// What 1 form's lines set, each number at most once. Only a keyword's
+	// line may set both damage and protection, since a weapon or a piece of
+	// armor may carry it.
 	struct Entry
 	{
 		std::optional<Set> wear;
 		std::optional<Set> damage;
+		std::optional<Set> protection;
 	};
 
-	// Weapons and mods by form ID, keywords in a list each copy walks.
-	// files names each Set's file, and load is the read they came from.
+	// Weapons, armor and mods by form ID, keywords in a list each copy
+	// walks. Weapon mods and armor mods share 1 map, since no 2 forms share
+	// an ID. files names each Set's file, and load is the read they came
+	// from.
 	struct Table
 	{
 		std::unordered_map<RE::TESFormID, Entry>             weapons;
+		std::unordered_map<RE::TESFormID, Entry>             armors;
 		std::unordered_map<RE::TESFormID, Entry>             mods;
 		std::vector<std::pair<const RE::BGSKeyword*, Entry>> keywords;
 		std::vector<std::string>                             files;

@@ -14,7 +14,9 @@ namespace ArmorWear
 	struct Share
 	{
 		float quality;
+		float build;  // the reference quality against quality, below 1 for a piece better made
 		float lasts;  // the copy's Health against a piece with none, see Health.h
+		float line;   // what a line in NEC/Wear multiplies it by, 1 for none
 		float value;
 	};
 

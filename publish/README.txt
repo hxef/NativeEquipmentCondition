@@ -351,23 +351,34 @@ NEC.log lists what each file sets and any line it skips. NEC ships
 Traders\NEC_Example.ini, an example that changes nothing as it is.
 
 WEAR LIST
-To set how fast a weapon wears or how much damage it keeps when worn, add a
-line to a file in Data\F4SE\Plugins\NEC\Wear. A line names a weapon, a weapon
-mod or a keyword, such as WeaponTypeMelee1H for every one handed melee weapon
-or WeaponTypeLaser for every laser weapon.
+To set how fast a weapon or a piece of armor wears or how much damage or
+protection it keeps when worn, add a line to a file in
+Data\F4SE\Plugins\NEC\Wear. A line names a weapon, a piece of armor or
+clothing, a mod for either or a keyword, such as WeaponTypeMelee1H for every
+one handed melee weapon or WeaponTypeLaser for every laser weapon.
 
   ; Wear\MyWeapons.ini
+  ; The Baseball Bat hits for 30% at 0 condition.
   Fallout4.esm|08E736 = damage 0.3            ; Baseball Bat
+  ; A 10mm with this receiver wears 1.2 times as fast.
   Fallout4.esm|148338 = wear 1.2              ; a 10mm receiver
+  ; Ballistic weapons wear 0.8 times as fast and hit for 90% at 0 condition.
   Fallout4.esm|092A86 = wear 0.8 damage 0.9   ; WeaponTypeBallistic keyword
+  ; The Combat Armor Chest Piece wears 1.5 times as fast and gives half its
+  ; protection at 0 condition.
+  Fallout4.esm|11D3C3 = wear 1.5 protection 0.5   ; Combat Armor Chest Piece
 
-A line holds wear, damage or both, each followed by its number. wear is a
-multiplier for how fast it wears, from 0 to 10, where 1 is normal. damage is
-the share of its full damage the weapon still does at 0 condition, from 0 to 1,
-so the Baseball Bat above hits for 30% when fully worn. "Damage at 0 condition"
-sets it for every other weapon. Both come from the weapon's own line, else from
-a line for 1 of its keywords. A mod's line multiplies the wear, up to 10 in
-all, and its damage beats a keyword's. The first line read counts.
+A line holds wear, damage, protection or a mix, each followed by its number.
+wear is a multiplier for how fast it wears, from 0 to 10, where 1 is normal.
+damage is the share of its full damage the weapon still does at 0 condition,
+from 0 to 1. "Damage at
+0 condition" sets it for every other weapon. An armor line holds protection in
+place of damage, the share of its protection the piece still gives at 0
+condition, and "Protection at 0 condition" sets it for every other piece. Each
+comes from the item's own line, else from a line for 1 of its keywords. A mod's
+line multiplies the wear, up to 10 in all, and its damage or protection beats a
+keyword's. The first line read counts. NEC leaves power armor pieces to
+vanilla's own wear, so a line for one is skipped.
 
 NEC.log lists what each file sets and any line it skips. NEC ships
 Wear\NEC_Example.ini, an example that changes nothing as it is.

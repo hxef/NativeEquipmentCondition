@@ -14,7 +14,8 @@
 // are added up once per change of clothes and written into the actor values.
 // Install hooks both sums and scales each piece by its condition, a straight
 // line from fArmorFloor at 0 to 1 at fArmorPenaltyStart, the shape of the
-// damage line. The item cards and the Pip-Boy's paper doll add a piece up in a
+// damage line. A line in NEC/Wear may give a piece a floor of its own, see
+// WearList.h. The item cards and the Pip-Boy's paper doll add a piece up in a
 // third place, and Install scales that one too, so the menus show the worn
 // numbers.
 //
@@ -32,8 +33,8 @@ namespace ArmorRating
 	// Patches the 2 sums and the menus' one.
 	void Install();
 
-	// The share of its protection a piece keeps at a_health, see
-	// Condition::Share.
+	// The share of its protection a piece keeps at a_health at fArmorFloor,
+	// see Condition::Share.
 	float Share(float a_health);
 
 	// Asks the engine to add a_actor's resistances up again, after a piece

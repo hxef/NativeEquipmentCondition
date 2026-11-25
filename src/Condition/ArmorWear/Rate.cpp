@@ -1,8 +1,10 @@
 #include "Condition/ArmorWear/Rate.h"
 
 #include "Condition/ArmorWear/Health.h"
+#include "Condition/Condition.h"
 #include "Condition/Materials/Materials.h"
 #include "Condition/WeaponWear/WeaponWear.h"
+#include "Condition/WearList/WearList.h"
 #include "Core/Settings/Settings.h"
 #include "Core/TraceLog/TraceLog.h"
 
@@ -42,12 +44,18 @@ namespace ArmorWear
 		// share, see Health.h.
 		share.lasts = HealthMult(a_armor, a_extra);
 
+		// A line in NEC/Wear for the piece, a mod on it or its keyword, 1
+		// with none.
+		const auto& instance = Condition::InstanceDataOf<RE::TESObjectARMO::InstanceData>(a_extra, a_armor.armorData);
+		share.line = WearList::Of(a_armor, &instance, a_extra).wear;
+
 		// Better made pieces wear slower, measured against the ordinary piece,
 		// a plain one, see Materials::ReferenceQuality: a plain steel helmet
 		// wears a little faster, plain leather slower, and every upgrade slows
 		// either one, since adhesive and fiberglass are worth more than steel
 		// or leather.
-		share.value = Materials::ReferenceQuality(Condition::Kind::kArmor) / share.quality / share.lasts;
+		share.build = Materials::ReferenceQuality(Condition::Kind::kArmor) / share.quality;
+		share.value = share.build / share.lasts * share.line;
 		return share;
 	}
 
@@ -70,6 +78,10 @@ namespace ArmorWear
 		auto tail = a_theirs && TraceLog::IsOpen() ? std::format(", NPC rate x{:.2f}", mult) : std::string{};
 		if (share.lasts != 1.0F && TraceLog::IsOpen()) {
 			tail += std::format(", Health x{:.2f}", share.lasts);
+		}
+		if (TraceLog::IsOpen()) {
+			const auto& instance = Condition::InstanceDataOf<RE::TESObjectARMO::InstanceData>(a_extra, a_armor.armorData);
+			tail += WearList::Of(a_armor, &instance, a_extra).WearTail();
 		}
 		TraceLog::For(a_theirs).Line("rate", "a blow of {:.0f} on armor at quality {:.1f} costs {:.6f}{:s}", a_damage, share.quality, wear, tail);
 		return wear;

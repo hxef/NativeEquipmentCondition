@@ -1,6 +1,8 @@
 #include "Condition/WearList/WearList.h"
 
+#include "Condition/ArmorWear/ArmorWear.h"
 #include "Condition/Condition.h"
+#include "Condition/Excluded.h"
 #include "Condition/WearList/Table.h"
 #include "Core/IniText.h"
 #include "Core/ListFiles.h"
@@ -28,25 +30,54 @@ namespace WearList
 		// The lines
 		// -------------------------------------------------------------------
 
-		constexpr ListFiles::List LIST{ .folder = "Wear", .unread = "uses no wear list", .word = "wear or damage" };
+		constexpr ListFiles::List LIST{ .folder = "Wear", .unread = "uses no wear list", .word = "wear, damage or protection" };
 
 		// What a line names, as the logs say it.
 		enum class Kind
 		{
 			kWeapon,
+			kArmor,
 			kMod,
 			kKeyword,
 		};
 
-		constexpr std::size_t      KINDS = 3;
-		constexpr std::string_view KIND_NAMES[KINDS]{ "weapon", "mod", "keyword" };
+		constexpr std::size_t      KINDS = 4;
+		constexpr std::string_view KIND_NAMES[KINDS]{ "weapon", "armor", "mod", "keyword" };
 
-		// The 2 numbers 1 line sets, nothing for one it leaves out.
+		// The numbers 1 line sets, nothing for one it leaves out.
 		struct Numbers
 		{
 			std::optional<float> wear;
 			std::optional<float> damage;
+			std::optional<float> protection;
 		};
+
+		// Which words a line's form takes: damage for a weapon or a weapon
+		// mod, protection for armor or an armor mod, and both for a keyword,
+		// which either kind may carry. A word that does not fit is unknown.
+		enum class Fits
+		{
+			kWeapon,
+			kArmor,
+			kBoth,
+		};
+
+		constexpr std::string_view FITTING[]{ "wear or damage", "wear or protection", "wear, damage or protection" };
+
+		// The words, each with where its number goes as read and as kept, its
+		// top and an example for the log.
+		struct Word
+		{
+			std::string_view      name;
+			std::optional<float> Numbers::*slot;
+			std::optional<Set> Entry::*kept;
+			float                 most;
+			std::string_view      example;
+		};
+
+		constexpr Word WEAR{ "wear", &Numbers::wear, &Entry::wear, MOST_WEAR, "1.5" };
+		constexpr Word DAMAGE{ "damage", &Numbers::damage, &Entry::damage, 1.0F, "0.5" };
+		constexpr Word PROTECTION{ "protection", &Numbers::protection, &Entry::protection, 1.0F, "0.5" };
 
 		// What the files set so far, and the forms the file being read set,
 		// for its summary.
@@ -90,10 +121,25 @@ namespace WearList
 			return word;
 		}
 
+		// The word a_key names, if a_fits takes it.
+		const Word* WordOf(std::string_view a_key, Fits a_fits)
+		{
+			if (IniText::SameName(a_key, WEAR.name)) {
+				return &WEAR;
+			}
+			if (a_fits != Fits::kArmor && IniText::SameName(a_key, DAMAGE.name)) {
+				return &DAMAGE;
+			}
+			if (a_fits != Fits::kWeapon && IniText::SameName(a_key, PROTECTION.name)) {
+				return &PROTECTION;
+			}
+			return nullptr;
+		}
+
 		// The numbers of "wear 1.5 damage 0.3", or nothing once a_faults says
 		// what is wrong with them. A number is written with a point, and 1
 		// fault skips the whole line.
-		std::optional<Numbers> Parse(const ListFiles::Line& a_line, ListFiles::Faults& a_faults)
+		std::optional<Numbers> Parse(const ListFiles::Line& a_line, Fits a_fits, ListFiles::Faults& a_faults)
 		{
 			const auto skip = [&](const std::string& a_why) {
 				a_faults.Add(std::format("{:s} line {:d}{:s}, so NEC skips it.", a_line.file, a_line.number, a_why));
@@ -102,13 +148,13 @@ namespace WearList
 			Numbers numbers;
 			auto    rest = a_line.word;
 			for (auto key = NextWord(rest); !key.empty(); key = NextWord(rest)) {
-				const auto wear = IniText::SameName(key, "wear");
-				if (!wear && !IniText::SameName(key, "damage")) {
-					return skip(std::format(": {:s} is not wear or damage", key));
+				const auto* word = WordOf(key, a_fits);
+				if (!word) {
+					return skip(std::format(": {:s} is not {:s}", key, FITTING[std::to_underlying(a_fits)]));
 				}
-				auto& slot = wear ? numbers.wear : numbers.damage;
+				auto& slot = numbers.*word->slot;
 				if (slot) {
-					return skip(std::format(" sets {:s} twice", wear ? "wear" : "damage"));
+					return skip(std::format(" sets {:s} twice", word->name));
 				}
 
 				// from_chars reads no comma, so 0,5 stops at the 0 and fails.
@@ -116,11 +162,11 @@ namespace WearList
 				const auto* last = text.data() + text.size();
 				float       value = 0.0F;
 				if (text.empty() || std::from_chars(text.data(), last, value) != std::from_chars_result{ last, std::errc{} }) {
-					return skip(std::format(": {:s} needs a number after it, such as {:s} {:s}", key, key, wear ? "1.5" : "0.5"));
+					return skip(std::format(": {:s} needs a number after it, such as {:s} {:s}", key, key, word->example));
 				}
 				// Written so that inf and nan fail too.
-				if (!(value >= 0.0F && value <= (wear ? MOST_WEAR : 1.0F))) {
-					return skip(std::format(": {:s} {:s} is not 0 to {:s}", key, text, wear ? "10" : "1"));
+				if (!(value >= 0.0F && value <= word->most)) {
+					return skip(std::format(": {:s} {:s} is not 0 to {:g}", key, text, word->most));
 				}
 				slot = value + 0.0F;  // + 0 turns -0 into 0, so the log prints no minus
 			}
@@ -131,7 +177,7 @@ namespace WearList
 		Entry& EntryOf(Table& a_table, Kind a_kind, const RE::TESForm& a_form)
 		{
 			if (a_kind != Kind::kKeyword) {
-				return (a_kind == Kind::kWeapon ? a_table.weapons : a_table.mods)[a_form.formID];
+				return (a_kind == Kind::kWeapon ? a_table.weapons : a_kind == Kind::kArmor ? a_table.armors : a_table.mods)[a_form.formID];
 			}
 			const auto* keyword = static_cast<const RE::BGSKeyword*>(&a_form);
 			auto&       keywords = a_table.keywords;
@@ -155,29 +201,58 @@ namespace WearList
 
 			// Whether the line's number of 1 kind goes in, said when it is
 			// set again.
-			const auto put = [&](std::optional<Set>& a_slot, const std::optional<float>& a_value, bool a_wear) {
-				if (a_value && a_slot) {
+			const auto put = [&](const Word& a_word) {
+				auto&       slot = entry.*a_word.kept;
+				const auto& value = a_numbers.*a_word.slot;
+				if (value && slot) {
 					a_faults.Add(std::format("{:s} line {:d}: {:s} has {:s} set again, so NEC keeps {:s}{:.2f} from {:s}.", a_line.file,
-						a_line.number, who, a_wear ? "wear" : "damage", a_wear ? "x" : "", a_slot->value, Where(a_reading.table, *a_slot, &here)));
-				} else if (a_value) {
-					a_slot = Set{ .value = *a_value, .file = here.file, .line = here.line, .load = a_reading.table.load };
+						a_line.number, who, a_word.name, &a_word == &WEAR ? "x" : "", slot->value, Where(a_reading.table, *slot, &here)));
+				} else if (value) {
+					slot = Set{ .value = *value, .file = here.file, .line = here.line, .load = a_reading.table.load };
 					return true;
 				}
 				return false;
 			};
-			const auto wear = put(entry.wear, a_numbers.wear, true);
-			const auto damage = put(entry.damage, a_numbers.damage, false);
-			if (!wear && !damage) {
+			std::vector<std::string> sets;
+			if (put(WEAR)) {
+				sets.push_back(std::format("wears x{:.2f}", *a_numbers.wear));
+			}
+			for (const auto* word : { &DAMAGE, &PROTECTION }) {
+				if (put(*word)) {
+					sets.push_back(std::format("keeps {:.2f} of its {:s} at 0 condition", *(a_numbers.*word->slot), word->name));
+				}
+			}
+			if (sets.empty()) {
 				return;
 			}
 
-			const auto wears = wear ? std::format("wears x{:.2f}", *a_numbers.wear) : std::string{};
-			const auto keeps = damage ? std::format("keeps {:.2f} of its damage at 0 condition", *a_numbers.damage) : std::string{};
-			REX::DEBUG("{:s} line {:d}: {:s} {:s}{:s}{:s}.", a_line.file, a_line.number, who, wears, wear && damage ? " and " : "", keeps);
+			// "wears x1.50 and keeps 0.50 of its damage at 0 condition"
+			std::string said;
+			for (std::size_t i = 0; i < sets.size(); i++) {
+				said += (i == 0 ? "" : i + 1 == sets.size() ? " and " : ", ") + sets[i];
+			}
+			REX::DEBUG("{:s} line {:d}: {:s} {:s}.", a_line.file, a_line.number, who, said);
 			auto& mine = a_reading.mine[std::to_underlying(a_kind)];
 			if (std::ranges::find(mine, a_form.formID) == mine.end()) {
 				mine.push_back(a_form.formID);
 			}
+		}
+
+		// Why a listed weapon or piece takes no condition, or null. For
+		// armor that is the kind's own rule, power armor first, and the lists
+		// in NEC/Exclude, both read once a load as this list is. The plain
+		// apparel switch is left out, since it moves in play: a plain piece
+		// keeps its line and wears by it whenever the switch lets it wear.
+		const char* WhyLeftOut(const RE::TESForm& a_form)
+		{
+			const auto& object = static_cast<const RE::TESBoundObject&>(a_form);
+			if (!a_form.Is(RE::ENUM_FORM_ID::kARMO)) {
+				return Condition::WhyNoCondition(object);
+			}
+			if (const auto* why = ArmorWear::WhyNoCondition(static_cast<const RE::TESObjectARMO&>(a_form))) {
+				return why;
+			}
+			return Excluded::Has(object) ? "on a list in NEC/Exclude" : nullptr;
 		}
 
 		// A line whose form is loaded, by what the form is.
@@ -185,29 +260,34 @@ namespace WearList
 		{
 			const auto&         form = a_line.form;
 			std::optional<Kind> kind;
-			if (form.IsWeapon()) {
-				if (const auto* why = Condition::WhyNoCondition(static_cast<const RE::TESBoundObject&>(form))) {
+			auto                fits = Fits::kBoth;
+			if (form.IsWeapon() || form.Is(RE::ENUM_FORM_ID::kARMO)) {
+				if (const auto* why = WhyLeftOut(form)) {
 					a_faults.Add(std::format("{:s} line {:d}: {:s} takes no condition ({:s}), so NEC skips it.", a_line.file, a_line.number,
 						NameOf(form), why));
 					return;
 				}
-				kind = Kind::kWeapon;
-			} else if (form.Is(RE::ENUM_FORM_ID::kOMOD) &&
-					   static_cast<const RE::BGSMod::Attachment::Mod&>(form).targetFormType.get() == RE::ENUM_FORM_ID::kWEAP) {
-				kind = Kind::kMod;
+				kind = form.IsWeapon() ? Kind::kWeapon : Kind::kArmor;
+				fits = form.IsWeapon() ? Fits::kWeapon : Fits::kArmor;
+			} else if (form.Is(RE::ENUM_FORM_ID::kOMOD)) {
+				const auto target = static_cast<const RE::BGSMod::Attachment::Mod&>(form).targetFormType.get();
+				if (target == RE::ENUM_FORM_ID::kWEAP || target == RE::ENUM_FORM_ID::kARMO) {
+					kind = Kind::kMod;
+					fits = target == RE::ENUM_FORM_ID::kWEAP ? Fits::kWeapon : Fits::kArmor;
+				}
 			} else if (form.Is(RE::ENUM_FORM_ID::kKYWD)) {
 				kind = Kind::kKeyword;
 			}
 			if (!kind) {
-				a_faults.Add(std::format("{:s} line {:d}: {:s} is not a weapon, a weapon mod or a keyword, so NEC skips it.", a_line.file,
-					a_line.number, NameOf(form)));
-			} else if (const auto numbers = Parse(a_line, a_faults)) {
+				a_faults.Add(std::format("{:s} line {:d}: {:s} is not a weapon, a piece of armor or clothing, a mod for either or a keyword, so NEC skips it.",
+					a_line.file, a_line.number, NameOf(form)));
+			} else if (const auto numbers = Parse(a_line, fits, a_faults)) {
 				Keep(a_reading, *kind, form, *numbers, a_line, a_faults);
 			}
 		}
 
-		// "Wear/MyWeapons.ini sets wear or damage for 5 forms: 1 by weapon, 2
-		// by mod and 2 by keyword."
+		// "Wear/MyWeapons.ini sets wear, damage or protection for 5 forms: 1
+		// by weapon, 2 by mod and 2 by keyword."
 		void Report(std::string_view a_file, const std::array<std::vector<RE::TESFormID>, KINDS>& a_mine)
 		{
 			std::vector<std::string> parts;
@@ -218,7 +298,7 @@ namespace WearList
 					total += count;
 				}
 			}
-			REX::INFO("{:s} sets wear or damage for {:d} {:s}{:s}.", a_file, total, total == 1 ? "form" : "forms", ListFiles::Joined(parts));
+			REX::INFO("{:s} sets {:s} for {:d} {:s}{:s}.", a_file, LIST.word, total, total == 1 ? "form" : "forms", ListFiles::Joined(parts));
 		}
 
 		// -------------------------------------------------------------------
@@ -245,7 +325,7 @@ namespace WearList
 			});
 
 		const auto& table = reading.table;
-		const auto  any = !table.weapons.empty() || !table.mods.empty() || !table.keywords.empty();
+		const auto  any = !table.weapons.empty() || !table.armors.empty() || !table.mods.empty() || !table.keywords.empty();
 		g_table.Publish(any ? std::make_shared<const Table>(std::move(reading.table)) : nullptr);
 		g_any.store(any, std::memory_order_relaxed);
 	}

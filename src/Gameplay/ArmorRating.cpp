@@ -2,6 +2,7 @@
 
 #include "Condition/Condition.h"
 #include "Condition/Equipped.h"
+#include "Condition/WearList/WearList.h"
 #include "Core/CallPatch/CallPatch.h"
 #include "Core/Settings/Settings.h"
 #include "Core/TraceLog/TraceLog.h"
@@ -67,6 +68,28 @@ namespace ArmorRating
 		CallPatch::Link<Sum_t>                                          g_sumLink;
 		std::array<CallPatch::Link<Fill_t>, std::size(FILL_SITES)>       g_fillLinks;
 
+		// The share of its protection the copy of a_armor whose list is
+		// a_extra keeps at a_health: a line in NEC/Wear for it, a mod on it
+		// or its keyword sets its floor, fArmorFloor the rest. A copy at full
+		// asks no line.
+		float ShareOf(const RE::TESObjectARMO& a_armor, const RE::ExtraDataList* a_extra, float a_health)
+		{
+			if (!WearList::Any() || Condition::Share(a_health, 0.0F, Condition::Kind::kArmor) >= 1.0F) {
+				return Share(a_health);
+			}
+			const auto& instance = Condition::InstanceDataOf<RE::TESObjectARMO::InstanceData>(a_extra, a_armor.armorData);
+			const auto  line = WearList::Of(a_armor, &instance, a_extra).protection;
+			return line ? Condition::Share(a_health, line->value, Condition::Kind::kArmor) : Share(a_health);
+		}
+
+		// The same for an item the hooks hand over, all of it for one that is
+		// not armor.
+		float ShareOf(const RE::BGSInventoryItem& a_item, const RE::BGSInventoryItem::Stack* a_stack, float a_health)
+		{
+			const auto* armor = a_item.object ? a_item.object->As<RE::TESObjectARMO>() : nullptr;
+			return armor ? ShareOf(*armor, a_stack ? a_stack->extra.get() : nullptr, a_health) : Share(a_health);
+		}
+
 		// The stack the visitor read: the equipped one for ANY_STACK with the
 		// check on, the first otherwise, or the one named.
 		const RE::BGSInventoryItem::Stack* StackRead(const RE::ActorUtils::ArmorRatingVisitorBase& a_visitor,
@@ -96,8 +119,9 @@ namespace ArmorRating
 				return result;
 			}
 
-			const auto health = Condition::HealthOf(StackRead(*a_visitor, *a_item, a_stackID));
-			const auto share = Share(health);
+			const auto* stack = StackRead(*a_visitor, *a_item, a_stackID);
+			const auto  health = Condition::HealthOf(stack);
+			const auto  share = ShareOf(*a_item, stack, health);
 			if (share >= 1.0F) {
 				return result;
 			}
@@ -134,7 +158,7 @@ namespace ArmorRating
 					if (!stack->IsEquipped()) {
 						continue;
 					}
-					const auto  share = Share(Condition::HealthOf(stack));
+					const auto  share = ShareOf(armor, stack->extra.get(), Condition::HealthOf(stack));
 					// The copy's own damage types where it carries some, the
 					// record's otherwise, as the engine's sum reads them.
 					const auto* types = share < 1.0F ?
@@ -174,12 +198,13 @@ namespace ArmorRating
 			return result;
 		}
 
-		// The share of a_item's resistances fill site a_site gives at
-		// a_health, all of them while the site is not patched or the item
-		// never wears out.
-		[[nodiscard]] float ShareAt(std::size_t a_site, const RE::BGSInventoryItem& a_item, float a_health)
+		// The share of the resistances of a_item's copy on a_stack fill site
+		// a_site gives at a_health, all of them while the site is not patched
+		// or the item never wears out.
+		[[nodiscard]] float ShareAt(std::size_t a_site, const RE::BGSInventoryItem& a_item, const RE::BGSInventoryItem::Stack* a_stack,
+			float a_health)
 		{
-			return g_fillLinks[a_site].Live() && a_item.object && Condition::WearsOut(*a_item.object) ? Share(a_health) : 1.0F;
+			return g_fillLinks[a_site].Live() && a_item.object && Condition::WearsOut(*a_item.object) ? ShareOf(a_item, a_stack, a_health) : 1.0F;
 		}
 
 		// Stands in for FillResistTypeInfo. Each resistance read before the
@@ -190,7 +215,7 @@ namespace ArmorRating
 		void FillHk(const RE::BGSInventoryItem& a_item, const RE::BGSInventoryItem::Stack* a_stack,
 			RE::BSScrapArray<RE::BSTTuple<std::uint32_t, float>>& a_values, float a_scale)
 		{
-			const auto share = ShareAt(I, a_item, Condition::HealthOf(a_stack));
+			const auto share = ShareAt(I, a_item, a_stack, Condition::HealthOf(a_stack));
 			if (share >= 1.0F) {
 				g_fillLinks[I](a_item, a_stack, a_values, a_scale);
 				return;
@@ -239,7 +264,7 @@ namespace ArmorRating
 		// card's own call scales the whole list by the share.
 		RE::BSScrapArray<RE::BSTTuple<std::uint32_t, float>> values;
 		RE::PipboyInventoryUtils::FillResistTypeInfo(a_item, a_stack, values, 1.0F);
-		const auto share = ShareAt(CARD_SITE, a_item, a_health);
+		const auto share = ShareAt(CARD_SITE, a_item, a_stack, a_health);
 		std::vector<std::pair<std::uint32_t, float>> out;
 		out.reserve(values.size());
 		for (const auto& entry : values) {

@@ -1,3 +1,8 @@
+2.1.0
+v2.1.0, a minor update to the final version, adds armor and clothing to wear list ini files, the srm wearinfo console command, more CND word switches, a log slider and a UI reset button, and fixes the wear rate missing under wider UI fonts.
+
+OG/AE only
+
 2.0.0
 v2.0.0 is the final version. It adds Pip-Boy repairs, MCM presets, cheap servicing of well kept gear, perk locked repairs, item card wear rates, better loose loot in rich areas, CND bar penalty marks and more!
 

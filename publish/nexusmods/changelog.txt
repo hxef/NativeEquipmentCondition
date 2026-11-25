@@ -1,3 +1,11 @@
+2.1.0
+* A wear list ini file in Data\F4SE\Plugins\NEC\Wear can now also name armor and clothing, by piece, armor mod or keyword. wear sets how fast it wears and protection sets the share of its protection it keeps at 0 condition.
+* New console commands srm wearinfo and srm wearinfo armor show the wear rate of the weapon in hand or of each piece you wear, and the numbers it is made of.
+* The MCM switches Weapon CND shows word, Power armor dash CND shows word and Pickup CND shows word now hide the CND word at Percent too, and 2 new MCM switches, Quick container CND shows word and Apparel figure CND shows word (both on), hide it before those percents.
+* A new MCM slider, Log files kept (iLogFiles, 2), on NEC's main page sets how many files each log keeps, the newest one included. At the next game start NEC removes the older numbered files past that count, so 2.0.0's NEC.2.log to NEC.10.log go.
+* A new MCM button, Reset UI settings, at the top of the UI page puts every setting of that page back to its default after you confirm.
+* Fixed the wear rate missing from the item card under a UI font wider than vanilla's, such as Fallout: London's. A long rate such as (x16.9) is now drawn a little smaller so it fits beside CND.
+
 2.0.0
 * NEC.ini and NEC_custom.ini now live in Data\F4SE\Plugins\NEC\Config, so only NEC.dll and NEC.pdb stay loose in Data\F4SE\Plugins. NEC no longer reads a NEC_custom.ini beside the DLL, so move yours into Config by hand.
 * A new MCM stepper, Pip-Boy repairs (iPipboyRepair, Off), lets you repair from the Pip-Boy as in Fallout 3 and New Vegas. Inspect a worn weapon or armor piece and press REPAIR. Spares only uses up a spare you carry, and Workbench opens the workbench's repair box with USE A SPARE, its levels paid in supplies and components from your inventory.

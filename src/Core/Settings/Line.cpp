@@ -115,6 +115,7 @@ namespace Settings
 			&fPenaltyMarkWidth,
 			&fTraderSignX,
 			&fTraderSignY,
+			&iLogFiles,
 		};
 
 		// Every switch in NEC.ini's order, for a lookup by id.
@@ -358,8 +359,8 @@ namespace Settings
 		std::string_view section;
 		for (const auto& entry : NUMBERS) {
 			std::visit([&](const auto* a_number) {
-				// Said after its switch or stepper above.
-				if (a_number->section == bSpareRepair.section) {
+				// Said after its switch or stepper above, or with [Log] below.
+				if (a_number->section == bSpareRepair.section || a_number->section == bTraceLogs.section) {
 					return;
 				}
 				if (a_number->section != section) {
@@ -369,7 +370,7 @@ namespace Settings
 				Say(line, *a_number);
 			}, entry);
 		}
-		std::format_to(std::back_inserter(line), " [Log] sLogLevel={:s} bTraceLogs={}", LogLevelWord(), bTraceLogs.GetValue());
+		std::format_to(std::back_inserter(line), " [Log] sLogLevel={:s} bTraceLogs={} iLogFiles={:d}", LogLevelWord(), bTraceLogs.GetValue(), iLogFiles.GetValue());
 		std::format_to(std::back_inserter(line), " [Presets] sPreset={:s}", Presets::PickedStem());
 		REX::INFO("{:s}", line);
 		// Above info NEC.log drops these lines, so no summary is kept and the

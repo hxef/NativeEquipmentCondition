@@ -50,7 +50,11 @@
     { "id": "bTraceLogs:Log", "type": "switcher",
       "text": "NEC|bTraceLogs", "textFromFormName": true,
       "help": "NEC|bTraceLogs.help", "helpFromFormName": true,
-      "valueOptions": { "sourceType": "ModSettingBool" } }
+      "valueOptions": { "sourceType": "ModSettingBool" } },
+    { "id": "iLogFiles:Log", "type": "slider",
+      "text": "NEC|iLogFiles", "textFromFormName": true,
+      "help": "NEC|iLogFiles.help", "helpFromFormName": true,
+      "valueOptions": { "min": 1, "max": 10, "step": 1, "sourceType": "ModSettingInt" } }
   ],
   "pages": [
     {

@@ -1,6 +1,6 @@
 #include "Papyrus/Log.h"
 
-#include "Core/LogFiles.h"
+#include "Core/LogFiles/LogFiles.h"
 #include "Core/ScriptEvents.h"
 #include "Core/TraceLog/TraceLog.h"
 
@@ -82,7 +82,7 @@ namespace Papyrus::Log
 		}
 
 		// The file, opened beside NEC.log as its first line comes. Keeps the
-		// 10 starts before as NEC.log does, see LogFiles.h. Under g_lock.
+		// starts before as NEC.log does, see LogFiles.h. Under g_lock.
 		spdlog::logger* File()
 		{
 			if (g_opened) {

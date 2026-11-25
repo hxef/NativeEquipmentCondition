@@ -3,7 +3,7 @@
 #include "Condition/WeaponWear/WeaponWear.h"
 #include "Core/CallPatch/CallPatch.h"
 #include "Core/Feature.h"
-#include "Core/LogFiles.h"
+#include "Core/LogFiles/LogFiles.h"
 #include "Core/Plugin.h"
 #include "Core/Runtime.h"
 #include "Core/ScriptEvents.h"

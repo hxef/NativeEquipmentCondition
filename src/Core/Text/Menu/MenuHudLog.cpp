@@ -2,8 +2,9 @@
 
 #include "Core/Settings/Settings.h"
 
-// The names and help lines of the HUD settings and the log level on the MCM
-// page, see MenuLine in Text.h, and the HUD bar sliders' Default sentence.
+// The names and help lines of the HUD settings, the log level and the log
+// files count on the MCM page, see MenuLine in Text.h, and the HUD bar
+// sliders' Default sentence.
 namespace Text
 {
 	namespace
@@ -48,6 +49,7 @@ namespace Text
 			{ &Settings::fTraderSignX, TRADER_SIGN_X_NAME, TRADER_SIGN_X_HELP },
 			{ &Settings::fTraderSignY, TRADER_SIGN_Y_NAME, TRADER_SIGN_Y_HELP },
 			{ &LOG_LEVEL, LOG_LEVEL_NAME, LOG_LEVEL_HELP },
+			{ &Settings::iLogFiles, LOG_FILES_NAME, LOG_FILES_HELP },
 		};
 	}
 

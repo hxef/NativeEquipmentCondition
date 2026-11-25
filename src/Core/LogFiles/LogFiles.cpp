@@ -1,4 +1,6 @@
-#include "Core/LogFiles.h"
+#include "Core/LogFiles/LogFiles.h"
+
+#include "Core/LogFiles/Tidy.h"
 
 #include "Core/Settings/Settings.h"
 
@@ -11,7 +13,9 @@
 #include <spdlog/sinks/msvc_sink.h>
 #include <spdlog/spdlog.h>
 
+#include <algorithm>
 #include <cerrno>
+#include <cstdint>
 #include <cstdio>
 #include <exception>
 #include <format>
@@ -27,9 +31,9 @@ namespace LogFiles
 {
 	namespace
 	{
-		// How many earlier starts each log keeps, NEC.1.log to NEC.10.log.
-		// Enough to reach back over an evening of crashes and restarts.
-		constexpr std::size_t KEPT_STARTS = 10;
+		// The files each log keeps, its own counted in, as iLogFiles counts.
+		constexpr std::int32_t FEWEST_FILES = 1;
+		constexpr std::int32_t MOST_FILES = 10;
 
 		// NEC.log's file name.
 		constexpr std::string_view MAIN_FILE = "NEC.log";
@@ -50,6 +54,11 @@ namespace LogFiles
 		// Documents as Windows names it, kept by MainPath for Shown. Set once
 		// before any other thread logs, so reading it needs no lock.
 		std::filesystem::path g_documents;
+
+		// How many earlier starts each log keeps, 1 less than iLogFiles. Set
+		// once by OpenMain the same way, so a change on the MCM page acts at
+		// the next game start.
+		std::size_t g_keptStarts{ 1 };
 
 		// -------------------------------------------------------------------
 		// The file sink
@@ -153,17 +162,6 @@ namespace LogFiles
 				spdlog::throw_spdlog_ex(std::format("Failed opening file {:s} for writing", Shown(path)), errno);
 			}
 
-			// NEC.log, NEC.1.log and so on, by the number of starts back.
-			[[nodiscard]] std::filesystem::path Numbered(std::size_t a_back) const
-			{
-				if (a_back == 0) {
-					return path;
-				}
-				auto numbered = path;
-				numbered.replace_extension(std::format(L".{:d}", a_back) + path.extension().native());
-				return numbered;
-			}
-
 			// Replaces a_to with a_from.
 			[[nodiscard]] static bool Move(const std::filesystem::path& a_from, const std::filesystem::path& a_to) noexcept
 			{
@@ -179,13 +177,13 @@ namespace LogFiles
 				file.reset();
 				std::string failed;
 				int         why{ 0 };
-				for (auto back = KEPT_STARTS; back > 0; --back) {
-					const auto from = Numbered(back - 1);
+				for (auto back = g_keptStarts; back > 0; --back) {
+					const auto from = Numbered(path, back - 1);
 					std::error_code error;
 					if (!std::filesystem::exists(from, error)) {
 						continue;
 					}
-					const auto to = Numbered(back);
+					const auto to = Numbered(path, back);
 					if (Move(from, to)) {
 						continue;
 					}
@@ -290,10 +288,21 @@ namespace LogFiles
 			// The debugger's output window, as in every CommonLibF4 log.
 			std::vector<spdlog::sink_ptr> sinks{ std::make_shared<spdlog::sinks::msvc_sink_mt>() };
 
+			const auto files = std::clamp(Settings::iLogFiles.GetValue(), FEWEST_FILES, MOST_FILES);
+			g_keptStarts = static_cast<std::size_t>(files - 1);
+
 			std::string noFile;
 			Opened file;
+			std::size_t removed = 0;
+			std::string notRemoved;
 			const auto path = MainPath(noFile);
 			if (!path.empty()) {
+				// A cleanup that fails costs only the cleanup, never the log.
+				try {
+					removed = Tidy(path.parent_path(), g_keptStarts, notRemoved);
+				} catch (const std::exception& e) {
+					notRemoved = e.what();
+				}
 				try {
 					file = Open(path, MAIN_SIZE);
 					sinks.push_back(file.sink);
@@ -316,6 +325,12 @@ namespace LogFiles
 				REX::WARN("Could not open {:s}, so this game start writes no log file: {:s}", where, noFile);
 			} else if (!file.warning.empty()) {
 				REX::WARN("{:s}", file.warning);
+			}
+			if (removed > 0) {
+				REX::INFO("Removed {:d} log files of earlier starts, past the {:d} files each log keeps.", removed, files);
+			}
+			if (!notRemoved.empty()) {
+				REX::WARN("Could not remove a log file of an earlier start, past the {:d} files each log keeps, {:s}", files, notRemoved);
 			}
 		} catch (...) {
 			// Nothing is left to say it to, and a log is not worth ending the

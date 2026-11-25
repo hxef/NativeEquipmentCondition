@@ -6,10 +6,14 @@
 #include <filesystem>
 #include <string>
 
-// NEC.log, NEC.papyrus.log and the 5 bug report logs keep the logs of the 10
-// game starts before. As a log opens, the file of the start before moves to
-// NEC.1.log, NEC.trace.1.log and so on, so a restart after a crash still has
-// the lines that led to it.
+// NEC.log, NEC.papyrus.log and the 5 bug report logs keep the logs of the
+// game starts before, as many as iLogFiles says: 2 files keep NEC.log and
+// NEC.1.log. As a log opens, the file of the start before moves to NEC.1.log,
+// NEC.trace.1.log and so on, so a restart after a crash still has the lines
+// that led to it. A log that grows past its size below also moves along, so
+// in a long start NEC.1.log can hold that start's own first lines. As NEC.log
+// opens, the numbered files past the count are removed, for every log, so a
+// lower count leaves no old files behind.
 //
 // The files are opened here by a file sink of NEC's own, which moves them
 // along the way the rotating file sink of spdlog, the library CommonLibF4
@@ -52,7 +56,7 @@ namespace LogFiles
 	// F4SE::Init, which names the save folder.
 	void OpenMain() noexcept;
 
-	// The file sink for 1 log, keeping the 10 starts before. It falls back as
+	// The file sink for 1 log, keeping the starts before. It falls back as
 	// the top of this file says, with a WARN, and throws when the last
 	// fallback fails too, for example while another program holds the file
 	// open.

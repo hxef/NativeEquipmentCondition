@@ -58,7 +58,9 @@ src/
     IniText.h/.cpp           one key changed in an ini file's text, every other line kept
     ItemCards.h/.cpp         asking the Pip-Boy to rebuild its item cards
     ListFiles.h/.cpp         reading the lists of forms a mod ships in a folder under NEC, such as Exclude
-    LogFiles.h/.cpp          opening NEC.log and the other logs in their own folder, and keeping those of the 10 game starts before
+    LogFiles/
+      LogFiles.h/.cpp        opening NEC.log and the other logs in their own folder, and keeping those of the game starts before, as many as iLogFiles says
+      Tidy.h/.cpp            removing the numbered files past that count as NEC.log opens
     LogLevel.cpp             NEC.log's level, from sLogLevel or the MCM page, declared in Settings.h
     Parts.h/.cpp             every part another mod can take from NEC, and what each setting works through
     Pieces.h/.cpp            the pieces of every part, and what each piece needs

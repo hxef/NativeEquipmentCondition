@@ -448,7 +448,8 @@ For anything else, share NEC's logs:
      that uses NEC's Papyrus API.
    * If the game crashed and you started it again, also the files with a
      1 in the name, like NEC.1.log. They are from the game that crashed.
-     NEC keeps your last 10 games this way, and a higher number is older.
+     NEC keeps the game before this way, more with Log files kept in MCM,
+     and a higher number is older.
    * The crash log, if the game crashed, like
      crash-2026-10-01-21-15-31.log from Addictol, 1 folder up in
      Documents\My Games\Fallout4\F4SE

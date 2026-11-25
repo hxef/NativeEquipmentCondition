@@ -207,20 +207,26 @@ namespace Settings
 	// they are off unless a bug is being reported.
 	inline Live<bool> bTraceLogs{ "Log", "bTraceLogs", false };
 
+	// How many files each log keeps, its own file counted in, see LogFiles.h.
+	// Counts as 1 to 10: 2 keeps NEC.log and NEC.1.log, 1 keeps no earlier
+	// start. Read once, as NEC.log opens, so a change acts at the next start.
+	inline Live<std::int32_t> iLogFiles{ "Log", "iLogFiles", 2 };
+
 	// Presets. The preset NEC's main MCM page picked, by its file name
 	// without .ini, such as NEC_New_Vegas, and empty for Default, see
 	// Core/Presets/Presets.h.
 	inline constexpr Named PRESET_KEY{ "Presets", "sPreset" };
 	inline REX::TIniSetting<std::string> sPreset{ PRESET_KEY.section, PRESET_KEY.key, "" };
 
-	// A number under [Features], [Loot], [Balance] or [HUD]: a float, or a
-	// whole number where the setting only takes whole steps.
+	// A number under [Features], [Loot], [Balance], [HUD] or [Log]: a float,
+	// or a whole number where the setting only takes whole steps.
 	using Number = std::variant<Live<float>*, Live<std::int32_t>*>;
 
 	// The 7 switches and 2 CND steppers that lead [Features] on the Settings
 	// line, among them every one a row of Features.cpp turns on with, and the
-	// 70 numbers under [Features], [Loot], [Balance] and [HUD], the 6 CND
-	// steppers among them, in NEC.ini's order, for Report and the MCM page.
+	// 74 numbers under [Features], [Loot], [Balance], [HUD] and [Log], the 6
+	// CND steppers among them, in NEC.ini's order, for Report and the MCM
+	// page.
 	[[nodiscard]] std::span<const Gate>   Gates();
 	[[nodiscard]] std::span<const Number> Numbers();
 

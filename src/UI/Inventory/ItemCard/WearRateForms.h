@@ -26,16 +26,37 @@ namespace ItemCard
 	// the field's own units. Nothing when the movie refuses to measure it.
 	[[nodiscard]] std::optional<double> NaturalWidth(Scaleform::GFx::Movie& a_movie, Scaleform::GFx::Value& a_field, const std::string& a_text);
 
-	// Form A: a_text, the percent and the rate, in the number's own field
-	// at its natural size. The field grows left with its right edge kept,
-	// only while the row shows nothing but its background in that stretch,
-	// and its text starts no further left than the label's last letter and
-	// LABEL_GAP, wherever the field's box starts. The text is taken as
-	// right aligned, as vanilla's number is, which puts it furthest left.
-	// How much wider the field grew, or nothing when it would not fit, with
-	// the field as it was.
-	[[nodiscard]] std::optional<double> WriteInField(Scaleform::GFx::Movie& a_movie, Scaleform::GFx::Value& a_row, Scaleform::GFx::Value& a_field,
-		const std::string& a_printed, const std::string& a_text);
+	// The size form A lets its text show at.
+	enum class Fit
+	{
+		kAsBefore,  // the size the number had before the write
+		kShrunk,    // its natural size, or less where the movie's own shrink draws it smaller
+	};
+
+	// What form A did to the number's field.
+	struct FieldWrite
+	{
+		double wider = 0.0;  // how much wider the field grew
+		double share = 1.0;  // the share of its natural size the movie's shrink drew the text at
+	};
+
+	// Form A: a_text, the percent and the rate, in the number's own field.
+	// The field grows left with its right edge kept, only while the row
+	// shows nothing but its background in that stretch, and its text starts
+	// no further left than the label's last letter and LABEL_GAP, wherever
+	// the field's box starts. The text is taken as right aligned, as
+	// vanilla's number is, which puts it furthest left.
+	// kAsBefore writes a text that has that room at its natural size and
+	// then shows at the size the number had.
+	// kShrunk is for a row under a wider font. It also writes a text over
+	// a number the movie had drawn smaller to fit its field. And a text
+	// with no such room gets a field as wide as the label leaves, where
+	// the movie's shrink draws it smaller, down to 90% of its size. NEC
+	// sets no size itself, so a field that never shrinks its text keeps
+	// its number.
+	// Nothing when the text would not fit, with the field as it was.
+	[[nodiscard]] std::optional<FieldWrite> WriteInField(Scaleform::GFx::Movie& a_movie, Scaleform::GFx::Value& a_row,
+		Scaleform::GFx::Value& a_field, const std::string& a_printed, const std::string& a_text, Fit a_fit);
 
 	// Form B: a_rate in a_cell, the empty field right of the number, at
 	// the number's size and in its colour, aligned as the cell is. An

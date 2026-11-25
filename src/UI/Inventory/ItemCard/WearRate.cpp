@@ -306,15 +306,28 @@ namespace ItemCard
 			}
 		};
 
-		if (const auto text = printed + " " + rate; const auto wider = WriteInField(a_movie, a_row, field, printed, text)) {
+		// Form A with a_fit. True once the rate stands in the number's field.
+		const auto text = printed + " " + rate;
+		const auto inField = [&](Fit a_fit) {
+			const auto wrote = WriteInField(a_movie, a_row, field, printed, text, a_fit);
+			if (!wrote) {
+				return false;
+			}
 			tidyCell();
-			TraceLog::First("menu", "{:s} CND row reads \"{:s}\", {:.0f} wider to the left", movie, text, *wider);
+			// A text the movie drew smaller says at what share of its size.
+			const auto percent = std::round(wrote->share * 100.0);
+			const auto smaller = percent < 100.0 ? std::format(", at {:.0f}% of its size", percent) : std::string{};
+			TraceLog::First("menu", "{:s} CND row reads \"{:s}\", {:.0f} wider to the left{:s}", movie, text, wrote->wider, smaller);
 			remember();
+			return true;
+		};
+
+		if (inField(Fit::kAsBefore)) {
 			return;
 		}
 		if (cell.IsDisplayObject() && !a_movieCompares) {
 			// Only the last try's reason is traced, the rate with no sign and
-			// no brackets, as it says why the row shows no rate at all.
+			// no brackets, as it says why the cell holds no rate.
 			const auto  keepColour = changed && !beside.empty();
 			std::string why;
 			for (const auto& tried : cellTries) {
@@ -325,6 +338,12 @@ namespace ItemCard
 				}
 			}
 			TraceLog::First("menu", "{:s} CND row's cell beside the number {:s}", movie, why);
+		}
+		// Last, the number's field again, for a row under a wider font. The
+		// rate keeps its brackets, and the movie draws the text a little
+		// smaller where the label leaves less room than it takes.
+		if (inField(Fit::kShrunk)) {
+			return;
 		}
 		tidyCell();
 		remember();

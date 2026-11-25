@@ -174,7 +174,9 @@ namespace ItemCard
 
 	// Writes a_rate beside the number on a_row, the CND row, in WearRate.cpp:
 	// in the number's own field, grown left over the label's free room, else
-	// in the empty field beside it, else nowhere, so it never draws shrunk.
+	// in the empty field beside it, else in the number's field again, where
+	// the movie's shrink may draw both down to 90% of their size, else
+	// nowhere, so it never draws smaller than that.
 	// Nothing for a row whose item has no rate. a_movieFile is the movie's.
 	// a_compared is the rate of the item compared, see
 	// WEAR_RATE_COMPARED_MARK. While the 2 print apart, it signs the rate in

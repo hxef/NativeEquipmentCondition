@@ -89,8 +89,11 @@ namespace Mcm
 	// mark. Its 2 points sit on the Weapons and the Armor page, so the
 	// section's id names the first, and both sliders refresh the menu.
 	// At Off each CND stepper hides the rows of its place, and at any form
-	// but Bar the rows that size a bar, flip it or show its word. Weapon CND
-	// percent in 1 line shows only while Weapon CND is at Percent. A part left
+	// but Bar the rows that size or flip a bar. A word switch shows at Bar and
+	// Percent, the quick container's and the apparel figure's only at
+	// Percent, since their bars have no word. Weapon CND percent in 1 line
+	// shows only while Weapon CND is at Percent with its word shown, since
+	// without the word the percent is always 1 line. A part left
 	// to another mod leaves its stepper at Off in memory, see Gate::SetOff, so
 	// its Bar rows hide too and a block's note leaves them out. The 3 item
 	// card switches hide while Item card CND is Off, and CND decimals while no
@@ -117,19 +120,19 @@ namespace Mcm
 			{ &Settings::fPenaltyMarkWidth, &Settings::bPenaltyMarkAsLine } },
 		{ "bPenaltyMarkAsLine:Notches"sv, [] { return MarkedBarShows(false); }, { &Settings::bPenaltyMarkAsLine } },
 		{ "iWeaponCnd:Shown"sv, [] { return Settings::iWeaponCnd.Form() != Settings::Cnd::kOff; },
-			{ &Settings::fHudBarX, &Settings::fHudBarY, &Settings::bHudBarHidesWithCounter, &Settings::bHudBarStandsAlone } },
+			{ &Settings::fHudBarX, &Settings::fHudBarY, &Settings::bHudBarHidesWithCounter, &Settings::bHudBarStandsAlone, &Settings::bHudBarShowsWord } },
 		{ "iWeaponCnd:Bar"sv, [] { return Settings::iWeaponCnd.Form() == Settings::Cnd::kBar; },
-			{ &Settings::fHudBarLength, &Settings::fHudBarThickness, &Settings::bHudBarShowsWord, &Settings::bHudBarFlipped } },
-		{ "iWeaponCnd:Percent"sv, [] { return Settings::iWeaponCnd.Form() == Settings::Cnd::kPercent; }, { &Settings::bHudBarPercentOneLine } },
+			{ &Settings::fHudBarLength, &Settings::fHudBarThickness, &Settings::bHudBarFlipped } },
+		{ "iWeaponCnd:Percent"sv, [] { return Settings::iWeaponCnd.Form() == Settings::Cnd::kPercent && Settings::bHudBarShowsWord.GetValue(); },
+			{ &Settings::bHudBarPercentOneLine } },
 		{ "iPowerArmorCnd:Shown"sv, [] { return Settings::iPowerArmorCnd.Form() != Settings::Cnd::kOff; },
-			{ &Settings::fPowerArmorBarX, &Settings::fPowerArmorBarY } },
+			{ &Settings::fPowerArmorBarX, &Settings::fPowerArmorBarY, &Settings::bPowerArmorBarShowsWord } },
 		{ "iPowerArmorCnd:Bar"sv, [] { return Settings::iPowerArmorCnd.Form() == Settings::Cnd::kBar; },
-			{ &Settings::fPowerArmorBarLength, &Settings::fPowerArmorBarThickness, &Settings::bPowerArmorBarShowsWord,
-				&Settings::bPowerArmorBarFlipped } },
+			{ &Settings::fPowerArmorBarLength, &Settings::fPowerArmorBarThickness, &Settings::bPowerArmorBarFlipped } },
 		{ "iPickupCnd:Shown"sv, [] { return Settings::iPickupCnd.Form() != Settings::Cnd::kOff; },
-			{ &Settings::fPickupBarX, &Settings::fPickupBarY } },
+			{ &Settings::fPickupBarX, &Settings::fPickupBarY, &Settings::bPickupBarShowsWord } },
 		{ "iPickupCnd:Bar"sv, [] { return Settings::iPickupCnd.Form() == Settings::Cnd::kBar; },
-			{ &Settings::fPickupBarLength, &Settings::fPickupBarThickness, &Settings::bPickupBarShowsWord, &Settings::bPickupBarFlipped } },
+			{ &Settings::fPickupBarLength, &Settings::fPickupBarThickness, &Settings::bPickupBarFlipped } },
 		{ "bPickupPenaltyMark:Marks"sv, [] { return Settings::iPickupCnd.Form() == Settings::Cnd::kBar && AnyPenaltyPoint(); },
 			{ &Settings::bPickupPenaltyMark } },
 		{ "iItemCardCnd:Shown"sv, [] { return Settings::iItemCardCnd.Form() != Settings::Cnd::kOff; },
@@ -138,10 +141,14 @@ namespace Mcm
 			{ &Settings::bQuickContainerCndAtRight } },
 		{ "iQuickContainerCnd:Bar"sv, [] { return Settings::iQuickContainerCnd.Form() == Settings::Cnd::kBar; },
 			{ &Settings::bQuickContainerBarFlipped } },
+		{ "iQuickContainerCnd:Percent"sv, [] { return Settings::iQuickContainerCnd.Form() == Settings::Cnd::kPercent; },
+			{ &Settings::bQuickContainerShowsWord } },
 		{ "iItemCardCnd:Bar"sv, [] { return Settings::iItemCardCnd.Form() == Settings::Cnd::kBar; },
 			{ &Settings::fItemCardBarThickness, &Settings::bItemCardBarFlipped } },
 		{ "iApparelFigureCnd:Bar"sv, [] { return Settings::iApparelFigureCnd.Form() == Settings::Cnd::kBar; },
 			{ &Settings::fPipboyBarThickness, &Settings::bPipboyBarFlipped } },
+		{ "iApparelFigureCnd:Percent"sv, [] { return Settings::iApparelFigureCnd.Form() == Settings::Cnd::kPercent; },
+			{ &Settings::bApparelFigureShowsWord } },
 		{ "iCndDecimals:Numbers"sv,
 			[] {
 				return AnyCndAt(Settings::Cnd::kPercent) || BenchWayRepairs() || Settings::bVendorRepair.GetValue() ||

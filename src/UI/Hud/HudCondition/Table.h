@@ -26,7 +26,9 @@
 // field at the word's place, its left edge and its baseline. With
 // bHudBarPercentOneLine on it reads so at the line too, drawn smaller where it
 // would run off screen, and the line box runs the line on under the whole of
-// it. Private to this folder.
+// it. With bHudBarShowsWord off it reads in 1 line everywhere, 87.4% alone in
+// the word's field, so no empty row stands over the line. Private to this
+// folder.
 namespace HudCondition
 {
 	// Where the counter's line and its 2 numbers stand, from the readout's
@@ -75,10 +77,12 @@ namespace HudCondition
 		double                        rise = 0.0;
 		Flash::Point                  number;
 
-		// What it was laid out for.
+		// What it was laid out for, worded false while bHudBarShowsWord is
+		// off and the 1 line is the number alone.
 		Rows        rows;
 		Flash::Box  word;
 		std::string widest;
+		bool        worded = true;
 	};
 
 	// The table for a_word, the word's place as Spot.h's Label measured it,
@@ -106,6 +110,7 @@ namespace HudCondition
 		bool between = false;    // the divider runs between the 2 numbers, see Choice in Spot.h
 		bool fits = false;       // the 2 lines fit by it, the same
 		bool asked = false;      // bHudBarPercentOneLine is on
+		bool wordless = false;   // bHudBarShowsWord is off
 	};
 
 	// The percent's form, and why in the words NEC.log says it with. atLine
@@ -120,7 +125,8 @@ namespace HudCondition
 	// The rule. The percent stands at the divider at its own place, by a
 	// counter that shows this weapon's rounds and runs its divider between
 	// its 2 numbers. There it reads in 2 lines where they fit, else in 1, and
-	// in 1 with bHudBarPercentOneLine on. Anywhere else it reads in 1 line.
+	// in 1 with bHudBarPercentOneLine on or bHudBarShowsWord off. Anywhere
+	// else it reads in 1 line.
 	[[nodiscard]] Lines LinesFor(const LinesFacts& a_facts);
 
 	// Moves the word's and the number's fields for a_table, moved by a_x and
@@ -133,7 +139,7 @@ namespace HudCondition
 	void WriteNumber(Scaleform::GFx::Value& a_readout, const std::string& a_number);
 
 	// Writes the 1 line for a_tenths into the word's own field, CND 87.4%,
-	// a_scale times the word's size.
+	// or 87.4% while bHudBarShowsWord is off, a_scale times the word's size.
 	void WriteOneLine(Scaleform::GFx::Value& a_readout, std::uint32_t a_tenths, double a_scale);
 
 	// Writes the word alone back into its own field, as the 1 line goes.

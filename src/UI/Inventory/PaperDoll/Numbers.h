@@ -19,7 +19,8 @@
 // the torso's ends where its bar ends while its entry shows 1 digit, clear of
 // the left leg's entry. All 6 take 1 size, the largest the tightest room
 // above them allows, from 0.75 of the figure's size 18 down to 0.5 of it, see
-// Room.h. Private to this folder.
+// Room.h. With bApparelFigureShowsWord off each number stands alone, placed
+// the same way. Private to this folder.
 namespace PaperDoll
 {
 	// The size the numbers start at and the least they shrink to.
@@ -62,6 +63,9 @@ namespace PaperDoll
 		void Forget();
 
 	private:
+		// a_number with the word before it, or alone without a_worded.
+		[[nodiscard]] std::string Text(const std::string& a_number, bool a_worded) const;
+
 		// What 1 region shows: its number with no word, and the spot it was
 		// placed by.
 		struct Shown
@@ -72,8 +76,10 @@ namespace PaperDoll
 
 		std::array<Shown, kRegions> shown;
 
-		// The CND word as the movie translates it, read once a movie.
+		// The CND word as the movie translates it, read once a movie, and
+		// whether the numbers last drawn had it.
 		std::string word;
+		bool        shownWorded{ true };
 
 		// The least headroom the trace last named as too little, see Draw.
 		std::optional<double> tightSaid;

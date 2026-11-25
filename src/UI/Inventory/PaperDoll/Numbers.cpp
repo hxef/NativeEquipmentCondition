@@ -1,5 +1,6 @@
 #include "UI/Inventory/PaperDoll/Numbers.h"
 
+#include "Core/Settings/Settings.h"
 #include "Core/TraceLog/TraceLog.h"
 #include "UI/Flash.h"
 #include "UI/Hud/HudParts/HudParts.h"
@@ -64,7 +65,8 @@ namespace PaperDoll
 	void Numbers::Draw(Scaleform::GFx::Movie& a_movie, Value& a_doll, std::vector<Value>& a_texts, NumberEntries& a_entries, bool a_relaid)
 	{
 		std::array<std::string, kRegions> numbers;
-		auto                              changed = a_relaid;
+		const auto                        worded = Settings::bApparelFigureShowsWord.GetValue();
+		auto                              changed = a_relaid || worded != shownWorded;
 		for (std::size_t region = 0; region < kRegions; region++) {
 			const auto tenths = a_entries[region] ? LowestTenths(region) : NONE;
 			numbers[region] = tenths >= 0 ? Readout::PercentText(static_cast<std::uint32_t>(tenths)) : std::string{};
@@ -74,6 +76,7 @@ namespace PaperDoll
 		if (!changed) {
 			return;
 		}
+		shownWorded = worded;
 
 		// Each number is written at the starting size first, and the
 		// tightest room above any of them sets the size all 6 take. Its
@@ -91,11 +94,11 @@ namespace PaperDoll
 				entry->readout.SetMember("visible"sv, Value(false));
 				continue;
 			}
-			if (word.empty()) {
+			if (worded && word.empty()) {
 				auto label = Readout::LabelOf(entry->readout);
 				word = HudParts::Translated(label, HudParts::CND_TEXT);
 			}
-			const auto  letters = Put(entry->readout, region, entry->spot, word + " " + numbers[region], NUMBER_SIZE);
+			const auto  letters = Put(entry->readout, region, entry->spot, Text(numbers[region], worded), NUMBER_SIZE);
 			const auto& at = entry->spot.placed;
 			const auto  room = RoomAbove(a_movie, a_doll, a_texts, entry->entry, at.y + letters.bottom, at.x + letters.left, at.x + letters.right);
 			const auto  headroom = HeadroomOf(room, at.y + letters.bottom);
@@ -113,7 +116,7 @@ namespace PaperDoll
 			for (std::size_t region = 0; region < kRegions; region++) {
 				auto& entry = a_entries[region];
 				if (entry && !numbers[region].empty()) {
-					Put(entry->readout, region, entry->spot, word + " " + numbers[region], wanted);
+					Put(entry->readout, region, entry->spot, Text(numbers[region], worded), wanted);
 				}
 			}
 		}
@@ -121,7 +124,7 @@ namespace PaperDoll
 		std::string drawn;
 		for (std::size_t region = 0; region < kRegions; region++) {
 			if (a_entries[region] && !numbers[region].empty()) {
-				std::format_to(std::back_inserter(drawn), "{:s}{:s} {:s} {:s}", drawn.empty() ? "" : ", ", ENTRY_NAMES[region], word, numbers[region]);
+				std::format_to(std::back_inserter(drawn), "{:s}{:s} {:s}", drawn.empty() ? "" : ", ", ENTRY_NAMES[region], Text(numbers[region], worded));
 			}
 		}
 		TraceLog::Line("menu", "Pip-Boy doll CND drawn as numbers {:s}, at size {:.1f}", drawn.empty() ? std::string{ "none" } : drawn, wanted);
@@ -135,6 +138,11 @@ namespace PaperDoll
 				TraceLog::Line("menu", "Pip-Boy doll CND numbers have only {:.1f} of room under {:s}, so their least size overlaps it", *tight, tightUnder);
 			}
 		}
+	}
+
+	std::string Numbers::Text(const std::string& a_number, bool a_worded) const
+	{
+		return a_worded ? word + " " + a_number : a_number;
 	}
 
 	void Numbers::Forget()

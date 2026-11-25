@@ -136,9 +136,9 @@ namespace HudCondition
 	// -------------------------------------------------------------------
 
 	// A change of form shows the bar's boxes, or hides them and shows the
-	// word whatever its switch says, and forgets everything laid out, so
-	// this frame reads and lays the new form out. A bar takes the word back
-	// from the 1 line, and a percent starts in 2 lines until told.
+	// word's field, which holds the percent, and forgets everything laid
+	// out, so this frame reads and lays the new form out. A bar takes the
+	// word back from the 1 line, and a percent starts in 2 lines until told.
 	void FrameListener::SwitchForm(Value& a_readout, bool a_number)
 	{
 		tabled = a_number;
@@ -178,7 +178,8 @@ namespace HudCondition
 			.noCounter = counterPart && !HudParts::HasRounds(*counterPart),
 			.between = between,
 			.fits = fits,
-			.asked = Settings::bHudBarPercentOneLine.GetValue() };
+			.asked = Settings::bHudBarPercentOneLine.GetValue(),
+			.wordless = !Settings::bHudBarShowsWord.GetValue() };
 		const auto lines = LinesFor(facts);
 		const auto moves = lines.one != oneLine || (lines.one && lines.atLine != atLine);
 		atLine = lines.atLine;

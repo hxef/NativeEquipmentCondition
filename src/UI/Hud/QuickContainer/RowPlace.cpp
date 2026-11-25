@@ -20,6 +20,13 @@ namespace QuickContainer
 
 	namespace
 	{
+		// What stands before a row's number: the word and a space, or nothing
+		// while bQuickContainerShowsWord is off.
+		std::string WordBefore(const std::string& a_word)
+		{
+			return Settings::bQuickContainerShowsWord.GetValue() ? a_word + " " : std::string{};
+		}
+
 		// The middle of a line's capitals and digits below its top, by the
 		// font's own ascent and CAPITALS_SHARE, in the field's own units.
 		double CapitalsMiddle(const Flash::TextLine& a_line)
@@ -128,9 +135,10 @@ namespace QuickContainer
 
 	// The widest text the row can write: CND and the number of a worn item
 	// at its most or of a full one, see HudParts::Readout::WIDEST, in the
-	// name's letters. Measured again only when those texts or letters
-	// change, as CND decimals or a new name font does, and a measure leaves
-	// the number to be written again.
+	// name's letters, the number alone while bQuickContainerShowsWord is
+	// off. Measured again only when those texts or letters change, as CND
+	// decimals, the word's switch or a new name font does, and a measure
+	// leaves the number to be written again.
 	std::optional<double> Meters::Widest(Value& a_number, const Value& a_name, Drawn& a_drawn)
 	{
 		const auto letters = LettersOf(a_name);
@@ -144,7 +152,8 @@ namespace QuickContainer
 			a_drawn.number.clear();
 		}
 		std::array<std::string, HudParts::Readout::WIDEST.size()> texts;
-		std::ranges::transform(HudParts::Readout::WIDEST, texts.begin(), [&](std::uint32_t a_tenths) { return a_drawn.word + " " + HudParts::Readout::PercentText(a_tenths); });
+		const auto before = WordBefore(a_drawn.word);
+		std::ranges::transform(HudParts::Readout::WIDEST, texts.begin(), [&](std::uint32_t a_tenths) { return before + HudParts::Readout::PercentText(a_tenths); });
 		const auto of = texts[0] + "|" + texts[1];
 		if (letters == a_drawn.letters && of == a_drawn.widestOf) {
 			return a_drawn.widest;
@@ -176,7 +185,7 @@ namespace QuickContainer
 		auto&      last = drawn[a_index];
 		const auto selected = Flash::Bool(a_row, "selected"sv);
 		const auto number = HudParts::Readout::PercentText(a_reading.tenths);
-		const auto text = last.word + " " + number;
+		const auto text = WordBefore(last.word) + number;
 		const auto renumbered = number != last.number;
 		const auto changed = renumbered || selected != last.numberSelected;
 		if (changed) {

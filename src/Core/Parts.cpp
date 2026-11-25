@@ -247,6 +247,7 @@ namespace
 		// stepper's block.
 		{ &Settings::bQuickContainerBarFlipped, &Settings::iQuickContainerCnd, LOOT_METERS },
 		{ &Settings::bQuickContainerCndAtRight, &Settings::iQuickContainerCnd, LOOT_METERS },
+		{ &Settings::bQuickContainerShowsWord, &Settings::iQuickContainerCnd, LOOT_METERS },
 		{ &Settings::fItemCardBarThickness, &Settings::iItemCardCnd, CARD_CND },
 		{ &Settings::bItemCardBarFlipped, &Settings::iItemCardCnd, CARD_CND },
 		// The sign's 2 sliders sit in Trader repairs' block, as the sign's

@@ -10,7 +10,8 @@
 // one too, its freshness, while Food spoils is on. At Quick container CND
 // Percent the row shows CND and the percent in the meter's place instead, in
 // the name's font at 0.7 of its size, centred on the name's capitals, and the
-// name narrows by the widest such text. bQuickContainerCndAtRight, on as it
+// name narrows by the widest such text, the percent alone while
+// bQuickContainerShowsWord is off. bQuickContainerCndAtRight, on as it
 // ships, puts the meter or the percent at the row's right edge, and a centred
 // name stays centred in the room left of it.
 //

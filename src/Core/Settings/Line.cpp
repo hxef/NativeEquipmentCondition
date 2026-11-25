@@ -150,8 +150,10 @@ namespace Settings
 			&bPickupPenaltyMark,
 			&bQuickContainerBarFlipped,
 			&bQuickContainerCndAtRight,
+			&bQuickContainerShowsWord,
 			&bItemCardBarFlipped,
 			&bPipboyBarFlipped,
+			&bApparelFigureShowsWord,
 			&bPenaltyMarkAsLine,
 			&bTraceLogs,
 		};
@@ -164,9 +166,10 @@ namespace Settings
 		Live<bool>* const AFTER_FOOD_SPOILS[]{ &bFridgeIcon };
 		Live<bool>* const AFTER_HUD_BAR[]{ &bHudBarHidesWithCounter, &bHudBarStandsAlone, &bHudBarShowsWord, &bHudBarFlipped, &bHudBarPercentOneLine };
 		Live<bool>* const AFTER_POWER_ARMOR_BAR[]{ &bPowerArmorBarShowsWord, &bPowerArmorBarFlipped };
-		Live<bool>* const AFTER_PICKUP_BAR[]{ &bPickupBarShowsWord, &bPickupBarFlipped, &bPickupPenaltyMark, &bQuickContainerBarFlipped, &bQuickContainerCndAtRight };
+		Live<bool>* const AFTER_PICKUP_BAR[]{ &bPickupBarShowsWord, &bPickupBarFlipped, &bPickupPenaltyMark, &bQuickContainerBarFlipped, &bQuickContainerCndAtRight,
+			&bQuickContainerShowsWord };
 		Live<bool>* const AFTER_ITEM_CARD_BAR[]{ &bItemCardBarFlipped };
-		Live<bool>* const AFTER_PIPBOY_BAR[]{ &bPipboyBarFlipped };
+		Live<bool>* const AFTER_PIPBOY_BAR[]{ &bPipboyBarFlipped, &bApparelFigureShowsWord };
 		Live<bool>* const AFTER_PENALTY_MARK[]{ &bPenaltyMarkAsLine };
 		Live<bool>* const AFTER_CND_DECIMALS[]{ &bCndColumn };
 

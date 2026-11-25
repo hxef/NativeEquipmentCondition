@@ -230,7 +230,7 @@ namespace Settings
 	[[nodiscard]] std::span<const Gate>   Gates();
 	[[nodiscard]] std::span<const Number> Numbers();
 
-	// Every switch in NEC.ini, the 7 of Gates and the 19 others, for the
+	// Every switch in NEC.ini, the 7 of Gates and the 28 others, for the
 	// presets.
 	[[nodiscard]] std::span<Live<bool>* const> EverySwitch();
 

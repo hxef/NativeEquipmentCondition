@@ -1,5 +1,6 @@
 #include "UI/Hud/PowerArmorCondition/Lines.h"
 
+#include "Core/TraceLog/TraceLog.h"
 #include "UI/Flash.h"
 #include "UI/Hud/HudParts/Readout.h"
 
@@ -80,7 +81,7 @@ namespace PowerArmorCondition
 		return true;
 	}
 
-	std::optional<std::string> Lines::Write(Scaleform::GFx::Movie& a_movie, Value& a_readout, std::uint32_t a_tenths)
+	std::optional<std::string> Lines::Write(Scaleform::GFx::Movie& a_movie, Value& a_readout, std::uint32_t a_tenths, bool a_worded)
 	{
 		auto       lower = Readout::ExtraOf(a_movie, a_readout, Readout::Extra::kNumber);
 		const auto text = Readout::PercentText(a_tenths);
@@ -89,15 +90,26 @@ namespace PowerArmorCondition
 		}
 		numberAt = FromCorner(Readout::WriteText(lower, text, size, LINES_WIDE));
 		number = text;
-		return word + " " + text;
+		return a_worded ? word + " " + text : text;
 	}
 
-	bool Lines::Place(Value& a_readout, const Frame& a_frame, const Point& a_origin, double a_turn, const Point& a_upper, const Point& a_lower)
+	bool Lines::Place(Value& a_readout, const Frame& a_frame, const Point& a_origin, double a_turn, const Point& a_upper, const Point& a_lower, bool a_worded)
 	{
 		auto upper = Readout::ExtraIn(a_readout, Readout::Extra::kWord);
 		auto lower = Readout::ExtraIn(a_readout, Readout::Extra::kNumber);
+		// Before any early return, so CND never shows on a frame that places
+		// nothing while it fades.
+		if (worded != a_worded) {
+			worded = a_worded;
+			Flash::Set(upper, "visible"sv, Value(a_worded));
+			TraceLog::Line("menu", "Power armor CND word {:s}", a_worded ? "shows over the percent" : "hides, the percent stands alone between the 2 rows");
+		}
 		if (!a_upper.ok || !a_lower.ok || !(size > 0.0) || number.empty()) {
 			return false;
+		}
+		if (!a_worded) {
+			const Point middle{ (a_upper.x + a_lower.x) / 2.0, (a_upper.y + a_lower.y) / 2.0, true };
+			return PutOn(lower, numberAt, middle, a_frame, a_origin, a_turn);
 		}
 		const auto wordFits = PutOn(upper, wordAt, a_upper, a_frame, a_origin, a_turn);
 		const auto numberFits = PutOn(lower, numberAt, a_lower, a_frame, a_origin, a_turn);
@@ -110,6 +122,7 @@ namespace PowerArmorCondition
 		auto lower = Readout::ExtraIn(a_readout, Readout::Extra::kNumber);
 		Flash::Set(upper, "visible"sv, Value(a_shown));
 		Flash::Set(lower, "visible"sv, Value(a_shown));
+		worded.reset();
 		Readout::ShowBar(a_readout, !a_shown);
 		if (a_shown) {
 			Readout::ShowLabel(a_readout, false);
@@ -121,6 +134,7 @@ namespace PowerArmorCondition
 		size = 0.0;
 		word.clear();
 		number.clear();
+		worded.reset();
 		wordAt = Readout::LabelPlace{};
 		numberAt = Readout::LabelPlace{};
 	}

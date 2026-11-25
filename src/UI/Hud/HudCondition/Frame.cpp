@@ -110,13 +110,13 @@ namespace HudCondition
 				labelled = true;
 			}
 			// At Percent the lines are laid out again when the counter's
-			// rows, the word, the widest number or the 1 line's size at the
-			// ammo line change.
+			// rows, the word, the widest number, the word's switch or the 1
+			// line's size at the ammo line change.
 			if (tabled) {
 				rows = RowsNow(*a_params.movie, counter, ownVisible, rows);
 				auto laid = LayTable(*a_params.movie, readout, label, rows, table, lineRight);
 				const auto resized = laid && table && oneLine && atLine && laid->atLine.scale != table->atLine.scale;
-				if (!laid || !table || laid->rows != table->rows || laid->word != table->word || laid->widest != table->widest || resized) {
+				if (!laid || !table || laid->rows != table->rows || laid->word != table->word || laid->widest != table->widest || laid->worded != table->worded || resized) {
 					laidOut.reset();
 					shownNumber.clear();
 					lined.reset();

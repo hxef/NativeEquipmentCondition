@@ -33,8 +33,9 @@ namespace Settings
 	// hides with the counter.
 	inline Live<bool> bHudBarStandsAlone{ "HUD", "bHudBarStandsAlone", false };
 
-	// Whether the CND word shows beside the Weapon CND bar. When off, only the
-	// bar shows, at the same place.
+	// Whether the CND word shows beside the Weapon CND bar or percent. When
+	// off, only the bar shows, at the same place, or the number alone in 1
+	// line, see HudCondition/Table.h.
 	inline Live<bool> bHudBarShowsWord{ "HUD", "bHudBarShowsWord", true };
 
 	// Mirrors the Weapon CND bar, so it fills from the left and the word sits
@@ -42,8 +43,8 @@ namespace Settings
 	inline Live<bool> bHudBarFlipped{ "HUD", "bHudBarFlipped", false };
 
 	// Whether the Weapon CND percent reads in 1 line, CND 87.4%, at the ammo
-	// divider too, where it reads in 2 lines when off. Anywhere else it is 1
-	// line either way, see Lines in HudCondition/Table.h.
+	// divider too, where it reads in 2 lines when off while the word shows.
+	// Anywhere else it is 1 line either way, see Lines in HudCondition/Table.h.
 	inline Live<bool> bHudBarPercentOneLine{ "HUD", "bHudBarPercentOneLine", false };
 
 	// How far right of the dash's ammo digits the Power armor CND bar sits,
@@ -58,8 +59,9 @@ namespace Settings
 	inline Live<float> fPowerArmorBarLength{ "HUD", "fPowerArmorBarLength", 1.0F };
 	inline Live<float> fPowerArmorBarThickness{ "HUD", "fPowerArmorBarThickness", 1.0F };
 
-	// Whether the CND word shows beside the Power armor CND bar. When off,
-	// only the bar shows, at the same place.
+	// Whether the CND word shows beside the Power armor CND bar or over its
+	// percent. When off, only the bar shows, at the same place, or the number
+	// alone between the dash's 2 rows, see PowerArmorCondition/Lines.h.
 	inline Live<bool> bPowerArmorBarShowsWord{ "HUD", "bPowerArmorBarShowsWord", true };
 
 	// Mirrors the Power armor CND bar, so it fills from the left and keeps the
@@ -81,8 +83,9 @@ namespace Settings
 	inline Live<float> fPickupBarLength{ "HUD", "fPickupBarLength", 1.0F };
 	inline Live<float> fPickupBarThickness{ "HUD", "fPickupBarThickness", 1.0F };
 
-	// Whether the CND word shows beside the Pickup CND bar. When off, only
-	// the bar shows, at the same place.
+	// Whether the CND word shows beside the Pickup CND bar or before its
+	// percent. When off, only the bar shows, at the same place, or the number
+	// alone, centred under the name.
 	inline Live<bool> bPickupBarShowsWord{ "HUD", "bPickupBarShowsWord", true };
 
 	// Mirrors the Pickup CND bar, so it fills from the left and the word sits
@@ -98,6 +101,11 @@ namespace Settings
 
 	// Puts each quick container row's CND at its right edge, see QuickContainer.h.
 	inline Live<bool> bQuickContainerCndAtRight{ "HUD", "bQuickContainerCndAtRight", true };
+
+	// Whether the CND word shows before each quick container row's percent.
+	// When off, the number stands alone where the row puts its CND. The
+	// row's bar never shows the word.
+	inline Live<bool> bQuickContainerShowsWord{ "HUD", "bQuickContainerShowsWord", true };
 
 	// How thick the CND meter on item cards is drawn, 1 for 65% of its row's
 	// text height.
@@ -116,6 +124,11 @@ namespace Settings
 	// Mirrors the CND bars on the Pip-Boy apparel figure, so each fills from
 	// the right.
 	inline Live<bool> bPipboyBarFlipped{ "HUD", "bPipboyBarFlipped", false };
+
+	// Whether the CND word shows before each number of the Pip-Boy apparel
+	// figure at Percent. When off, the number stands alone where it stood.
+	// The figure's bars never show the word.
+	inline Live<bool> bApparelFigureShowsWord{ "HUD", "bApparelFigureShowsWord", true };
 
 	// How wide the mark where penalties start is on CND bars, 1 for its normal
 	// width.

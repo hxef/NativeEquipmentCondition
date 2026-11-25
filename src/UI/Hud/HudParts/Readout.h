@@ -214,7 +214,7 @@ namespace HudParts
 		void ShowBar(Value& a_readout, bool a_shown);
 
 		// Shows or hides the word's field, for a place at Percent, where the
-		// word shows whatever the bar's word switch says.
+		// field holds the percent, with the word as the place's switch says.
 		void ShowLabel(Value& a_readout, bool a_shown);
 
 		// The number a place at Percent writes for a_tenths, as an item's

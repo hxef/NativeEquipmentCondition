@@ -213,8 +213,9 @@ namespace PickupBar
 		private:
 			// At Percent CND and the number stand as 1 line centred under the
 			// name, on the line the word takes at Bar, moved by the place
-			// sliders as the bar is. The text is written only when the number
-			// or the item changes, since it is measured.
+			// sliders as the bar is, and the number alone while
+			// bPickupBarShowsWord is off. The text is written only when it or
+			// the item changes, since it is measured.
 			void ShowPercent(Value& a_readout, const Value& a_name, const Value& a_hints, const Looked& a_kept)
 			{
 				const auto centre = Flash::Number(a_name, "x"sv) + (Flash::Number(a_name, "width"sv) / 2.0);
@@ -228,15 +229,17 @@ namespace PickupBar
 					shownY = y;
 				}
 				const auto number = Readout::PercentText(a_kept.tenths);
-				if (number == shownNumber && a_kept.name == shownName) {
+				const auto worded = Settings::bPickupBarShowsWord.GetValue();
+				if (number == shownNumber && a_kept.name == shownName && worded == shownWorded) {
 					return;
 				}
 				auto       label = Readout::LabelOf(a_readout);
-				const auto text = Readout::WordAndPercent(label, a_kept.tenths);
+				const auto text = worded ? Readout::WordAndPercent(label, a_kept.tenths) : number;
 				Readout::ShowNumber(a_readout, text, Readout::Label{ .size = WORD.size }, Readout::Align::kMiddle);
 				TraceLog::Line("menu", "Pickup CND drawn as {:s} for {:s}", text, a_kept.name);
 				shownNumber = number;
 				shownName = a_kept.name;
+				shownWorded = worded;
 			}
 
 			// The game paints the prompt's name and hints in the warning
@@ -298,11 +301,13 @@ namespace PickupBar
 			std::optional<bool> wordShown;
 			bool                colored = false;
 
-			// The form last seen, whether the readout last showed a number and
-			// the number last written, see ShowPercent.
+			// The form last seen, whether the readout last showed a number, the
+			// number last written and whether the word stood before it, see
+			// ShowPercent.
 			std::optional<Settings::Cnd> saidForm;
 			bool                         shownAsNumber = false;
 			std::string                  shownNumber;
+			bool                         shownWorded = true;
 
 			// Only a name for HudParts to look the target up by, see
 			// HudParts::SetWarningColor.

@@ -1,5 +1,6 @@
 #include "UI/Hud/HudCondition/Table.h"
 
+#include "Core/Settings/Settings.h"
 #include "UI/Hud/HudParts/HudParts.h"
 #include "UI/Roles/Hud.h"
 
@@ -63,6 +64,13 @@ namespace HudCondition
 			moved.field = a_place.field.Moved(-a_place.field.left, -a_place.field.top);
 			moved.letters = a_place.letters.Moved(-a_place.field.left, -a_place.field.top);
 			return moved;
+		}
+
+		// The 1 line for a_tenths, CND 87.4%, or the number alone while
+		// bHudBarShowsWord is off.
+		[[nodiscard]] std::string LineText(Value& a_field, std::uint32_t a_tenths, bool a_worded)
+		{
+			return a_worded ? Readout::WordAndPercent(a_field, a_tenths) : Readout::PercentText(a_tenths);
 		}
 
 		// The widest numbers CND decimals writes now, joined, which a table
@@ -187,7 +195,8 @@ namespace HudCondition
 			return std::nullopt;
 		}
 		const auto widest = WidestNow();
-		if (a_last && a_last->rows == a_rows && a_last->word == a_word.letters && a_last->widest == widest &&
+		const auto worded = Settings::bHudBarShowsWord.GetValue();
+		if (a_last && a_last->rows == a_rows && a_last->word == a_word.letters && a_last->widest == widest && a_last->worded == worded &&
 			LineScale(a_last->away.place.letters, a_lineRight) == a_last->atLine.scale) {
 			return a_last;
 		}
@@ -199,13 +208,13 @@ namespace HudCondition
 		// The 1 line and the number are laid out at their widest, so nothing
 		// moves as the digits change. The number goes last, so the field is
 		// left holding a number.
-		const auto line = Widest(field, [&](std::uint32_t a_tenths) { return Readout::WordAndPercent(field, a_tenths); }, true);
+		const auto line = Widest(field, [&](std::uint32_t a_tenths) { return LineText(field, a_tenths, worded); }, true);
 		const auto wide = Widest(field, [](std::uint32_t a_tenths) { return Readout::PercentText(a_tenths); });
 		if (!line || !wide) {
 			return std::nullopt;
 		}
 
-		Table table{ {}, {}, {}, a_rows.foot - a_word.letters.bottom, {}, a_rows, a_word.letters, widest };
+		Table table{ {}, {}, {}, a_rows.foot - a_word.letters.bottom, {}, a_rows, a_word.letters, widest, worded };
 		table.number = Flash::Point{ a_word.letters.left - wide->letters.left, a_rows.head - DigitsTop(wide->letters) };
 		const auto word = a_word.letters.Moved(0.0, table.rise);
 		const auto number = wide->letters.Moved(table.number.x, table.number.y);
@@ -237,6 +246,9 @@ namespace HudCondition
 		}
 		if (!a_facts.between) {
 			return Lines{ .one = true, .why = "since no ammo divider runs between the 2 ammo numbers"sv };
+		}
+		if (a_facts.wordless) {
+			return Lines{ .atLine = true, .one = true, .why = "since bHudBarShowsWord is off"sv };
 		}
 		if (a_facts.asked) {
 			return Lines{ .atLine = true, .one = true, .why = "since bHudBarPercentOneLine is on"sv };
@@ -272,7 +284,7 @@ namespace HudCondition
 	void WriteOneLine(Value& a_readout, std::uint32_t a_tenths, double a_scale)
 	{
 		auto label = Readout::LabelOf(a_readout);
-		static_cast<void>(Readout::WriteText(label, Readout::WordAndPercent(label, a_tenths), WORD_SIZE * a_scale, WORD_WIDE));
+		static_cast<void>(Readout::WriteText(label, LineText(label, a_tenths, Settings::bHudBarShowsWord.GetValue()), WORD_SIZE * a_scale, WORD_WIDE));
 	}
 
 	void WriteWord(Value& a_readout)

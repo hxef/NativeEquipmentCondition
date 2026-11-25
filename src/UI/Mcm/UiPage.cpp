@@ -52,6 +52,7 @@ namespace Mcm
 			&Settings::iQuickContainerCnd,
 			&Settings::bQuickContainerBarFlipped,
 			&Settings::bQuickContainerCndAtRight,
+			&Settings::bQuickContainerShowsWord,
 			&Settings::iItemCardCnd,
 			&Settings::fItemCardBarThickness,
 			&Settings::bItemCardBarFlipped,
@@ -62,6 +63,7 @@ namespace Mcm
 			&Settings::iApparelFigureCnd,
 			&Settings::fPipboyBarThickness,
 			&Settings::bPipboyBarFlipped,
+			&Settings::bApparelFigureShowsWord,
 			&Settings::fPenaltyMarkWidth,
 			&Settings::bPenaltyMarkAsLine,
 		};

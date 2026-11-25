@@ -164,11 +164,12 @@ namespace PowerArmorCondition
 				const auto origin = box.At(laidOutFlipped && !asNumber ? bar.width : box.width, 0.0);
 				auto       fits = barFits;
 				if (asNumber) {
-					const auto drawn = measured && tenths ? lines.Write(*a_params.movie, readout, *tenths) : std::nullopt;
+					const auto worded = Settings::bPowerArmorBarShowsWord.GetValue();
+					const auto drawn = measured && tenths ? lines.Write(*a_params.movie, readout, *tenths, worded) : std::nullopt;
 					if (drawn) {
 						TraceLog::Line("menu", "Power armor CND drawn as {:s}", *drawn);
 					}
-					fits = measured && lines.Place(readout, frame, origin, box.turn, moved(anchor.upper), moved(anchor.lower));
+					fits = measured && lines.Place(readout, frame, origin, box.turn, moved(anchor.upper), moved(anchor.lower), worded);
 				}
 				const auto wanted = InPowerArmor() && DashAllowed() && percent >= 0 && fits;
 

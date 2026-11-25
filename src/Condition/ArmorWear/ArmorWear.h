@@ -105,4 +105,22 @@ namespace ArmorWear
 	// wear rate slider. No trace line. Read it under the inventory lock that
 	// keeps a_extra.
 	float WearShare(const RE::TESObjectARMO& a_armor, const RE::ExtraDataList* a_extra);
+
+	// A copy's own share of the wear, value, with what it is worked out from.
+	// 1 for a piece of the reference make, 2 for one that wears twice as
+	// fast. fArmorWearRateMult, fNpcArmorWearRateMult and the blow are left
+	// out, so Rate multiplies the value by them and the item card shows it
+	// as it is.
+	struct Share
+	{
+		float quality;
+		float build;  // the reference quality against quality, below 1 for a piece better made
+		float lasts;  // the copy's Health against a piece with none, see Health.h
+		float line;   // what a line in NEC/Wear multiplies it by, 1 for none
+		float value;
+	};
+
+	// WearShare with every factor behind it, for srm wearinfo, for a piece
+	// that wears. Read it under the inventory lock that keeps a_extra.
+	Share WearFactors(const RE::TESObjectARMO& a_armor, const RE::ExtraDataList* a_extra);
 }

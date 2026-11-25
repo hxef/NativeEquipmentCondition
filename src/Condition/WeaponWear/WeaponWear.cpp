@@ -222,6 +222,12 @@ namespace WeaponWear
 		return ShareOf(a_weapon, instance, a_extra, false).value;
 	}
 
+	Share WearFactors(const RE::TESObjectWEAP& a_weapon, const RE::ExtraDataList* a_extra)
+	{
+		const auto& instance = Condition::InstanceDataOf<RE::TESObjectWEAP::InstanceData>(a_extra, a_weapon.weaponData);
+		return ShareOf(a_weapon, instance, a_extra, false);
+	}
+
 	void PutAwayNow(RE::Actor& a_owner, RE::TESObjectWEAP& a_weapon)
 	{
 		auto* equipment = RE::ActorEquipManager::GetSingleton();

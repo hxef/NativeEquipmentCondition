@@ -341,8 +341,8 @@ namespace WeaponWear
 		// are measured against the reference weapon, so how much damage a
 		// weapon can deal in its life depends on what it is built from, and
 		// damage per shot decides how fast that runs out.
-		share.value = (share.damage / share.reference) * (Materials::ReferenceQuality(Condition::Kind::kWeapon) / share.quality) *
-		              share.pace * share.autoMult * share.suppressor * share.line;
+		share.build = Materials::ReferenceQuality(Condition::Kind::kWeapon) / share.quality;
+		share.value = (share.damage / share.reference) * share.build * share.pace * share.autoMult * share.suppressor * share.line;
 		return share;
 	}
 

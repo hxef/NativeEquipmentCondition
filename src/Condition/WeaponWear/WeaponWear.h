@@ -2,6 +2,8 @@
 
 #include "Core/Plugin.h"
 
+#include <cstdint>
+
 // Which weapons take part, how fast one wears, and wearing down the copy in
 // hand. Every shot and hit costs the equipped copy some condition, based on how
 // hard it hits compared with the ordinary weapon of its damage type in the load
@@ -56,6 +58,31 @@ namespace WeaponWear
 	// slider. No trace line. Read it under the inventory lock that keeps
 	// a_extra.
 	float WearShare(const RE::TESObjectWEAP& a_weapon, const RE::ExtraDataList* a_extra);
+
+	// A copy's own share of the wear, value, with what it is worked out from.
+	// 1 for an ordinary weapon of its damage type at the reference make, 2
+	// for one that wears twice as fast. fWearRateMult, fNpcWearRateMult and
+	// what one event scales are left out, so Rate multiplies the value by
+	// them and the item card shows it as it is.
+	struct Share
+	{
+		float         damage;
+		float         blast;      // the part of the damage the round's explosion deals
+		float         reference;  // what the ordinary weapon of its damage type hits for
+		float         quality;
+		float         build;      // the reference quality against quality, below 1 for a weapon better made
+		float         pace;       // below 1 for an automatic faster than the ordinary one
+		float         fireRate;   // shots a second, 0 for a weapon that is not automatic
+		float         autoMult;
+		float         suppressor;
+		float         line;       // what a line in NEC/Wear multiplies it by, 1 for none
+		float         value;
+		std::uint32_t kind;       // the damage type it deals most of, 0 for ballistic
+	};
+
+	// WearShare with every factor behind it, for srm wearinfo. Read it under
+	// the inventory lock that keeps a_extra.
+	Share WearFactors(const RE::TESObjectWEAP& a_weapon, const RE::ExtraDataList* a_extra);
 
 	// Takes a_weapon, worn to 0, out of a_owner's hands, with the break
 	// message for the player, as the shot that breaks it does. Call it from

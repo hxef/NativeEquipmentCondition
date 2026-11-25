@@ -1,8 +1,7 @@
 #pragma once
 
+#include "Condition/WeaponWear/WeaponWear.h"
 #include "Core/Plugin.h"
-
-#include <cstdint>
 
 // How fast a weapon wears, against the ordinary weapon of its damage type in
 // the load order.
@@ -28,26 +27,6 @@ namespace WeaponWear
 	// looked up at each call, so nothing is kept to unload. Null when no
 	// plugin loaded has it.
 	const RE::BGSKeyword* SuppressorKeyword();
-
-	// A copy's own share of the wear, value, with what it is worked out from.
-	// 1 for an ordinary weapon of its damage type at the reference make, 2
-	// for one that wears twice as fast. fWearRateMult, fNpcWearRateMult and
-	// what one event scales are left out, so Rate multiplies the value by
-	// them and the item card shows it as it is.
-	struct Share
-	{
-		float         damage;
-		float         blast;      // the part of the damage the round's explosion deals
-		float         reference;  // what the ordinary weapon of its damage type hits for
-		float         quality;
-		float         pace;       // below 1 for an automatic faster than the ordinary one
-		float         fireRate;   // shots a second, 0 for a weapon that is not automatic
-		float         autoMult;
-		float         suppressor;
-		float         line;       // what a line in NEC/Wear multiplies it by, 1 for none
-		float         value;
-		std::uint32_t kind;       // the damage type it deals most of, 0 for ballistic
-	};
 
 	// The share of the copy whose instance data is a_instance and whose list
 	// is a_extra. a_bash for a bash, which fAutoWearRateMult and

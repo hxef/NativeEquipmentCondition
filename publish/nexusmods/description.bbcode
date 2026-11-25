@@ -128,7 +128,17 @@ Your weapons and armor [b]wear down as you use them[/b], the way they did in Fal
 [*]7 loading screen tips on wear, repairs, broken gear, jams, loot and food spoiling, in the vanilla style and as likely to show as any ordinary loading screen. A tip about a feature you switch off never shows.
 [*]Vanilla fix: the inspect screen at a trader shows the right price for the side the item is on.
 [*]Vanilla fix: a workbench confirmation box with a long list of components shows more rows and scrolls with the mouse wheel, the arrow keys, the D-pad and W and S.
-[*]A console command for testing: [font=Courier New]srm[/font] brings the weapon in hand back to full, and [font=Courier New]srm 25[/font] sets it to 25%, any number from 0 to 100. Add armor, as in [font=Courier New]srm armor[/font] or [font=Courier New]srm 25 armor[/font], for every piece you have on that wears.
+[*]A console command for testing: [font=Courier New]srm[/font] repairs the weapon in hand, sets its condition or shows what makes its wear rate.
+[spoiler]
+[code]srm              the weapon in hand back to full
+srm 25           the weapon in hand to 25%, any number from 0 to 100
+srm wearinfo     its wear rate and the numbers behind it
+srm armor        the same for every piece you have on that wears, also srm 25 armor and srm wearinfo armor[/code]
+[font=Courier New]srm wearinfo[/font] and [font=Courier New]srm wearinfo armor[/font] print lines like these, and the numbers after the colon multiply to the rate on the item card:
+[code]Wears x2.1: damage 18 against 25 (x0.7), build x1.48, automatic x1.00, suppressor x1.00, wear list x2.00
+Leather Chest Piece wears x0.6: build x0.40, Health x1.00, wear list x1.50[/code]
+[font=Courier New]damage[/font] is the weapon's damage against an ordinary weapon of its damage type. [font=Courier New]build[/font] is below 1 for gear made from pricier components. [font=Courier New]wear list[/font] is its number from the wear list. [font=Courier New]automatic[/font], [font=Courier New]suppressor[/font] and [font=Courier New]Health[/font] stay at 1 unless the weapon fires automatic or has a suppressor, or the piece's mods change its Health.
+[/spoiler]
 [/list]
 
 [size=3][b][font=Georgia][color=#1AFF80]Compatibility[/color][/font][/b][/size]

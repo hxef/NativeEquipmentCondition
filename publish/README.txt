@@ -240,9 +240,27 @@ LITTLE EXTRAS
 * Vanilla fix: a workbench confirmation box with a long list of components
   shows more rows and scrolls with the mouse wheel, the arrow keys, the D-pad
   and W and S.
-* A console command for testing: "srm" brings the weapon in hand back to
-  full, and "srm 25" sets it to 25%, any number from 0 to 100. Add armor, as
-  in "srm armor" or "srm 25 armor", for every piece you have on that wears.
+* A console command for testing: "srm" repairs the weapon in hand, sets its
+  condition or shows what makes its wear rate.
+
+    srm              the weapon in hand back to full
+    srm 25           the weapon in hand to 25%, any number from 0 to 100
+    srm wearinfo     its wear rate and the numbers behind it
+    srm armor        the same for every piece you have on that wears,
+                     also srm 25 armor and srm wearinfo armor
+
+  "srm wearinfo" and "srm wearinfo armor" print lines like these, and the
+  numbers after the colon multiply to the rate on the item card:
+
+    Wears x2.1: damage 18 against 25 (x0.7), build x1.48, automatic x1.00,
+    suppressor x1.00, wear list x2.00
+    Leather Chest Piece wears x0.6: build x0.40, Health x1.00, wear list x1.50
+
+  damage is the weapon's damage against an ordinary weapon of its damage
+  type. build is below 1 for gear made from pricier components. wear list is
+  its number from the wear list. automatic, suppressor and Health stay at 1
+  unless the weapon fires automatic or has a suppressor, or the piece's mods
+  change its Health.
 
 COMPATIBILITY
 * Runs on Fallout 4 1.11.240 (AE) and 1.10.163 (OG).

@@ -11,6 +11,9 @@
 //   srm 25         sets it to 25%
 //   srm armor      brings every worn piece of armor that wears back to full
 //   srm 25 armor   sets every one of them to 25%
+//   srm wearinfo   shows the wear rate of the weapon in hand and what makes
+//                  it, and with the word armor that of every worn piece, see
+//                  WearInfo.h
 //
 // With the word armor, every piece carried that does not wear but kept a
 // condition loses it, whatever the percent, see Equipped::LeftoverPieces.
@@ -24,7 +27,7 @@ namespace ConsoleRepair
 
 	// Puts back the help and parameters NEC found once a recheck cut srm's
 	// place, so the console no longer shows NEC's help or expects NEC's
-	// number and armor word for the mod that has srm now. Called after every
+	// number, armor and wearinfo words for the mod that has srm now. Called after every
 	// CallPatch::Recheck.
 	void Settle();
 }

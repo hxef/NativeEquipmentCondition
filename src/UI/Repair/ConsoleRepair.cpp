@@ -7,6 +7,7 @@
 #include "Core/ItemCards.h"
 #include "Core/TraceLog/TraceLog.h"
 #include "UI/Repair/Restore.h"
+#include "UI/Repair/WearInfo.h"
 
 #include <algorithm>
 #include <cctype>
@@ -25,39 +26,45 @@ namespace ConsoleRepair
 		// The word that turns the command on armor.
 		constexpr std::string_view ARMOR = "armor"sv;
 
+		// The word that prints the wear rate and writes nothing, see WearInfo.h.
+		constexpr std::string_view WEARINFO = "wearinfo"sv;
+
 		// Room for a word as the console hands it over. A line of console
 		// input is shorter than this.
 		constexpr std::size_t WORD = 512;
 
-		// 2 optional words, a percent and the word armor, in either order. Both
+		// 2 optional words, a percent or wearinfo and the word armor, in either
+		// order. Both
 		// are words rather than a number and a word so that "srm armor" needs
 		// no number in front. The command table keeps a pointer to this for as
 		// long as the game runs.
 		RE::SCRIPT_PARAMETER PARAMETERS[]{
-			{ "Percent or armor", RE::SCRIPT_PARAM_TYPE::kChar, true },
-			{ "Percent or armor", RE::SCRIPT_PARAM_TYPE::kChar, true },
+			{ "Percent, wearinfo or armor", RE::SCRIPT_PARAM_TYPE::kChar, true },
+			{ "Percent, wearinfo or armor", RE::SCRIPT_PARAM_TYPE::kChar, true },
 		};
 
 		// The help srm shows while it is NEC's.
-		constexpr const char HELP[] = "Sets the weapon in hand, or with the word armor every worn piece, to a condition in percent, or to full without one";
+		constexpr const char HELP[] = "Sets the weapon in hand, or with the word armor every worn piece, to a condition in percent, or to full without one. With the word wearinfo it shows the wear rate instead";
 
 		// What was typed: the level, full where no number was, and whether the
-		// word armor was among it.
+		// words armor and wearinfo were among it.
 		struct Asked
 		{
 			std::uint32_t level{ Repair::FULL };
 			bool          armor{ false };
+			bool          info{ false };
 		};
 
-		[[nodiscard]] bool SaysArmor(std::string_view a_word)
+		// Whether a_word is a_known, in any case.
+		[[nodiscard]] bool Says(std::string_view a_word, std::string_view a_known)
 		{
-			return std::ranges::equal(a_word, ARMOR, [](unsigned char a_typed, unsigned char a_known) {
-				return std::tolower(a_typed) == a_known;
+			return std::ranges::equal(a_word, a_known, [](unsigned char a_typed, unsigned char a_letter) {
+				return std::tolower(a_typed) == a_letter;
 			});
 		}
 
-		// Nothing for a word that is neither a number nor armor, or for a
-		// second number.
+		// Nothing for a word that is neither a number, armor nor wearinfo,
+		// for a second number, or for a number beside wearinfo.
 		[[nodiscard]] std::optional<Asked> Parse(std::string_view a_first, std::string_view a_second)
 		{
 			Asked out;
@@ -66,15 +73,19 @@ namespace ConsoleRepair
 				if (word.empty()) {
 					continue;
 				}
-				if (SaysArmor(word)) {
+				if (Says(word, ARMOR)) {
 					out.armor = true;
+					continue;
+				}
+				if (Says(word, WEARINFO) && !numbered) {
+					out.info = true;
 					continue;
 				}
 
 				std::int32_t percent = 0;
 				const auto*  end = word.data() + word.size();
 				const auto   read = std::from_chars(word.data(), end, percent);
-				if (numbered || read.ec != std::errc{} || read.ptr != end) {
+				if (numbered || out.info || read.ec != std::errc{} || read.ptr != end) {
 					return std::nullopt;
 				}
 				numbered = true;
@@ -224,13 +235,17 @@ namespace ConsoleRepair
 			const auto  asked = Parse(first, second);
 			if (!asked) {
 				if (console) {
-					console->Log("srm takes a percent, the word armor, or both.");
+					console->Log("srm takes a percent or the word wearinfo, with or without the word armor.");
 				}
 				return true;
 			}
 
 			auto* const player = RE::PlayerCharacter::GetSingleton();
 			if (!player) {
+				return true;
+			}
+			if (asked->info) {
+				WearInfo::Print(*player, console, asked->armor);
 				return true;
 			}
 
@@ -288,7 +303,7 @@ namespace ConsoleRepair
 		command->helpString = HELP;
 		command->SetParameters(PARAMETERS);
 
-		REX::INFO("The console command srm repairs the weapon in hand, or with the word armor every worn piece, or sets them to the percent typed after it.");
+		REX::INFO("The console command srm repairs the weapon in hand, or with the word armor every worn piece, or sets them to the percent typed after it. With the word wearinfo it shows their wear rate.");
 	}
 
 	// Each is put back only while it is still NEC's, so another DLL mod that

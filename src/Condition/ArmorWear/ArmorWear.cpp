@@ -223,4 +223,9 @@ namespace ArmorWear
 	{
 		return Condition::WearsOut(a_armor) ? ShareOf(a_armor, a_extra).value : 0.0F;
 	}
+
+	Share WearFactors(const RE::TESObjectARMO& a_armor, const RE::ExtraDataList* a_extra)
+	{
+		return ShareOf(a_armor, a_extra);
+	}
 }

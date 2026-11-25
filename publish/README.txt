@@ -37,8 +37,10 @@ ones that add new gear.
 WEAR AND TEAR
 Weapons:
 * Your weapon wears with every shot you fire and every melee hit you land, and
-  harder with a bash or a power attack. Fast automatics like the Minigun wear
-  less per shot, as if they fired at an ordinary automatic's pace.
+  harder with a bash or a power attack. Weapons that hit harder wear faster per
+  shot, and ones built from pricier components wear slower. Fast automatics
+  like the Minigun wear less per shot, as if they fired at an ordinary
+  automatic's pace.
 * A worn weapon does less damage, yours and NPCs' alike, down to 66% at 0
   condition.
 * Worn guns lose accuracy and range, and worn automatic weapons fire slower,
